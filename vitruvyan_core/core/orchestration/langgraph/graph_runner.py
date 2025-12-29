@@ -1,0 +1,280 @@
+# core/langgraph/graph_runner.py
+
+import json
+from typing import Dict, Any
+from core.orchestration.langgraph.graph_flow import build_graph
+from core.orchestration.langgraph.memory_utils import merge_slots
+from core.orchestration.langgraph.node.proactive_suggestions_node import format_suggestions_for_response
+# from core.logging.audit import  # TODO: audit module not available generate_trace_id  # 🆕 VSGS trace_id generation
+
+# Stub for generate_trace_id
+import uuid
+def generate_trace_id():
+    return str(uuid.uuid4())[:8]
+
+from langdetect import detect
+from langdetect import DetectorFactory
+
+# Deterministic language detection
+DetectorFactory.seed = 0
+
+# --- Language detection (normalized to {en, it, es}) ---
+def _detect_language(text: str) -> str:
+    """
+    Detect ISO-639-1 code and normalize to supported set.
+    Defaults to 'en' if unknown.
+    """
+    try:
+        code = (detect(text or "") or "en").lower()
+    except Exception:
+        code = "en"
+    return "it" if code.startswith("it") else ("es" if code.startswith("es") else "en")
+
+
+# In-memory session cache (fast, but not persistent)
+_SESSION_STATE: Dict[str, Dict[str, Any]] = {}
+
+# Compile the LangGraph once at module load
+_GRAPH = build_graph()
+
+
+def run_graph_once(input_text: str, user_id: str = "demo", return_full: bool = False) -> Dict[str, Any]:
+    """
+    Execute the graph once for a given user input.
+    
+    Pipeline:
+    1. Load last known conversation state (RAM → Postgres).
+    2. Merge with new input (slots, language).
+    3. 🆕 Generate trace_id for VSGS audit trail.
+    4. Run the LangGraph.
+    5. Persist final state to RAM (cache) and Postgres/Qdrant.
+    6. Return final response or full state.
+    """
+    # 1) Load previous state (RAM cache only - VSGS handles conversation context)
+    # Phase 1 Migration (Nov 2025): Removed get_last_conversation() call
+    # Reason: semantic_grounding_node populates state["semantic_matches"] automatically
+    state = _SESSION_STATE.get(user_id) or {}
+    state["input_text"] = input_text
+    state["user_id"] = user_id
+    
+    # 🆕 2) Generate trace_id for VSGS audit trail (propagated through all nodes)
+    state["trace_id"] = generate_trace_id()
+    print(f"🔍 [graph_runner] Request trace_id: {state['trace_id']}")
+
+    # 2) Detect and set language (fallback if babel_emotion_node hasn't run yet)
+    lang = _detect_language(input_text) if input_text else state.get("language")
+    if lang:
+        state["language"] = lang
+
+    # Merge slots (budget, tickers, horizon, language)
+    state = merge_slots(state, state)
+    print(f"➡️ [run_graph_once] Initial merged state: {state}")
+
+    # 3) Run the LangGraph
+    final_state = _GRAPH.invoke(state)
+
+    # ✅ Override language with Babel Gardens detection (more accurate than langdetect)
+    if final_state.get("emotion_metadata") and final_state["emotion_metadata"].get("language"):
+        babel_lang = final_state["emotion_metadata"]["language"]
+        # Normalize Babel Gardens language codes to our 3-lang system
+        if babel_lang.lower() in ["it", "italian", "ita"]:
+            final_state["language"] = "it"
+        elif babel_lang.lower() in ["es", "spanish", "esp", "spa"]:
+            final_state["language"] = "es"
+        else:
+            final_state["language"] = "en"
+        print(f"🌍 [graph_runner] Language overridden from Babel Gardens: {babel_lang} → {final_state['language']}")
+
+    # Debug log (safe truncation)
+    print("🟢 [graph_runner] Final state after invoke:",
+          json.dumps(final_state, indent=2, default=str)[:1000])
+    
+    # 🎭 DEBUG: Check emotion_detected presence
+    print(f"🎭 [graph_runner] emotion_detected in final_state: {final_state.get('emotion_detected')}")
+    print(f"🎭 [graph_runner] Keys in final_state: {list(final_state.keys()) if isinstance(final_state, dict) else 'NOT A DICT'}")
+
+    # 4) Persist results
+    _SESSION_STATE[user_id] = final_state
+    
+    # Phase 1 Migration (Nov 2025): save_conversation() removed
+    # Reason: semantic_grounding_node auto-saves to conversations + semantic_states
+    # Old code (kept as reference):
+    # try:
+    #     save_conversation(
+    #         user_id=user_id,
+    #         input_text=input_text,
+    #         slots=final_state,
+    #         intent=final_state.get("intent", "unknown")
+    #     )
+    # except Exception as e:
+    #     print(f"⚠️ [graph_runner] Failed to persist conversation: {e}")
+
+    # 5) Return final result
+    if return_full:
+        return final_state
+
+    # Extract response - prioritize structured response from compose_node
+    # Handle both nested and flattened response structures
+    response = final_state.get("response") if isinstance(final_state, dict) else None
+    
+    # 💡 Phase 2.1: Append proactive suggestions if present
+    proactive_suggestions = final_state.get("proactive_suggestions", [])
+    suggestions_text = format_suggestions_for_response(proactive_suggestions) if proactive_suggestions else ""
+    
+    # CASE 1: Valid nested response dict from compose_node
+    if isinstance(response, dict) and "action" in response:
+        # Already in correct format, just ensure Babel Gardens fields are present
+        if not response.get("language_detected") and final_state.get("language_detected"):
+            response["language_detected"] = final_state.get("language_detected")
+            response["language_confidence"] = final_state.get("language_confidence")
+            response["babel_status"] = final_state.get("babel_status")
+            response["cultural_context"] = final_state.get("cultural_context")
+        
+        # 🎭 Phase 2.1: Propagate emotion detection from babel_emotion_node
+        if final_state.get("emotion_detected"):
+            response["emotion_detected"] = final_state.get("emotion_detected")
+            response["emotion_confidence"] = final_state.get("emotion_confidence")
+            response["emotion_intensity"] = final_state.get("emotion_intensity")
+            response["emotion_secondary"] = final_state.get("emotion_secondary")
+            response["emotion_reasoning"] = final_state.get("emotion_reasoning")
+            response["emotion_sentiment_label"] = final_state.get("emotion_sentiment_label")
+            response["emotion_sentiment_score"] = final_state.get("emotion_sentiment_score")
+            response["emotion_metadata"] = final_state.get("emotion_metadata")
+        
+        # 💡 Phase 2.1: Append proactive suggestions (for all actions, not just answer)
+        if suggestions_text:
+            if response.get("action") == "answer" and "raw_output" in response and isinstance(response["raw_output"], dict):
+                # Append to notes for answer responses
+                notes = response["raw_output"].get("notes", {})
+                if not isinstance(notes, dict):
+                    notes = {}
+                notes["proactive_suggestions"] = suggestions_text
+                response["raw_output"]["notes"] = notes
+            # Always add suggestions fields to response
+            response["proactive_suggestions_text"] = suggestions_text
+            response["proactive_suggestions"] = proactive_suggestions
+        
+        # ✅ FIX (Nov 2, 2025): Add intent, route, tickers, horizon to API response
+        response["intent"] = final_state.get("intent")
+        response["route"] = final_state.get("route")
+        response["tickers"] = final_state.get("tickers")
+        response["horizon"] = final_state.get("horizon")
+        
+        # ✅ FIX (Nov 4, 2025): Add VSGS fields to API response
+        response["vsgs_status"] = final_state.get("vsgs_status")
+        response["vsgs_elapsed_ms"] = final_state.get("vsgs_elapsed_ms")
+        response["vsgs_error"] = final_state.get("vsgs_error")
+        response["semantic_matches_count"] = len(final_state.get("semantic_matches", []))
+        
+        # 🕸️ FIX (Dec 25, 2025): Add Pattern Weaver context to API response
+        response["weaver_context"] = final_state.get("weaver_context")
+        
+        # 🧠 FIX (Dec 28, 2025): Add CAN v2 fields to API response
+        response["can_mode"] = final_state.get("can_mode")
+        response["can_route"] = final_state.get("can_route")
+        response["can_response"] = final_state.get("can_response")
+        response["follow_ups"] = final_state.get("follow_ups")
+        response["conversation_type"] = final_state.get("conversation_type")
+        
+        # 🎯 FIX (Dec 28, 2025): Add Advisor Node fields to API response
+        response["advisor_recommendation"] = final_state.get("advisor_recommendation")
+        response["user_requests_action"] = final_state.get("user_requests_action")
+        
+        return response
+    
+    # CASE 2: Flattened structure - response fields at root level
+    if isinstance(final_state, dict) and "action" in final_state:
+        result = {
+            "action": final_state.get("action"),
+            "questions": final_state.get("questions", []),
+            "needed_slots": final_state.get("needed_slots", []),
+            "language_detected": final_state.get("language_detected"),
+            "language_confidence": final_state.get("language_confidence"),
+            "babel_status": final_state.get("babel_status"),
+            "cultural_context": final_state.get("cultural_context"),
+            "sentiment_label": final_state.get("sentiment_label"),
+            "raw_output": final_state.get("raw_output"),
+            # 🎭 Phase 2.1: Include emotion detection from babel_emotion_node
+            "emotion_detected": final_state.get("emotion_detected"),
+            "emotion_confidence": final_state.get("emotion_confidence"),
+            "emotion_intensity": final_state.get("emotion_intensity"),
+            "emotion_secondary": final_state.get("emotion_secondary"),
+            "emotion_reasoning": final_state.get("emotion_reasoning"),
+            "emotion_sentiment_label": final_state.get("emotion_sentiment_label"),
+            "emotion_sentiment_score": final_state.get("emotion_sentiment_score"),
+            "emotion_metadata": final_state.get("emotion_metadata"),
+            # ✅ FIX (Nov 2, 2025): Add intent, route, tickers, horizon to API response
+            "intent": final_state.get("intent"),
+            "route": final_state.get("route"),
+            "tickers": final_state.get("tickers"),
+            "horizon": final_state.get("horizon"),
+            # ✅ FIX (Nov 4, 2025): Add VSGS fields to API response
+            "vsgs_status": final_state.get("vsgs_status"),
+            "vsgs_elapsed_ms": final_state.get("vsgs_elapsed_ms"),
+            "vsgs_error": final_state.get("vsgs_error"),
+            "semantic_matches_count": len(final_state.get("semantic_matches", [])),
+            # 🕸️ FIX (Dec 25, 2025): Add Pattern Weaver context to API response
+            "weaver_context": final_state.get("weaver_context"),
+            # 🧠 FIX (Dec 28, 2025): Add CAN v2 fields to API response
+            "can_mode": final_state.get("can_mode"),
+            "can_route": final_state.get("can_route"),
+            "can_response": final_state.get("can_response"),
+            "follow_ups": final_state.get("follow_ups"),
+            "conversation_type": final_state.get("conversation_type"),
+            # 🎯 FIX (Dec 28, 2025): Add Advisor Node fields to API response
+            "advisor_recommendation": final_state.get("advisor_recommendation"),
+            "user_requests_action": final_state.get("user_requests_action"),
+        }
+        
+        # 💡 Phase 2.1: Include proactive suggestions
+        if suggestions_text:
+            result["proactive_suggestions_text"] = suggestions_text
+            result["proactive_suggestions"] = proactive_suggestions
+        
+        return result
+    
+    # CASE 3: No action field - likely semantic_fallback or error
+    # Compose a minimal valid response with available metadata
+    return {
+        "action": "clarify",
+        "questions": ["Unable to process request. Please provide more details."],
+        "semantic_fallback": True,
+        "language_detected": final_state.get("language_detected") if isinstance(final_state, dict) else None,
+        "language_confidence": final_state.get("language_confidence") if isinstance(final_state, dict) else None,
+        "babel_status": final_state.get("babel_status") if isinstance(final_state, dict) else None,
+        "cultural_context": final_state.get("cultural_context") if isinstance(final_state, dict) else None,
+        # 🎭 Phase 2.1: Include emotion detection even in fallback
+        "emotion_detected": final_state.get("emotion_detected") if isinstance(final_state, dict) else None,
+        "emotion_confidence": final_state.get("emotion_confidence") if isinstance(final_state, dict) else None,
+        # ✅ FIX (Nov 2, 2025): Add intent, route, tickers, horizon to API response
+        "intent": final_state.get("intent") if isinstance(final_state, dict) else None,
+        "route": final_state.get("route") if isinstance(final_state, dict) else None,
+        "tickers": final_state.get("tickers") if isinstance(final_state, dict) else None,
+        "horizon": final_state.get("horizon") if isinstance(final_state, dict) else None,
+        # ✅ FIX (Nov 4, 2025): Add VSGS fields to API response
+        "vsgs_status": final_state.get("vsgs_status") if isinstance(final_state, dict) else None,
+        "vsgs_elapsed_ms": final_state.get("vsgs_elapsed_ms") if isinstance(final_state, dict) else None,
+        "vsgs_error": final_state.get("vsgs_error") if isinstance(final_state, dict) else None,
+        "semantic_matches_count": len(final_state.get("semantic_matches", [])) if isinstance(final_state, dict) else 0,
+        # 🕸️ FIX (Dec 25, 2025): Add Pattern Weaver context to API response
+        "weaver_context": final_state.get("weaver_context") if isinstance(final_state, dict) else None,
+    }
+
+
+def run_graph(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Variant that accepts an API-style payload:
+    - { "input": "..." }
+    - { "input_text": "..." }
+    - { "user_id": "..." }
+    """
+    print(f"➡️ [run_graph] Incoming payload: {payload}")
+
+    if not payload:
+        return run_graph_once("", "demo")
+
+    text = payload.get("input") or payload.get("input_text") or ""
+    user_id = payload.get("user_id", "demo")
+    print(f"➡️ [run_graph] user_id={user_id}, input_text={text.strip()}")
+
+    return run_graph_once(text.strip(), user_id)

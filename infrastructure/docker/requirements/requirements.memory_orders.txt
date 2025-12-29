@@ -1,0 +1,37 @@
+# Memory Orders Requirements - Python 3.12 Compatible
+# EPOCH II - PHASE 4.9
+
+# --- Core API ---
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# --- Pydantic & Config ---
+pydantic>=2.9,<2.12
+pydantic-settings>=2.0
+
+# --- PostgreSQL (Archivarium) ---
+psycopg2-binary>=2.9
+SQLAlchemy>=2.0
+alembic>=1.13
+
+# --- Redis Cognitive Bus (EPOCH II) ---
+redis>=5.0.1
+
+# --- Qdrant Vector DB (Mnemosyne) ---
+qdrant-client>=1.7.0
+
+# --- Data Processing ---
+pandas>=2.2.0
+
+# --- LangChain & LangGraph (for node integration) ---
+langchain-core>=0.3
+langgraph>=0.5
+
+# --- Utilities ---
+requests>=2.31
+python-dotenv>=1.0
+structlog>=24.1
+prometheus-client>=0.19.0
+
+# --- HTTP Client ---
+httpx>=0.25.0

@@ -1,0 +1,62 @@
+FROM python:3.10-slim as base
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y gcc g++ curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Dependencies stage
+FROM base as dependencies
+
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy and install requirements
+COPY services/core/api_semantic/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Final stage
+FROM base as final
+
+WORKDIR /app
+
+# Copy service code
+COPY services/core/api_semantic/ /app/api_semantic/
+
+# Copy semantic engine
+COPY vitruvyan_core/core/cognitive/semantic_engine/ /app/core/cognitive/semantic_engine/
+
+# Copy persistence for db_params
+COPY vitruvyan_core/core/foundation/persistence/ /app/core/foundation/persistence/
+COPY vitruvyan_core/core/foundation/__init__.py /app/core/foundation/__init__.py
+
+# Copy core dependencies (if needed)
+COPY vitruvyan_core/core/__init__.py /app/core/__init__.py
+COPY vitruvyan_core/core/cognitive/__init__.py /app/core/cognitive/__init__.py
+
+# Create user and setup permissions
+RUN useradd --create-home --shell /bin/bash semantic && \
+    mkdir -p /app/logs && \
+    chown -R semantic:semantic /app
+
+# Copy virtual environment from dependencies stage
+COPY --from=dependencies /opt/venv /opt/venv
+
+# Environment variables
+ENV PATH="/opt/venv/bin:$PATH"
+ENV PYTHONPATH="/app"
+ENV PYTHONUNBUFFERED=1
+
+# Switch to non-root user
+USER semantic
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8002/health || exit 1
+
+# Expose port
+EXPOSE 8002
+
+# Start uvicorn
+CMD ["uvicorn", "api_semantic.main:app", "--host", "0.0.0.0", "--port", "8002"]

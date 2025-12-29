@@ -1,0 +1,34 @@
+# --- Core API ---
+fastapi
+uvicorn[standard]
+gunicorn
+
+# --- Pydantic & Config ---
+pydantic>=2.9,<2.12  # Lock to avoid breaking changes in 2.12+ (tools compatibility)
+pydantic-settings
+
+# --- PostgreSQL ---
+psycopg2-binary
+
+# --- Redis & Qdrant (PHASE 4.6 Cognitive Bus) ---
+redis>=5.0
+qdrant-client>=1.7
+
+# --- CrewAI & LangGraph ---
+crewai[tools]>=0.86  # Versione LEGGERA senza dipendenze pesanti
+langgraph>=0.5
+langchain-core>=0.3
+langchain-openai>=0.2
+
+# --- Financial data ---
+yfinance
+pandas>=2.2
+numpy>=2.2.6   # Richiesto da pandas-ta
+pandas-ta>=0.4.71b0  # Latest version - requires Python 3.12+
+
+# --- Utility ---
+requests
+python-dotenv
+structlog>=24.1
+prometheus_client>=0.16  # Required by vsgs_metrics.py (VEE + VSGS monitoring)
+alembic>=1.13.0

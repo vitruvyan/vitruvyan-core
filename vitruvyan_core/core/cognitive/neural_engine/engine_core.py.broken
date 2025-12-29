@@ -1,0 +1,2014 @@
+# core/logic/neural_engine/engine_core.py
+# -*- coding: utf-8 -*-
+from __future__ import annotations
+
+import os
+from datetime import datetime, timezone
+from typing import Optional, Dict, Any, Tuple, List
+
+import numpy as np
+import pandas as pd
+import psycopg2
+from dotenv import load_dotenv
+from core.leo.factor_explanations import save_explanations
+from core.logic.vitruvyan_proprietary.vare_engine import VAREEngine
+import logging
+
+logger = logging.getLogger("neural_engine")
+logger.setLevel(logging.INFO)
+
+# ============================================================
+# Bootstrap ENV & DB
+# ============================================================
+load_dotenv()  # loads any .env mounted by the container
+
+DB_PARAMS = {
+    "host": os.getenv("POSTGRES_HOST", "localhost"),
+    "port": int(os.getenv("POSTGRES_PORT", "5432")),
+    "dbname": os.getenv("POSTGRES_DB", "vitruvyan"),
+    "user": os.getenv("POSTGRES_USER", "vitruvyan_user"),
+    "password": os.getenv("POSTGRES_PASSWORD", ""),
+}
+
+NE_DISABLE_SENTIMENT = os.getenv("NE_DISABLE_SENTIMENT", "0") == "1"
+NE_MIN_ADV_USD = int(os.getenv("NE_MIN_ADV_USD", "1000000"))
+
+# ============================================================
+# Utils
+# ============================================================
+def _none_to_float(x):
+    try:
+        if x is None:
+            return None
+        if isinstance(x, float) and np.isnan(x):
+            return None
+        return float(x)
+    except Exception:
+        return None
+
+def _fmt(val):
+    return None if (val is None or (isinstance(val, float) and np.isnan(val))) else float(round(val, 4))
+
+# ============================================================
+# STEP 0 — Universe / Features shell
+# ============================================================
+def extract_universe(filters: Optional[Dict[str, Any]] = None) -> pd.DataFrame:
+    """
+    Loads the universe from `tickers` (active=true), or a filtered subset if tickers are specified.
+    Base columns: ticker, type, sector/fund_category -> category.
+    Supports filters: tickers (list), sector (str), universe (list/CSV)
+    """
+    import logging
+    logger = logging.getLogger("neural_engine_core")
+    tickers_filter = None
+    sector_filter = None
+    
+    if filters and filters.get("tickers"):
+        tickers_filter = [str(x).upper() for x in filters["tickers"] if x]
+        logger.info(f"Filtering universe by tickers: {tickers_filter}")
+    
+    if filters and filters.get("sector"):
+        sector_filter = str(filters["sector"])
+        logger.info(f"Filtering universe by sector: {sector_filter}")
+    
+    if tickers_filter:
+        # Only select those tickers, active=true
+        query = f"""
+            SELECT
+                ticker,
+                type,
+                sector,
+                fund_category,
+                country,
+                active
+            FROM tickers
+            WHERE active = true AND ticker = ANY(%s);
+        """
+        with psycopg2.connect(**DB_PARAMS) as conn:
+            df = pd.read_sql_query(query, conn, params=(tickers_filter,))
+        logger.info(f"Loaded {len(df)} tickers from DB for filter.")
+    elif sector_filter:
+        # Filter by sector
+        query = """
+            SELECT
+                ticker,
+                type,
+                sector,
+                fund_category,
+                country,
+                active
+            FROM tickers
+            WHERE active = true 
+              AND type = 'stock'
+              AND sector = %s;
+        """
+        with psycopg2.connect(**DB_PARAMS) as conn:
+            df = pd.read_sql_query(query, conn, params=(sector_filter,))
+        logger.info(f"Loaded {len(df)} tickers from sector '{sector_filter}'")
+    else:
+        query = """
+            SELECT
+                ticker,
+                type,
+                sector,
+                fund_category,
+                country,
+                active
+            FROM tickers
+            WHERE active = true;
+        """
+        with psycopg2.connect(**DB_PARAMS) as conn:
+            df = pd.read_sql_query(query, conn)
+
+    # uniform category (sector for stock, fund_category otherwise)
+    df["category"] = df.apply(
+        lambda r: r["sector"] if r["type"] == "stock" else r["fund_category"],
+        axis=1,
+    )
+
+    # placeholder (if in the future we use price/ADV in guardrails)
+    df["last_close"] = None
+    df["adv20_usd"] = None
+
+    # Optional universe filter (list or CSV)
+    if filters and filters.get("universe"):
+        uni = filters["universe"]
+        if isinstance(uni, str):
+            tickers = [x.strip().upper() for x in uni.split(",") if x.strip()]
+        elif isinstance(uni, (list, tuple, set)):
+            tickers = [str(x).upper() for x in uni]
+        else:
+            tickers = []
+        if tickers:
+            df = df[df["ticker"].isin(tickers)]
+
+    return df[["ticker", "type", "category", "country", "last_close", "adv20_usd"]]
+
+def extract_features(filters: Optional[Dict[str, Any]] = None) -> pd.DataFrame:
+    """
+    **Compatibility with existing APIs**:
+    returns an "empty" feature dataframe, populated only with the universe.
+    The get_*_z() functions will merge the factors.
+    """
+    return extract_universe(filters=filters)
+
+# ============================================================
+# STEP 1 — Technical factors (merge + z-score)
+# ============================================================
+def get_momentum_z(df: pd.DataFrame, apply_decay: bool = False) -> pd.DataFrame:
+    """
+    Gets the latest RSI per ticker from momentum_logs -> z-score on RSI.
+    
+    Args:
+        df: Input dataframe with tickers
+        apply_decay: If True, applies exponential time decay exp(-days_old/30) to z-scores (Function L)
+    """
+    if df.empty:
+        return df.copy()
+
+    query = """
+        SELECT DISTINCT ON (ticker)
+            ticker, rsi, timestamp
+        FROM momentum_logs
+        WHERE rsi IS NOT NULL
+        ORDER BY ticker, timestamp DESC;
+    """
+    with psycopg2.connect(**DB_PARAMS) as conn:
+        mom_df = pd.read_sql_query(query, conn)
+
+    out = df.merge(mom_df, on="ticker", how="left")
+    
+    # Calculate z-score using FULL UNIVERSE stats (not just filtered tickers)
+    # This allows single-ticker queries to have valid z-scores
+    if mom_df["rsi"].notnull().sum() > 1:
+        mu, sd = mom_df["rsi"].mean(), mom_df["rsi"].std(ddof=0)
+        out["momentum_z"] = (out["rsi"] - mu) / sd if sd and not np.isnan(sd) else 0.0
+    else:
+        out["momentum_z"] = None
+    
+    # Function L: Apply time decay if requested
+    if apply_decay and "timestamp" in out.columns:
+        logger.info("[Function L] Applying time decay to momentum_z")
+        now = pd.Timestamp.now(tz='UTC')
+        out["timestamp"] = pd.to_datetime(out["timestamp"], utc=True)
+        out["days_old"] = (now - out["timestamp"]).dt.total_seconds() / 86400.0  # Convert to days
+        out["decay_factor"] = np.exp(-out["days_old"] / 30.0)  # 30-day half-life
+        
+        # Apply decay only to non-null z-scores
+        mask = out["momentum_z"].notna()
+        out.loc[mask, "momentum_z"] = out.loc[mask, "momentum_z"] * out.loc[mask, "decay_factor"]
+        
+        logger.info(f"[Function L] Momentum decay applied: mean decay_factor={out['decay_factor'].mean():.3f}")
+        out = out.drop(columns=["decay_factor", "days_old"], errors="ignore")
+    
+    return out.drop(columns=["rsi", "timestamp"], errors="ignore")
+
+def get_trend_z(df: pd.DataFrame, apply_decay: bool = False) -> pd.DataFrame:
+    """
+    Z-score of trend strength: (SMA short - SMA medium) / SMA medium (%).
+    
+    Args:
+        df: Input dataframe with tickers
+        apply_decay: If True, applies exponential time decay exp(-days_old/30) to z-scores (Function L)
+    """
+    if df.empty:
+        return df.copy()
+
+    query = """
+        SELECT DISTINCT ON (ticker)
+            ticker, sma_short, sma_medium, timestamp
+        FROM trend_logs
+        WHERE sma_short IS NOT NULL AND sma_medium IS NOT NULL
+        ORDER BY ticker, timestamp DESC;
+    """
+    with psycopg2.connect(**DB_PARAMS) as conn:
+        tr_df = pd.read_sql_query(query, conn)
+
+    tr_df["trend_strength"] = ((tr_df["sma_short"] - tr_df["sma_medium"]) / tr_df["sma_medium"]) * 100.0
+    out = df.merge(tr_df[["ticker", "trend_strength", "timestamp"]], on="ticker", how="left")
+    
+    # Calculate z-score using FULL UNIVERSE stats (not just filtered tickers)
+    if tr_df["trend_strength"].notnull().sum() > 1:
+        mu, sd = tr_df["trend_strength"].mean(), tr_df["trend_strength"].std(ddof=0)
+        out["trend_z"] = (out["trend_strength"] - mu) / sd if sd and not np.isnan(sd) else 0.0
+    else:
+        out["trend_z"] = None
+    
+    # Function L: Apply time decay if requested
+    if apply_decay and "timestamp" in out.columns:
+        logger.info("[Function L] Applying time decay to trend_z")
+        now = pd.Timestamp.now(tz='UTC')
+        out["timestamp"] = pd.to_datetime(out["timestamp"], utc=True)
+        out["days_old"] = (now - out["timestamp"]).dt.total_seconds() / 86400.0
+        out["decay_factor"] = np.exp(-out["days_old"] / 30.0)
+        
+        mask = out["trend_z"].notna()
+        out.loc[mask, "trend_z"] = out.loc[mask, "trend_z"] * out.loc[mask, "decay_factor"]
+        
+        logger.info(f"[Function L] Trend decay applied: mean decay_factor={out['decay_factor'].mean():.3f}")
+        out = out.drop(columns=["decay_factor", "days_old"], errors="ignore")
+    
+    return out.drop(columns=["trend_strength", "timestamp"], errors="ignore")
+
+def get_volatility_z(df: pd.DataFrame, apply_decay: bool = False) -> pd.DataFrame:
+    """
+    Z-score of ATR from volatility_logs.
+    
+    Args:
+        df: Input dataframe with tickers
+        apply_decay: If True, applies exponential time decay exp(-days_old/30) to z-scores (Function L)
+    """
+    if df.empty:
+        return df.copy()
+
+    query = """
+        SELECT DISTINCT ON (ticker)
+            ticker, atr, timestamp
+        FROM volatility_logs
+        WHERE atr IS NOT NULL
+        ORDER BY ticker, timestamp DESC;
+    """
+    with psycopg2.connect(**DB_PARAMS) as conn:
+        vol_df = pd.read_sql_query(query, conn)
+
+    out = df.merge(vol_df, on="ticker", how="left")
+    
+    # Calculate z-score using FULL UNIVERSE stats (not just filtered tickers)
+    if vol_df["atr"].notnull().sum() > 1:
+        mu, sd = vol_df["atr"].mean(), vol_df["atr"].std(ddof=0)
+        out["vola_z"] = (out["atr"] - mu) / sd if sd and not np.isnan(sd) else 0.0
+    else:
+        out["vola_z"] = None
+    
+    # Function L: Apply time decay if requested
+    if apply_decay and "timestamp" in out.columns:
+        logger.info("[Function L] Applying time decay to vola_z")
+        now = pd.Timestamp.now(tz='UTC')
+        out["timestamp"] = pd.to_datetime(out["timestamp"], utc=True)
+        out["days_old"] = (now - out["timestamp"]).dt.total_seconds() / 86400.0
+        out["decay_factor"] = np.exp(-out["days_old"] / 30.0)
+        
+        mask = out["vola_z"].notna()
+        out.loc[mask, "vola_z"] = out.loc[mask, "vola_z"] * out.loc[mask, "decay_factor"]
+        
+        logger.info(f"[Function L] Volatility decay applied: mean decay_factor={out['decay_factor'].mean():.3f}")
+        out = out.drop(columns=["decay_factor", "days_old"], errors="ignore")
+    
+    return out.drop(columns=["atr", "timestamp"], errors="ignore")
+
+# ============================================================
+# STEP 2 — Sentiment (raw + tag + at + z)
+# ============================================================
+def get_sentiment_z(df: pd.DataFrame, apply_decay: bool = False) -> pd.DataFrame:
+    """
+    Retrieves the latest sentiment per ticker from sentiment_scores, merging:
+      - sentiment_raw  (combined_score)
+      - sentiment_tag
+      - sentiment_at   (created_at)
+    and computes sentiment_z on sentiment_raw.
+    If NE_DISABLE_SENTIMENT=1 -> sentiment_* columns set to None.
+    
+    Args:
+        df: Input dataframe with tickers
+        apply_decay: If True, applies exponential time decay exp(-days_old/30) to z-scores (Function L)
+    """
+    out = df.copy()
+    if out.empty:
+        return out
+
+    if NE_DISABLE_SENTIMENT:
+        out["sentiment_raw"] = None
+        out["sentiment_tag"] = None
+        out["sentiment_at"]  = None
+        out["sentiment_z"]   = None
+        return out
+
+    query = """
+        SELECT DISTINCT ON (ticker)
+            ticker,
+            combined_score   AS sentiment_raw,
+            sentiment_tag    AS sentiment_tag,
+            created_at       AS sentiment_at
+        FROM sentiment_scores
+        WHERE combined_score IS NOT NULL
+        ORDER BY ticker, created_at DESC;
+    """
+    with psycopg2.connect(**DB_PARAMS) as conn:
+        s_df = pd.read_sql_query(query, conn)
+
+    out = out.merge(
+        s_df[["ticker", "sentiment_raw", "sentiment_tag", "sentiment_at"]],
+        on="ticker",
+        how="left",
+    )
+    
+    # Calculate z-score using FULL UNIVERSE stats (not just filtered tickers)
+    if s_df["sentiment_raw"].notnull().sum() > 1:
+        mu, sd = s_df["sentiment_raw"].mean(), s_df["sentiment_raw"].std(ddof=0)
+        out["sentiment_z"] = (out["sentiment_raw"] - mu) / sd if sd and not np.isnan(sd) else 0.0
+    else:
+        out["sentiment_z"] = None
+    
+    # Function L: Apply time decay if requested
+    if apply_decay and "sentiment_at" in out.columns:
+        logger.info("[Function L] Applying time decay to sentiment_z")
+        now = pd.Timestamp.now(tz='UTC')
+        out["sentiment_at"] = pd.to_datetime(out["sentiment_at"], utc=True)
+        out["days_old"] = (now - out["sentiment_at"]).dt.total_seconds() / 86400.0
+        out["decay_factor"] = np.exp(-out["days_old"] / 30.0)
+        
+        mask = out["sentiment_z"].notna()
+        out.loc[mask, "sentiment_z"] = out.loc[mask, "sentiment_z"] * out.loc[mask, "decay_factor"]
+        
+        logger.info(f"[Function L] Sentiment decay applied: mean decay_factor={out['decay_factor'].mean():.3f}")
+        out = out.drop(columns=["decay_factor", "days_old"], errors="ignore")
+    
+    return out
+
+# ============================================================
+# FUNDAMENTALS LAYER (Priority 1 - Dec 2025)
+# ============================================================
+def get_fundamentals_z(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Retrieves latest fundamental data per ticker from fundamentals table and computes z-scores.
+    
+    Z-scored metrics:
+    - revenue_growth_yoy_z (Revenue growth year-over-year)
+    - eps_growth_yoy_z (EPS growth year-over-year)
+    - net_margin_z (Net profit margin)
+    - debt_to_equity_z (Debt-to-equity ratio, inverted: lower is better)
+    - free_cash_flow_z (Free cash flow)
+    - dividend_yield_z (Dividend yield)
+    
+    Args:
+        df: Input dataframe with tickers
+    
+    Returns:
+        Enriched dataframe with fundamental raw metrics + z-scores
+    
+    Note:
+        - Uses DISTINCT ON (ticker) to get latest data per ticker
+        - Z-scores computed across FULL UNIVERSE (not just filtered tickers)
+        - Debt-to-equity inverted: lower debt = higher z-score
+        - Returns None for tickers without fundamental data
+    
+    Architecture:
+        - Called by: run_ne_once() main pipeline
+        - Data source: fundamentals table (populated by fundamentals_node.py)
+        - Integration: Merged into composite scoring via compute_composite()
+    
+    Author: GitHub Copilot + dbaldoni
+    Date: December 6, 2025
+    """
+    out = df.copy()
+    if out.empty:
+        return out
+    
+    logger.info("📊 Fetching fundamentals data from PostgreSQL...")
+    
+    # Query latest fundamentals per ticker
+    query = """
+        SELECT DISTINCT ON (ticker)
+            ticker,
+            date AS fundamentals_date,
+            revenue_growth_yoy,
+            eps_growth_yoy,
+            net_margin,
+            debt_to_equity,
+            free_cash_flow,
+            dividend_yield,
+            pe_ratio,
+            pb_ratio
+        FROM fundamentals
+        ORDER BY ticker, date DESC;
+    """
+    
+    try:
+        with psycopg2.connect(**DB_PARAMS) as conn:
+            f_df = pd.read_sql_query(query, conn)
+        
+        logger.info(f"✅ Loaded {len(f_df)} tickers with fundamental data")
+    except Exception as e:
+        logger.error(f"❌ Failed to fetch fundamentals: {e}")
+        # Return dataframe with None columns
+        out["revenue_growth_yoy"] = None
+        out["eps_growth_yoy"] = None
+        out["net_margin"] = None
+        out["debt_to_equity"] = None
+        out["free_cash_flow"] = None
+        out["dividend_yield"] = None
+        out["revenue_growth_yoy_z"] = None
+        out["eps_growth_yoy_z"] = None
+        out["net_margin_z"] = None
+        out["debt_to_equity_z"] = None
+        out["free_cash_flow_z"] = None
+        out["dividend_yield_z"] = None
+        return out
+    
+    # Merge with input dataframe
+    out = out.merge(
+        f_df[[
+            "ticker", "fundamentals_date", "revenue_growth_yoy", "eps_growth_yoy",
+            "net_margin", "debt_to_equity", "free_cash_flow", "dividend_yield",
+            "pe_ratio", "pb_ratio"
+        ]],
+        on="ticker",
+        how="left"
+    )
+    
+    # ===== Z-SCORE CALCULATIONS (using FULL UNIVERSE stats) =====
+    
+    # 1. Revenue Growth YoY
+    if f_df["revenue_growth_yoy"].notnull().sum() > 1:
+        mu = f_df["revenue_growth_yoy"].mean()
+        sd = f_df["revenue_growth_yoy"].std(ddof=0)
+        out["revenue_growth_yoy_z"] = (out["revenue_growth_yoy"] - mu) / sd if sd and not np.isnan(sd) else 0.0
+    else:
+        out["revenue_growth_yoy_z"] = None
+    
+    # 2. EPS Growth YoY
+    if f_df["eps_growth_yoy"].notnull().sum() > 1:
+        mu = f_df["eps_growth_yoy"].mean()
+        sd = f_df["eps_growth_yoy"].std(ddof=0)
+        out["eps_growth_yoy_z"] = (out["eps_growth_yoy"] - mu) / sd if sd and not np.isnan(sd) else 0.0
+    else:
+        out["eps_growth_yoy_z"] = None
+    
+    # 3. Net Margin
+    if f_df["net_margin"].notnull().sum() > 1:
+        mu = f_df["net_margin"].mean()
+        sd = f_df["net_margin"].std(ddof=0)
+        out["net_margin_z"] = (out["net_margin"] - mu) / sd if sd and not np.isnan(sd) else 0.0
+    else:
+        out["net_margin_z"] = None
+    
+    # 4. Debt-to-Equity (INVERTED: lower is better)
+    if f_df["debt_to_equity"].notnull().sum() > 1:
+        mu = f_df["debt_to_equity"].mean()
+        sd = f_df["debt_to_equity"].std(ddof=0)
+        # Invert sign: high debt = negative z-score
+        out["debt_to_equity_z"] = -(out["debt_to_equity"] - mu) / sd if sd and not np.isnan(sd) else 0.0
+    else:
+        out["debt_to_equity_z"] = None
+    
+    # 5. Free Cash Flow
+    if f_df["free_cash_flow"].notnull().sum() > 1:
+        mu = f_df["free_cash_flow"].mean()
+        sd = f_df["free_cash_flow"].std(ddof=0)
+        out["free_cash_flow_z"] = (out["free_cash_flow"] - mu) / sd if sd and not np.isnan(sd) else 0.0
+    else:
+        out["free_cash_flow_z"] = None
+    
+    # 6. Dividend Yield
+    if f_df["dividend_yield"].notnull().sum() > 1:
+        mu = f_df["dividend_yield"].mean()
+        sd = f_df["dividend_yield"].std(ddof=0)
+        out["dividend_yield_z"] = (out["dividend_yield"] - mu) / sd if sd and not np.isnan(sd) else 0.0
+    else:
+        out["dividend_yield_z"] = None
+    
+    logger.info(f"✅ Fundamentals z-scores computed for {len(out)} tickers")
+    
+    return out
+
+# ============================================================
+# Function J: Portfolio Diversification
+# ============================================================
+def apply_portfolio_diversification(df: pd.DataFrame, portfolio_tickers: List[str], correlation_threshold: float = 0.3) -> pd.DataFrame:
+    """
+    Function J: Portfolio Diversification Filter
+    
+    Filters candidates to include only tickers with low correlation (<threshold) to the user's existing portfolio.
+    Uses 90-day returns to calculate correlation matrix.
+    
+    Args:
+        df: DataFrame with candidate tickers
+        portfolio_tickers: List of tickers in user's portfolio (e.g., ["AAPL", "MSFT", "GOOGL"])
+        correlation_threshold: Max average correlation allowed (default 0.3)
+    
+    Returns:
+        DataFrame with additional columns:
+          - avg_correlation: Average correlation to portfolio tickers
+        Filtered to only include tickers with avg_correlation < threshold
+    """
+    out = df.copy()
+    if out.empty:
+        logger.info("[Function J] Empty dataframe, skipping portfolio diversification")
+        return out
+    
+    if not portfolio_tickers:
+        logger.warning("[Function J] No portfolio tickers provided, skipping diversification filter")
+        out["avg_correlation"] = None
+        return out
+    
+    logger.info(f"[Function J] Calculating correlations for {len(df)} candidates vs {len(portfolio_tickers)} portfolio tickers")
+    
+    # Get all tickers (candidates + portfolio)
+    all_tickers = list(set(df["ticker"].tolist() + portfolio_tickers))
+    
+    # Get 90-day returns for all tickers
+    query = """
+        WITH daily_returns AS (
+            SELECT 
+                ticker,
+                dt,
+                (close - LAG(close) OVER (PARTITION BY ticker ORDER BY dt)) / LAG(close) OVER (PARTITION BY ticker ORDER BY dt) AS return
+            FROM ohlcv_daily
+            WHERE ticker = ANY(%s)
+              AND dt >= CURRENT_DATE - INTERVAL '90 days'
+              AND close IS NOT NULL
+        )
+        SELECT ticker, dt, return
+        FROM daily_returns
+        WHERE return IS NOT NULL
+        ORDER BY ticker, dt;
+    """
+    
+    try:
+        with psycopg2.connect(**DB_PARAMS) as conn:
+            returns_df = pd.read_sql_query(query, conn, params=(all_tickers,))
+        
+        if returns_df.empty:
+            logger.warning("[Function J] No return data found for correlation calculation")
+            out["avg_correlation"] = None
+            return out
+        
+        # Pivot to wide format (tickers as columns, dates as rows)
+        returns_pivot = returns_df.pivot(index='dt', columns='ticker', values='return')
+        
+        # Calculate correlation matrix
+        corr_matrix = returns_pivot.corr()
+        
+        # For each candidate ticker, calculate average correlation to portfolio tickers
+        correlations = []
+        for ticker in df["ticker"]:
+            if ticker not in corr_matrix.columns:
+                # No correlation data available
+                correlations.append(None)
+                continue
+            
+            # Get correlations to portfolio tickers (excluding self if in portfolio)
+            portfolio_corrs = []
+            for pticker in portfolio_tickers:
+                if pticker in corr_matrix.columns and ticker != pticker:
+                    corr_val = corr_matrix.loc[ticker, pticker]
+                    if not np.isnan(corr_val):
+                        portfolio_corrs.append(abs(corr_val))  # Use absolute correlation
+            
+            if portfolio_corrs:
+                avg_corr = np.mean(portfolio_corrs)
+                correlations.append(avg_corr)
+            else:
+                correlations.append(None)
+        
+        out["avg_correlation"] = correlations
+        
+        # Filter by correlation threshold
+        initial_count = len(out)
+        out = out[
+            (out["avg_correlation"].notna()) & 
+            (out["avg_correlation"] < correlation_threshold)
+        ].copy()
+        
+        logger.info(f"[Function J] After diversification filter: {len(out)}/{initial_count} tickers remain (avg_corr < {correlation_threshold})")
+        
+        # Log correlation distribution
+        if not out.empty:
+            low_corr = (out["avg_correlation"] < 0.2).sum()
+            med_corr = ((out["avg_correlation"] >= 0.2) & (out["avg_correlation"] < 0.3)).sum()
+            logger.info(f"[Function J] Correlation breakdown: {low_corr} low (<0.2), {med_corr} medium (0.2-0.3)")
+        
+    except Exception as e:
+        logger.error(f"[Function J] Error calculating portfolio correlations: {e}")
+        out["avg_correlation"] = None
+    
+    return out
+
+# ============================================================
+# Function K: Macro Factor Sensitivity
+# ============================================================
+def apply_macro_sensitivity_filter(
+    df: pd.DataFrame, 
+    macro_factor: str,
+    inflation_threshold: float = 3.0,  # % threshold for inflation beneficiaries
+    rate_threshold: float = 4.0,        # % threshold for rate-sensitive stocks
+    volatility_threshold: float = 20.0  # VIX threshold for low-volatility preference
+) -> pd.DataFrame:
+    """
+    Function K: Macro Factor Sensitivity Filter
+    
+    Filters tickers based on macro environment exposure.
+    Uses current macro data from macro_outlook table.
+    
+    Args:
+        df: DataFrame with candidate tickers
+        macro_factor: Factor to filter by ("inflation"|"rates"|"volatility"|"dollar")
+        inflation_threshold: Inflation rate threshold (%)
+        rate_threshold: Interest rate threshold (%)
+        volatility_threshold: VIX threshold
+    
+    Returns:
+        DataFrame filtered by macro sensitivity logic:
+          - "inflation": Sectors that benefit from high inflation (commodities, energy, real estate)
+          - "rates": Sectors that benefit from low rates (growth tech, real estate) or high rates (financials)
+          - "volatility": Low beta stocks during high VIX periods
+          - "dollar": Export-heavy sectors benefit from weak dollar
+    
+    Note: Uses sector-based heuristics + macro thresholds (no per-ticker z-scores yet)
+    """
+    out = df.copy()
+    if out.empty:
+        logger.info("[Function K] Empty dataframe, skipping macro sensitivity filter")
+        return out
+    
+    if not macro_factor:
+        logger.warning("[Function K] No macro_factor provided")
+        return out
+    
+    # Get latest macro data
+    macro_df = get_macro_outlook(out)
+    
+    # Check if macro data available
+    if macro_df["inflation_rate"].isna().all() or macro_df["interest_rate"].isna().all():
+        logger.warning("[Function K] No macro_outlook data available, skipping filter")
+        return out
+    
+    current_inflation = macro_df["inflation_rate"].iloc[0]
+    current_rates = macro_df["interest_rate"].iloc[0]
+    current_vix = macro_df["market_volatility"].iloc[0] if "market_volatility" in macro_df.columns else None
+    
+    logger.info(f"[Function K] Current macro: inflation={current_inflation}%, rates={current_rates}%, VIX={current_vix}")
+    
+    initial_count = len(out)
+    
+    if macro_factor == "inflation":
+        # High inflation → favor commodities, energy, materials, real estate
+        inflation_beneficiaries = ["Energy", "Materials", "Real Estate", "Consumer Staples"]
+        out = out[out["category"].isin(inflation_beneficiaries)].copy()
+        logger.info(f"[Function K] Inflation filter: {len(out)}/{initial_count} tickers from inflation-resilient sectors")
+        
+    elif macro_factor == "rates":
+        # Two scenarios:
+        # - Low rates (<rate_threshold) → favor growth/tech (duration-sensitive)
+        # - High rates (>=rate_threshold) → favor financials (net interest margin expansion)
+        if current_rates < rate_threshold:
+            # Low rate environment
+            low_rate_beneficiaries = ["Technology", "Consumer Discretionary", "Communication Services", "Real Estate"]
+            out = out[out["category"].isin(low_rate_beneficiaries)].copy()
+            logger.info(f"[Function K] Low-rate filter: {len(out)}/{initial_count} tickers from duration-sensitive sectors")
+        else:
+            # High rate environment
+            high_rate_beneficiaries = ["Financials", "Energy"]
+            out = out[out["category"].isin(high_rate_beneficiaries)].copy()
+            logger.info(f"[Function K] High-rate filter: {len(out)}/{initial_count} tickers from rate-benefiting sectors")
+    
+    elif macro_factor == "volatility":
+        # High VIX → prefer defensive sectors (utilities, consumer staples, healthcare)
+        if current_vix and current_vix > volatility_threshold:
+            defensive_sectors = ["Utilities", "Consumer Staples", "Healthcare"]
+            out = out[out["category"].isin(defensive_sectors)].copy()
+            logger.info(f"[Function K] High-VIX filter: {len(out)}/{initial_count} tickers from defensive sectors")
+        else:
+            logger.warning(f"[Function K] VIX below threshold ({current_vix} < {volatility_threshold}), no filter applied")
+    
+    elif macro_factor == "dollar":
+        # Weak dollar → favor exporters (industrials, technology, materials)
+        # Strong dollar → favor importers/domestic (consumer discretionary, utilities)
+        # Note: Requires DXY data in macro_outlook (not implemented yet)
+        logger.warning("[Function K] Dollar sensitivity filter not yet implemented (requires DXY data)")
+        
+    else:
+        logger.error(f"[Function K] Unknown macro_factor: {macro_factor}")
+        return out
+    
+    if out.empty:
+        logger.warning(f"[Function K] No tickers match macro sensitivity filter for {macro_factor}")
+    
+    return out
+
+# ============================================================
+# Function P: Smart Money Flow Detection
+# ============================================================
+def get_dark_pool_z(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Function P: Smart Money Flow Detection
+    
+    Calculates dark pool volume ratio (institutional accumulation indicator).
+    Dark pool volume > 40% of total = unusual institutional activity (leading indicator)
+    
+    Returns df with additional columns:
+      - dark_pool_ratio: Latest 5-day average dark pool / total volume
+      - dark_pool_z: Z-score vs 90-day historical average
+    
+    Note: Requires dark_pool_volume table populated by smart_money_fetcher.py
+    """
+    out = df.copy()
+    if out.empty:
+        logger.info("[Function P] Empty dataframe, skipping smart money flow analysis")
+        return out
+    
+    query = """
+        WITH recent_dark_pool AS (
+            SELECT 
+                ticker,
+                AVG(dark_pool_ratio) as avg_dark_pool_ratio_5d
+            FROM dark_pool_volume
+            WHERE date >= CURRENT_DATE - INTERVAL '5 days'
+            GROUP BY ticker
+        ),
+        historical_dark_pool AS (
+            SELECT 
+                ticker,
+                AVG(dark_pool_ratio) as avg_dark_pool_ratio_90d,
+                STDDEV(dark_pool_ratio) as std_dark_pool_ratio_90d
+            FROM dark_pool_volume
+            WHERE date >= CURRENT_DATE - INTERVAL '90 days'
+            GROUP BY ticker
+        )
+        SELECT 
+            r.ticker,
+            r.avg_dark_pool_ratio_5d as dark_pool_ratio,
+            h.avg_dark_pool_ratio_90d,
+            h.std_dark_pool_ratio_90d,
+            CASE 
+                WHEN h.std_dark_pool_ratio_90d > 0 THEN 
+                    (r.avg_dark_pool_ratio_5d - h.avg_dark_pool_ratio_90d) / h.std_dark_pool_ratio_90d
+                ELSE NULL
+            END as dark_pool_z
+        FROM recent_dark_pool r
+        LEFT JOIN historical_dark_pool h ON r.ticker = h.ticker;
+    """
+    
+    try:
+        with psycopg2.connect(**DB_PARAMS) as conn:
+            dp_df = pd.read_sql_query(query, conn)
+        
+        if dp_df.empty:
+            logger.warning("[Function P] No dark pool data available in database")
+            out["dark_pool_ratio"] = None
+            out["dark_pool_z"] = None
+            return out
+        
+        # Merge with main dataframe
+        out = out.merge(dp_df[["ticker", "dark_pool_ratio", "dark_pool_z"]], on="ticker", how="left")
+        
+        available_count = out["dark_pool_z"].notna().sum()
+        logger.info(f"[Function P] Dark pool data available for {available_count}/{len(out)} tickers")
+        
+        return out
+        
+    except Exception as e:
+        logger.error(f"[Function P] Error fetching dark pool data: {e}")
+        out["dark_pool_ratio"] = None
+        out["dark_pool_z"] = None
+        return out
+
+
+def apply_smart_money_filter(df: pd.DataFrame, threshold: float = 1.5) -> pd.DataFrame:
+    """
+    Function P: Smart Money Flow Filter
+    
+    Filters tickers with unusual institutional accumulation (dark_pool_z > threshold).
+    
+    Args:
+        df: DataFrame with dark_pool_z column
+        threshold: Z-score threshold (default 1.5 = above 93rd percentile)
+    
+    Returns:
+        Filtered DataFrame with only tickers showing institutional accumulation
+    """
+    out = df.copy()
+    if out.empty:
+        return out
+    
+    initial_count = len(out)
+    
+    # Filter by dark pool z-score
+    out = out[
+        (out["dark_pool_z"].notna()) & 
+        (out["dark_pool_z"] > threshold)
+    ].copy()
+    
+    logger.info(f"[Function P] Smart Money filter: {len(out)}/{initial_count} tickers with dark_pool_z > {threshold}")
+    
+    if not out.empty:
+        high_accumulation = (out["dark_pool_z"] > 2.0).sum()
+        moderate_accumulation = ((out["dark_pool_z"] > 1.5) & (out["dark_pool_z"] <= 2.0)).sum()
+        logger.info(f"[Function P] Accumulation breakdown: {high_accumulation} high (>2.0σ), {moderate_accumulation} moderate (1.5-2.0σ)")
+    
+    return out
+
+
+def get_vare_scores(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    VARE: Vitruvyan Adaptive Risk Engine
+    
+    Calculates multi-dimensional risk scores for each ticker:
+      - market_risk: Beta vs SPY
+      - volatility_risk: Historical volatility
+      - liquidity_risk: Volume and bid-ask spread
+      - correlation_risk: Correlation with risk-on/risk-off assets
+      - overall_risk: Composite risk score (0-100, higher = riskier)
+      - risk_category: LOW, MODERATE, HIGH, EXTREME
+    
+    Returns df with additional columns:
+      - vare_risk_score: Overall risk (0-100)
+      - vare_risk_category: Risk classification
+      - vare_confidence: Confidence in assessment (0-1)
+      - vare_market_risk, vare_volatility_risk, vare_liquidity_risk, vare_correlation_risk
+    """
+    out = df.copy()
+    if out.empty:
+        logger.info("[VARE] Empty dataframe, skipping risk analysis")
+        return out
+    
+    logger.info(f"[VARE] Starting risk analysis for {len(out)} tickers...")
+    
+    vare_engine = VAREEngine()
+    vare_results = []
+    
+    for idx, row in out.iterrows():
+        ticker = row["ticker"]
+        try:
+            # Analyze ticker risk
+            result = vare_engine.analyze_ticker(ticker)
+            
+            vare_results.append({
+                "ticker": ticker,
+                "vare_risk_score": result.overall_risk,
+                "vare_risk_category": result.risk_category,
+                "vare_confidence": result.confidence,
+                "vare_market_risk": result.market_risk,
+                "vare_volatility_risk": result.volatility_risk,
+                "vare_liquidity_risk": result.liquidity_risk,
+                "vare_correlation_risk": result.correlation_risk,
+                "vare_explanation": result.explanation.get("summary", "")
+            })
+            
+        except Exception as e:
+            logger.warning(f"[VARE] Error analyzing {ticker}: {e}")
+            vare_results.append({
+                "ticker": ticker,
+                "vare_risk_score": None,
+                "vare_risk_category": None,
+                "vare_confidence": 0.0,
+                "vare_market_risk": None,
+                "vare_volatility_risk": None,
+                "vare_liquidity_risk": None,
+                "vare_correlation_risk": None,
+                "vare_explanation": "Risk analysis unavailable"
+            })
+    
+    # Merge results into dataframe
+    vare_df = pd.DataFrame(vare_results)
+    out = out.merge(vare_df, on="ticker", how="left")
+    
+    available_count = out["vare_risk_score"].notna().sum()
+    logger.info(f"[VARE] Risk scores calculated for {available_count}/{len(out)} tickers")
+    
+    # Log risk distribution
+    if available_count > 0:
+        risk_distribution = out["vare_risk_category"].value_counts().to_dict()
+        logger.info(f"[VARE] Risk distribution: {risk_distribution}")
+    
+    return out
+
+
+# ============================================================
+# Earnings Safety Filter
+# ============================================================
+def get_days_to_earnings(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Earnings Safety Filter
+    
+    Adds days_to_earnings column to identify tickers with upcoming earnings.
+    Used to avoid holding positions during high-volatility earnings periods.
+    
+    Returns df with additional column:
+      - days_to_earnings: Days until next earnings report (null if >90 days or unknown)
+    
+    Note: Requires earnings_calendar table populated by smart_money_fetcher.py
+    """
+    out = df.copy()
+    if out.empty:
+        return out
+    
+    query = """
+        SELECT 
+            ticker,
+            MIN(earnings_date) as next_earnings_date,
+            MIN(earnings_date) - CURRENT_DATE as days_to_earnings
+        FROM earnings_calendar
+        WHERE earnings_date >= CURRENT_DATE
+        GROUP BY ticker;
+    """
+    
+    try:
+        with psycopg2.connect(**DB_PARAMS) as conn:
+            earnings_df = pd.read_sql_query(query, conn)
+        
+        if earnings_df.empty:
+            logger.warning("[Earnings Safety] No earnings calendar data available")
+            out["days_to_earnings"] = None
+            out["next_earnings_date"] = None
+            return out
+        
+        # Merge with main dataframe
+        out = out.merge(earnings_df[["ticker", "days_to_earnings", "next_earnings_date"]], on="ticker", how="left")
+        
+        upcoming_count = (out["days_to_earnings"].notna() & (out["days_to_earnings"] <= 30)).sum()
+        logger.info(f"[Earnings Safety] {upcoming_count}/{len(out)} tickers have earnings within 30 days")
+        
+        return out
+        
+    except Exception as e:
+        logger.error(f"[Earnings Safety] Error fetching earnings calendar: {e}")
+        out["days_to_earnings"] = None
+        out["next_earnings_date"] = None
+        return out
+
+
+def apply_earnings_safety_filter(df: pd.DataFrame, days_buffer: int = 7) -> pd.DataFrame:
+    """
+    Earnings Safety Filter
+    
+    Removes tickers with earnings in the next N days to avoid earnings volatility.
+    
+    Args:
+        df: DataFrame with days_to_earnings column
+        days_buffer: Exclude tickers with earnings within this many days (default 7)
+    
+    Returns:
+        Filtered DataFrame excluding tickers near earnings
+    """
+    out = df.copy()
+    if out.empty:
+        return out
+    
+    initial_count = len(out)
+    
+    # Filter: keep only tickers with no upcoming earnings or earnings >days_buffer away
+    out = out[
+        (out["days_to_earnings"].isna()) | 
+        (out["days_to_earnings"] > days_buffer)
+    ].copy()
+    
+    removed_count = initial_count - len(out)
+    logger.info(f"[Earnings Safety] Removed {removed_count}/{initial_count} tickers with earnings within {days_buffer} days")
+    
+    if removed_count > 0 and initial_count > 0:
+        logger.info(f"[Earnings Safety] Remaining universe: {len(out)} tickers ({len(out)/initial_count*100:.1f}%)")
+    
+    return out
+
+
+def get_divergence_score(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Function H: Divergence Detection
+    
+    Calculates divergence between 7-day price trend and 7-day RSI trend.
+    (NOTE: Reduced from 30-day to 7-day due to limited RSI historical data availability)
+    
+    Divergence signals potential reversals:
+    - Bullish divergence: Price down, RSI up → possible bounce
+    - Bearish divergence: Price up, RSI down → possible correction
+    
+    Returns df with additional columns:
+      - price_trend_7d: % change in close price over 7 days
+      - rsi_trend_7d: % change in RSI over 7 days  
+      - divergence_score: abs(price_trend - rsi_trend)
+      - divergence_type: 'bullish', 'bearish', or None
+    """
+    out = df.copy()
+    if out.empty:
+        return out
+    
+    # Get 7-day price data (changed from 30 to 7)
+    query_price = """
+        WITH ranked_prices AS (
+            SELECT 
+                ticker,
+                dt,
+                close,
+                ROW_NUMBER() OVER (PARTITION BY ticker ORDER BY dt DESC) as rn
+            FROM ohlcv_daily
+            WHERE close IS NOT NULL
+        )
+        SELECT 
+            ticker,
+            MAX(CASE WHEN rn = 1 THEN close END) as close_latest,
+            MAX(CASE WHEN rn = 7 THEN close END) as close_7d_ago
+        FROM ranked_prices
+        WHERE rn IN (1, 7)
+        GROUP BY ticker
+        HAVING MAX(CASE WHEN rn = 1 THEN close END) IS NOT NULL 
+           AND MAX(CASE WHEN rn = 7 THEN close END) IS NOT NULL;
+    """
+    
+    # Get 7-day RSI data (changed from 30 to 7)
+    query_rsi = """
+        WITH ranked_rsi AS (
+            SELECT 
+                ticker,
+                timestamp,
+                rsi,
+                ROW_NUMBER() OVER (PARTITION BY ticker ORDER BY timestamp DESC) as rn
+            FROM momentum_logs
+            WHERE rsi IS NOT NULL
+        )
+        SELECT 
+            ticker,
+            MAX(CASE WHEN rn = 1 THEN rsi END) as rsi_latest,
+            MAX(CASE WHEN rn = 7 THEN rsi END) as rsi_7d_ago
+        FROM ranked_rsi
+        WHERE rn IN (1, 7)
+        GROUP BY ticker
+        HAVING MAX(CASE WHEN rn = 1 THEN rsi END) IS NOT NULL 
+           AND MAX(CASE WHEN rn = 7 THEN rsi END) IS NOT NULL;
+    """
+    
+    with psycopg2.connect(**DB_PARAMS) as conn:
+        price_df = pd.read_sql_query(query_price, conn)
+        rsi_df = pd.read_sql_query(query_rsi, conn)
+    
+    # Calculate trends (% change)
+    price_df["price_trend_7d"] = ((price_df["close_latest"] - price_df["close_7d_ago"]) 
+                                    / price_df["close_7d_ago"]) * 100.0
+    rsi_df["rsi_trend_7d"] = ((rsi_df["rsi_latest"] - rsi_df["rsi_7d_ago"]) 
+                                / rsi_df["rsi_7d_ago"]) * 100.0
+    
+    # Merge both trends
+    out = out.merge(price_df[["ticker", "price_trend_7d"]], on="ticker", how="left")
+    out = out.merge(rsi_df[["ticker", "rsi_trend_7d"]], on="ticker", how="left")
+    
+    # Calculate divergence score and type
+    out["divergence_score"] = np.abs(out["price_trend_7d"] - out["rsi_trend_7d"])
+    
+    # Determine divergence type (relaxed thresholds for 7-day: ±1%)
+    def classify_divergence(row):
+        if pd.isna(row["price_trend_7d"]) or pd.isna(row["rsi_trend_7d"]):
+            return None
+        # Bullish: price down (< -1%), RSI up (> 1%)
+        if row["price_trend_7d"] < -1 and row["rsi_trend_7d"] > 1:
+            return "bullish"
+        # Bearish: price up (> 1%), RSI down (< -1%)
+        elif row["price_trend_7d"] > 1 and row["rsi_trend_7d"] < -1:
+            return "bearish"
+        else:
+            return None
+    
+    out["divergence_type"] = out.apply(classify_divergence, axis=1)
+    
+    return out
+
+def get_multi_timeframe_consensus(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Function I: Multi-Timeframe Analysis
+    
+    Calculates consensus score from short/medium/long-term trends.
+    Uses weighted average: daily(0.5) + weekly(0.3) + monthly(0.2).
+    
+    Trend mapping:
+    - bullish/uptrend = +1
+    - sideways/neutral = 0
+    - bearish/downtrend = -1
+    
+    Returns df with additional columns:
+      - mtf_consensus: weighted consensus score [-1.0 to +1.0]
+      - mtf_short_score: numeric score for short-term trend
+      - mtf_medium_score: numeric score for medium-term trend
+      - mtf_long_score: numeric score for long-term trend
+      - mtf_alignment: 'bullish' if consensus > 0.3, 'bearish' if < -0.3, else 'mixed'
+    """
+    out = df.copy()
+    if out.empty:
+        return out
+    
+    # Get latest multi-timeframe trend data
+    query = """
+        SELECT DISTINCT ON (ticker)
+            ticker,
+            short_trend,
+            medium_trend,
+            long_trend
+        FROM trend_logs
+        WHERE short_trend IS NOT NULL 
+          AND medium_trend IS NOT NULL 
+          AND long_trend IS NOT NULL
+        ORDER BY ticker, timestamp DESC;
+    """
+    
+    with psycopg2.connect(**DB_PARAMS) as conn:
+        mtf_df = pd.read_sql_query(query, conn)
+    
+    # Map trend strings to numeric scores
+    def trend_to_score(trend: str) -> float:
+        if pd.isna(trend):
+            return 0.0
+        trend_lower = str(trend).lower()
+        if trend_lower in ['bullish', 'uptrend', 'strong_uptrend']:
+            return 1.0
+        elif trend_lower in ['bearish', 'downtrend', 'strong_downtrend']:
+            return -1.0
+        else:  # sideways, neutral, etc.
+            return 0.0
+    
+    mtf_df["mtf_short_score"] = mtf_df["short_trend"].apply(trend_to_score)
+    mtf_df["mtf_medium_score"] = mtf_df["medium_trend"].apply(trend_to_score)
+    mtf_df["mtf_long_score"] = mtf_df["long_trend"].apply(trend_to_score)
+    
+    # Calculate weighted consensus: short(0.5) + medium(0.3) + long(0.2)
+    mtf_df["mtf_consensus"] = (
+        mtf_df["mtf_short_score"] * 0.5 +
+        mtf_df["mtf_medium_score"] * 0.3 +
+        mtf_df["mtf_long_score"] * 0.2
+    )
+    
+    # Classify alignment
+    def classify_alignment(consensus: float) -> str:
+        if pd.isna(consensus):
+            return None
+        if consensus > 0.3:
+            return "bullish"
+        elif consensus < -0.3:
+            return "bearish"
+        else:
+            return "mixed"
+    
+    mtf_df["mtf_alignment"] = mtf_df["mtf_consensus"].apply(classify_alignment)
+    
+    # Merge into main dataframe
+    out = out.merge(
+        mtf_df[["ticker", "mtf_consensus", "mtf_short_score", "mtf_medium_score", "mtf_long_score", "mtf_alignment"]],
+        on="ticker",
+        how="left"
+    )
+    
+    return out
+
+# ============================================================
+# STEP 2b — Macro & Factors
+# ============================================================
+def get_macro_outlook(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Merges the latest macro data (inflation, rates, volatility) onto the entire universe.
+    Note: same value for all tickers, as it is a global data point.
+    """
+    if df.empty:
+        return df.copy()
+
+    query = """
+        SELECT date, inflation_rate, interest_rate, market_volatility
+        FROM macro_outlook
+        ORDER BY date DESC
+        LIMIT 1;
+    """
+    with psycopg2.connect(**DB_PARAMS) as conn:
+        m_df = pd.read_sql_query(query, conn)
+
+    if m_df.empty:
+        df["inflation_rate"] = None
+        df["interest_rate"] = None
+        df["market_volatility"] = None
+        return df
+
+    macro = m_df.iloc[0].to_dict()
+    df["inflation_rate"] = macro.get("inflation_rate")
+    df["interest_rate"] = macro.get("interest_rate")
+    df["market_volatility"] = macro.get("market_volatility")
+    return df
+
+
+def get_factor_scores(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Merges the latest factor scores (value, growth, size, quality, academic momentum).
+    """
+    if df.empty:
+        return df.copy()
+
+    query = """
+        SELECT DISTINCT ON (ticker)
+            ticker, value, growth, size, quality, momentum
+        FROM factor_scores
+        ORDER BY ticker, date DESC;
+    """
+    with psycopg2.connect(**DB_PARAMS) as conn:
+        f_df = pd.read_sql_query(query, conn)
+
+    out = df.merge(f_df, on="ticker", how="left")
+    return out
+
+# ============================================================
+# STEP 3 — Composite scoring
+# ============================================================
+# Fundamental factor weights (Priority 1 - Dec 2025):
+# - revenue_growth: Revenue growth year-over-year z-score (0.05)
+# - eps_growth: EPS growth year-over-year z-score (0.05)
+# - margin: Net profit margin z-score (0.05)
+# - debt: Debt-to-equity z-score, inverted (0.05)
+# - fcf: Free cash flow z-score (0.05)
+# - dividend: Dividend yield z-score (0.02-0.03)
+PROFILE_WEIGHTS: Dict[str, Dict[str, float]] = {
+    "short_spec": {
+        "momentum": 0.12, "trend": 0.35, "vola": 0.10, "sent": 0.08,
+        "growth": 0.04, "quality": 0.04,
+        "revenue_growth": 0.05, "eps_growth": 0.05, "margin": 0.04, "debt": 0.03, "fcf": 0.05, "dividend": 0.01,
+        "macro_rate": 0.04
+    },  # Sum: 1.00
+    "momentum_focus": {
+        "momentum": 0.35, "trend": 0.15, "vola": 0.08, "sent": 0.10,
+        "acad_mom": 0.08,
+        "revenue_growth": 0.04, "eps_growth": 0.04, "margin": 0.03, "debt": 0.03, "fcf": 0.04, "dividend": 0.01,
+        "macro_vola": 0.05
+    },  # Sum: 1.00
+    "sentiment_boost":{
+        "momentum": 0.10, "trend": 0.10, "vola": 0.10, "sent": 0.25,
+        "growth": 0.08,
+        "revenue_growth": 0.05, "eps_growth": 0.05, "margin": 0.05, "debt": 0.04, "fcf": 0.05, "dividend": 0.03,
+        "macro_infl": 0.05, "macro_rate": 0.05
+    },  # Sum: 1.00
+}
+
+FACTOR_MAP = {
+    "momentum_z": "momentum",
+    "trend_z": "trend",
+    "vola_z": "vola",
+    "sentiment_z": "sent",
+    "value": "value",
+    "growth": "growth",
+    "size": "size",
+    "quality": "quality",
+    "momentum": "acad_mom",   # to distinguish from technical momentum_z
+    "inflation_rate": "macro_infl",
+    "interest_rate": "macro_rate",
+    "market_volatility": "macro_vola",
+}
+
+def compute_composite(df: pd.DataFrame, profile: str = "short_spec") -> pd.DataFrame:
+    out = df.copy()
+    if out.empty:
+        out["composite_score"] = np.nan
+        out["weights_used"] = {}
+        return out
+
+    w = PROFILE_WEIGHTS.get(profile, PROFILE_WEIGHTS["short_spec"])
+
+    def row_score(r: pd.Series) -> Tuple[float, Dict[str, float]]:
+        parts: List[Tuple[str, str, float]] = []
+        for col, name in FACTOR_MAP.items():
+            val = r.get(col)
+            if pd.notnull(val):
+                parts.append((col, name, w.get(name, 0.0)))
+        if not parts:
+            return (np.nan, {})
+        wsum = sum(wi for _, _, wi in parts)
+        if wsum <= 0:
+            return (np.nan, {})
+        score = sum((r[col] * (wi / wsum)) for col, _, wi in parts)
+        used = {name: round(wi / wsum, 3) for _, name, wi in parts}
+        return (score, used)
+
+    pairs = [row_score(r) for _, r in out.iterrows()]
+    out["composite_score"] = [s for s, _ in pairs]
+    out["weights_used"] = [u for _, u in pairs]
+    return out
+
+
+def apply_risk_adjustment(df: pd.DataFrame, risk_tolerance: str = None) -> pd.DataFrame:
+    """
+    Applies risk adjustment to composite_score based on volatility (vola_z).
+    
+    Args:
+        df: DataFrame with composite_score and vola_z
+        risk_tolerance: 
+            - "low": Strong penalty for high volatility (conservative investors)
+            - "medium": Moderate adjustment (balanced)
+            - "high": Light penalty or no adjustment (aggressive)
+            - None: No adjustment
+    
+    Formula for low risk:
+        adjusted_score = composite_score / (1 + vola_z * penalty_factor)
+        where penalty_factor is higher for low risk tolerance
+    """
+    if risk_tolerance is None or df.empty:
+        return df
+    
+    out = df.copy()
+    
+    # Risk penalty factors
+    penalty_map = {
+        "low": 0.3,      # Strong penalty for volatility
+        "medium": 0.15,  # Moderate penalty
+        "high": 0.05     # Light penalty
+    }
+    
+    penalty = penalty_map.get(risk_tolerance, 0.0)
+    
+    if penalty > 0:
+        logger.info(f"[NE] Applying risk adjustment: risk_tolerance={risk_tolerance}, penalty_factor={penalty}")
+        
+        # Apply risk adjustment only to rows with valid composite_score and vola_z
+        mask = out["composite_score"].notnull() & out["vola_z"].notnull()
+        
+        # Formula: adjusted = score / (1 + abs(vola_z) * penalty)
+        # High vola_z (positive = high volatility) → lower adjusted score
+        out.loc[mask, "composite_score_original"] = out.loc[mask, "composite_score"]
+        out.loc[mask, "composite_score"] = out.loc[mask, "composite_score"] / (
+            1 + out.loc[mask, "vola_z"].abs() * penalty
+        )
+        
+        logger.info(f"[NE] Risk adjustment applied to {mask.sum()} tickers")
+    
+    return out
+
+# ============================================================
+# STEP 4 — Guardrails & Top-K
+# ============================================================
+def apply_guardrails_and_topk(df: pd.DataFrame, top_k: int = 5, momentum_breakout: bool = False, value_screening: bool = False, divergence_detection: bool = False, multi_timeframe_filter: bool = False) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """
+    - Stocks: max 2 per sector (strict)
+    - ETF/Fund: max 2 per category (flexible: fills if needed)
+    - Function F: Se momentum_breakout=True, filtra solo ticker con momentum_z > 2.0 (strong breakout)
+    - Function G: Se value_screening=True, filtra solo ticker sottovalutati (value > 0.0, quality > -0.5)
+    - Function H: Se divergence_detection=True, filtra solo ticker con divergenza price-RSI
+    - Function I: Se multi_timeframe_filter=True, filtra solo ticker con consensus bullish (mtf_consensus > 0.3)
+    """
+    # 🚀 Function F: Momentum Breakout Filter
+    if momentum_breakout:
+        logger.info(f"[Function F] Momentum breakout filter ENABLED: momentum_z > 2.0")
+        # Filter by momentum AND ensure type is not null (avoid DB constraint violations)
+        df = df[(df["momentum_z"] > 2.0) & (df["type"].notna())].copy()
+        logger.info(f"[Function F] After momentum filter: {len(df)} tickers remain")
+        
+        if df.empty:
+            logger.warning("[Function F] No tickers with strong momentum breakout (momentum_z > 2.0)")
+            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    
+    # 💎 Function G: Value Screening Filter
+    if value_screening:
+        logger.info(f"[Function G] Value screening filter ENABLED: value > 0.0 AND quality > -0.5")
+        # Filter by value signal AND quality (profitable undervalued stocks)
+        # Lowered thresholds: value > 0.0 (any positive value signal), quality > -0.5 (not terrible quality)
+        # Use fillna(-999) to handle missing values gracefully (will be filtered out)
+        df = df[
+            (df["value"].fillna(-999) > 0.0) & 
+            (df["quality"].fillna(-999) > -0.5) & 
+            (df["type"].notna())
+        ].copy()
+        logger.info(f"[Function G] After value screening: {len(df)} tickers remain")
+        
+        if df.empty:
+            logger.warning("[Function G] No tickers with value signal (value > 0.0, quality > -0.5)")
+            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    
+    # 📉 Function H: Divergence Detection Filter
+    if divergence_detection:
+        logger.info(f"[Function H] Divergence detection filter ENABLED: divergence_type IS NOT NULL")
+        # Filter only tickers with measurable divergence (bullish or bearish)
+        df = df[
+            (df["divergence_type"].notna()) & 
+            (df["divergence_score"].notna()) &
+            (df["type"].notna())
+        ].copy()
+        logger.info(f"[Function H] After divergence filter: {len(df)} tickers remain")
+        
+        # Log divergence breakdown
+        if not df.empty:
+            bullish_count = (df["divergence_type"] == "bullish").sum()
+            bearish_count = (df["divergence_type"] == "bearish").sum()
+            logger.info(f"[Function H] Divergence breakdown: {bullish_count} bullish, {bearish_count} bearish")
+        
+        if df.empty:
+            logger.warning("[Function H] No tickers with price-RSI divergence detected")
+            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    
+    # 📈 Function I: Multi-Timeframe Consensus Filter
+    if multi_timeframe_filter:
+        logger.info(f"[Function I] Multi-timeframe filter ENABLED: mtf_consensus > 0.3 (bullish alignment)")
+        # Filter only tickers with bullish consensus across timeframes
+        df = df[
+            (df["mtf_consensus"].notna()) & 
+            (df["mtf_consensus"] > 0.3) &
+            (df["type"].notna())
+        ].copy()
+        logger.info(f"[Function I] After multi-timeframe filter: {len(df)} tickers remain")
+        
+        # Log consensus breakdown
+        if not df.empty:
+            strong_bullish = (df["mtf_consensus"] > 0.7).sum()
+            moderate_bullish = ((df["mtf_consensus"] > 0.3) & (df["mtf_consensus"] <= 0.7)).sum()
+            logger.info(f"[Function I] Consensus breakdown: {strong_bullish} strong bullish (>0.7), {moderate_bullish} moderate bullish (0.3-0.7)")
+        
+        if df.empty:
+            logger.warning("[Function I] No tickers with bullish multi-timeframe consensus (> 0.3)")
+            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    
+    def cap_by(group_df: pd.DataFrame, key: str, cap: int, flexible: bool = False) -> pd.DataFrame:
+        out_rows: List[Dict[str, Any]] = []
+        counts: Dict[str, int] = {}
+        for _, r in group_df.iterrows():
+            k = r.get(key)
+            if not flexible and counts.get(k, 0) >= cap:
+                continue
+            if len(out_rows) >= top_k:
+                break
+            out_rows.append(r.to_dict())
+            counts[k] = counts.get(k, 0) + 1
+        if flexible and len(out_rows) < top_k:
+            need = top_k - len(out_rows)
+            extras = [r.to_dict() for _, r in group_df.iterrows() if r.to_dict() not in out_rows]
+            out_rows += extras[:need]
+        return pd.DataFrame(out_rows)
+
+    stocks = df[df["type"] == "stock"].sort_values("composite_score", ascending=False)
+    etf    = df[df["type"] == "etf"  ].sort_values("composite_score", ascending=False)
+    fund   = df[df["type"] == "fund" ].sort_values("composite_score", ascending=False)
+
+    stocks_top = cap_by(stocks, "category", cap=2, flexible=False)
+    etf_top    = cap_by(etf,    "category", cap=2, flexible=True)
+    fund_top   = cap_by(fund,   "category", cap=2, flexible=True)
+    return stocks_top, etf_top, fund_top
+
+# ============================================================
+# STEP 5 — Response JSON & Persistence
+# ============================================================
+def build_json(profile: str, asof_dt: datetime, universe_size: int, top_k: int,
+               stocks_top: pd.DataFrame, etf_top: pd.DataFrame, fund_top: pd.DataFrame) -> Dict[str, Any]:
+    def _fmt(val):
+        return None if (val is None or (isinstance(val, float) and np.isnan(val))) else float(round(val, 4))
+
+    # 🔎 Dynamic rationale construction
+    def make_rationale(r):
+        reasons = []
+
+        # Growth
+        g = getattr(r, "growth", None)
+        if g is not None:
+            if g > 0:
+                reasons.append("benefits from positive earnings growth")
+            elif g < 0:
+                reasons.append("suffers from declining earnings")
+
+        # Quality
+        q = getattr(r, "quality", None)
+        if q is not None and q > 0.2:
+            reasons.append("shows solid profitability and quality")
+
+        # Macro: interest rates
+        rate = getattr(r, "interest_rate", None)
+        if rate is not None and rate > 4:
+            reasons.append("faces headwinds from high interest rates")
+
+        # Macro: inflation
+        infl = getattr(r, "inflation_rate", None)
+        if infl is not None and infl > 3:
+            reasons.append("operates in an environment of above-target inflation")
+
+        # Momentum accademico
+        am = getattr(r, "momentum", None)
+        if am is not None:
+            if am > 0.1:
+                reasons.append("benefits from strong 12m momentum")
+            elif am < -0.1:
+                reasons.append("under pressure from negative 12m momentum")
+        
+        # Divergence (Function H)
+        div_type = getattr(r, "divergence_type", None)
+        if div_type == "bullish":
+            reasons.append("shows bullish divergence (price down, RSI up) → potential reversal")
+        elif div_type == "bearish":
+            reasons.append("shows bearish divergence (price up, RSI down) → potential correction")
+        
+        # Multi-timeframe consensus (Function I)
+        mtf_consensus = getattr(r, "mtf_consensus", None)
+        if mtf_consensus is not None:
+            if mtf_consensus > 0.7:
+                reasons.append("strong bullish alignment across all timeframes")
+            elif mtf_consensus > 0.3:
+                reasons.append("moderate bullish consensus across timeframes")
+            elif mtf_consensus < -0.7:
+                reasons.append("strong bearish alignment across all timeframes")
+            elif mtf_consensus < -0.3:
+                reasons.append("moderate bearish consensus across timeframes")
+        
+        # VARE Risk Assessment
+        vare_risk = getattr(r, "vare_risk_category", None)
+        vare_score = getattr(r, "vare_risk_score", None)
+        if vare_risk and vare_score is not None:
+            if vare_risk == "LOW":
+                reasons.append(f"low risk profile (VARE score: {vare_score:.0f}/100)")
+            elif vare_risk == "MODERATE":
+                reasons.append(f"moderate risk profile (VARE score: {vare_score:.0f}/100)")
+            elif vare_risk == "HIGH":
+                reasons.append(f"high risk profile (VARE score: {vare_score:.0f}/100) - exercise caution")
+            elif vare_risk == "EXTREME":
+                reasons.append(f"extreme risk profile (VARE score: {vare_score:.0f}/100) - high volatility and uncertainty")
+        
+        # Fundamentals Layer (Function E - Dec 6, 2025)
+        revenue_z = getattr(r, "revenue_growth_yoy_z", None)
+        eps_z = getattr(r, "eps_growth_yoy_z", None)
+        margin_z = getattr(r, "net_margin_z", None)
+        debt_z = getattr(r, "debt_to_equity_z", None)
+        fcf_z = getattr(r, "free_cash_flow_z", None)
+        div_z = getattr(r, "dividend_yield_z", None)
+        
+        # Revenue growth
+        if revenue_z is not None:
+            if revenue_z > 1.0:
+                reasons.append("strong revenue growth YoY (top quartile)")
+            elif revenue_z < -1.0:
+                reasons.append("declining revenue YoY (bottom quartile)")
+        
+        # EPS growth
+        if eps_z is not None:
+            if eps_z > 1.0:
+                reasons.append("exceptional EPS growth YoY")
+            elif eps_z < -1.0:
+                reasons.append("negative EPS growth YoY")
+        
+        # Profit margins
+        if margin_z is not None:
+            if margin_z > 1.0:
+                reasons.append("superior net profit margins")
+            elif margin_z < -1.0:
+                reasons.append("below-average net margins")
+        
+        # Debt levels (inverted: high z-score = low debt = good)
+        if debt_z is not None:
+            if debt_z > 1.0:
+                reasons.append("low debt-to-equity ratio improves financial stability")
+            elif debt_z < -1.0:
+                reasons.append("high debt-to-equity ratio increases financial risk")
+        
+        # Free cash flow
+        if fcf_z is not None:
+            if fcf_z > 1.0:
+                reasons.append("strong free cash flow supports long-term sustainability")
+            elif fcf_z < -1.0:
+                reasons.append("negative free cash flow raises liquidity concerns")
+        
+        # Dividend yield
+        if div_z is not None:
+            if div_z > 1.0:
+                reasons.append("high dividend yield contributes to total return")
+            elif div_z > 0.5:
+                reasons.append("moderate dividend yield provides income cushion")
+
+        if not reasons:
+            return "Selection based on available factors; weights recalibrated on those present."
+        return "; ".join(reasons)
+
+    def pack_rows(df: pd.DataFrame) -> List[Dict[str, Any]]:
+        rows = []
+        for i, r in enumerate(df.head(top_k).itertuples(index=False), 1):
+            rows.append({
+                "rank": i,
+                "ticker": r.ticker,
+                "composite_score": _fmt(getattr(r, "composite_score", np.nan)),
+                "factors": {
+                    "momentum_z": _fmt(getattr(r, "momentum_z", np.nan)),
+                    "trend_z":    _fmt(getattr(r, "trend_z",    np.nan)),
+                    "vola_z":     _fmt(getattr(r, "vola_z",     np.nan)),
+                    "sentiment_z":_fmt(getattr(r, "sentiment_z",np.nan)),
+                    "value":      _fmt(getattr(r, "value", np.nan)),
+                    "growth":     _fmt(getattr(r, "growth", np.nan)),
+                    "size":       _fmt(getattr(r, "size", np.nan)),
+                    "quality":    _fmt(getattr(r, "quality", np.nan)),
+                    "acad_mom":   _fmt(getattr(r, "momentum", np.nan)),  # momentum accademico
+                    "inflation":  _fmt(getattr(r, "inflation_rate", np.nan)),
+                    "rate":       _fmt(getattr(r, "interest_rate", np.nan)),
+                    "macro_vola": _fmt(getattr(r, "market_volatility", np.nan)),
+                    "price_trend_7d": _fmt(getattr(r, "price_trend_7d", np.nan)),      # Function H
+                    "rsi_trend_7d": _fmt(getattr(r, "rsi_trend_7d", np.nan)),          # Function H
+                    "divergence_score": _fmt(getattr(r, "divergence_score", np.nan)),  # Function H
+                    "divergence_type": getattr(r, "divergence_type", None),            # Function H
+                    "mtf_consensus": _fmt(getattr(r, "mtf_consensus", np.nan)),        # Function I
+                    "mtf_alignment": getattr(r, "mtf_alignment", None),                # Function I
+                    "mtf_short": _fmt(getattr(r, "mtf_short_score", np.nan)),          # Function I
+                    "mtf_medium": _fmt(getattr(r, "mtf_medium_score", np.nan)),        # Function I
+                    "mtf_long": _fmt(getattr(r, "mtf_long_score", np.nan)),            # Function I
+                    # Fundamentals Layer (Function E - Dec 6, 2025)
+                    "revenue_growth_yoy_z": _fmt(getattr(r, "revenue_growth_yoy_z", np.nan)),
+                    "eps_growth_yoy_z": _fmt(getattr(r, "eps_growth_yoy_z", np.nan)),
+                    "net_margin_z": _fmt(getattr(r, "net_margin_z", np.nan)),
+                    "debt_to_equity_z": _fmt(getattr(r, "debt_to_equity_z", np.nan)),
+                    "free_cash_flow_z": _fmt(getattr(r, "free_cash_flow_z", np.nan)),
+                    "dividend_yield_z": _fmt(getattr(r, "dividend_yield_z", np.nan)),
+                    "fundamentals_z": _fmt(getattr(r, "fundamentals_z", np.nan)),  # Composite fundamental score
+                },
+                "risk": {
+                    "vare_risk_score": _fmt(getattr(r, "vare_risk_score", np.nan)),
+                    "vare_risk_category": getattr(r, "vare_risk_category", None),
+                    "vare_confidence": _fmt(getattr(r, "vare_confidence", np.nan)),
+                    "vare_market_risk": _fmt(getattr(r, "vare_market_risk", np.nan)),
+                    "vare_volatility_risk": _fmt(getattr(r, "vare_volatility_risk", np.nan)),
+                    "vare_liquidity_risk": _fmt(getattr(r, "vare_liquidity_risk", np.nan)),
+                    "vare_correlation_risk": _fmt(getattr(r, "vare_correlation_risk", np.nan)),
+                    "vare_explanation": getattr(r, "vare_explanation", "Risk analysis unavailable"),
+                },
+                "rationale": make_rationale(r),
+                "explainability": {
+                    "simple": "Ranking calculated with z-score normalization.",
+                    "technical": [],
+                    "detailed": "Weights recalibrated on the factors actually available for the security.",
+                },
+            })
+        return rows
+
+    asof_iso = asof_dt.astimezone(timezone.utc).isoformat()
+    return {
+        "profile": profile,
+        "asof": asof_iso,
+        "universe_size": int(universe_size),
+        "filters_applied": {"sector": [], "country": [], "min_price": 5, "min_adv_usd": NE_MIN_ADV_USD},
+        "top_k": int(top_k),
+        "ranking": {
+            "stocks": pack_rows(stocks_top),
+            "etf": pack_rows(etf_top),
+            "funds": pack_rows(fund_top)
+        },
+        "notes": {
+            "sector_cap_enforced": True,
+            "partial_results": True,
+            "risk_disclaimer": "Speculative ideas: high risk, possible partial/total loss.",
+        },
+    }
+
+def persist_results(resp_json: Dict[str, Any], ranked_df: pd.DataFrame) -> int:
+    import json as _json
+    with psycopg2.connect(**DB_PARAMS) as conn, conn.cursor() as cur:
+        # screener_results
+        cur.execute(
+            """
+            INSERT INTO screener_results (asof, profile, filters, top_k, ranking, notes)
+            VALUES (%s,%s,%s,%s,%s,%s)
+            RETURNING id;
+            """,
+            (
+                resp_json["asof"],
+                resp_json["profile"],
+                _json.dumps(resp_json["filters_applied"]),
+                resp_json["top_k"],
+                _json.dumps(resp_json["ranking"]),
+                _json.dumps(resp_json["notes"]),
+            ),
+        )
+        run_id = cur.fetchone()[0]
+
+        # screener_features (z-score + composite essenziali)
+        rows = []
+        for r in ranked_df.itertuples(index=False):
+            rows.append(
+                (
+                    run_id,
+                    r.ticker,
+                    r.type,
+                    getattr(r, "category", None),
+                    _none_to_float(getattr(r, "momentum_z", None)),
+                    _none_to_float(getattr(r, "trend_z", None)),
+                    _none_to_float(getattr(r, "vola_z", None)),
+                    _none_to_float(getattr(r, "sentiment_z", None)),
+                    float(r.composite_score),
+                )
+            )
+
+        cur.executemany(
+            """
+            INSERT INTO screener_features
+            (run_id, ticker, instrument_type, category,
+             momentum_z, trend_z, vola_z, sentiment_z, composite_score)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s);
+            """,
+            rows,
+        )
+        conn.commit()
+
+    # ✅ Salva anche le rationale in factor_explanations
+    explanations = []
+    for r in resp_json["ranking"]["stocks"]:
+        explanations.append({"ticker": r["ticker"], "rationale": r["rationale"]})
+    for r in resp_json["ranking"]["etf"]:
+        explanations.append({"ticker": r["ticker"], "rationale": r["rationale"]})
+    for r in resp_json["ranking"]["funds"]:
+        explanations.append({"ticker": r["ticker"], "rationale": r["rationale"]})
+    if explanations:
+        save_explanations(run_id, explanations)
+
+    return run_id
+
+# ============================================================
+# STEP 6 — One-shot orchestrator (API compatible)
+# ============================================================
+def run_ne_once(
+    profile: str, 
+    tickers: list[str], 
+    top_k: int = 5, 
+    mode: str = "discovery",
+    sector: str = None,
+    risk_tolerance: str = None,
+    momentum_breakout: bool = False,
+    value_screening: bool = False,
+    divergence_detection: bool = False,
+    multi_timeframe_filter: bool = False,
+    portfolio_diversification: Optional[List[str]] = None,
+    macro_factor: Optional[str] = None,
+    time_decay_weighting: bool = False,
+    smart_money_flow: bool = False,
+    earnings_safety_days: Optional[int] = None
+) -> dict:
+    """
+    Esegue il Neural Engine per un profilo e un set di tickers.
+    
+    Args:
+        profile: Profilo di ranking (balanced_mid, momentum_focus, etc.)
+        tickers: Lista ticker richiesti dall'utente
+        top_k: Numero di risultati da restituire
+        mode: Modalità di funzionamento:
+            - "discovery": Top K dall'universo completo (ignora tickers)
+            - "analyze": Analizza SOLO i ticker richiesti
+            - "comparative": Analizza ticker richiesti + suggerisci top K alternativi
+            - "sector": Top K da un settore specifico
+        sector: Settore da filtrare (solo per mode="sector" o discovery con filtro)
+        risk_tolerance: Livello di rischio accettabile:
+            - "low": Penalizza alta volatilità (conservative investors)
+            - "medium": Balanced risk/return
+            - "high": Preferisce momentum, tolera volatilità
+        momentum_breakout: Se True, filtra solo ticker con momentum_z > 2.0 (Function F)
+        value_screening: Se True, filtra solo ticker sottovalutati con quality > 0 (Function G)
+        divergence_detection: Se True, filtra solo ticker con divergenza price-RSI (Function H)
+        multi_timeframe_filter: Se True, filtra solo ticker con consensus bullish > 0.3 (Function I)
+        portfolio_diversification: Lista ticker del portfolio utente per diversificazione (Function J)
+        macro_factor: Fattore macro per filtrare ("inflation"|"rates"|"volatility"|"dollar") (Function K)
+        time_decay_weighting: Se True, applica decay esponenziale a z-score basati sull'età (Function L)
+        smart_money_flow: Se True, filtra per institutional accumulation (dark pool z > 1.5) (Function P)
+        earnings_safety_days: Se specificato, rimuove ticker con earnings entro N giorni (Earnings Safety)
+    
+    Returns:
+        JSON strutturato con ranking, explainability e persistenza in DB.
+    """
+
+    logger.info(f"[NE] Run start | profile={profile} | tickers={tickers} | top_k={top_k} | mode={mode} | sector={sector} | risk_tolerance={risk_tolerance} | momentum_breakout={momentum_breakout} | value_screening={value_screening} | divergence_detection={divergence_detection} | multi_timeframe_filter={multi_timeframe_filter} | portfolio_diversification={portfolio_diversification} | macro_factor={macro_factor} | time_decay_weighting={time_decay_weighting} | smart_money_flow={smart_money_flow} | earnings_safety_days={earnings_safety_days}")
+
+    # 1) Estrai features dai log in Postgres
+    # MODE ANALYZE: filtra solo i ticker richiesti
+    # MODE DISCOVERY: universo completo (tickers=None o [])
+    # MODE COMPARATIVE: prima analyze, poi discovery per alternative
+    # MODE SECTOR: universo filtrato per settore
+    
+    if mode == "analyze" and tickers:
+        # NUOVO: Analisi solo ticker richiesti
+        features_df = extract_features({"tickers": tickers})
+        logger.info(f"[NE] MODE=analyze: analyzing only requested tickers={tickers}")
+    elif mode == "sector" and sector:
+        # NUOVO: Filtra per settore specifico
+        features_df = extract_features({"sector": sector})
+        logger.info(f"[NE] MODE=sector: analyzing sector '{sector}'")
+    elif mode == "discovery":
+        # Universo completo, oppure filtrato per settore se specificato
+        filters = {}
+        if sector:
+            filters["sector"] = sector
+            logger.info(f"[NE] MODE=discovery with sector filter: {sector}")
+        features_df = extract_features(filters if filters else {"tickers": None})
+        logger.info(f"[NE] MODE=discovery: analyzing full universe (ignoring requested tickers)")
+    elif mode == "comparative":
+        # Prima analizza i richiesti, poi aggiungi top K dall'universo
+        features_df = extract_features({"tickers": None})  # Universo completo per confronto
+        logger.info(f"[NE] MODE=comparative: comparing requested {tickers} vs full universe")
+    else:
+        # Fallback legacy: usa tickers se presenti
+        features_df = extract_features({"tickers": tickers if tickers else None})
+
+    if features_df.empty:
+        logger.warning("[NE] Nessun dato disponibile per i tickers richiesti")
+        return {
+            "profile": profile,
+            "asof": datetime.now(timezone.utc).isoformat(),
+            "universe_size": 0,
+            "ranking": {"stocks": [], "etf": [], "funds": []},
+            "notes": {"no_data": True},
+        }
+
+    # 2) Calcola z-score per momentum, trend, volatility, sentiment (with optional time decay - Function L)
+    features_z = get_momentum_z(features_df, apply_decay=time_decay_weighting)
+    features_z = get_trend_z(features_z, apply_decay=time_decay_weighting)
+    features_z = get_volatility_z(features_z, apply_decay=time_decay_weighting)
+    features_z = get_sentiment_z(features_z, apply_decay=time_decay_weighting)
+    
+    # 2.4) Merge fundamental z-scores (Priority 1 - Dec 2025)
+    features_z = get_fundamentals_z(features_z)
+    fundamentals_count = features_z["revenue_growth_yoy_z"].notna().sum() if "revenue_growth_yoy_z" in features_z.columns else 0
+    logger.info(f"[NE] Fundamentals layer: {fundamentals_count} tickers with fundamental data")
+    
+    # 2.5) Merge factor scores (value, quality, growth, size, academic momentum) - Needed for Function G
+    features_z = get_factor_scores(features_z)
+    logger.info(f"[NE] Factor scores merged: {len(features_z)} tickers with fundamental data")
+    
+    # 2.6) Calculate divergence scores if requested - Function H
+    features_z = get_divergence_score(features_z)
+    divergence_count = features_z["divergence_type"].notna().sum() if "divergence_type" in features_z.columns else 0
+    logger.info(f"[NE] Divergence detection: {divergence_count} tickers with measurable divergence")
+    
+    # 2.7) Calculate multi-timeframe consensus - Function I
+    features_z = get_multi_timeframe_consensus(features_z)
+    mtf_count = features_z["mtf_consensus"].notna().sum() if "mtf_consensus" in features_z.columns else 0
+    logger.info(f"[NE] Multi-timeframe analysis: {mtf_count} tickers with consensus scores")
+
+    # 2.8) Apply portfolio diversification filter if requested - Function J
+    if portfolio_diversification:
+        logger.info(f"[Function J] Applying portfolio diversification filter vs {len(portfolio_diversification)} portfolio tickers")
+        features_z = apply_portfolio_diversification(features_z, portfolio_diversification)
+        if features_z.empty:
+            logger.warning("[Function J] No tickers with low correlation to portfolio (<0.3)")
+            return {
+                "profile": profile,
+                "asof": datetime.now(timezone.utc).isoformat(),
+                "universe_size": 0,
+                "ranking": {"stocks": [], "etf": [], "funds": []},
+                "notes": {"no_data": True, "reason": "portfolio_diversification_filter_empty"},
+            }
+    
+    # 2.9) Apply macro sensitivity filter if requested - Function K
+    if macro_factor:
+        logger.info(f"[Function K] Applying macro sensitivity filter: {macro_factor}")
+        features_z = apply_macro_sensitivity_filter(features_z, macro_factor)
+        if features_z.empty:
+            logger.warning(f"[Function K] No tickers match macro sensitivity filter for {macro_factor}")
+            return {
+                "profile": profile,
+                "asof": datetime.now(timezone.utc).isoformat(),
+                "universe_size": 0,
+                "ranking": {"stocks": [], "etf": [], "funds": []},
+                "notes": {"no_data": True, "reason": f"macro_factor_filter_empty_{macro_factor}"},
+            }
+    
+    # 2.10) Calculate dark pool scores - Function P (always calculate, filter optionally)
+    features_z = get_dark_pool_z(features_z)
+    dark_pool_count = features_z["dark_pool_z"].notna().sum() if "dark_pool_z" in features_z.columns else 0
+    logger.info(f"[Function P] Dark pool data: {dark_pool_count} tickers with smart money flow scores")
+    
+    # 2.10.1) Apply smart money filter if requested
+    if smart_money_flow:
+        logger.info(f"[Function P] Applying smart money flow filter (dark_pool_z > 1.5)")
+        features_z = apply_smart_money_filter(features_z, threshold=1.5)
+        if features_z.empty:
+            logger.warning("[Function P] No tickers with unusual institutional accumulation")
+            return {
+                "profile": profile,
+                "asof": datetime.now(timezone.utc).isoformat(),
+                "universe_size": 0,
+                "ranking": {"stocks": [], "etf": [], "funds": []},
+                "notes": {"no_data": True, "reason": "smart_money_flow_filter_empty"},
+            }
+    
+    # 2.11) Calculate days to earnings (always calculate, filter optionally)
+    features_z = get_days_to_earnings(features_z)
+    earnings_upcoming_count = (features_z["days_to_earnings"].notna() & (features_z["days_to_earnings"] <= 30)).sum() if "days_to_earnings" in features_z.columns else 0
+    logger.info(f"[Earnings Safety] {earnings_upcoming_count} tickers have earnings within 30 days")
+    
+    # 2.12) Calculate VARE risk scores (ALWAYS calculate for all tickers)
+    features_z = get_vare_scores(features_z)
+    vare_count = features_z["vare_risk_score"].notna().sum() if "vare_risk_score" in features_z.columns else 0
+    logger.info(f"[VARE] Risk scores available for {vare_count}/{len(features_z)} tickers")
+    
+    # 2.11.1) Apply earnings safety filter if requested
+    if earnings_safety_days is not None:
+        logger.info(f"[Earnings Safety] Applying earnings safety filter (exclude earnings within {earnings_safety_days} days)")
+        features_z = apply_earnings_safety_filter(features_z, days_buffer=earnings_safety_days)
+        if features_z.empty:
+            logger.warning(f"[Earnings Safety] All tickers have upcoming earnings within {earnings_safety_days} days")
+            return {
+                "profile": profile,
+                "asof": datetime.now(timezone.utc).isoformat(),
+                "universe_size": 0,
+                "ranking": {"stocks": [], "etf": [], "funds": []},
+                "notes": {"no_data": True, "reason": "earnings_safety_filter_empty"},
+            }
+
+    # 3) Calcola composite score per profilo
+    ranked = compute_composite(features_z, profile)
+    
+    # 3.5) NUOVO: Applica risk adjustment se richiesto
+    if risk_tolerance:
+        ranked = apply_risk_adjustment(ranked, risk_tolerance)
+
+    # 4) NUOVO: Filtra per ticker richiesti in mode=analyze
+    if mode == "analyze" and tickers:
+        # Mantieni SOLO i ticker richiesti nel ranking
+        ranked_filtered = ranked[ranked["ticker"].isin([t.upper() for t in tickers])].copy()
+        logger.info(f"[NE] MODE=analyze: filtered to requested tickers. Found {len(ranked_filtered)} of {len(tickers)}")
+        
+        if ranked_filtered.empty:
+            logger.warning(f"[NE] Nessuno dei ticker richiesti {tickers} ha features valide")
+            return {
+                "profile": profile,
+                "asof": datetime.now(timezone.utc).isoformat(),
+                "universe_size": 0,
+                "ranking": {"stocks": [], "etf": [], "funds": []},
+                "notes": {"no_data": True, "requested_tickers": tickers},
+            }
+        
+        # Usa SOLO i ticker richiesti per il ranking (senza top_k limit)
+        ranked = ranked_filtered
+        actual_top_k = len(ranked_filtered)  # Restituisci tutti i ticker richiesti
+    elif mode == "comparative" and tickers:
+        # COMPARATIVE: ticker richiesti + top K alternative dal ranking
+        ticker_upper = [t.upper() for t in tickers]
+        requested_df = ranked[ranked["ticker"].isin(ticker_upper)].copy()
+        alternatives_df = ranked[~ranked["ticker"].isin(ticker_upper)].copy()
+        
+        # Prendi top K alternative
+        alternatives_top = alternatives_df.head(top_k)
+        
+        # Combina: richiesti prima, poi alternative
+        ranked = pd.concat([requested_df, alternatives_top], ignore_index=True)
+        actual_top_k = len(ranked)
+        logger.info(f"[NE] MODE=comparative: {len(requested_df)} requested + {len(alternatives_top)} alternatives = {actual_top_k} total")
+    else:
+        actual_top_k = top_k
+
+    # 5) Guardrails & top-k (with optional filters - Functions F, G, H, I)
+    stocks_top, etf_top, fund_top = apply_guardrails_and_topk(
+        ranked, 
+        top_k=actual_top_k, 
+        momentum_breakout=momentum_breakout,
+        value_screening=value_screening,
+        divergence_detection=divergence_detection,
+        multi_timeframe_filter=multi_timeframe_filter
+    )
+
+    # 6) Response + persist
+    asof = datetime.now(timezone.utc)
+    resp = build_json(profile, asof, len(features_df), actual_top_k, stocks_top, etf_top, fund_top)
+    
+    # Aggiungi metadata sul mode
+    resp["notes"]["mode"] = mode
+    if momentum_breakout:
+        resp["notes"]["momentum_breakout_filter"] = "enabled (momentum_z > 2.0)"
+    if value_screening:
+        resp["notes"]["value_screening_filter"] = "enabled (value > 0.0, quality > -0.5)"
+    if divergence_detection:
+        resp["notes"]["divergence_detection_filter"] = "enabled (bullish/bearish price-RSI divergence)"
+    if multi_timeframe_filter:
+        resp["notes"]["multi_timeframe_filter"] = "enabled (bullish consensus across timeframes > 0.3)"
+    if portfolio_diversification:
+        resp["notes"]["portfolio_diversification_filter"] = f"enabled (avg_correlation < 0.3 vs {len(portfolio_diversification)} portfolio tickers)"
+    if macro_factor:
+        resp["notes"]["macro_sensitivity_filter"] = f"enabled (macro_factor={macro_factor})"
+    if time_decay_weighting:
+        resp["notes"]["time_decay_weighting"] = "enabled (exp(-days_old/30) applied to z-scores)"
+    if smart_money_flow:
+        resp["notes"]["smart_money_flow_filter"] = "enabled (institutional accumulation: dark_pool_z > 1.5)"
+    if earnings_safety_days is not None:
+        resp["notes"]["earnings_safety_filter"] = f"enabled (excluded tickers with earnings within {earnings_safety_days} days)"
+    if mode in ["analyze", "comparative"] and tickers:
+        resp["notes"]["requested_tickers"] = tickers
+    
+    # 🔹 FIX: Persist only the selected top results, not the entire ranked DataFrame
+    # This prevents saving tickers without type=null that would violate DB constraints
+    selected_tickers_df = pd.concat([stocks_top, etf_top, fund_top], ignore_index=True)
+    run_id = persist_results(resp, selected_tickers_df)
+    resp["run_id"] = run_id
+
+    logger.info(f"[NE] Run completed | profile={profile} | mode={mode} | universe_size={len(features_df)} | run_id={run_id}")
+    return resp

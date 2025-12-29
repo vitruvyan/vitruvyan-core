@@ -1,0 +1,65 @@
+# 🛡️ Vitruvyan Portfolio Guardian Container
+# Financial Data Protection & Market Intelligence Agent
+# "Protecting wealth through intelligent vigilance."
+
+FROM python:3.10-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -g 1000 vitruvyan && \
+    useradd -u 1000 -g vitruvyan -m -s /bin/bash vitruvyan
+
+USER vitruvyan
+
+# Copy requirements
+COPY --chown=vitruvyan:vitruvyan infrastructure/docker/requirements/requirements.portfolio_guardian.txt ./requirements.txt
+
+# Install Python dependencies
+RUN pip install --user --no-cache-dir -r requirements.txt
+
+# Copy application code (babel_gardens pattern)
+COPY --chown=vitruvyan:vitruvyan services/core/api_portfolio_guardian/ /app/api_portfolio_guardian/
+
+# Copy ALL core modules
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/ /app/vitruvyan_core/
+
+# Add current directory to Python path
+ENV PYTHONPATH=/app
+ENV PATH="/home/vitruvyan/.local/bin:$PATH"
+
+# Environment variables with defaults
+ENV GUARDIAN_MODE=balanced
+ENV MONITORING_INTERVAL=60
+ENV TRADING_HOURS_FREQUENCY=30
+ENV AFTER_HOURS_FREQUENCY=300
+
+# PostgreSQL connection
+ENV POSTGRES_HOST=host.docker.internal
+ENV POSTGRES_PORT=5432
+ENV POSTGRES_DB=vitruvyan
+ENV POSTGRES_USER=vitruvyan
+ENV POSTGRES_PASSWORD="@Caravaggio971"
+
+# Integration URLs
+ENV BACKUP_AGENT_URL=http://vitruvyan_vault_keepers:8007
+ENV AUDIT_ENGINE_URL=http://vitruvyan_api_audit:8006
+ENV CREWAI_AGENTS_URL=http://vitruvyan_api_crewai:8005
+
+# Expose API port
+EXPOSE 8011
+
+# Health check
+HEALTHCHECK --interval=60s --timeout=15s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8011/guardian/health || exit 1
+
+# Start the Portfolio Guardian API server
+CMD ["python", "-m", "uvicorn", "api_portfolio_guardian.main:app", "--host", "0.0.0.0", "--port", "8011"]

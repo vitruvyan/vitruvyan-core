@@ -1,0 +1,47 @@
+# Dockerfile.api_crewai - CrewAI Multi-Agent System
+FROM python:3.12-slim
+
+RUN groupadd -g 1000 vitruvyan && \
+    useradd -u 1000 -g vitruvyan -m -s /bin/bash vitruvyan
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /home/vitruvyan/.ssh && \
+    chown -R vitruvyan:vitruvyan /home/vitruvyan && \
+    chmod 700 /home/vitruvyan/.ssh
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PYTHONPATH=/app
+
+WORKDIR /app
+
+# Install dependencies as root
+COPY infrastructure/docker/requirements/requirements.crewai.txt /app/requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+
+# Create directories as root before switching user
+RUN mkdir -p /app/domains/trade /app/core/cognitive
+
+# Switch to vitruvyan user
+USER vitruvyan
+
+# Copy CrewAI service and MINIMAL dependencies
+COPY --chown=vitruvyan:vitruvyan services/core/api_crewai /app/api_crewai
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/__init__.py /app/core/__init__.py
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/foundation/__init__.py /app/core/foundation/__init__.py
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/foundation/persistence /app/core/foundation/persistence
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/foundation/cognitive_bus /app/core/foundation/cognitive_bus
+# DOMAIN-NEUTRAL: Copy CrewAI orchestration templates (NO domain-specific code)
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/orchestration/__init__.py /app/core/orchestration/__init__.py
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/orchestration/crewai /app/core/orchestration/crewai
+# NOTE: Domain-specific implementations (e.g., domains/trade) should be
+# copied ONLY if the service needs to execute domain-specific crews.
+# For pure domain-neutral operation, no domain modules are required.
+
+USER vitruvyan
+EXPOSE 8005
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD curl -fsS http://localhost:8005/health || exit 1
+CMD ["uvicorn", "api_crewai.main:app", "--host", "0.0.0.0", "--port", "8005"]

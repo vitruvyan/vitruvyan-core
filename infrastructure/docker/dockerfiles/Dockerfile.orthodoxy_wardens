@@ -1,0 +1,35 @@
+# 🏛️ SACRED DOCKERFILE - ORTHODOXY WARDENS
+FROM python:3.11-slim
+
+# System dependencies (minimal)
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create user
+RUN groupadd -g 1000 vitruvyan && \
+    useradd -u 1000 -g vitruvyan -m -s /bin/bash vitruvyan
+
+WORKDIR /app
+USER vitruvyan
+
+# Install Python dependencies
+COPY --chown=vitruvyan:vitruvyan infrastructure/docker/requirements/requirements.orthodoxy_wardens.txt ./requirements.txt
+RUN pip install --user --no-cache-dir -r requirements.txt
+
+# Copy application code (same pattern as babel_gardens)
+COPY --chown=vitruvyan:vitruvyan services/core/api_orthodoxy_wardens/ /app/api_orthodoxy_wardens/
+
+# Copy ALL core modules (includes governance, foundation, etc.)
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/ /app/core/
+
+ENV PYTHONPATH=/app
+ENV PATH="/home/vitruvyan/.local/bin:$PATH"
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8006/divine-health || exit 1
+
+EXPOSE 8006
+
+CMD ["python", "-m", "uvicorn", "api_orthodoxy_wardens.main:app", "--host", "0.0.0.0", "--port", "8006"]

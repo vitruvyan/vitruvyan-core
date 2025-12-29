@@ -1,0 +1,102 @@
+# Requirements for Unified Gemma Cognitive Layer
+# Gemma Cognitive Layer - Production Requirements
+
+# ===========================
+# WEB FRAMEWORK
+# ===========================
+fastapi==0.115.14
+uvicorn[standard]==0.30.1
+starlette==0.46.2
+
+# ===========================
+# MACHINE LEARNING & AI
+# ===========================
+torch>=2.1.0,<2.3.0
+transformers>=4.35.0,<4.40.0
+tokenizers>=0.15.0
+accelerate>=0.24.0
+safetensors>=0.4.0
+
+# Sentence transformers for embeddings
+sentence-transformers>=2.2.2
+
+# ===========================
+# DATA PROCESSING
+# ===========================
+numpy>=1.24.0,<1.27.0
+pandas>=2.0.0,<2.2.0
+scipy>=1.11.0
+
+# ===========================
+# DATABASE & CACHING
+# ===========================
+redis>=5.0.0
+psycopg2-binary>=2.9.7
+asyncpg>=0.29.0
+sqlalchemy>=2.0.0
+
+# Vector database
+qdrant-client>=1.6.0
+
+# ===========================
+# HTTP & NETWORKING
+# ===========================
+httpx>=0.25.0
+aiohttp>=3.8.0
+requests>=2.31.0
+
+# ===========================
+# DATA VALIDATION
+# ===========================
+pydantic>=2.4.0,<2.6.0
+pydantic-settings>=2.0.0
+
+# ===========================
+# UTILITIES
+# ===========================
+python-multipart>=0.0.6
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# Logging and monitoring
+structlog>=23.1.0
+prometheus-client>=0.17.0
+
+# Configuration
+python-dotenv==1.1.0
+
+# ===========================
+# DEVELOPMENT & TESTING
+# ===========================
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+httpx>=0.25.0  # For testing async clients
+
+# Code quality
+black>=23.0.0
+isort>=5.12.0
+flake8>=6.0.0
+
+# ===========================
+# DEPLOYMENT
+# ===========================
+gunicorn>=21.2.0
+
+# ===========================
+# FINANCIAL MODELS (Optional)
+# ===========================
+# yfinance>=0.2.18
+# pandas-datareader>=0.10.0
+
+# ===========================
+# LANGUAGE DETECTION
+# ===========================
+langdetect>=1.0.9
+
+# ===========================
+# ASYNC UTILITIES
+# ===========================
+asyncio-throttle>=1.0.2
+tenacity>=8.2.0  # For retry logic
+alembic>=1.13.0

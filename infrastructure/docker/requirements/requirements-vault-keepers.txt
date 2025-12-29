@@ -1,0 +1,33 @@
+# Vault Keepers Dependencies
+# Base packages
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+
+# Database & Storage
+psycopg2-binary>=2.9.9
+asyncpg>=0.29.0
+qdrant-client>=1.7.0
+alembic>=1.13.0
+
+# Monitoring
+prometheus-client>=0.19.0
+prometheus-fastapi-instrumentator>=6.1.0
+
+# Async & Utilities
+aiofiles>=23.2.1
+python-multipart>=0.0.6
+
+# Google Drive API Dependencies
+google-api-python-client>=2.100.0
+google-auth>=2.23.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.1
+
+# Logging
+colorlog>=6.8.0
+structlog>=24.1.0
+
+# Additional dependencies
+redis>=5.0.0
+httpx>=0.25.0

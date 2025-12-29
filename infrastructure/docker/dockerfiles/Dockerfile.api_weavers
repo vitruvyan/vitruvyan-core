@@ -1,0 +1,50 @@
+# Dockerfile for vitruvyan_api_weavers service
+FROM python:3.11-slim
+
+# Create a non-root user
+RUN groupadd -g 1000 vitruvyan && \
+    useradd -u 1000 -g vitruvyan -m -s /bin/bash vitruvyan
+
+# Install necessary system packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    # Add any other system dependencies if needed, e.g., git for some python packages
+    && rm -rf /var/lib/apt/lists/*
+
+# Create .ssh directory for vitruvyan user (if needed for git dependencies)
+RUN mkdir -p /home/vitruvyan/.ssh && \
+    chown -R vitruvyan:vitruvyan /home/vitruvyan && \
+    chmod 700 /home/vitruvyan/.ssh
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PYTHONPATH=/app
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install Python dependencies
+# Use a specific requirements file for this service
+COPY services/core/api_pattern_weavers/requirements.txt /app/requirements.txt
+RUN pip install --upgrade pip && pip install -r /app/requirements.txt
+
+# Switch to non-root user
+USER vitruvyan
+
+# Copy the application code
+# Copy the entire vitruvyan_core package (our core library)
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core /app/vitruvyan_core
+
+# Copy the API service specific code
+COPY --chown=vitruvyan:vitruvyan services/core/api_pattern_weavers /app/api_pattern_weavers
+
+# Expose the port
+EXPOSE 8011
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD curl -f http://localhost:8011/health || exit 1
+
+# Command to run the application
+CMD ["uvicorn", "api_pattern_weavers.main:app", "--host", "0.0.0.0", "--port", "8011"]

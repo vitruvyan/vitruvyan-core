@@ -1,0 +1,60 @@
+# Audit Container Requirements - Clean Version
+# Only dependencies actually used by the audit system
+
+# ===== CORE API FRAMEWORK =====
+fastapi==0.115.14
+uvicorn==0.35.0
+pydantic>=2.7.4,<2.10.0
+python-multipart==0.0.20
+
+# ===== LANGGRAPH & AI =====
+# LangGraph for workflow orchestration
+langgraph==0.5.4
+langchain-core==0.3.71
+
+# OpenAI for LLM interface
+openai==1.88.0
+
+# ===== DATABASE =====
+# PostgreSQL support
+psycopg2-binary==2.9.10
+asyncpg==0.30.0
+alembic==1.13.1
+
+# Qdrant vector database
+qdrant-client==1.15.1
+
+# ===== DATA PROCESSING =====
+# Pandas for data analysis
+pandas==2.2.2
+
+# ===== SYSTEM MONITORING =====
+# System monitoring and Docker management
+psutil~=6.0.0
+docker==7.1.0
+prometheus-client==0.20.0
+
+# Git operations for audit tracking
+GitPython==3.1.43
+
+# ===== HTTP & UTILITIES =====
+# HTTP requests for API calls
+requests==2.32.3
+aiohttp==3.12.13
+
+# Configuration and utilities
+python-dotenv==1.1.0
+python-dateutil==2.9.0.post0
+
+# ===== SYNAPTIC CONCLAVE INTEGRATION =====
+# Redis for cognitive bus communication
+redis==5.2.1
+
+# Structured logging for theological messages  
+structlog==23.2.0
+
+# ===== REMOVED DEPENDENCIES =====
+# No longer needed after removing dependency update management:
+# - safety (security scanning)
+# - pip-audit (dependency auditing)  
+# - pytest, black (development tools - not needed in container)

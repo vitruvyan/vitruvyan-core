@@ -1,0 +1,24 @@
+# Local Development Dependencies for Vitruvyan Context Management
+# These should be installed in your LOCAL Python environment, not in the devcontainer
+
+# Performance Monitoring Dependencies
+aiohttp>=3.8.0
+psutil>=5.9.0
+
+# HTTP Clients for Advanced Monitoring
+httpx>=0.24.0
+requests>=2.31.0
+
+# Development & Testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+
+# Documentation
+markdown>=3.4.0
+mkdocs>=1.5.0
+
+# Optional: Enhanced Logging
+structlog>=22.0.0
+
+# Note: Install these locally with:
+# pip install -r requirements.local.txt

@@ -1,0 +1,68 @@
+FROM python:3.10-slim as base
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y gcc g++ curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Dependencies stage
+FROM base as dependencies
+
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Install Python dependencies
+RUN pip install --no-cache-dir \
+    uvicorn[standard]==0.30.1 \
+    fastapi==0.115.14 \
+    pydantic==2.12.4 \
+    python-dotenv==1.2.1 \
+    psycopg2-binary==2.9.10 \
+    pandas==2.3.0 \
+    numpy==2.2.6 \
+    yfinance==0.2.63 \
+    prometheus-client==0.19.0 \
+    qdrant-client==1.15.0 \
+    redis==5.0.8 \
+    alembic>=1.13.0
+
+# Final stage
+FROM base as final
+
+WORKDIR /app
+
+# Copy service code
+COPY services/core/api_neural_engine/ /app/api_neural_engine/
+
+# Copy core structure (order matters: parent directories first)
+COPY vitruvyan_core/core/__init__.py /app/core/__init__.py
+COPY vitruvyan_core/core/foundation/__init__.py /app/core/foundation/__init__.py
+COPY vitruvyan_core/core/foundation/persistence/ /app/core/foundation/persistence/
+
+# Create cognitive directory structure and copy Neural Engine
+RUN mkdir -p /app/core/cognitive
+COPY vitruvyan_core/core/cognitive/__init__.py /app/core/cognitive/__init__.py
+COPY vitruvyan_core/core/cognitive/neural_engine/ /app/core/cognitive/neural_engine/
+COPY vitruvyan_core/core/cognitive/vitruvyan_proprietary/ /app/core/cognitive/vitruvyan_proprietary/
+
+# Create user and setup permissions
+RUN useradd --create-home --shell /bin/bash neural && \
+    chown -R neural:neural /app
+
+# Copy venv from dependencies stage
+COPY --from=dependencies --chown=neural:neural /opt/venv /opt/venv
+
+# Set environment
+ENV PATH="/opt/venv/bin:$PATH"
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+USER neural
+
+EXPOSE 8003
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8003/health || exit 1
+
+CMD ["uvicorn", "api_neural_engine.main:app", "--host", "0.0.0.0", "--port", "8003"]

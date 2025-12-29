@@ -1,0 +1,20 @@
+services:
+  vitruvyan_api_craft:
+    container_name: vitruvyan_api_craft
+    build:
+      context: .
+      dockerfile: api_craft/Dockerfile.api_craft
+    ports:
+      - "8006:8006"
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./api_craft:/app
+    networks:
+      - vitruvyan-net
+
+networks:
+  vitruvyan-net:
+    name: vitruvyan-net
+    external: true

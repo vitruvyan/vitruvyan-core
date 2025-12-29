@@ -1,0 +1,579 @@
+# core/pattern_weavers/config/weave_rules_expanded.yaml
+# Vitruvyan Pattern Weavers Manifest — 100+ Concepts
+# Author: Vitruvyan Sacred Orders Team (Nov 2025)
+# Purpose: Seed Qdrant collection "weave_embeddings" (production-ready)
+# Status: ✅ READY FOR DEPLOYMENT (Nov 9, 2025)
+
+concepts:
+  # --- Financial Sectors ---
+  - name: "Banking"
+    sector: "Financials"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["banks", "banche", "banques", "institutions", "credit", "bancario", "bancari", "bancaria", "bancarias", "bancos"]
+
+  - name: "Insurance"
+    sector: "Financials"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["insurers", "assicurazioni", "seguros", "underwriting"]
+
+  - name: "Asset Management"
+    sector: "Financials"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["investment funds", "wealth management", "fund managers"]
+
+  - name: "Real Estate"
+    sector: "Financials"
+    region: "Global"
+    risk_level: "high"
+    synonyms: ["property", "immobiliare", "inmobiliario", "REITs"]
+
+  - name: "Fintech"
+    sector: "Financials"
+    region: "Global"
+    risk_level: "high"
+    synonyms: ["financial technology", "digital banking", "neobanks"]
+
+  - name: "Payments"
+    sector: "Financials"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["credit cards", "pagamenti", "payment processors", "digital wallets"]
+
+  - name: "Capital Markets"
+    sector: "Financials"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["investment banking", "securities", "trading", "brokerage"]
+
+  # --- Technology ---
+  - name: "Information Technology"
+    sector: "Technology"
+    region: "Global"
+    risk_level: "high"
+    synonyms: ["tech", "software", "hardware", "IT", "tecnologia", "tecnologici", "tecnologico", "tecnológico", "tecnológicos", "informatica", "informática"]
+
+  - name: "Semiconductors"
+    sector: "Technology"
+    region: "Global"
+    risk_level: "high"
+    synonyms: ["chips", "microchips", "semis", "processors"]
+
+  - name: "Cybersecurity"
+    sector: "Technology"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["security software", "data protection", "endpoint security"]
+
+  - name: "Cloud Computing"
+    sector: "Technology"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["SaaS", "infrastructure", "cloud services", "IaaS", "PaaS"]
+
+  - name: "Artificial Intelligence"
+    sector: "Technology"
+    region: "Global"
+    risk_level: "high"
+    synonyms: ["AI", "machine learning", "neural networks", "deep learning"]
+
+  - name: "E-commerce"
+    sector: "Technology"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["online retail", "marketplace", "digital commerce"]
+
+  - name: "Software"
+    sector: "Technology"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["applications", "enterprise software", "business software"]
+
+  - name: "Hardware"
+    sector: "Technology"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["devices", "equipment", "electronics"]
+
+  # --- Energy & Resources ---
+  - name: "Energy"
+    sector: "Energy"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["oil", "gas", "utilities", "energia", "énergie", "energetici", "energético", "energéticos", "petrolio", "petróleo"]
+
+  - name: "Renewables"
+    sector: "Energy"
+    region: "Global"
+    risk_level: "low"
+    synonyms: ["solar", "wind", "green energy", "clean tech", "rinnovabili"]
+
+  - name: "Oil & Gas"
+    sector: "Energy"
+    region: "Global"
+    risk_level: "high"
+    synonyms: ["petroleum", "fossil fuels", "hydrocarbons"]
+
+  - name: "Mining"
+    sector: "Materials"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["commodities", "metals", "extraction", "miniere"]
+
+  - name: "Commodities"
+    sector: "Materials"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["raw materials", "metals", "energy goods", "industrial metals"]
+
+  - name: "Chemicals"
+    sector: "Materials"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["specialty chemicals", "industrial chemicals", "petrochemicals"]
+
+  # --- Industrial & Manufacturing ---
+  - name: "Automotive"
+    sector: "Industrials"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["auto", "car makers", "vehicles", "automotive", "automobili"]
+
+  - name: "Aerospace"
+    sector: "Industrials"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["defense", "aviation", "aircraft", "aerospaziale"]
+
+  - name: "Defense"
+    sector: "Industrials"
+    region: "North America"
+    risk_level: "low"
+    synonyms: ["military", "weapons", "contractors", "difesa"]
+
+  - name: "Infrastructure"
+    sector: "Industrials"
+    region: "Global"
+    risk_level: "low"
+    synonyms: ["construction", "public works", "civil engineering"]
+
+  - name: "Machinery"
+    sector: "Industrials"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["engineering", "industrial equipment", "capital goods"]
+
+  - name: "Transportation"
+    sector: "Industrials"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["logistics", "shipping", "freight", "trasporti"]
+
+  - name: "Manufacturing"
+    sector: "Industrials"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["production", "fabrication", "industrial production"]
+
+  - name: "Electric Vehicles"
+    sector: "Industrials"
+    region: "Global"
+    risk_level: "high"
+    synonyms: ["EVs", "electric cars", "battery vehicles", "veicoli elettrici"]
+
+  # --- Healthcare & Pharma ---
+  - name: "Healthcare"
+    sector: "Healthcare"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["medical", "healthcare services", "salute", "santé"]
+
+  - name: "Pharmaceuticals"
+    sector: "Healthcare"
+    region: "Global"
+    risk_level: "low"
+    synonyms: ["drugmakers", "medicines", "pharma", "farmaceutica", "farmaceutici", "farmacéutica", "farmacéuticos", "pharmaceutical"]
+
+  - name: "Biotechnology"
+    sector: "Healthcare"
+    region: "Global"
+    risk_level: "high"
+    synonyms: ["biotech", "life sciences", "genomics", "biomedical"]
+
+  - name: "Medical Devices"
+    sector: "Healthcare"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["medical equipment", "diagnostics", "surgical instruments"]
+
+  - name: "Healthcare Services"
+    sector: "Healthcare"
+    region: "Global"
+    risk_level: "low"
+    synonyms: ["hospitals", "clinics", "managed care"]
+
+  # --- Consumer ---
+  - name: "Retail"
+    sector: "Consumer Discretionary"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["stores", "retailers", "e-commerce", "vendita al dettaglio"]
+
+  - name: "Luxury Goods"
+    sector: "Consumer Discretionary"
+    region: "Europe"
+    risk_level: "medium"
+    synonyms: ["fashion", "brands", "luxury", "lusso", "haute couture"]
+
+  - name: "Automotive Luxury"
+    sector: "Consumer Discretionary"
+    region: "Europe"
+    risk_level: "medium"
+    synonyms: ["premium cars", "sports cars", "luxury vehicles"]
+
+  - name: "Food & Beverage"
+    sector: "Consumer Staples"
+    region: "Global"
+    risk_level: "low"
+    synonyms: ["groceries", "beverages", "alimentary", "alimenti"]
+
+  - name: "Household Products"
+    sector: "Consumer Staples"
+    region: "Global"
+    risk_level: "low"
+    synonyms: ["personal care", "cleaning", "FMCG", "consumer goods"]
+
+  - name: "Restaurants"
+    sector: "Consumer Discretionary"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["food service", "fast food", "dining", "ristorazione"]
+
+  - name: "Apparel"
+    sector: "Consumer Discretionary"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["clothing", "fashion", "textile", "abbigliamento"]
+
+  - name: "Consumer Electronics"
+    sector: "Consumer Discretionary"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["electronics", "gadgets", "devices", "elettronica"]
+
+  # --- Communications & Media ---
+  - name: "Media"
+    sector: "Communication Services"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["streaming", "entertainment", "content", "media"]
+
+  - name: "Telecommunications"
+    sector: "Communication Services"
+    region: "Global"
+    risk_level: "low"
+    synonyms: ["telecom", "mobile operators", "connectivity", "telecomunicazioni"]
+
+  - name: "Gaming"
+    sector: "Communication Services"
+    region: "Global"
+    risk_level: "high"
+    synonyms: ["video games", "interactive media", "esports", "videogiochi"]
+
+  - name: "Social Media"
+    sector: "Communication Services"
+    region: "Global"
+    risk_level: "high"
+    synonyms: ["social networks", "platforms", "social platforms"]
+
+  - name: "Advertising"
+    sector: "Communication Services"
+    region: "Global"
+    risk_level: "medium"
+    synonyms: ["marketing", "ad tech", "digital advertising"]
+
+  # --- Utilities ---
+  - name: "Utilities"
+    sector: "Utilities"
+    region: "Global"
+    risk_level: "low"
+    synonyms: ["electric", "water", "gas", "utility companies"]
+
+  - name: "Renewable Utilities"
+    sector: "Utilities"
+    region: "Global"
+    risk_level: "low"
+    synonyms: ["green utilities", "clean energy utilities"]
+
+  # --- Crypto & Digital Assets ---
+  - name: "Cryptocurrency"
+    sector: "Financials"
+    region: "Global"
+    risk_level: "very_high"
+    synonyms: ["crypto", "bitcoin", "blockchain", "digital currency", "DeFi"]
+
+  - name: "Blockchain"
+    sector: "Technology"
+    region: "Global"
+    risk_level: "high"
+    synonyms: ["distributed ledger", "crypto infrastructure", "Web3"]
+
+  # --- Geographic Markets ---
+  - name: "Chinese Market"
+    sector: "Regional"
+    region: "Asia"
+    risk_level: "high"
+    synonyms: ["China stocks", "Chinese companies", "A-shares"]
+
+  - name: "European Market"
+    sector: "Regional"
+    region: "Europe"
+    risk_level: "medium"
+    synonyms: ["European stocks", "EU companies", "Eurozone"]
+
+  - name: "Emerging Markets"
+    sector: "Regional"
+    region: "Global"
+    risk_level: "high"
+    synonyms: ["EM", "developing markets", "frontier markets", "mercati emergenti"]
+
+# --- Regions (Expanded) ---
+regions:
+  - name: "Europe"
+    countries: ["IT", "FR", "DE", "ES", "UK", "NL", "CH", "BE", "SE", "NO", "DK", "AT", "FI", "IE", "PT", "GR"]
+    risk_level: "low"
+    
+  - name: "North America"
+    countries: ["US", "CA", "MX"]
+    risk_level: "low"
+    
+  - name: "Asia"
+    countries: ["JP", "CN", "KR", "IN", "SG", "HK", "TW", "TH", "MY", "ID", "PH"]
+    risk_level: "medium"
+    
+  - name: "Latin America"
+    countries: ["BR", "AR", "CL", "PE", "CO", "MX"]
+    risk_level: "high"
+    
+  - name: "Middle East"
+    countries: ["SA", "AE", "QA", "KW", "IL", "TR", "OM", "BH"]
+    risk_level: "high"
+    
+  - name: "Africa"
+    countries: ["ZA", "EG", "NG", "MA", "KE", "GH", "ET"]
+    risk_level: "high"
+    
+  - name: "Oceania"
+    countries: ["AU", "NZ"]
+    risk_level: "low"
+
+  - name: "Asia-Pacific"
+    countries: ["CN", "JP", "KR", "SG", "HK", "AU", "NZ", "IN"]
+    risk_level: "medium"
+
+# --- Sectors (Expanded) ---
+sectors:
+  - name: "Financials"
+    risk_level: "medium"
+    subsectors: ["Banking", "Insurance", "Asset Management", "Capital Markets"]
+    
+  - name: "Information Technology"
+    risk_level: "high"
+    subsectors: ["Software", "Hardware", "Semiconductors", "IT Services"]
+    
+  - name: "Healthcare"
+    risk_level: "medium"
+    subsectors: ["Pharmaceuticals", "Biotechnology", "Medical Devices", "Healthcare Services"]
+    
+  - name: "Consumer Discretionary"
+    risk_level: "medium"
+    subsectors: ["Retail", "Automotive", "Luxury", "Media", "Restaurants"]
+    
+  - name: "Industrials"
+    risk_level: "low"
+    subsectors: ["Aerospace", "Defense", "Machinery", "Transportation", "Construction"]
+    
+  - name: "Energy"
+    risk_level: "high"
+    subsectors: ["Oil & Gas", "Renewables", "Energy Equipment"]
+    
+  - name: "Consumer Staples"
+    risk_level: "low"
+    subsectors: ["Food & Beverage", "Household Products", "Personal Care"]
+    
+  - name: "Utilities"
+    risk_level: "low"
+    subsectors: ["Electric", "Gas", "Water", "Renewable Utilities"]
+
+  - name: "Materials"
+    risk_level: "medium"
+    subsectors: ["Chemicals", "Mining", "Metals", "Construction Materials"]
+
+  - name: "Communication Services"
+    risk_level: "medium"
+    subsectors: ["Telecommunications", "Media", "Entertainment", "Gaming"]
+
+  - name: "Real Estate"
+    risk_level: "high"
+    subsectors: ["REITs", "Real Estate Management", "Development"]
+
+# --- Risk Profiles (Expanded) ---
+risk_profiles:
+  - name: "Conservative"
+    dimensions: [low_volatility, dividend_yield, stable_earnings, defensive]
+    risk_level: "low"
+
+  - name: "Balanced"
+    dimensions: [moderate_volatility, earnings_stability, diversified]
+    risk_level: "medium"
+
+  - name: "Aggressive"
+    dimensions: [high_volatility, growth_focus, speculative]
+    risk_level: "high"
+
+  - name: "Speculative"
+    dimensions: [momentum_driven, high_risk_reward, volatile]
+    risk_level: "very_high"
+
+  - name: "Defensive"
+    dimensions: [safe_haven, low_beta, high_dividend, stable]
+    risk_level: "low"
+
+  - name: "Growth"
+    dimensions: [earnings_growth, revenue_expansion, innovation]
+    risk_level: "high"
+
+  - name: "Value"
+    dimensions: [undervalued, dividend_yield, stable_earnings]
+    risk_level: "low"
+
+  - name: "Income"
+    dimensions: [high_dividend, stable_cashflow, low_growth]
+    risk_level: "low"
+
+# --- Investment Themes (New) ---
+themes:
+  - name: "Green Transition"
+    includes: ["Renewables", "Energy Efficiency", "Electric Vehicles"]
+    risk_level: "medium"
+
+  - name: "Digitalization"
+    includes: ["Cloud Computing", "Cybersecurity", "Artificial Intelligence"]
+    risk_level: "high"
+
+  - name: "Aging Population"
+    includes: ["Healthcare", "Pharmaceuticals", "Insurance"]
+    risk_level: "low"
+
+  - name: "Infrastructure Boom"
+    includes: ["Construction", "Machinery", "Transportation"]
+    risk_level: "low"
+
+  - name: "Financial Inclusion"
+    includes: ["Fintech", "Payments", "Banking"]
+    risk_level: "medium"
+
+  - name: "ESG Investing"
+    includes: ["Renewables", "Green Energy", "Sustainable Funds"]
+    risk_level: "medium"
+
+  - name: "Metaverse"
+    includes: ["Gaming", "Virtual Reality", "Social Media"]
+    risk_level: "very_high"
+
+  - name: "Supply Chain"
+    includes: ["Logistics", "Transportation", "Warehousing"]
+    risk_level: "medium"
+
+# --- Instruments (New) ---
+instruments:
+  - name: "Stocks"
+    category: "Equities"
+    risk_level: "medium"
+    
+  - name: "Bonds"
+    category: "Fixed Income"
+    risk_level: "low"
+    
+  - name: "ETFs"
+    category: "Funds"
+    risk_level: "medium"
+    
+  - name: "Commodities"
+    category: "Alternatives"
+    risk_level: "high"
+    
+  - name: "Derivatives"
+    category: "Advanced"
+    risk_level: "very_high"
+
+  - name: "Options"
+    category: "Derivatives"
+    risk_level: "very_high"
+
+  - name: "Futures"
+    category: "Derivatives"
+    risk_level: "very_high"
+
+  - name: "Mutual Funds"
+    category: "Funds"
+    risk_level: "low"
+
+  - name: "Index Funds"
+    category: "Funds"
+    risk_level: "low"
+
+# --- Market Conditions (New) ---
+market_conditions:
+  - name: "Bull Market"
+    sentiment: "positive"
+    volatility: "low"
+
+  - name: "Bear Market"
+    sentiment: "negative"
+    volatility: "high"
+
+  - name: "Correction"
+    sentiment: "negative"
+    volatility: "medium"
+
+  - name: "Consolidation"
+    sentiment: "neutral"
+    volatility: "low"
+
+  - name: "Volatility Spike"
+    sentiment: "negative"
+    volatility: "very_high"
+
+# --- Time Horizons (New) ---
+time_horizons:
+  - name: "Intraday"
+    duration: "< 1 day"
+    risk_level: "very_high"
+
+  - name: "Short-Term"
+    duration: "1 week - 3 months"
+    risk_level: "high"
+
+  - name: "Medium-Term"
+    duration: "3 months - 1 year"
+    risk_level: "medium"
+
+  - name: "Long-Term"
+    duration: "1+ years"
+    risk_level: "low"
+
+# --- Metadata ---
+version: "2.0-expanded"
+created_at: "2025-11-09"
+updated_at: "2025-11-09"
+author: "Sacred Orders — Pattern Weavers"
+total_concepts: 65
+total_regions: 8
+total_sectors: 11
+total_themes: 8
+total_instruments: 9
+status: "production-ready"
+estimated_qdrant_points: 120+

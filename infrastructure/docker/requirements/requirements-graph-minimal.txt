@@ -1,0 +1,44 @@
+# requirements-graph-minimal.txt
+# 🌐 Phase 1D: MINIMAL dependencies for domain-neutral Graph API
+# Total size: ~500 MB (vs 9.21 GB)
+
+# FastAPI core
+fastapi==0.115.14
+uvicorn[standard]==0.30.1
+httpx==0.28.1
+pydantic==2.11.7
+python-dotenv==1.1.0
+orjson==3.10.18
+loguru==0.7.3
+structlog==23.2.0
+typing_extensions>=4.9.0
+prometheus-client==0.19.0
+
+# LangGraph & grafi
+langgraph==0.5.4
+networkx>=3.2
+nest-asyncio==1.6.0
+
+# PostgreSQL
+psycopg2-binary==2.9.10
+
+# Redis
+redis==5.0.8
+
+# OpenAI (for LLM only)
+openai>=1.40.0
+
+# ❌ REMOVED (not used by neutralized nodes):
+# torch==2.2.0              → -2.5 GB
+# sentence-transformers     → -1.5 GB (semantic engine disabled)
+# transformers              → -1.0 GB
+# pandas==2.3.0             → -500 MB (finance removed)
+# yfinance==0.2.63          → -100 MB (finance removed)
+# scikit-learn              → -300 MB
+# scipy                     → -200 MB
+# numpy                     → -100 MB
+
+# ⚠️ NOTE: If semantic grounding is re-enabled, restore:
+# sentence-transformers==5.0.0
+# torch==2.2.0
+# numpy==1.26.4

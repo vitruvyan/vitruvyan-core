@@ -1,0 +1,58 @@
+FROM python:3.10-slim as base
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y gcc g++ curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Dependencies stage
+FROM base as dependencies
+
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy and install requirements
+COPY infrastructure/docker/requirements/requirements.memory_orders.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Final stage
+FROM base as final
+
+WORKDIR /app
+
+# Copy service code
+COPY services/core/api_memory_orders/ /app/api_memory_orders/
+
+# Copy core dependencies
+COPY vitruvyan_core/core/foundation/persistence/ /app/core/foundation/persistence/
+COPY vitruvyan_core/core/governance/memory_orders/ /app/core/governance/memory_orders/
+COPY vitruvyan_core/core/foundation/cognitive_bus/ /app/core/foundation/cognitive_bus/
+COPY vitruvyan_core/core/__init__.py /app/core/__init__.py
+COPY vitruvyan_core/core/foundation/__init__.py /app/core/foundation/__init__.py
+COPY vitruvyan_core/core/governance/__init__.py /app/core/governance/__init__.py
+
+# Create logs directory and setup user
+RUN useradd --create-home --shell /bin/bash memory && \
+    mkdir -p /app/logs && \
+    chown -R memory:memory /app
+
+# Copy virtual environment from dependencies stage
+COPY --from=dependencies /opt/venv /opt/venv
+
+# Environment variables
+ENV PATH="/opt/venv/bin:$PATH"
+ENV PYTHONPATH="/app"
+
+# Switch to non-root user
+USER memory
+
+# Health check
+HEALTHCHECK --interval=120s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8016/health || exit 1
+
+# Expose port
+EXPOSE 8016
+
+# Start uvicorn
+CMD ["uvicorn", "api_memory_orders.main:app", "--host", "0.0.0.0", "--port", "8016"]

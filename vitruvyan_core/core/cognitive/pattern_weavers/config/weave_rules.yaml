@@ -1,0 +1,121 @@
+# Pattern Weavers — Semantic Mapping Rules
+# Defines concepts, sectors, regions, and risk profiles
+
+concepts:
+  - name: "Banking"
+    sector: "Financials"
+    keywords: ["bank", "banca", "banking", "financial", "credit", "lending", "loans"]
+    region: "Global"
+    risk_level: "medium"
+    
+  - name: "Technology"
+    sector: "Information Technology"
+    keywords: ["tech", "software", "hardware", "AI", "cloud", "semiconductor", "chip"]
+    region: "Global"
+    risk_level: "high"
+    
+  - name: "Clean Energy"
+    sector: "Utilities"
+    keywords: ["solar", "wind", "renewable", "clean energy", "green", "esg"]
+    region: "Global"
+    risk_level: "high"
+    
+  - name: "Healthcare"
+    sector: "Healthcare"
+    keywords: ["health", "pharma", "biotech", "medical", "drug", "hospital"]
+    region: "Global"
+    risk_level: "medium"
+    
+  - name: "E-commerce"
+    sector: "Consumer Discretionary"
+    keywords: ["ecommerce", "e-commerce", "online retail", "marketplace", "shopping"]
+    region: "Global"
+    risk_level: "medium"
+    
+  - name: "Defense"
+    sector: "Industrials"
+    keywords: ["defense", "aerospace", "military", "weapons", "contractor"]
+    region: "North America"
+    risk_level: "low"
+    
+  - name: "Cryptocurrency"
+    sector: "Financials"
+    keywords: ["crypto", "bitcoin", "blockchain", "digital currency", "defi"]
+    region: "Global"
+    risk_level: "very_high"
+
+regions:
+  - name: "Europe"
+    keywords: ["europe", "europa", "eu", "european", "eurozone"]
+    countries: ["IT", "FR", "DE", "ES", "UK", "NL", "CH"]
+    
+  - name: "North America"
+    keywords: ["usa", "us", "america", "american", "canada", "north america"]
+    countries: ["US", "CA", "MX"]
+    
+  - name: "Asia-Pacific"
+    keywords: ["asia", "china", "japan", "korea", "apac", "pacific"]
+    countries: ["CN", "JP", "KR", "SG", "HK", "AU"]
+    
+  - name: "Emerging Markets"
+    keywords: ["emerging", "bric", "developing", "frontier"]
+    countries: ["BR", "RU", "IN", "ZA", "TR"]
+
+sectors:
+  - name: "Financials"
+    keywords: ["financial", "bank", "insurance", "investment", "asset management"]
+    risk_level: "medium"
+    
+  - name: "Information Technology"
+    keywords: ["technology", "software", "hardware", "IT", "tech"]
+    risk_level: "high"
+    
+  - name: "Healthcare"
+    keywords: ["healthcare", "pharma", "biotech", "medical"]
+    risk_level: "medium"
+    
+  - name: "Consumer Discretionary"
+    keywords: ["consumer", "retail", "ecommerce", "luxury", "automotive"]
+    risk_level: "medium"
+    
+  - name: "Industrials"
+    keywords: ["industrial", "manufacturing", "aerospace", "defense", "construction"]
+    risk_level: "low"
+    
+  - name: "Energy"
+    keywords: ["energy", "oil", "gas", "renewable", "utilities"]
+    risk_level: "high"
+    
+  - name: "Consumer Staples"
+    keywords: ["staples", "food", "beverage", "household", "tobacco"]
+    risk_level: "low"
+    
+  - name: "Utilities"
+    keywords: ["utility", "electric", "water", "gas", "renewable"]
+    risk_level: "low"
+
+risk_profiles:
+  - name: "Volatility"
+    keywords: ["volatile", "volatility", "fluctuation", "swing", "instability"]
+    risk_level: "high"
+    
+  - name: "Liquidity"
+    keywords: ["liquid", "liquidity", "volume", "trading", "marketable"]
+    risk_level: "low"
+    
+  - name: "Concentration"
+    keywords: ["concentrated", "concentration", "diversification", "exposure"]
+    risk_level: "high"
+    
+  - name: "Correlation"
+    keywords: ["correlated", "correlation", "co-movement", "relationship"]
+    risk_level: "medium"
+    
+  - name: "Leverage"
+    keywords: ["leverage", "debt", "leveraged", "margin", "borrowed"]
+    risk_level: "high"
+
+# Metadata
+version: "1.0"
+created_at: "2025-11-09"
+author: "Sacred Orders — Pattern Weavers"

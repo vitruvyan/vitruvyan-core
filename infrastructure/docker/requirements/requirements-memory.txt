@@ -1,0 +1,23 @@
+# Memory Orders Service Dependencies (EPOCH II - PHASE 4.9)
+# Minimal dependencies for Dual-Memory System (Archivarium + Mnemosyne)
+
+# FastAPI & Web
+fastapi==0.115.14
+uvicorn==0.35.0
+gunicorn==23.0.0
+pydantic==2.11.7
+pydantic-settings==2.10.1
+
+# Database (PostgreSQL - Archivarium)
+psycopg2-binary==2.9.10
+
+# Vector Database (Qdrant - Mnemosyne)
+qdrant-client==1.15.0
+
+# Redis (Cognitive Bus)
+redis==5.0.1
+
+# Core Dependencies
+requests==2.32.3
+httpx==0.28.1
+python-dotenv==1.0.0

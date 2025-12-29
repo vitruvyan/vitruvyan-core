@@ -1,0 +1,40 @@
+# 🏰 VAULT KEEPERS - Memory Archivists
+FROM python:3.11-slim
+
+# System dependencies (minimal)
+RUN apt-get update && apt-get install -y \
+    curl \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create user
+RUN groupadd -g 1000 vitruvyan && \
+    useradd -u 1000 -g vitruvyan -m -s /bin/bash vitruvyan
+
+# Create backup directory with proper permissions
+RUN mkdir -p /var/vitruvyan/vaults && \
+    chown -R vitruvyan:vitruvyan /var/vitruvyan
+
+WORKDIR /app
+USER vitruvyan
+
+# Install Python dependencies
+COPY --chown=vitruvyan:vitruvyan infrastructure/docker/requirements/requirements-vault-keepers.txt ./requirements.txt
+RUN pip install --user --no-cache-dir -r requirements.txt
+
+# Copy application code (same pattern as babel_gardens)
+COPY --chown=vitruvyan:vitruvyan services/governance/api_vault_keepers/ /app/api_vault_keepers/
+
+# Copy ALL core modules (includes governance, foundation, etc.)
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/ /app/core/
+
+ENV PYTHONPATH=/app
+ENV PATH="/home/vitruvyan/.local/bin:$PATH"
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8007/health || exit 1
+
+EXPOSE 8007
+
+CMD ["python", "-m", "uvicorn", "api_vault_keepers.main:app", "--host", "0.0.0.0", "--port", "8007"]

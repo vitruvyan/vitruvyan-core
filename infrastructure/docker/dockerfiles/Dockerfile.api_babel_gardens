@@ -1,0 +1,82 @@
+# Dockerfile per Unified Gemma Cognitive Layer
+# Multi-stage build per ottimizzazione dimensioni container
+
+# ===========================
+# STAGE 1: Base Dependencies
+# ===========================
+FROM python:3.10-slim as base
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# ===========================
+# STAGE 2: Python Dependencies
+# ===========================
+FROM base as dependencies
+
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy requirements
+COPY infrastructure/docker/requirements/requirements.babel_gardens.txt /tmp/requirements.txt
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# ===========================
+# STAGE 3: Model Downloads
+# ===========================
+FROM dependencies as models
+
+# Set working directory
+WORKDIR /app
+
+# Copy model download script (placeholder for future model downloads)
+# COPY scripts/download_gemma_models.py /app/download_models.py
+
+# Pre-download models (optional - can be done at runtime)
+# RUN python download_models.py --models gemma-2-2b-it finbert
+
+# ===========================
+# STAGE 4: Application
+# ===========================
+FROM dependencies as final
+
+# Set working directory
+WORKDIR /app
+
+# Copy application code
+COPY services/core/api_babel_gardens/ /app/api_babel_gardens/
+# Copy core modules required for PostgresAgent and QdrantAgent
+COPY vitruvyan_core/core/ /app/core/
+
+# Copy configuration files (optional)
+# COPY .env.template /app/.env.template
+
+# Create non-root user and set up directories
+RUN useradd --create-home --shell /bin/bash babel && \
+    mkdir -p /app/models /app/logs && \
+    chown -R babel:babel /app
+USER babel
+
+# Expose port
+EXPOSE 8009
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8009/health || exit 1
+
+# Default command
+CMD ["python", "-m", "uvicorn", "api_babel_gardens.main:app", "--host", "0.0.0.0", "--port", "8009", "--workers", "1"]

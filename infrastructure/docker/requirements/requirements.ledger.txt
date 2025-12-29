@@ -1,0 +1,10 @@
+# 🔗 Vitruvyan Blockchain Ledger Requirements
+# Tron blockchain integration for immutable audit anchoring
+
+# Tron blockchain client
+tronpy==0.4.0
+
+# Dependencies (if not already installed)
+requests>=2.28.0
+eth-keys>=0.4.0
+eth-utils>=2.0.0

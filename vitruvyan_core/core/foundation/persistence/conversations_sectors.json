@@ -1,0 +1,2378 @@
+[
+  {
+    "phrase_text": "Vit, mostrami titoli del settore assicurativo",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, consigliami un ETF sul settore assicurativo",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, fammi esempi di aziende assicurativo quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, mostrami titoli del settore assicurativo",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, consigliami un ETF sul settore assicurativo",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, fammi esempi di aziende assicurativo quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, mostrami titoli del settore assicurativo",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, consigliami un ETF sul settore assicurativo",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, fammi esempi di aziende assicurativo quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, show me insurance stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, suggest me a insurance ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, give me examples of listed insurance companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, show me insurance stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, suggest me a insurance ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, give me examples of listed insurance companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, show me insurance stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, suggest me a insurance ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, give me examples of listed insurance companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, muéstrame acciones del sector asegurador",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, recomiéndame un ETF asegurador",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, dame ejemplos de compañías asegurador que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, muéstrame acciones del sector asegurador",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, recomiéndame un ETF asegurador",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, dame ejemplos de compañías asegurador que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, muéstrame acciones del sector asegurador",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, recomiéndame un ETF asegurador",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, dame ejemplos de compañías asegurador que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, mostrami titoli del settore energia",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, consigliami un ETF sul settore energia",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, fammi esempi di aziende energia quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, mostrami titoli del settore energia",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, consigliami un ETF sul settore energia",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, fammi esempi di aziende energia quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, mostrami titoli del settore energia",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, consigliami un ETF sul settore energia",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, fammi esempi di aziende energia quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, show me energy stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, suggest me a energy ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, give me examples of listed energy companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, show me energy stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, suggest me a energy ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, give me examples of listed energy companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, show me energy stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, suggest me a energy ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, give me examples of listed energy companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, muéstrame acciones del sector energético",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, recomiéndame un ETF energético",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, dame ejemplos de compañías energético que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, muéstrame acciones del sector energético",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, recomiéndame un ETF energético",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, dame ejemplos de compañías energético que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, muéstrame acciones del sector energético",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, recomiéndame un ETF energético",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, dame ejemplos de compañías energético que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, mostrami titoli del settore aerospaziale",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, consigliami un ETF sul settore aerospaziale",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, fammi esempi di aziende aerospaziale quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, mostrami titoli del settore aerospaziale",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, consigliami un ETF sul settore aerospaziale",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, fammi esempi di aziende aerospaziale quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, mostrami titoli del settore aerospaziale",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, consigliami un ETF sul settore aerospaziale",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, fammi esempi di aziende aerospaziale quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, show me aerospace stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, suggest me a aerospace ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, give me examples of listed aerospace companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, show me aerospace stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, suggest me a aerospace ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, give me examples of listed aerospace companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, show me aerospace stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, suggest me a aerospace ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, give me examples of listed aerospace companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, muéstrame acciones del sector aeroespacial",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, recomiéndame un ETF aeroespacial",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, dame ejemplos de compañías aeroespacial que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, muéstrame acciones del sector aeroespacial",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, recomiéndame un ETF aeroespacial",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, dame ejemplos de compañías aeroespacial que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, muéstrame acciones del sector aeroespacial",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, recomiéndame un ETF aeroespacial",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, dame ejemplos de compañías aeroespacial que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, mostrami titoli del settore bancario",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, consigliami un ETF sul settore bancario",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, fammi esempi di aziende bancario quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, mostrami titoli del settore bancario",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, consigliami un ETF sul settore bancario",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, fammi esempi di aziende bancario quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, mostrami titoli del settore bancario",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, consigliami un ETF sul settore bancario",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, fammi esempi di aziende bancario quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, show me banking stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, suggest me a banking ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, give me examples of listed banking companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, show me banking stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, suggest me a banking ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, give me examples of listed banking companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, show me banking stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, suggest me a banking ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, give me examples of listed banking companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, muéstrame acciones del sector bancario",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, recomiéndame un ETF bancario",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, dame ejemplos de compañías bancario que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, muéstrame acciones del sector bancario",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, recomiéndame un ETF bancario",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, dame ejemplos de compañías bancario que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, muéstrame acciones del sector bancario",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, recomiéndame un ETF bancario",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, dame ejemplos de compañías bancario que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, mostrami titoli del settore biotecnologico",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, consigliami un ETF sul settore biotecnologico",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, fammi esempi di aziende biotecnologico quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, mostrami titoli del settore biotecnologico",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, consigliami un ETF sul settore biotecnologico",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, fammi esempi di aziende biotecnologico quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, mostrami titoli del settore biotecnologico",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, consigliami un ETF sul settore biotecnologico",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, fammi esempi di aziende biotecnologico quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, show me biotech stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, suggest me a biotech ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, give me examples of listed biotech companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, show me biotech stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, suggest me a biotech ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, give me examples of listed biotech companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, show me biotech stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, suggest me a biotech ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, give me examples of listed biotech companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, muéstrame acciones del sector biotecnológico",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, recomiéndame un ETF biotecnológico",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, dame ejemplos de compañías biotecnológico que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, muéstrame acciones del sector biotecnológico",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, recomiéndame un ETF biotecnológico",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, dame ejemplos de compañías biotecnológico que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, muéstrame acciones del sector biotecnológico",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, recomiéndame un ETF biotecnológico",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, dame ejemplos de compañías biotecnológico que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, mostrami titoli del settore turismo e intrattenimento",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, consigliami un ETF sul settore turismo e intrattenimento",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, fammi esempi di aziende turismo e intrattenimento quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, mostrami titoli del settore turismo e intrattenimento",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, consigliami un ETF sul settore turismo e intrattenimento",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, fammi esempi di aziende turismo e intrattenimento quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, mostrami titoli del settore turismo e intrattenimento",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, consigliami un ETF sul settore turismo e intrattenimento",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, fammi esempi di aziende turismo e intrattenimento quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, show me leisure and tourism stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, suggest me a leisure and tourism ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, give me examples of listed leisure and tourism companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, show me leisure and tourism stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, suggest me a leisure and tourism ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, give me examples of listed leisure and tourism companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, show me leisure and tourism stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, suggest me a leisure and tourism ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, give me examples of listed leisure and tourism companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, muéstrame acciones del sector ocio y turismo",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, recomiéndame un ETF ocio y turismo",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, dame ejemplos de compañías ocio y turismo que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, muéstrame acciones del sector ocio y turismo",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, recomiéndame un ETF ocio y turismo",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, dame ejemplos de compañías ocio y turismo que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, muéstrame acciones del sector ocio y turismo",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, recomiéndame un ETF ocio y turismo",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, dame ejemplos de compañías ocio y turismo que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, mostrami titoli del settore immobiliare",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, consigliami un ETF sul settore immobiliare",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, fammi esempi di aziende immobiliare quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, mostrami titoli del settore immobiliare",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, consigliami un ETF sul settore immobiliare",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, fammi esempi di aziende immobiliare quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, mostrami titoli del settore immobiliare",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, consigliami un ETF sul settore immobiliare",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, fammi esempi di aziende immobiliare quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, show me real estate stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, suggest me a real estate ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, give me examples of listed real estate companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, show me real estate stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, suggest me a real estate ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, give me examples of listed real estate companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, show me real estate stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, suggest me a real estate ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, give me examples of listed real estate companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, muéstrame acciones del sector inmobiliario",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, recomiéndame un ETF inmobiliario",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, dame ejemplos de compañías inmobiliario que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, muéstrame acciones del sector inmobiliario",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, recomiéndame un ETF inmobiliario",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, dame ejemplos de compañías inmobiliario que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, muéstrame acciones del sector inmobiliario",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, recomiéndame un ETF inmobiliario",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, dame ejemplos de compañías inmobiliario que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, mostrami titoli del settore retail",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, consigliami un ETF sul settore retail",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, fammi esempi di aziende retail quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, mostrami titoli del settore retail",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, consigliami un ETF sul settore retail",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, fammi esempi di aziende retail quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, mostrami titoli del settore retail",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, consigliami un ETF sul settore retail",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, fammi esempi di aziende retail quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, show me retail stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, suggest me a retail ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, give me examples of listed retail companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, show me retail stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, suggest me a retail ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, give me examples of listed retail companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, show me retail stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, suggest me a retail ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, give me examples of listed retail companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, muéstrame acciones del sector minorista",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, recomiéndame un ETF minorista",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, dame ejemplos de compañías minorista que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, muéstrame acciones del sector minorista",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, recomiéndame un ETF minorista",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, dame ejemplos de compañías minorista que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, muéstrame acciones del sector minorista",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, recomiéndame un ETF minorista",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, dame ejemplos de compañías minorista que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, mostrami titoli del settore beni di consumo",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, consigliami un ETF sul settore beni di consumo",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, fammi esempi di aziende beni di consumo quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, mostrami titoli del settore beni di consumo",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, consigliami un ETF sul settore beni di consumo",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, fammi esempi di aziende beni di consumo quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, mostrami titoli del settore beni di consumo",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, consigliami un ETF sul settore beni di consumo",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, fammi esempi di aziende beni di consumo quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, show me consumer goods stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, suggest me a consumer goods ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, give me examples of listed consumer goods companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, show me consumer goods stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, suggest me a consumer goods ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, give me examples of listed consumer goods companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, show me consumer goods stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, suggest me a consumer goods ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, give me examples of listed consumer goods companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, muéstrame acciones del sector bienes de consumo",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, recomiéndame un ETF bienes de consumo",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, dame ejemplos de compañías bienes de consumo que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, muéstrame acciones del sector bienes de consumo",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, recomiéndame un ETF bienes de consumo",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, dame ejemplos de compañías bienes de consumo que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, muéstrame acciones del sector bienes de consumo",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, recomiéndame un ETF bienes de consumo",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, dame ejemplos de compañías bienes de consumo que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, mostrami titoli del settore automotive",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, consigliami un ETF sul settore automotive",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, fammi esempi di aziende automotive quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, mostrami titoli del settore automotive",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, consigliami un ETF sul settore automotive",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, fammi esempi di aziende automotive quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, mostrami titoli del settore automotive",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, consigliami un ETF sul settore automotive",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, fammi esempi di aziende automotive quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, show me automotive stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, suggest me a automotive ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, give me examples of listed automotive companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, show me automotive stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, suggest me a automotive ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, give me examples of listed automotive companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, show me automotive stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, suggest me a automotive ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, give me examples of listed automotive companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, muéstrame acciones del sector automotriz",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, recomiéndame un ETF automotriz",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, dame ejemplos de compañías automotriz que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, muéstrame acciones del sector automotriz",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, recomiéndame un ETF automotriz",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, dame ejemplos de compañías automotriz que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, muéstrame acciones del sector automotriz",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, recomiéndame un ETF automotriz",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, dame ejemplos de compañías automotriz que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, mostrami titoli del settore utilities",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, consigliami un ETF sul settore utilities",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, fammi esempi di aziende utilities quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, mostrami titoli del settore utilities",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, consigliami un ETF sul settore utilities",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, fammi esempi di aziende utilities quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, mostrami titoli del settore utilities",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, consigliami un ETF sul settore utilities",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, fammi esempi di aziende utilities quotate",
+    "language": "it",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, show me utilities stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, suggest me a utilities ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, give me examples of listed utilities companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, show me utilities stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, suggest me a utilities ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, give me examples of listed utilities companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, show me utilities stocks",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, suggest me a utilities ETF",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, give me examples of listed utilities companies",
+    "language": "en",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, muéstrame acciones del sector servicios públicos",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, recomiéndame un ETF servicios públicos",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Vit, dame ejemplos de compañías servicios públicos que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, muéstrame acciones del sector servicios públicos",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, recomiéndame un ETF servicios públicos",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leonardo, dame ejemplos de compañías servicios públicos que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, muéstrame acciones del sector servicios públicos",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, recomiéndame un ETF servicios públicos",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  },
+  {
+    "phrase_text": "Leo, dame ejemplos de compañías servicios públicos que cotizan en bolsa",
+    "language": "es",
+    "context_type": "portfolio_sector",
+    "tone": "neutral",
+    "source": "seed_conversation",
+    "seed": true
+  }
+]

@@ -1,0 +1,107 @@
+# 🧪 SYNAPTIC RENAISSANCE - TEST CONTAINERS
+# Docker Compose per testing delle trasformazioni teologiche
+# PostgreSQL locale (non containerizzato), porte diverse per evitare conflitti
+
+services:
+  # 🏛️ Test Orthodoxy Wardens (ex-Audit)
+  test_orthodoxy_wardens:
+    build:
+      context: .
+      dockerfile: Dockerfile.orthodoxy_wardens
+    ports:
+      - "8106:8006"
+    environment:
+      - REDIS_URL=redis://vitruvyan_redis:6379
+      - POSTGRES_HOST=172.17.0.1  # Docker bridge gateway IP pentru PostgreSQL host
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=vitruvyan
+      - POSTGRES_USER=vitruvyan
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PYTHONPATH=/app
+      - VITRUVYAN_TEST_MODE=true  # Skip database initialization in test mode
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - vitruvyan_network
+    restart: "no"
+    container_name: test_orthodoxy_wardens
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/divine-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 🌿 Test Babel Gardens (ex-Gemma)
+  test_babel_gardens:
+    build:
+      context: .
+      dockerfile:  api_babel_gardens/Dockerfile
+    ports:
+      - "8109:8009"
+    environment:
+      - REDIS_URL=redis://vitruvyan_redis:6379
+      - POSTGRES_HOST=172.17.0.1  # Docker bridge gateway IP for PostgreSQL host
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=vitruvyan
+      - POSTGRES_USER=vitruvyan
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PYTHONPATH=/app
+      - VITRUVYAN_TEST_MODE=true  # Skip database initialization in test mode
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - vitruvyan_network
+    restart: "no"
+    container_name: test_babel_gardens
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8009/sacred-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 🧠 Test LangGraph (per integration testing)
+  test_langgraph:
+    build:
+      context: .
+      dockerfile: Dockerfile.api_graph
+    ports:
+      - "8101:8001"
+    environment:
+      - REDIS_URL=redis://vitruvyan_redis:6379
+      - POSTGRES_HOST=localhost  # PostgreSQL locale
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=vitruvyan
+      - POSTGRES_USER=vitruvyan
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # Point to test services
+      - ORTHODOXY_WARDENS_URL=http://test_orthodoxy_wardens:8006
+      - BABEL_GARDENS_URL=http://test_babel_gardens:8009
+      - PYTHONPATH=/app
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - vitruvyan_network
+    restart: "no"
+    container_name: test_langgraph
+    depends_on:
+      - test_orthodoxy_wardens
+      - test_babel_gardens
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# Utilizziamo la rete esistente per accedere ai servizi condivisi
+networks:
+  vitruvyan_network:
+    external: true
+    name: vitruvyan-net
+
+# Volume dedicato per test
+volumes:
+  test_redis_data:
+    driver: local

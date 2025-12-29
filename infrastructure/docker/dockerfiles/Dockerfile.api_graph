@@ -1,0 +1,46 @@
+# Dockerfile.api_graph - LangGraph Orchestrator
+FROM python:3.11-slim
+
+RUN groupadd -g 1000 vitruvyan && \
+    useradd -u 1000 -g vitruvyan -m -s /bin/bash vitruvyan
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /home/vitruvyan/.ssh && \
+    chown -R vitruvyan:vitruvyan /home/vitruvyan && \
+    chmod 700 /home/vitruvyan/.ssh
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PYTHONPATH=/app
+
+WORKDIR /app
+
+COPY infrastructure/docker/requirements/requirements-graph.txt /app/requirements-graph.txt
+RUN pip install --upgrade pip && pip install -r /app/requirements-graph.txt
+
+USER vitruvyan
+
+COPY --chown=vitruvyan:vitruvyan services/core/api_graph /app/api_graph
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/__init__.py /app/core/__init__.py
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/orchestration /app/core/orchestration
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/foundation/__init__.py /app/core/foundation/__init__.py
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/foundation/persistence /app/core/foundation/persistence
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/foundation/cache /app/core/foundation/cache
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/foundation/llm /app/core/foundation/llm
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/foundation/cognitive_bus /app/core/foundation/cognitive_bus
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/monitoring /app/core/monitoring
+RUN mkdir -p /app/core/cognitive
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/cognitive/__init__.py /app/core/cognitive/__init__.py
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/cognitive/semantic_engine /app/core/cognitive/semantic_engine
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/cognitive/vitruvyan_proprietary /app/core/cognitive/vitruvyan_proprietary
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/cognitive/pattern_weavers /app/core/cognitive/pattern_weavers
+
+# Copy config directory for Pattern Weavers API config
+COPY --chown=vitruvyan:vitruvyan config /app/config
+
+EXPOSE 8004
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD curl -fsS http://localhost:8004/health || exit 1
+CMD ["uvicorn", "api_graph.main:app", "--host", "0.0.0.0", "--port", "8004"]

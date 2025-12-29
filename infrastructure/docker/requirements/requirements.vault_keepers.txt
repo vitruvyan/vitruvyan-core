@@ -1,0 +1,59 @@
+# 🏰 SACRED REQUIREMENTS - VAULT KEEPERS DIVINE DEPENDENCIES
+# Sacred Orders Phase 4.4: Active memory custodians with Redis integration
+# Container: vitruvyan_vault_keepers (port 8006)
+
+# Core FastAPI and async web framework
+fastapi==0.115.14
+uvicorn[standard]==0.30.1
+
+# Database sacred connections 
+psycopg2-binary==2.9.10
+asyncpg>=0.29.0
+sqlalchemy>=2.0.23
+alembic==1.13.1
+
+# Vector database divine connection
+qdrant-client==1.12.1
+
+# Redis Synaptic Conclave divine communication
+redis>=5.0.1
+aioredis>=2.0.1
+
+# HTTP sacred client
+httpx>=0.25.2
+requests==2.32.3
+
+# Async utilities and typing
+aiofiles==23.2.1
+aiohttp==3.12.13
+asyncio-throttle>=1.0.2
+pydantic==2.11.7
+pydantic-settings>=2.1.0
+
+# Logging and monitoring divine instrumentation
+structlog>=23.2.0
+prometheus-client>=0.19.0
+prometheus-fastapi-instrumentator>=7.0.0
+
+# Sacred utilities
+python-multipart>=0.0.6
+python-json-logger>=2.0.7
+
+# Time and datetime sacred handling
+python-dateutil>=2.8.2
+pytz>=2023.3
+
+# JSON and data divine processing
+orjson>=3.9.10
+pyaml>=23.9.7
+
+# Environment divine configuration
+python-dotenv==1.1.0
+
+# Error tracking divine monitoring
+sentry-sdk[fastapi]>=1.38.0
+
+# Python standard library modules (included):
+# asyncio, logging, hashlib, gzip, tarfile, shutil
+# datetime, typing, dataclasses, enum, pathlib
+# json, os, base64, tempfile, subprocess, time

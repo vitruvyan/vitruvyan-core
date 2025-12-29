@@ -1,0 +1,50 @@
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create vitruvyan user
+RUN useradd -m -u 1000 vitruvyan && \
+    mkdir -p /home/vitruvyan/.local/bin && \
+    chown -R vitruvyan:vitruvyan /home/vitruvyan
+
+# Set PATH for user installs
+ENV PATH="/home/vitruvyan/.local/bin:$PATH"
+
+# Switch to vitruvyan user for pip install
+USER vitruvyan
+
+# Copy requirements and install Python dependencies
+COPY --chown=vitruvyan:vitruvyan infrastructure/docker/requirements/requirements-codex.txt ./
+RUN pip install --no-cache-dir --user -r requirements-codex.txt
+
+# Switch back to root for COPY operations
+USER root
+
+# Copy service code and core modules (babel_gardens pattern)
+COPY --chown=vitruvyan:vitruvyan services/core/api_codex_hunters/ /app/api_codex_hunters/
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/ /app/core/
+
+# Set Python path
+ENV PYTHONPATH=/app
+
+# Switch to vitruvyan user for runtime
+USER vitruvyan
+
+# Expose port
+EXPOSE 8008
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8008/health || exit 1
+
+# Command to run the API
+CMD ["python", "-m", "uvicorn", "api_codex_hunters.main:app", "--host", "0.0.0.0", "--port", "8008"]
