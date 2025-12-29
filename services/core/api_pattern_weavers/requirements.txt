@@ -8,3 +8,5 @@ qdrant-client==1.7.0
 psycopg2-binary==2.9.9
 python-dotenv==1.0.0
 redis==5.0.1
+alembic==1.13.1
+numpy==2.4.0

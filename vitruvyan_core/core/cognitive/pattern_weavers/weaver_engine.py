@@ -26,8 +26,8 @@ import httpx
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 
-from core.foundation.persistence.qdrant_agent import QdrantAgent
-from core.foundation.persistence.postgres_agent import PostgresAgent
+from vitruvyan_core.core.foundation.persistence.qdrant_agent import QdrantAgent
+from vitruvyan_core.core.foundation.persistence.postgres_agent import PostgresAgent
 
 
 class PatternWeaverEngine:

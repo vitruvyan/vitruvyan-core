@@ -20,8 +20,8 @@ import time
 from typing import Dict, Any
 import os
 
-from core.cognitive.pattern_weavers.weaver_engine import PatternWeaverEngine
-from core.foundation.persistence.postgres_agent import PostgresAgent
+from vitruvyan_core.core.cognitive.pattern_weavers.weaver_engine import PatternWeaverEngine
+from vitruvyan_core.core.foundation.persistence.postgres_agent import PostgresAgent
 
 
 class PatternWeaversListener:

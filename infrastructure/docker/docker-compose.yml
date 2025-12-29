@@ -75,7 +75,7 @@ services:
 
   embedding:
     build:
-      context: /home/caravaggio/projects/vitruvyan-os
+      context: ../..
       dockerfile: scripts/Dockerfile.embedding
     container_name: omni_api_embedding
     networks:
@@ -88,6 +88,11 @@ services:
     command: python3 scripts/api_embedding_server.py
     environment:
       - PYTHONPATH=/app
+      - POSTGRES_HOST=${POSTGRES_HOST:-omni_postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_omni}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971}
       - QDRANT_URL=${QDRANT_URL_OMNI:-http://omni_qdrant:6333}
       - POSTGRES_HOST=${POSTGRES_HOST}
       - POSTGRES_PORT=${POSTGRES_PORT}
@@ -284,42 +289,42 @@ services:
 
 
 
-  # 🛡️ PORTFOLIO GUARDIAN: Financial data protection & market intelligence
-  vitruvyan_portfolio_guardian:
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.portfolio_guardian
-    container_name: omni_portfolio_guardian
-    restart: unless-stopped
-    ports:
-      - "9011:8011"
-    environment:
-      - POSTGRES_HOST=${POSTGRES_HOST_OMNI:-omni_postgres}
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB_OMNI:-vitruvyan_omni}
-      - POSTGRES_USER=${POSTGRES_USER_OMNI:-vitruvyan_omni_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_OMNI:-@Caravaggio971_omni}
-      - REDIS_HOST=omni_redis
-      - REDIS_PORT=6379
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - PORTFOLIO_GUARDIAN_MODE=production
-      - GUARDIAN_RISK_THRESHOLD=0.15
-      - GUARDIAN_PROTECTION_LEVEL=maximum
-      - GUARDIAN_UPDATE_INTERVAL=300
-      - GUARDIAN_ALERT_CHANNELS=log,redis
-      - AUDIT_ENGINE_URL=http://omni_api_orthodoxy_wardens:8006
-      - CREWAI_AGENTS_URL=http://omni_api_crewai:8005
-    networks:
-      - omni-net
-    depends_on:
-      - redis
-      - vitruvyan_api_orthodoxy_wardens
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8011/guardian/health"]
-      interval: 60s
-      timeout: 15s
-      retries: 3
-      start_period: 10s
+  # 🛡️ PORTFOLIO GUARDIAN: DISABLED - Legacy financial component, kept as template
+  # vitruvyan_portfolio_guardian:
+  #   build:
+  #     context: ../..
+  #     dockerfile: infrastructure/docker/dockerfiles/Dockerfile.portfolio_guardian
+  #   container_name: omni_portfolio_guardian
+  #   restart: unless-stopped
+  #   ports:
+  #     - "9011:8011"
+  #   environment:
+  #     - POSTGRES_HOST=${POSTGRES_HOST_OMNI:-omni_postgres}
+  #     - POSTGRES_PORT=5432
+  #     - POSTGRES_DB=${POSTGRES_DB_OMNI:-vitruvyan_omni}
+  #     - POSTGRES_USER=${POSTGRES_USER_OMNI:-vitruvyan_omni_user}
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_OMNI:-@Caravaggio971_omni}
+  #     - REDIS_HOST=omni_redis
+  #     - REDIS_PORT=6379
+  #     - OPENAI_API_KEY=${OPENAI_API_KEY}
+  #     - PORTFOLIO_GUARDIAN_MODE=production
+  #     - GUARDIAN_RISK_THRESHOLD=0.15
+  #     - GUARDIAN_PROTECTION_LEVEL=maximum
+  #     - GUARDIAN_UPDATE_INTERVAL=300
+  #     - GUARDIAN_ALERT_CHANNELS=log,redis
+  #     - AUDIT_ENGINE_URL=http://omni_api_orthodoxy_wardens:8006
+  #     - CREWAI_AGENTS_URL=http://omni_api_crewai:8005
+  #   networks:
+  #     - omni-net
+  #   depends_on:
+  #     - redis
+  #     - vitruvyan_api_orthodoxy_wardens
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8011/guardian/health"]
+  #     interval: 60s
+  #     timeout: 15s
+  #     retries: 3
+  #     start_period: 10s
 
   # 🌿 Babel Gardens - Sacred Linguistic Unity (Replaces Gemma Cognitive Layer)
   vitruvyan_babel_gardens:
@@ -604,6 +609,42 @@ services:
       - qdrant
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8008/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  vitruvyan_pattern_weavers:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_weavers
+    container_name: omni_pattern_weavers
+    restart: unless-stopped
+    ports:
+      - "9017:8011"
+    environment:
+      - PYTHONPATH=/app
+      # Database connections
+      - POSTGRES_HOST=${POSTGRES_HOST_OMNI:-omni_postgres}
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB_OMNI:-vitruvyan_omni}
+      - POSTGRES_USER=${POSTGRES_USER_OMNI:-vitruvyan_omni_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_OMNI:-@Caravaggio971_omni}
+      # Vector DB
+      - QDRANT_HOST=${QDRANT_HOST_OMNI:-omni_qdrant}
+      - QDRANT_PORT=${QDRANT_PORT_OMNI:-6333}
+      # Redis for Cognitive Bus
+      - REDIS_HOST=omni_redis
+      - REDIS_PORT=6379
+      # OpenAI for semantic operations
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    networks:
+      - omni-net
+    depends_on:
+      - redis
+      - qdrant
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8011/health"]
       interval: 30s
       timeout: 10s
       retries: 3

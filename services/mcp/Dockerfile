@@ -1,4 +1,4 @@
-# Dockerfile for MCP Server (vitruvyan-os)
+# Dockerfile for MCP Server (vitruvyan-core)
 # Model Context Protocol Bridge to Sacred Orders
 
 FROM python:3.11-slim
@@ -14,8 +14,10 @@ WORKDIR /app
 COPY services/mcp/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy vitruvyan_os core modules
-COPY vitruvyan_os ./vitruvyan_os
+# Copy vitruvyan_core foundation modules (minimal dependencies)
+COPY vitruvyan_core/core/__init__.py ./vitruvyan_core/core/__init__.py
+COPY vitruvyan_core/core/foundation/__init__.py ./vitruvyan_core/core/foundation/__init__.py
+COPY vitruvyan_core/core/foundation/persistence ./vitruvyan_core/core/foundation/persistence
 
 # Copy MCP server main.py
 COPY services/mcp/main.py .

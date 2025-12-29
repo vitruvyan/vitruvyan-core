@@ -14,7 +14,7 @@ __version__ = "1.0.0"
 __epistemic_order__ = "REASON"
 __layer__ = "SEMANTIC"
 
-from core.cognitive.pattern_weavers.weaver_engine import PatternWeaverEngine
-from core.cognitive.pattern_weavers.weaver_client import PatternWeaverClient
+from vitruvyan_core.core.cognitive.pattern_weavers.weaver_engine import PatternWeaverEngine
+from vitruvyan_core.core.cognitive.pattern_weavers.weaver_client import PatternWeaverClient
 
 __all__ = ["PatternWeaverEngine", "PatternWeaverClient"]

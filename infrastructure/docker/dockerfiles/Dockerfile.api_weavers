@@ -37,6 +37,9 @@ USER vitruvyan
 # Copy the entire vitruvyan_core package (our core library)
 COPY --chown=vitruvyan:vitruvyan vitruvyan_core /app/vitruvyan_core
 
+# Copy config module (needed by pattern_weavers)
+COPY --chown=vitruvyan:vitruvyan config /app/config
+
 # Copy the API service specific code
 COPY --chown=vitruvyan:vitruvyan services/core/api_pattern_weavers /app/api_pattern_weavers
 
