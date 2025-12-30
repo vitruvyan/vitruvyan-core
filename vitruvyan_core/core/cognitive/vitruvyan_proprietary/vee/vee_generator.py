@@ -20,11 +20,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from .vee_analyzer import AnalysisResult
 
+from vitruvyan_core.domains.explainability_contract import ExplainabilityProvider, ExplanationTemplate
+
 
 @dataclass
 class ExplanationLevels:
-    """Spiegazioni multilivello per un ticker"""
-    ticker: str
+    """Spiegazioni multilivello per un'entità (domain-agnostic)"""
+    entity_id: str  # Changed from ticker
     timestamp: datetime
     
     # Tre livelli di spiegazione
@@ -106,14 +108,16 @@ class VEEGenerator:
             'strength': 'relative strength'
         }
     
-    def generate_explanation(self, analysis: AnalysisResult, 
+    def generate_explanation(self, analysis: AnalysisResult,
+                           explainability_provider: ExplainabilityProvider,
                            profile: Optional[Dict[str, Any]] = None,
                            semantic_context: Optional[List[Dict[str, Any]]] = None) -> ExplanationLevels:
         """
-        Genera spiegazioni multilivello da risultato di analisi
+        Genera spiegazioni multilivello da risultato di analisi usando domain templates
         
         Args:
             analysis: AnalysisResult dall'analyzer
+            explainability_provider: Domain provider per templates e context
             profile: Profilo utente per personalizzazione
             semantic_context: VSGS semantic matches (PR-C) - list of dicts with keys:
                              text (str), score (float), trace_id (str), language (str)
@@ -125,13 +129,16 @@ class VEEGenerator:
             # Extract profile preferences (language removed - always EN)
             user_level = self._extract_user_level(profile)
             
-            # Prepare content variables
-            content_vars = self._prepare_content_variables(analysis)
+            # Get domain-specific templates
+            templates = explainability_provider.get_explanation_templates()
             
-            # Generate explanations at different levels
-            summary = self._generate_summary(analysis, content_vars)
-            technical = self._generate_technical(analysis, content_vars)
-            detailed = self._generate_detailed(analysis, content_vars, user_level)
+            # Prepare content variables
+            content_vars = self._prepare_content_variables(analysis, explainability_provider)
+            
+            # Generate explanations using domain templates
+            summary = self._generate_summary_from_template(analysis, content_vars, templates)
+            technical = self._generate_technical_from_template(analysis, content_vars, templates)
+            detailed = self._generate_detailed_from_template(analysis, content_vars, templates, user_level)
             
             # Confidence note
             confidence_note = self._generate_confidence_text(analysis.confidence_level)
@@ -149,7 +156,7 @@ class VEEGenerator:
             
             # Return structured explanation levels
             return ExplanationLevels(
-                ticker=analysis.ticker,
+                entity_id=analysis.entity_id,
                 timestamp=datetime.now(),
                 summary=summary,
                 technical=technical,
@@ -162,7 +169,7 @@ class VEEGenerator:
             )
             
         except Exception as e:
-            return self._create_error_explanation(analysis.ticker, str(e), profile)
+            return self._create_error_explanation(analysis.entity_id, str(e), profile)
     
     def _extract_user_level(self, profile: Optional[Dict[str, Any]]) -> str:
         """Extract expertise level from user profile"""
@@ -178,8 +185,14 @@ class VEEGenerator:
         else:
             return 'intermediate'
     
-    def _prepare_content_variables(self, analysis: AnalysisResult) -> Dict[str, Any]:
-        """Prepare variables for templating (English only)"""
+    def _prepare_content_variables(self, analysis: AnalysisResult, 
+                                 explainability_provider: ExplainabilityProvider) -> Dict[str, Any]:
+        """Prepare variables for templating using domain context"""
+        
+        # Get domain-specific descriptions
+        signal_descriptions = explainability_provider.get_signal_descriptions()
+        factor_categories = explainability_provider.get_factor_categories()
+        entity_reference = explainability_provider.format_entity_reference(analysis.entity_id)
         
         # Signals text
         if analysis.signals and analysis.signals[0] != "no relevant signals":
@@ -187,12 +200,8 @@ class VEEGenerator:
         else:
             signals_text = "mixed signals"
         
-        # Dominant factor translation
-        dominant_factor = analysis.dominant_factor
-        for key, translation in self.translations.items():
-            if key in dominant_factor.lower():
-                dominant_factor = translation
-                break
+        # Dominant factor using domain categories
+        dominant_factor = factor_categories.get(analysis.dominant_factor, analysis.dominant_factor)
         
         # Secondary factors (from signal strengths)
         secondary_factors = []
@@ -200,10 +209,8 @@ class VEEGenerator:
                                 key=lambda x: x[1], reverse=True)[1:3]  # Top 2 secondary
         
         for factor, strength in sorted_strengths:
-            if factor in self.translations:
-                secondary_factors.append(self.translations[factor])
-            else:
-                secondary_factors.append(factor)
+            domain_factor = factor_categories.get(factor, factor)
+            secondary_factors.append(domain_factor)
         
         secondary_text = ", ".join(secondary_factors) if secondary_factors else "secondary factors"
         
@@ -213,11 +220,12 @@ class VEEGenerator:
         else:
             patterns_text = ""
         
-        # Sentiment direction translation
-        sentiment_direction = self.translations.get(analysis.sentiment_direction, analysis.sentiment_direction)
+        # Sentiment direction (keep as is for now)
+        sentiment_direction = analysis.sentiment_direction
         
         return {
-            'ticker': analysis.ticker,
+            'entity_id': analysis.entity_id,
+            'entity_reference': entity_reference,
             'signals_text': signals_text,
             'dominant_factor': dominant_factor,
             'secondary_factors': secondary_text,
@@ -228,32 +236,57 @@ class VEEGenerator:
             'confidence_level': analysis.confidence_level
         }
     
-    def _generate_summary(self, analysis: AnalysisResult, content_vars: Dict) -> str:
-        """Generate summary explanation (English only)"""
+    def _generate_summary_from_template(self, analysis: AnalysisResult, content_vars: Dict, 
+                                      templates: ExplanationTemplate) -> str:
+        """Generate summary explanation using domain templates"""
         sentiment_key = analysis.sentiment_direction
-        templates = self.templates['summary'][sentiment_key]
         
-        template = random.choice(templates)
-        return template.format(**content_vars)
-    
-    def _generate_technical(self, analysis: AnalysisResult, content_vars: Dict) -> str:
-        """Generate technical explanation (English only)"""
-        templates = self.templates['technical']['base']
-        template = random.choice(templates)
+        # Use domain templates if available, fallback to hardcoded
+        if templates.summary_variants and len(templates.summary_variants) > 0:
+            template = random.choice(templates.summary_variants)
+        else:
+            # Fallback to basic template
+            template = templates.summary_template
         
-        return template.format(**content_vars)
+        try:
+            return template.format(**content_vars)
+        except KeyError:
+            # If template placeholders don't match, use basic fallback
+            return f"{content_vars.get('entity_reference', content_vars.get('entity_id', 'Entity'))} shows {content_vars['signals_text']} with {content_vars['dominant_factor']} as the prevailing element."
     
-    def _generate_detailed(self, analysis: AnalysisResult, content_vars: Dict, 
-                          user_level: str) -> str:
-        """Generate detailed explanation (English only)"""
-        templates = self.templates['detailed']['comprehensive']
-        template = random.choice(templates)
+    def _generate_technical_from_template(self, analysis: AnalysisResult, content_vars: Dict,
+                                        templates: ExplanationTemplate) -> str:
+        """Generate technical explanation using domain templates"""
+        if templates.technical_variants and len(templates.technical_variants) > 0:
+            template = random.choice(templates.technical_variants)
+        else:
+            # Fallback to basic template
+            template = templates.technical_template
+        
+        try:
+            return template.format(**content_vars)
+        except KeyError:
+            # Fallback
+            return f"Technical analysis of {content_vars.get('entity_reference', content_vars.get('entity_id', 'Entity'))}: {content_vars['dominant_factor']} emerges as prevailing factor (intensity: {content_vars['intensity']:.1%}). Relevant parameters: {content_vars['signals_summary']}. Sentiment direction: {content_vars['sentiment_direction']}."
+    
+    def _generate_detailed_from_template(self, analysis: AnalysisResult, content_vars: Dict,
+                                       templates: ExplanationTemplate, user_level: str) -> str:
+        """Generate detailed explanation using domain templates"""
+        if templates.detailed_variants and len(templates.detailed_variants) > 0:
+            template = random.choice(templates.detailed_variants)
+        else:
+            # Fallback to basic template
+            template = templates.detailed_template
         
         # Add confidence text
         confidence_text = self._generate_confidence_text(analysis.confidence_level)
         content_vars['confidence_text'] = confidence_text
         
-        detailed = template.format(**content_vars)
+        try:
+            detailed = template.format(**content_vars)
+        except KeyError:
+            # Fallback
+            detailed = f"In-depth analysis of {content_vars.get('entity_reference', content_vars.get('entity_id', 'Entity'))}: Performance reflects a complex balance between various factors. {content_vars['dominant_factor']} emerges as dominant element with {content_vars['intensity']:.1%} intensity. {content_vars['patterns_text']} {confidence_text} This analysis provides no direct recommendations but represents an objective assessment."
         
         # Adapt for user level (English only)
         if user_level == 'beginner':
@@ -290,16 +323,16 @@ class VEEGenerator:
         
         return detailed + expert_addition
     
-    def _create_error_explanation(self, ticker: str, error_msg: str, 
+    def _create_error_explanation(self, entity_id: str, error_msg: str,  # Changed from ticker
                                 profile: Optional[Dict[str, Any]]) -> ExplanationLevels:
         """Create error explanation (English only)"""
-        summary = f"Error in explanation generation for {ticker}: {error_msg}"
+        summary = f"Error in explanation generation for {entity_id}: {error_msg}"  # Changed ticker to entity_id
         technical = "Unable to process analysis data."
         detailed = f"A technical error occurred during explanation generation. Details: {error_msg}"
         confidence_note = "Analysis unavailable due to technical error."
         
         return ExplanationLevels(
-            ticker=ticker,
+            entity_id=entity_id,  # Changed ticker to entity_id
             timestamp=datetime.now(),
             summary=summary,
             technical=technical,
@@ -351,14 +384,14 @@ class VEEGenerator:
 
 
 # Convenience function for standalone usage
-def generate_explanation(ticker: str, analysis: AnalysisResult, 
+def generate_explanation(entity_id: str, analysis: AnalysisResult, 
                         profile: Optional[Dict[str, Any]] = None,
                         semantic_context: Optional[List[Dict[str, Any]]] = None) -> ExplanationLevels:
     """
     Convenience function for standalone explanation generation
     
     Args:
-        ticker: Ticker symbol (for compatibility)
+        entity_id: Entity identifier (domain-agnostic)
         analysis: AnalysisResult from analyzer
         profile: Optional user profile
         semantic_context: VSGS semantic matches (PR-C)
@@ -366,13 +399,17 @@ def generate_explanation(ticker: str, analysis: AnalysisResult,
     Returns:
         ExplanationLevels with multi-level explanations + semantic grounding
     """
+    from vitruvyan_core.domains.finance_explainability_provider import FinanceExplainabilityProvider
+    
     generator = VEEGenerator()
-    return generator.generate_explanation(analysis, profile, semantic_context)
+    provider = FinanceExplainabilityProvider()
+    return generator.generate_explanation(analysis, provider, profile, semantic_context)
 
 
 if __name__ == "__main__":
     # Test standalone - requires vee_analyzer
     from .vee_analyzer import analyze_kpi
+    from vitruvyan_core.domains.finance_explainability_provider import FinanceExplainabilityProvider
     
     # Test KPI data
     test_kpi = {
@@ -387,20 +424,21 @@ if __name__ == "__main__":
     
     # Generate explanations
     generator = VEEGenerator()
+    provider = FinanceExplainabilityProvider()
     
     # Test Italian
-    explanations_it = generator.generate_explanation(analysis, {'lang': 'it', 'level': 'intermediate'})
+    explanations_it = generator.generate_explanation(analysis, provider, {'lang': 'it', 'level': 'intermediate'})
     
-    print(f"=== VEE Generator Test Results for {explanations_it.ticker} (IT) ===")
+    print(f"=== VEE Generator Test Results for {explanations_it.entity_id} (IT) ===")
     print(f"Summary: {explanations_it.summary}")
     print(f"Technical: {explanations_it.technical}")
     print(f"Detailed: {explanations_it.detailed}")
     print(f"Confidence: {explanations_it.confidence_note}")
     
     # Test English
-    explanations_en = generator.generate_explanation(analysis, {'lang': 'en', 'level': 'expert'})
+    explanations_en = generator.generate_explanation(analysis, provider, {'lang': 'en', 'level': 'expert'})
     
-    print(f"\n=== VEE Generator Test Results for {explanations_en.ticker} (EN) ===")
+    print(f"\n=== VEE Generator Test Results for {explanations_en.entity_id} (EN) ===")
     print(f"Summary: {explanations_en.summary}")
     print(f"Technical: {explanations_en.technical}")
     print(f"Detailed: {explanations_en.detailed}")

@@ -26,13 +26,16 @@ from dataclasses import dataclass, field
 from datetime import datetime
 import logging
 
+# Domain contracts
+from vitruvyan_core.domains.aggregation_contract import AggregationProvider
+
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class VWREResult:
-    """Risultato dell'attribution analysis per un ticker"""
-    ticker: str
+    """Risultato dell'attribution analysis per un'entità (domain-agnostic)"""
+    entity_id: str  # Changed from ticker
     composite_score: float
     profile: str
     timestamp: datetime = field(default_factory=datetime.now)
@@ -66,7 +69,7 @@ class VWREEngine:
     Provides mathematical transparency for Neural Engine rankings.
     
     Architecture:
-    1. Input: composite_score + factors dict + profile weights
+    1. Input: composite_score + factors dict + aggregation_provider
     2. Process: Calculate contribution = z_score × weight for each factor
     3. Output: Attribution breakdown with primary drivers and verification
     
@@ -77,63 +80,56 @@ class VWREEngine:
     """
     
     def __init__(self):
-        """Initialize VWRE Engine with Neural Engine profile weights"""
-        try:
-            # Import profile weights and factor mapping from Neural Engine
-            from core.cognitive.neural_engine.engine_core import PROFILE_WEIGHTS, FACTOR_MAP
-            self.profile_weights = PROFILE_WEIGHTS
-            self.factor_map = FACTOR_MAP
-            logger.info("✅ VWRE Engine initialized with Neural Engine weights")
-        except ImportError as e:
-            logger.error(f"❌ Failed to import Neural Engine weights: {e}")
-            # Fallback to basic weights (should never happen in production)
-            self.profile_weights = {"short_spec": {"momentum": 0.35, "trend": 0.15, "vola": 0.08, "sent": 0.10}}
-            self.factor_map = {"momentum_z": "momentum", "trend_z": "trend", "vola_z": "vola", "sentiment_z": "sent"}
+        """Initialize VWRE Engine (domain-agnostic)"""
+        logger.info("✅ VWRE Engine initialized (domain-agnostic)")
     
     def analyze_attribution(
         self,
-        ticker: str,
+        entity_id: str,
         composite_score: float,
         factors: Dict[str, float],
-        profile: str = "short_spec"
+        aggregation_provider: 'AggregationProvider'
     ) -> VWREResult:
         """
         Reverse engineer composite_score into factor contributions.
         
         Args:
-            ticker: Symbol (e.g., "AAPL")
+            entity_id: Entity identifier (domain-agnostic, e.g., "AAPL" or "LOGISTICS_001")
             composite_score: Final composite z-score from Neural Engine
             factors: Dict with z-scores (momentum_z, trend_z, vola_z, sentiment_z, etc.)
-            profile: Screening profile determining weights (short_spec, balanced_mid, etc.)
+            aggregation_provider: Domain-specific provider for weighting schemes
         
         Returns:
             VWREResult with complete attribution breakdown
         
         Example:
             >>> vwre = VWREEngine()
+            >>> provider = FinanceAggregationProvider()
             >>> attribution = vwre.analyze_attribution(
-            ...     ticker="AAPL",
+            ...     entity_id="AAPL",
             ...     composite_score=1.85,
             ...     factors={"momentum_z": 2.1, "trend_z": 1.5, "vola_z": -0.3, "sentiment_z": 0.8, "fundamentals_z": 1.2},
-            ...     profile="short_spec"
+            ...     aggregation_provider=provider
             ... )
             >>> print(attribution.rank_explanation)
             "Rank driven by momentum (39.7% weight, +0.735 contribution)"
         """
-        logger.info(f"[VWRE] Analyzing attribution for {ticker} (composite={composite_score:.3f}, profile={profile})")
+        logger.info(f"[VWRE] Analyzing attribution for {entity_id} (composite={composite_score:.3f})")
         
-        # Get profile weights
-        weights = self.profile_weights.get(profile, self.profile_weights.get("short_spec", {}))
+        # Get aggregation profiles and factor mapping from provider
+        profiles = aggregation_provider.get_aggregation_profiles()
+        factor_map = aggregation_provider.get_factor_mappings()
         
-        if not weights:
-            logger.warning(f"⚠️ No weights found for profile '{profile}', using short_spec")
-            weights = self.profile_weights["short_spec"]
+        # Use default profile (assuming first profile is default)
+        profile_name = list(profiles.keys())[0] if profiles else "default"
+        profile = profiles.get(profile_name)
+        weights = profile.factor_weights if profile else {}
         
         # Calculate raw contributions (factor_z × weight)
         contributions = {}
         raw_factors_used = {}  # Track which z-scores were actually used
         
-        for factor_col, weight_key in self.factor_map.items():
+        for factor_col, weight_key in factor_map.items():
             if factor_col in factors:
                 z_score = factors[factor_col]
                 
@@ -150,11 +146,11 @@ class VWREEngine:
         
         # Handle case with no valid factors
         if not contributions:
-            logger.warning(f"⚠️ No valid factors found for {ticker}")
+            logger.warning(f"⚠️ No valid factors found for {entity_id}")
             return VWREResult(
-                ticker=ticker,
+                entity_id=entity_id,
                 composite_score=composite_score,
-                profile=profile,
+                profile=profile_name,
                 verification_status="error",
                 rank_explanation="No valid factors available for attribution analysis"
             )
@@ -188,12 +184,12 @@ class VWREEngine:
         # Generate explainability strings (for VEE integration)
         rank_explanation = self._generate_rank_explanation(primary_driver, percentages, primary_contribution)
         factor_narratives = self._generate_factor_narratives(raw_factors_used, contributions)
-        technical_summary = self._generate_technical_summary(ticker, composite_score, contributions, residual, profile)
+        technical_summary = self._generate_technical_summary(entity_id, composite_score, contributions, residual, profile_name)
         
         result = VWREResult(
-            ticker=ticker,
+            entity_id=entity_id,
             composite_score=composite_score,
-            profile=profile,
+            profile=profile_name,
             factor_contributions=contributions,
             factor_percentages=percentages,
             factor_ranks=factor_ranks,
@@ -208,7 +204,7 @@ class VWREEngine:
             technical_summary=technical_summary
         )
         
-        logger.info(f"✅ [VWRE] {ticker}: primary_driver={primary_driver}, contribution={primary_contribution:.3f}, residual={residual:.3f}")
+        logger.info(f"✅ [VWRE] {entity_id}: primary_driver={primary_driver}, contribution={primary_contribution:.3f}, residual={residual:.3f}")
         
         return result
     
@@ -388,7 +384,7 @@ class VWREEngine:
     
     def _generate_technical_summary(
         self,
-        ticker: str,
+        entity_id: str,
         composite_score: float,
         contributions: Dict[str, float],
         residual: float,
@@ -409,7 +405,7 @@ class VWREEngine:
         sum_contrib = sum(contributions.values())
         
         summary = (
-            f"{ticker} composite_score={composite_score:.3f} (profile={profile})\n"
+            f"{entity_id} composite_score={composite_score:.3f} (profile={profile})\n"
             f"= {contrib_parts}\n"
             f"= {sum_contrib:.3f} base"
         )
@@ -446,45 +442,45 @@ class VWREEngine:
     
     def batch_analyze(
         self,
-        tickers_data: List[Dict[str, Any]],
-        profile: str = "short_spec"
+        entities_data: List[Dict[str, Any]],
+        aggregation_provider: 'AggregationProvider'
     ) -> List[VWREResult]:
         """
-        Batch attribution analysis for multiple tickers.
+        Batch attribution analysis for multiple entities.
         
-        Optimized for Neural Engine integration where multiple tickers
+        Optimized for Neural Engine integration where multiple entities
         are ranked simultaneously.
         
         Args:
-            tickers_data: List of dicts with ticker, composite_score, factors
-            profile: Screening profile
+            entities_data: List of dicts with entity_id, composite_score, factors
+            aggregation_provider: Domain-specific provider for weighting schemes
         
         Returns:
             List of VWREResult objects (same order as input)
         """
         results = []
         
-        for ticker_data in tickers_data:
+        for entity_data in entities_data:
             try:
                 result = self.analyze_attribution(
-                    ticker=ticker_data["ticker"],
-                    composite_score=ticker_data["composite_score"],
-                    factors=ticker_data.get("factors", {}),
-                    profile=profile
+                    entity_id=entity_data["entity_id"],
+                    composite_score=entity_data["composite_score"],
+                    factors=entity_data.get("factors", {}),
+                    aggregation_provider=aggregation_provider
                 )
                 results.append(result)
             except Exception as e:
-                logger.error(f"❌ [VWRE] Failed to analyze {ticker_data.get('ticker', 'UNKNOWN')}: {e}")
+                logger.error(f"❌ [VWRE] Failed to analyze {entity_data.get('entity_id', 'UNKNOWN')}: {e}")
                 # Append error result to maintain list consistency
                 results.append(VWREResult(
-                    ticker=ticker_data.get("ticker", "UNKNOWN"),
-                    composite_score=ticker_data.get("composite_score", 0.0),
-                    profile=profile,
+                    entity_id=entity_data.get("entity_id", "UNKNOWN"),
+                    composite_score=entity_data.get("composite_score", 0.0),
+                    profile="unknown",
                     verification_status="error",
                     rank_explanation=f"Attribution analysis failed: {str(e)}"
                 ))
         
-        logger.info(f"✅ [VWRE] Batch analysis complete: {len(results)} tickers processed")
+        logger.info(f"✅ [VWRE] Batch analysis complete: {len(results)} entities processed")
         
         return results
 
@@ -493,41 +489,43 @@ class VWREEngine:
 # CONVENIENCE FUNCTIONS
 # ============================================================
 
-def explain_rank(ticker: str, composite_score: float, factors: Dict[str, float], profile: str = "short_spec") -> str:
+def explain_rank(entity_id: str, composite_score: float, factors: Dict[str, float], aggregation_provider: 'AggregationProvider') -> str:
     """
     Quick utility: Generate rank explanation string.
     
     Example:
-        >>> explanation = explain_rank("AAPL", 1.85, {"momentum_z": 2.1, "trend_z": 1.5})
+        >>> provider = FinanceAggregationProvider()
+        >>> explanation = explain_rank("AAPL", 1.85, {"momentum_z": 2.1, "trend_z": 1.5}, provider)
         >>> print(explanation)
         "Rank driven by momentum (39.7% weight, +0.735 contribution)"
     """
     vwre = VWREEngine()
-    result = vwre.analyze_attribution(ticker, composite_score, factors, profile)
+    result = vwre.analyze_attribution(entity_id, composite_score, factors, aggregation_provider)
     return result.rank_explanation
 
 
 def compare_two(
-    ticker_a: str, 
+    entity_a: str, 
     composite_a: float, 
     factors_a: Dict[str, float],
-    ticker_b: str,
+    entity_b: str,
     composite_b: float,
     factors_b: Dict[str, float],
-    profile: str = "short_spec"
+    aggregation_provider: 'AggregationProvider'
 ) -> str:
     """
     Quick utility: Generate comparison explanation.
     
     Example:
-        >>> comparison = compare_two("AAPL", 1.85, {...}, "TSLA", 0.95, {...})
+        >>> provider = FinanceAggregationProvider()
+        >>> comparison = compare_two("AAPL", 1.85, {...}, "TSLA", 0.95, {...}, provider)
         >>> print(comparison)
         "AAPL ranks higher primarily due to superior momentum (+0.8)"
     """
     vwre = VWREEngine()
-    attr_a = vwre.analyze_attribution(ticker_a, composite_a, factors_a, profile)
-    attr_b = vwre.analyze_attribution(ticker_b, composite_b, factors_b, profile)
-    comparison = vwre.compare_tickers(ticker_a, ticker_b, attr_a, attr_b)
+    attr_a = vwre.analyze_attribution(entity_a, composite_a, factors_a, aggregation_provider)
+    attr_b = vwre.analyze_attribution(entity_b, composite_b, factors_b, aggregation_provider)
+    comparison = vwre.compare_tickers(entity_a, entity_b, attr_a, attr_b)
     return comparison["explanation"]
 
 
@@ -542,7 +540,7 @@ def store_attribution(result: VWREResult, connection) -> bool:
     Table schema (create if needed):
     CREATE TABLE vwre_attributions (
         id SERIAL PRIMARY KEY,
-        ticker VARCHAR(10),
+        entity_id VARCHAR(50),
         composite_score FLOAT,
         profile VARCHAR(50),
         primary_driver VARCHAR(50),
@@ -559,12 +557,12 @@ def store_attribution(result: VWREResult, connection) -> bool:
         with connection.cursor() as cur:
             cur.execute("""
                 INSERT INTO vwre_attributions (
-                    ticker, composite_score, profile, primary_driver, 
+                    entity_id, composite_score, profile, primary_driver, 
                     primary_contribution, sum_contributions, residual,
                     verification_status, rank_explanation, technical_summary
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
-                result.ticker,
+                result.entity_id,
                 result.composite_score,
                 result.profile,
                 result.primary_driver,
@@ -576,7 +574,7 @@ def store_attribution(result: VWREResult, connection) -> bool:
                 result.technical_summary
             ))
             connection.commit()
-            logger.info(f"✅ [VWRE] Attribution stored for {result.ticker}")
+            logger.info(f"✅ [VWRE] Attribution stored for {result.entity_id}")
             return True
     except Exception as e:
         logger.error(f"❌ [VWRE] Failed to store attribution: {e}")

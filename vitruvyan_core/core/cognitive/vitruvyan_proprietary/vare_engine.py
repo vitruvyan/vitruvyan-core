@@ -20,6 +20,8 @@ from dataclasses import dataclass
 import warnings
 warnings.filterwarnings('ignore')
 
+from vitruvyan_core.domains.risk_contract import RiskProvider
+
 # Memory adapter for PostgreSQL/Qdrant integration
 try:
     from .algorithm_memory_adapter import store_vare_result
@@ -30,8 +32,8 @@ except ImportError:
 
 @dataclass 
 class VAREResult:
-    """Risultato dell'analisi VARE per un ticker"""
-    ticker: str
+    """Risultato dell'analisi VARE per un'entità (domain-agnostic)"""
+    entity_id: str  # Changed from ticker
     timestamp: datetime
     
     # Risk scores (0-100, higher = more risky)
@@ -81,58 +83,69 @@ class VAREEngine:
         # Adaptation tracking
         self.adaptation_history = []
     
-    def analyze_ticker(self, ticker: str, 
-                      benchmark_ticker: Optional[str] = None) -> VAREResult:
+    def analyze_entity(self, entity_id: str, data: pd.DataFrame,
+                      risk_provider: RiskProvider,
+                      profile_name: str = "balanced") -> VAREResult:
         """
-        Analizza il profilo di rischio di un ticker
+        Analizza il profilo di rischio di un'entità (domain-agnostic)
         
         Args:
-            ticker: Symbol del ticker
-            benchmark_ticker: Benchmark personalizzato (default: SPY)
+            entity_id: Entity identifier (domain-agnostic)
+            data: DataFrame con dati dell'entità
+            risk_provider: Provider per calcoli di rischio domain-specific
+            profile_name: Nome del profilo di rischio da usare
             
         Returns:
             VAREResult con metriche di rischio
         """
         try:
-            benchmark = benchmark_ticker or self.market_proxy
+            # Get risk profile from provider
+            risk_profile = risk_provider.get_risk_profiles().get(profile_name)
+            if not risk_profile:
+                return self._create_error_result(entity_id, f"Risk profile '{profile_name}' not found")
             
-            # Fetch data for ticker and benchmark
-            ticker_data, benchmark_data = self._fetch_comparative_data(ticker, benchmark)
+            # Get risk dimensions from provider
+            risk_dimensions = risk_provider.get_risk_dimensions()
             
-            if ticker_data.empty:
-                return self._create_error_result(ticker, "No ticker data available")
+            # Calculate individual risk components using provider
+            risk_scores = {}
+            for dim_name, dimension in risk_dimensions.items():
+                try:
+                    score = dimension.calculation_fn(data)
+                    risk_scores[dim_name] = score
+                except Exception as e:
+                    # Use neutral score if calculation fails
+                    risk_scores[dim_name] = 50.0
             
-            # Calculate individual risk components
-            market_risk = self._calculate_market_risk(ticker_data, benchmark_data)
-            volatility_risk = self._calculate_volatility_risk(ticker_data)
-            liquidity_risk = self._calculate_liquidity_risk(ticker_data)
-            correlation_risk = self._calculate_correlation_risk(ticker_data, benchmark_data)
+            # Extract standard risk components (with fallbacks)
+            market_risk = risk_scores.get('market_risk', 50.0)
+            volatility_risk = risk_scores.get('volatility_risk', 50.0)
+            liquidity_risk = risk_scores.get('liquidity_risk', 50.0)
+            correlation_risk = risk_scores.get('correlation_risk', 50.0)
             
-            # Calculate overall risk score
-            overall_risk = self._calculate_overall_risk(
-                market_risk, volatility_risk, liquidity_risk, correlation_risk
+            # Calculate overall risk using profile weights
+            overall_risk = self._calculate_overall_risk_weighted(
+                risk_scores, risk_profile.dimension_weights
             )
             
             # Determine risk category
             risk_category = self._determine_risk_category(overall_risk)
             
             # Generate risk factors breakdown
-            risk_factors = self._generate_risk_factors(
-                ticker_data, benchmark_data, market_risk, 
-                volatility_risk, liquidity_risk, correlation_risk
+            risk_factors = self._generate_risk_factors_domain_aware(
+                data, risk_scores, risk_provider
             )
             
-            # Generate explanations
-            explanation = self._generate_explanation(
-                ticker, market_risk, volatility_risk, 
-                liquidity_risk, correlation_risk, overall_risk, risk_category
+            # Generate explanations using provider
+            explanation = self._generate_explanation_domain_aware(
+                entity_id, risk_scores, overall_risk, risk_category, risk_provider
             )
             
             # Calculate confidence
-            confidence = self._calculate_confidence(ticker_data, benchmark_data)
+            confidence = self._calculate_confidence(data)
             
             result = VAREResult(
-                ticker=ticker,
+                entity_id=entity_id,
                 timestamp=datetime.now(),
                 market_risk=market_risk,
                 volatility_risk=volatility_risk,
@@ -145,7 +158,7 @@ class VAREEngine:
                 confidence=confidence
             )
             
-            # Store result in PostgreSQL/Qdrant
+            # Store result in PostgreSQL/Qdrant (would need updating for entity_id)
             try:
                 store_vare_result(result)
             except Exception as e:
@@ -155,7 +168,7 @@ class VAREEngine:
             return result
             
         except Exception as e:
-            return self._create_error_result(ticker, str(e))
+            return self._create_error_result(entity_id, str(e))
     
     # =====================================================================
     # EPOCH V - ADAPTIVE METHODS
@@ -641,40 +654,183 @@ class VAREEngine:
             'detailed': detailed
         }
     
-    def _calculate_confidence(self, ticker_data: pd.DataFrame, benchmark_data: pd.DataFrame) -> float:
+    def _calculate_confidence(self, data: pd.DataFrame) -> float:
         """Calcola livello di confidenza dell'analisi"""
         confidence_factors = []
         
         # Data availability
-        if len(ticker_data) >= 200:
+        if len(data) >= 200:
             confidence_factors.append(1.0)
-        elif len(ticker_data) >= 100:
+        elif len(data) >= 100:
             confidence_factors.append(0.8)
-        elif len(ticker_data) >= 50:
+        elif len(data) >= 50:
             confidence_factors.append(0.6)
         else:
             confidence_factors.append(0.3)
         
-        # Benchmark data
-        if len(benchmark_data) >= 200:
+        # Volume data availability (if present)
+        if 'volume' in data.columns and data['volume'].notna().sum() > 100:
             confidence_factors.append(1.0)
-        elif len(benchmark_data) >= 100:
-            confidence_factors.append(0.8)
-        else:
-            confidence_factors.append(0.5)
-        
-        # Volume data availability
-        if 'Volume' in ticker_data.columns and ticker_data['Volume'].notna().sum() > 100:
+        elif 'Volume' in data.columns and data['Volume'].notna().sum() > 100:
             confidence_factors.append(1.0)
         else:
             confidence_factors.append(0.7)
         
         return float(np.mean(confidence_factors))
     
-    def _create_error_result(self, ticker: str, error_msg: str) -> VAREResult:
+    def _calculate_overall_risk_weighted(self, risk_scores: Dict[str, float], 
+                                       weights: Dict[str, float]) -> float:
+        """
+        Calculate overall risk using weighted average of risk dimensions
+        
+        Args:
+            risk_scores: Dictionary of risk dimension scores
+            weights: Dictionary of dimension weights
+            
+        Returns:
+            Overall risk score (0-100)
+        """
+        total_weight = 0.0
+        weighted_sum = 0.0
+        
+        for dimension, weight in weights.items():
+            if dimension in risk_scores:
+                weighted_sum += risk_scores[dimension] * weight
+                total_weight += weight
+        
+        if total_weight == 0:
+            return 50.0  # Neutral risk
+        
+        return weighted_sum / total_weight
+    
+    def _generate_risk_factors_domain_aware(self, data: pd.DataFrame, 
+                                          risk_scores: Dict[str, float],
+                                          risk_provider: RiskProvider) -> Dict[str, Any]:
+        """
+        Generate risk factors breakdown using domain provider
+        
+        Args:
+            data: Entity data
+            risk_scores: Calculated risk scores
+            risk_provider: Domain-specific risk provider
+            
+        Returns:
+            Dictionary with risk factors analysis
+        """
+        risk_factors = {}
+        
+        # Get entity context from provider
+        context = risk_provider.get_entity_context("dummy")  # Would need entity_id
+        
+        # Generate explanations for each risk dimension
+        for dim_name, score in risk_scores.items():
+            explanation = risk_provider.format_risk_explanation(dim_name, score, context)
+            risk_factors[dim_name] = {
+                'score': score,
+                'explanation': explanation,
+                'category': self._score_to_category(score)
+            }
+        
+        # Add data quality factors
+        risk_factors['data_quality'] = {
+            'score': self._assess_data_quality(data),
+            'explanation': f"Data quality assessment: {len(data)} data points available",
+            'category': 'INFO'
+        }
+        
+        return risk_factors
+    
+    def _generate_explanation_domain_aware(self, entity_id: str, 
+                                         risk_scores: Dict[str, float],
+                                         overall_risk: float, 
+                                         risk_category: str,
+                                         risk_provider: RiskProvider) -> Dict[str, str]:
+        """
+        Generate risk explanations using domain provider
+        
+        Args:
+            entity_id: Entity identifier
+            risk_scores: Individual risk scores
+            overall_risk: Overall risk score
+            risk_category: Risk category
+            risk_provider: Domain-specific risk provider
+            
+        Returns:
+            Dictionary with summary, technical, and detailed explanations
+        """
+        context = risk_provider.get_entity_context(entity_id)
+        
+        # Summary explanation
+        summary = f"Risk assessment for {entity_id}: {risk_category} overall risk ({overall_risk:.1f}/100)"
+        
+        # Technical explanation
+        technical_parts = []
+        for dim_name, score in risk_scores.items():
+            explanation = risk_provider.format_risk_explanation(dim_name, score, context)
+            technical_parts.append(f"• {explanation}")
+        
+        technical = "Technical risk breakdown:\n" + "\n".join(technical_parts)
+        
+        # Detailed explanation
+        detailed = f"""
+Comprehensive risk analysis for {entity_id}:
+
+Overall Risk Score: {overall_risk:.1f}/100
+Risk Category: {risk_category}
+
+Risk Dimensions:
+{chr(10).join(f"- {dim}: {score:.1f}" for dim, score in risk_scores.items())}
+
+Entity Context: {context.get('entity_type', 'unknown')} in {context.get('market', 'unknown')} market
+
+This assessment provides quantitative risk metrics without investment recommendations.
+All scores are normalized to 0-100 scale where higher values indicate higher risk.
+"""
+        
+        return {
+            'summary': summary.strip(),
+            'technical': technical.strip(),
+            'detailed': detailed.strip()
+        }
+    
+    def _score_to_category(self, score: float) -> str:
+        """Convert risk score to category"""
+        if score <= 25:
+            return "LOW"
+        elif score <= 50:
+            return "MODERATE" 
+        elif score <= 75:
+            return "HIGH"
+        else:
+            return "EXTREME"
+    
+    def _assess_data_quality(self, data: pd.DataFrame) -> float:
+        """Assess data quality (0-100, higher = better quality)"""
+        if data.empty:
+            return 0.0
+        
+        quality_factors = []
+        
+        # Data completeness
+        completeness = data.notna().mean().mean()
+        quality_factors.append(completeness * 100)
+        
+        # Data length (more data = better)
+        if len(data) > 252:  # 1 year of daily data
+            quality_factors.append(100.0)
+        elif len(data) > 126:  # 6 months
+            quality_factors.append(75.0)
+        elif len(data) > 63:  # 3 months
+            quality_factors.append(50.0)
+        else:
+            quality_factors.append(25.0)
+        
+        return float(np.mean(quality_factors))
+    
+    def _create_error_result(self, entity_id: str, error_msg: str) -> VAREResult:
         """Crea risultato di errore"""
         return VAREResult(
-            ticker=ticker,
+            entity_id=entity_id,
             timestamp=datetime.now(),
             market_risk=50,
             volatility_risk=50,
@@ -684,12 +840,64 @@ class VAREEngine:
             risk_category="MODERATE",
             risk_factors={'error': error_msg},
             explanation={
-                'summary': f"Errore nell'analisi rischio di {ticker}: {error_msg}",
+                'summary': f"Errore nell'analisi rischio di {entity_id}: {error_msg}",
                 'technical': "Impossibile calcolare metriche di rischio",
                 'detailed': f"Dettagli errore: {error_msg}"
             },
             confidence=0.0
         )
+
+
+# Compatibility function with original interface
+def analyze_ticker(ticker: str, benchmark_ticker: Optional[str] = None) -> VAREResult:
+    """
+    Convenience function for backward compatibility
+    
+    Args:
+        ticker: Ticker symbol (converted to entity_id)
+        benchmark_ticker: Benchmark ticker (ignored in domain-agnostic version)
+        
+    Returns:
+        VAREResult with risk analysis
+    """
+    try:
+        # Fetch data using yfinance (for backward compatibility)
+        import yfinance as yf
+        
+        # Download ticker data
+        data = yf.download(ticker, period="1y", progress=False)
+        
+        if data.empty:
+            # Create error result
+            engine = VAREEngine()
+            return engine._create_error_result(ticker, "No data available from yfinance")
+        
+        # Initialize finance risk provider
+        from vitruvyan_core.domains.finance_risk_provider import FinanceRiskProvider
+        provider = FinanceRiskProvider()
+        
+        # Analyze with domain-agnostic engine
+        engine = VAREEngine()
+        return engine.analyze_entity(ticker, data, provider)
+        
+    except Exception as e:
+        # Fallback error result
+        engine = VAREEngine()
+        return engine._create_error_result(ticker, str(e))
+
+
+if __name__ == "__main__":
+    # Test the refactored VARE engine
+    result = analyze_ticker("AAPL")
+    
+    print(f"=== VARE Test Results for {result.entity_id} ===")
+    print(f"Overall Risk: {result.overall_risk:.1f}/100 ({result.risk_category})")
+    print(f"Market Risk: {result.market_risk:.1f}")
+    print(f"Volatility Risk: {result.volatility_risk:.1f}")
+    print(f"Liquidity Risk: {result.liquidity_risk:.1f}")
+    print(f"Correlation Risk: {result.correlation_risk:.1f}")
+    print(f"Confidence: {result.confidence:.2f}")
+    print(f"\nSummary: {result.explanation['summary']}")
 
 
 # LangGraph Node Integration

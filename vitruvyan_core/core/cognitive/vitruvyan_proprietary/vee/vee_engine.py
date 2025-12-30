@@ -28,6 +28,9 @@ from .vee_analyzer import VEEAnalyzer, AnalysisResult, analyze_kpi
 from .vee_generator import VEEGenerator, ExplanationLevels, generate_explanation
 from .vee_memory_adapter import VEEMemoryAdapter, HistoricalExplanation
 
+# Import explainability contract
+from vitruvyan_core.domains.explainability_contract import ExplainabilityProvider
+
 # PR-C: VSGS metrics and audit logging (optional)
 try:
     from core.monitoring.vsgs_metrics import record_vee_generation
@@ -86,15 +89,17 @@ class VEEEngine:
         
         self.logger.info("VEE Engine 2.0 initialized")
     
-    def explain_ticker(self, ticker: str, kpi: Dict[str, Any], 
+    def explain_entity(self, entity_id: str, metrics: Dict[str, Any], 
+                      explainability_provider: ExplainabilityProvider,
                       profile: Optional[Dict[str, Any]] = None,
                       semantic_context: Optional[List[Dict[str, Any]]] = None) -> Dict[str, str]:
         """
         Entry point principale per explainability multilivello
         
         Args:
-            ticker: Symbol del ticker da spiegare
-            kpi: KPI e metriche da analizzare
+            entity_id: ID dell'entità da spiegare (domain-agnostic)
+            metrics: Metriche da analizzare (domain-provided)
+            explainability_provider: Domain provider per context e templates
             profile: Profilo utente per personalizzazione
             semantic_context: VSGS semantic matches (PR-C) from grounding_node
             
@@ -102,15 +107,15 @@ class VEEEngine:
             Dict con spiegazioni multilivello compatibile con sistema esistente
         """
         try:
-            self.logger.info(f"Starting VEE 2.0 explanation for {ticker}")
+            self.logger.info(f"Starting VEE 2.0 explanation for {entity_id}")
             
-            # Phase 1: Analyze KPI and identify patterns
-            analysis = self.analyzer.analyze_kpi(ticker, kpi)
-            self.logger.debug(f"Analysis completed for {ticker}: {len(analysis.signals)} signals identified")
+            # Phase 1: Analyze metrics using domain-agnostic analyzer
+            analysis = self.analyzer.analyze_metrics(entity_id, metrics, explainability_provider)
+            self.logger.debug(f"Analysis completed for {entity_id}: {len(analysis.signals)} signals identified")
             
-            # Phase 2: Generate explanations (PR-C: pass semantic_context)
-            explanations = self.generator.generate_explanation(analysis, profile, semantic_context)
-            self.logger.debug(f"Explanations generated for {ticker} in {explanations.language}")
+            # Phase 2: Generate explanations using domain templates
+            explanations = self.generator.generate_explanation(analysis, explainability_provider, profile, semantic_context)
+            self.logger.debug(f"Explanations generated for {entity_id} in {explanations.language}")
             
             # PR-C: Record VEE generation metrics + audit logging
             layers_generated = ["summary", "technical", "detailed"]
@@ -122,7 +127,7 @@ class VEEEngine:
             # Record Prometheus metric
             user_id = profile.get("user_id", "unknown") if profile else "unknown"
             record_vee_generation(
-                ticker=ticker,
+                entity_id=entity_id,  # Changed from ticker
                 layers=len(layers_generated),
                 semantic_grounding=bool(semantic_context),
                 user_id=user_id
@@ -133,11 +138,11 @@ class VEEEngine:
             # audit(
             #     agent="vee_generation",
             #     payload={
-            #         "ticker": ticker,
+            #         "entity_id": entity_id,  # Changed from ticker
             #         "layers": layers_generated,
             #         "semantic_grounding": bool(semantic_context),
             #         "semantic_matches": len(semantic_context) if semantic_context else 0,
-            #         "kpi_count": analysis.kpi_count if hasattr(analysis, 'kpi_count') else 0
+            #         "metrics_count": analysis.kpi_count if hasattr(analysis, 'kpi_count') else 0
             #     },
             #     trace_id=trace_id,
             #     user_id=user_id
@@ -147,44 +152,46 @@ class VEEEngine:
             if self.use_memory_context:
                 try:
                     historical = self.memory.retrieve_similar_explanations(
-                        ticker, analysis, explanations.language
+                        entity_id, analysis, explanations.language  # Changed from ticker
                     )
                     if historical:
                         explanations = self.memory.enrich_with_context(explanations, historical)
                         self.logger.debug(f"Enriched with {len(historical)} historical references")
                 except Exception as e:
-                    self.logger.warning(f"Memory context enrichment failed for {ticker}: {e}")
+                    self.logger.warning(f"Memory context enrichment failed for {entity_id}: {e}")
             
             # Phase 4: Store explanation (if enabled)
             if self.auto_store:
                 try:
                     stored = self.memory.store_explanation(analysis, explanations)
                     if stored:
-                        self.logger.debug(f"Explanation stored for {ticker}")
+                        self.logger.debug(f"Explanation stored for {entity_id}")
                     else:
-                        self.logger.warning(f"Failed to store explanation for {ticker}")
+                        self.logger.warning(f"Failed to store explanation for {entity_id}")
                 except Exception as e:
-                    self.logger.warning(f"Storage failed for {ticker}: {e}")
+                    self.logger.warning(f"Storage failed for {entity_id}: {e}")
             
             # Phase 5: Format output for compatibility
             result = self._format_for_compatibility(explanations)
             
-            self.logger.info(f"VEE 2.0 explanation completed for {ticker}")
+            self.logger.info(f"VEE 2.0 explanation completed for {entity_id}")
             return result
             
         except Exception as e:
-            self.logger.error(f"VEE 2.0 failed for {ticker}: {e}")
-            return self._fallback_explanation(ticker, kpi, profile, str(e))
+            self.logger.error(f"VEE 2.0 failed for {entity_id}: {e}")
+            return self._fallback_explanation(entity_id, metrics, profile, str(e))
     
-    def explain_comprehensive(self, ticker: str, kpi: Dict[str, Any],
+    def explain_comprehensive(self, entity_id: str, metrics: Dict[str, Any],
+                            explainability_provider: ExplainabilityProvider,
                             profile: Optional[Dict[str, Any]] = None,
                             semantic_context: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         """
         Spiegazione comprehensive con tutti i dettagli VEE 2.0
         
         Args:
-            ticker: Symbol del ticker
-            kpi: KPI da analizzare
+            entity_id: ID dell'entità
+            metrics: Metriche da analizzare
+            explainability_provider: Domain provider
             profile: Profilo utente
             semantic_context: VSGS semantic matches (PR-C)
             
@@ -193,15 +200,15 @@ class VEEEngine:
         """
         try:
             # Full VEE 2.0 pipeline
-            analysis = self.analyzer.analyze_kpi(ticker, kpi)
-            explanations = self.generator.generate_explanation(analysis, profile, semantic_context)
+            analysis = self.analyzer.analyze_metrics(entity_id, metrics, explainability_provider)
+            explanations = self.generator.generate_explanation(analysis, explainability_provider, profile, semantic_context)
             
             # Get historical context
             historical = []
             if self.use_memory_context:
                 try:
                     historical = self.memory.retrieve_similar_explanations(
-                        ticker, analysis, explanations.language
+                        entity_id, analysis, explanations.language
                     )
                     explanations = self.memory.enrich_with_context(explanations, historical)
                 except Exception as e:
@@ -244,7 +251,7 @@ class VEEEngine:
                 "vee_context": {
                     "contextualized_text": explanations.contextualized,
                     "historical_reference": explanations.historical_reference,
-                    "kpi_coverage": analysis.kpi_count,
+                    "metrics_coverage": analysis.kpi_count,
                     "missing_indicators": analysis.missing_indicators
                 }
             }
@@ -253,38 +260,41 @@ class VEEEngine:
             self.logger.error(f"Comprehensive explanation failed for {ticker}: {e}")
             return self._fallback_comprehensive(ticker, kpi, profile, str(e))
     
-    def get_explanation_insights(self, ticker: str, days: int = 30) -> Dict[str, Any]:
+    def get_explanation_insights(self, entity_id: str, days: int = 30) -> Dict[str, Any]:
         """
         Ottieni insights dalle spiegazioni storiche
         
         Args:
-            ticker: Symbol del ticker
+            entity_id: ID dell'entità
             days: Giorni da analizzare
             
         Returns:
             Dict con trend e statistiche
         """
         try:
-            trends = self.memory.get_explanation_trends(ticker, days)
+            trends = self.memory.get_explanation_trends(entity_id, days)
             return trends
         except Exception as e:
-            self.logger.error(f"Failed to get insights for {ticker}: {e}")
+            self.logger.error(f"Failed to get insights for {entity_id}: {e}")
             return {}
     
-    def analyze_kpi_only(self, ticker: str, kpi: Dict[str, Any]) -> AnalysisResult:
+    def analyze_metrics_only(self, entity_id: str, metrics: Dict[str, Any], 
+                           explainability_provider: ExplainabilityProvider) -> AnalysisResult:
         """
-        Solo analisi KPI senza generazione spiegazioni
+        Solo analisi metriche senza generazione spiegazioni
         
         Args:
-            ticker: Symbol del ticker
-            kpi: KPI da analizzare
+            entity_id: ID dell'entità
+            metrics: Metriche da analizzare
+            explainability_provider: Domain provider
             
         Returns:
             AnalysisResult con pattern e segnali
         """
-        return self.analyzer.analyze_kpi(ticker, kpi)
+        return self.analyzer.analyze_metrics(entity_id, metrics, explainability_provider)
     
     def generate_explanation_only(self, analysis: AnalysisResult,
+                                explainability_provider: ExplainabilityProvider,
                                 profile: Optional[Dict[str, Any]] = None,
                                 semantic_context: Optional[List[Dict[str, Any]]] = None) -> ExplanationLevels:
         """
@@ -292,13 +302,14 @@ class VEEEngine:
         
         Args:
             analysis: AnalysisResult dall'analyzer
+            explainability_provider: Domain provider
             profile: Profilo utente
             semantic_context: VSGS semantic matches (PR-C)
             
         Returns:
             ExplanationLevels con spiegazioni multilivello
         """
-        return self.generator.generate_explanation(analysis, profile, semantic_context)
+        return self.generator.generate_explanation(analysis, explainability_provider, profile, semantic_context)
     
     def _format_for_compatibility(self, explanations: ExplanationLevels) -> Dict[str, str]:
         """Formatta output per compatibilità con sistema esistente (PR-C: include semantic grounding)"""
@@ -321,42 +332,42 @@ class VEEEngine:
         
         return result
     
-    def _fallback_explanation(self, ticker: str, kpi: Dict[str, Any],
+    def _fallback_explanation(self, entity_id: str, metrics: Dict[str, Any],
                             profile: Optional[Dict[str, Any]], error: str) -> Dict[str, str]:
         """Fallback usando CrewAI o spiegazione di errore"""
-        self.logger.warning(f"Using fallback explanation for {ticker}: {error}")
+        self.logger.warning(f"Using fallback explanation for {entity_id}: {error}")
         
         # Try CrewAI fallback if available and enabled
         if self.fallback_to_crewai and CREWAI_AVAILABLE:
             try:
-                return explain_with_motley_style(ticker, kpi, profile)
+                return explain_with_motley_style(entity_id, metrics, profile)
             except Exception as crewai_error:
-                self.logger.error(f"CrewAI fallback also failed for {ticker}: {crewai_error}")
+                self.logger.error(f"CrewAI fallback also failed for {entity_id}: {crewai_error}")
         
         # Final fallback - deterministic error explanation
         language = 'en' if profile and profile.get('lang') == 'en' else 'it'
         
         if language == 'it':
             return {
-                "summary": f"Analisi di {ticker} non disponibile a causa di errore tecnico.",
-                "technical": f"Errore nel processamento dei KPI: {error}",
-                "detailed": f"Il sistema VEE 2.0 ha riscontrato un errore durante l'analisi di {ticker}. "
+                "summary": f"Analisi di {entity_id} non disponibile a causa di errore tecnico.",
+                "technical": f"Errore nel processamento delle metriche: {error}",
+                "detailed": f"Il sistema VEE 2.0 ha riscontrato un errore durante l'analisi di {entity_id}. "
                            f"Dettagli tecnici: {error}. Si raccomanda di riprovare più tardi o "
                            f"verificare la qualità dei dati di input."
             }
         else:
             return {
-                "summary": f"Analysis of {ticker} unavailable due to technical error.",
-                "technical": f"Error processing KPIs: {error}",
-                "detailed": f"VEE 2.0 system encountered an error during {ticker} analysis. "
+                "summary": f"Analysis of {entity_id} unavailable due to technical error.",
+                "technical": f"Error processing metrics: {error}",
+                "detailed": f"VEE 2.0 system encountered an error during {entity_id} analysis. "
                            f"Technical details: {error}. Please retry later or "
                            f"verify input data quality."
             }
     
-    def _fallback_comprehensive(self, ticker: str, kpi: Dict[str, Any],
+    def _fallback_comprehensive(self, entity_id: str, metrics: Dict[str, Any],
                                profile: Optional[Dict[str, Any]], error: str) -> Dict[str, Any]:
         """Fallback comprehensive con struttura completa"""
-        basic_fallback = self._fallback_explanation(ticker, kpi, profile, error)
+        basic_fallback = self._fallback_explanation(entity_id, metrics, profile, error)
         
         return {
             "summary": basic_fallback["summary"],
@@ -385,7 +396,7 @@ class VEEEngine:
             "vee_context": {
                 "contextualized_text": None,
                 "historical_reference": None,
-                "kpi_coverage": 0,
+                "metrics_coverage": 0,
                 "missing_indicators": ["sistema non disponibile"]
             }
         }
@@ -405,8 +416,11 @@ def explain_ticker(ticker: str, kpi: Dict[str, Any],
     Returns:
         Dict con summary, technical, detailed (formato originale)
     """
+    from vitruvyan_core.domains.finance_explainability_provider import FinanceExplainabilityProvider
+    
     engine = VEEEngine()
-    return engine.explain_ticker(ticker, kpi, profile)
+    provider = FinanceExplainabilityProvider()
+    return engine.explain_entity(ticker, kpi, provider, profile)
 
 
 # LangGraph Node Integration
@@ -415,24 +429,31 @@ def vee_explainability_node(state: Dict[str, Any]) -> Dict[str, Any]:
     Nodo LangGraph per VEE 2.0 Explainability
     
     Input state keys:
-    - tickers: List[str] - ticker symbols
-    - kpi_results: Dict[str, Dict] - KPI per ticker
+    - entities: List[str] - entity IDs (domain-agnostic)
+    - metrics_results: Dict[str, Dict] - metrics per entity
     - user_profile: Dict (optional) - profilo utente
     - vee_config: Dict (optional) - configurazione VEE
+    - explainability_provider: ExplainabilityProvider (optional) - domain provider
     
     Output state keys:
-    - vee_explanations: Dict[str, Dict] - spiegazioni per ticker
+    - vee_explanations: Dict[str, Dict] - spiegazioni per entity
     """
     print(f"\n🧠 [VEE 2.0] Avvio Explainability Engine")
     
-    tickers = state.get('tickers', [])
-    kpi_results = state.get('kpi_results', {})
+    entities = state.get('entities', [])
+    metrics_results = state.get('metrics_results', {})
     user_profile = state.get('user_profile', {})
     vee_config = state.get('vee_config', {})
+    explainability_provider = state.get('explainability_provider')
     
-    if not tickers:
-        print("⚠️ Nessun ticker nello stato → skip VEE")
+    if not entities:
+        print("⚠️ Nessuna entità nello stato → skip VEE")
         return state
+    
+    # Default to finance provider if not specified
+    if explainability_provider is None:
+        from vitruvyan_core.domains.finance_explainability_provider import FinanceExplainabilityProvider
+        explainability_provider = FinanceExplainabilityProvider()
     
     engine = VEEEngine()
     
@@ -444,43 +465,46 @@ def vee_explainability_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     explanations = {}
     
-    for ticker in tickers:
+    for entity_id in entities:
         try:
-            print(f"🧠 Generazione spiegazioni per {ticker}...")
+            print(f"🧠 Generazione spiegazioni per {entity_id}...")
             
-            # Get KPI for this ticker
-            ticker_kpi = kpi_results.get(ticker, {})
+            # Get metrics for this entity
+            entity_metrics = metrics_results.get(entity_id, {})
             
             # Generate comprehensive explanation
-            explanation = engine.explain_comprehensive(ticker, ticker_kpi, user_profile)
-            explanations[ticker] = explanation
+            explanation = engine.explain_comprehensive(entity_id, entity_metrics, explainability_provider, user_profile)
+            explanations[entity_id] = explanation
             
             # Log key insights
             vee_meta = explanation.get('vee_metadata', {})
             confidence = explanation.get('vee_analysis', {}).get('confidence_level', 0)
             
-            print(f"✅ {ticker}: {vee_meta.get('language', 'it')} explanation "
+            print(f"✅ {entity_id}: {vee_meta.get('language', 'it')} explanation "
                   f"(confidence: {confidence:.2f}, "
                   f"contextualized: {vee_meta.get('contextualized', False)})")
                   
         except Exception as e:
-            print(f"❌ Errore VEE per {ticker}: {e}")
+            print(f"❌ Errore VEE per {entity_id}: {e}")
             # Store error explanation
-            explanations[ticker] = engine._fallback_comprehensive(ticker, {}, user_profile, str(e))
+            explanations[entity_id] = engine._fallback_comprehensive(entity_id, {}, user_profile, str(e))
     
     # Update state
     state['vee_explanations'] = explanations
     
-    print(f"🧠 [VEE 2.0] Completate spiegazioni per {len(explanations)} tickers\n")
+    print(f"🧠 [VEE 2.0] Completate spiegazioni per {len(explanations)} entities\n")
     return state
 
 
 if __name__ == "__main__":
     # Test VEE Engine 2.0
+    from vitruvyan_core.domains.finance_explainability_provider import FinanceExplainabilityProvider
+    
     engine = VEEEngine()
+    provider = FinanceExplainabilityProvider()
     
     # Test data
-    test_kpi = {
+    test_metrics = {
         'momentum_z': 0.8,
         'vola_z': -0.5,
         'sentiment_z': 0.3,
@@ -497,13 +521,13 @@ if __name__ == "__main__":
     print("=== VEE Engine 2.0 Test ===")
     
     # Test standard explanation
-    result = engine.explain_ticker("AAPL", test_kpi, test_profile)
+    result = engine.explain_entity("AAPL", test_metrics, provider, test_profile)
     print(f"Summary: {result['summary']}")
     print(f"Technical: {result['technical']}")
     print(f"Detailed: {result['detailed'][:200]}...")
     
     # Test comprehensive explanation
-    comprehensive = engine.explain_comprehensive("AAPL", test_kpi, test_profile)
+    comprehensive = engine.explain_comprehensive("AAPL", test_metrics, provider, test_profile)
     print(f"\nVEE Analysis Signals: {comprehensive['vee_analysis']['signals']}")
     print(f"Dominant Factor: {comprehensive['vee_analysis']['dominant_factor']}")
     print(f"Confidence: {comprehensive['vee_analysis']['confidence_level']:.2f}")

@@ -41,7 +41,7 @@ except ImportError:
 class HistoricalExplanation:
     """Spiegazione storica recuperata dal database"""
     id: int
-    ticker: str
+    entity_id: str  # Changed from ticker
     summary: str
     technical: str
     detailed: str
@@ -131,11 +131,11 @@ class VEEMemoryAdapter:
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS vee_explanations (
                         id SERIAL PRIMARY KEY,
-                        ticker VARCHAR(10) NOT NULL,
+                        entity_id VARCHAR(100) NOT NULL,  -- Changed from ticker VARCHAR(10)
                         summary TEXT NOT NULL,
                         technical TEXT NOT NULL,
                         detailed TEXT NOT NULL,
-                        language VARCHAR(5) DEFAULT 'it',
+                        language VARCHAR(5) DEFAULT 'en',  -- Changed from 'it'
                         confidence_level FLOAT DEFAULT 0.0,
                         dominant_factor VARCHAR(100),
                         sentiment_direction VARCHAR(20),
@@ -162,12 +162,12 @@ class VEEMemoryAdapter:
                 # Insert explanation
                 cur.execute("""
                     INSERT INTO vee_explanations (
-                        ticker, summary, technical, detailed, language,
+                        entity_id, summary, technical, detailed, language,  -- Changed ticker to entity_id
                         confidence_level, dominant_factor, sentiment_direction,
                         kpi_count, overall_intensity, analysis_data, created_at
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
-                    analysis.ticker,
+                    analysis.entity_id,
                     explanation.summary,
                     explanation.technical,
                     explanation.detailed,
@@ -182,11 +182,11 @@ class VEEMemoryAdapter:
                 ))
             
             self.postgres_agent.connection.commit()
-            self.logger.info(f"Stored VEE explanation for {analysis.ticker}")
+            self.logger.info(f"Stored VEE explanation for {analysis.entity_id}")
             return True
             
         except Exception as e:
-            self.logger.error(f"Error storing explanation for {analysis.ticker}: {e}")
+            self.logger.error(f"Error storing explanation for {analysis.entity_id}: {e}")
             try:
                 self.postgres_agent.connection.rollback()
             except:
@@ -194,18 +194,18 @@ class VEEMemoryAdapter:
             return False
                 
         except Exception as e:
-            self.logger.error(f"Error storing explanation for {analysis.ticker}: {e}")
+            self.logger.error(f"Error storing explanation for {analysis.entity_id}: {e}")
             return False
     
-    def retrieve_similar_explanations(self, ticker: str, 
+    def retrieve_similar_explanations(self, entity_id: str,  # Changed from ticker
                                     analysis: Optional[AnalysisResult] = None,
-                                    language: str = "it",
+                                    language: str = "en",  # Changed from "it"
                                     limit: int = None) -> List[HistoricalExplanation]:
         """
         Recupera spiegazioni simili storiche
         
         Args:
-            ticker: Symbol del ticker
+            entity_id: ID dell'entità (domain-agnostic)
             analysis: Analisi corrente per similarity matching (opzionale)
             language: Lingua preferita
             limit: Numero massimo di risultati
@@ -221,26 +221,26 @@ class VEEMemoryAdapter:
             limit = limit or self.max_historical_results
             cutoff_date = datetime.now() - timedelta(days=self.similarity_lookback_days)
             
-            # Base query for ticker-specific explanations
+            # Base query for entity-specific explanations
             base_query = """
-                SELECT id, ticker, summary, technical, detailed, language,
+                SELECT id, entity_id, summary, technical, detailed, language,  -- Changed ticker to entity_id
                        created_at, confidence_level, dominant_factor, sentiment_direction,
                        kpi_count, overall_intensity
                 FROM vee_explanations
-                WHERE ticker = %s 
+                WHERE entity_id = %s  -- Changed ticker to entity_id
                   AND created_at >= %s
                   AND language = %s
                 ORDER BY created_at DESC
                 LIMIT %s
             """
             
-            results = self.postgres_agent.fetch_all(base_query, (ticker, cutoff_date, language, limit))
+            results = self.postgres_agent.fetch_all(base_query, (entity_id, cutoff_date, language, limit))
             
             historical = []
             for row in results:
                 historical.append(HistoricalExplanation(
                     id=row[0],
-                    ticker=row[1],
+                    entity_id=row[1],  # Changed ticker to entity_id
                     summary=row[2],
                     technical=row[3],
                     detailed=row[4],
@@ -290,16 +290,16 @@ class VEEMemoryAdapter:
             
             if most_similar:
                 # Generate contextual reference
-                if explanation.language == 'it':
-                    context_text = (f"Questa analisi è coerente con {len(historical)} valutazioni precedenti "
-                                  f"di {explanation.ticker}. L'ultima analisi simile, del "
-                                  f"{most_similar.created_at.strftime('%d/%m/%Y')}, evidenziava "
-                                  f"{most_similar.dominant_factor} come fattore dominante.")
-                else:
+                if explanation.language == 'en':  # Changed from 'it'
                     context_text = (f"This analysis is consistent with {len(historical)} previous "
-                                  f"evaluations of {explanation.ticker}. The most recent similar analysis, "
+                                  f"evaluations of {explanation.entity_id}. The most recent similar analysis, "  # Changed ticker to entity_id
                                   f"from {most_similar.created_at.strftime('%m/%d/%Y')}, highlighted "
                                   f"{most_similar.dominant_factor} as the dominant factor.")
+                else:
+                    context_text = (f"Questa analisi è coerente con {len(historical)} valutazioni precedenti "
+                                  f"di {explanation.entity_id}. L'ultima analisi simile, del "  # Changed ticker to entity_id
+                                  f"{most_similar.created_at.strftime('%d/%m/%Y')}, evidenziava "
+                                  f"{most_similar.dominant_factor} come fattore dominante.")
                 
                 explanation.contextualized = context_text
                 
@@ -309,7 +309,7 @@ class VEEMemoryAdapter:
             return explanation
             
         except Exception as e:
-            self.logger.error(f"Error enriching context for {explanation.ticker}: {e}")
+            self.logger.error(f"Error enriching context for {explanation.entity_id}: {e}")
             return explanation
     
     def get_explanation_trends(self, ticker: str, 
@@ -432,7 +432,7 @@ class VEEMemoryAdapter:
                         id=explanation_id,
                         vector=pseudo_embedding,
                         payload={
-                            "ticker": analysis.ticker,
+                            "entity_id": analysis.entity_id,
                             "dominant_factor": analysis.dominant_factor,
                             "sentiment_direction": analysis.sentiment_direction,
                             "language": explanation.language,

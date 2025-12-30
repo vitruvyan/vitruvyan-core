@@ -21,11 +21,13 @@ from datetime import datetime
 import warnings
 warnings.filterwarnings('ignore')
 
+from vitruvyan_core.domains.explainability_contract import ExplainabilityProvider
+
 
 @dataclass
 class AnalysisResult:
     """Risultato dell'analisi KPI"""
-    ticker: str
+    entity_id: str  # Changed from ticker
     timestamp: datetime
     
     # Segnali identificati
@@ -92,45 +94,55 @@ class VEEAnalyzer:
             'technical_breakout': lambda kpi: self._check_technical_breakout(kpi)
         }
     
-    def analyze_kpi(self, ticker: str, kpi: Dict[str, Any]) -> AnalysisResult:
+    def analyze_metrics(self, entity_id: str, metrics: Dict[str, Any], 
+                       explainability_provider: ExplainabilityProvider) -> AnalysisResult:
         """
-        Analizza i KPI e identifica pattern significativi
+        Analizza le metriche e identifica pattern significativi
         
         Args:
-            ticker: Symbol del ticker
-            kpi: Dictionary con KPI e metriche da analizzare
+            entity_id: ID dell'entità (domain-agnostic)
+            metrics: Dictionary con metriche da analizzare
+            explainability_provider: Domain provider per categorie e descrizioni
             
         Returns:
             AnalysisResult con analisi completa
         """
         try:
-            if not kpi or not isinstance(kpi, dict):
-                return self._create_empty_result(ticker, "Empty or invalid KPI data")
+            if not metrics or not isinstance(metrics, dict):
+                return self._create_empty_result(entity_id, "Empty or invalid metrics data")
             
-            # Normalize and clean KPI data
-            normalized_kpi = self._normalize_kpi(kpi)
+            # Get domain-specific categories and descriptions
+            signal_descriptions = explainability_provider.get_signal_descriptions()
+            factor_categories = explainability_provider.get_factor_categories()
             
-            # Identify signals by category
-            signals, signal_strengths = self._identify_signals(normalized_kpi)
+            # Normalize and clean metrics data
+            normalized_metrics = self._normalize_metrics(metrics)
             
-            # Find dominant factor
-            dominant_factor, dominant_strength = self._find_dominant_factor(normalized_kpi)
+            # Identify signals by category using domain descriptions
+            signals, signal_strengths = self._identify_signals_domain_aware(
+                normalized_metrics, signal_descriptions
+            )
+            
+            # Find dominant factor using domain categories
+            dominant_factor, dominant_strength = self._find_dominant_factor_domain_aware(
+                normalized_metrics, factor_categories
+            )
             
             # Calculate overall metrics
             overall_intensity = self._calculate_overall_intensity(signal_strengths)
-            sentiment_direction = self._determine_sentiment_direction(normalized_kpi)
-            confidence_level = self._calculate_confidence(normalized_kpi, signals)
+            sentiment_direction = self._determine_sentiment_direction(normalized_metrics)
+            confidence_level = self._calculate_confidence(normalized_metrics, signals)
             
             # Identify patterns and anomalies
-            patterns = self._identify_patterns(normalized_kpi)
-            anomalies = self._identify_anomalies(normalized_kpi)
+            patterns = self._identify_patterns(normalized_metrics)
+            anomalies = self._identify_anomalies(normalized_metrics)
             
             # Metadata
-            kpi_count = len([k for k, v in kpi.items() if v is not None])
-            missing_indicators = self._identify_missing_indicators(kpi)
+            metrics_count = len([k for k, v in metrics.items() if v is not None])
+            missing_indicators = self._identify_missing_indicators(metrics)
             
             return AnalysisResult(
-                ticker=ticker,
+                entity_id=entity_id,
                 timestamp=datetime.now(),
                 signals=signals,
                 signal_strengths=signal_strengths,
@@ -141,12 +153,12 @@ class VEEAnalyzer:
                 confidence_level=confidence_level,
                 patterns=patterns,
                 anomalies=anomalies,
-                kpi_count=kpi_count,
+                kpi_count=metrics_count,
                 missing_indicators=missing_indicators
             )
             
         except Exception as e:
-            return self._create_error_result(ticker, str(e))
+            return self._create_error_result(entity_id, str(e))
     
     def _normalize_kpi(self, kpi: Dict[str, Any]) -> Dict[str, float]:
         """Normalizza i KPI in valori 0-1 per analisi uniforme"""
@@ -495,10 +507,10 @@ class VEEAnalyzer:
         momentum = kpi.get('momentum_score', 0.5)
         return technical > 0.8 and momentum > 0.7
     
-    def _create_empty_result(self, ticker: str, reason: str) -> AnalysisResult:
+    def _create_empty_result(self, entity_id: str, reason: str) -> AnalysisResult:
         """Crea risultato vuoto per dati mancanti"""
         return AnalysisResult(
-            ticker=ticker,
+            entity_id=entity_id,
             timestamp=datetime.now(),
             signals=["no relevant signals"],
             signal_strengths={},
@@ -513,10 +525,10 @@ class VEEAnalyzer:
             missing_indicators=[reason]
         )
     
-    def _create_error_result(self, ticker: str, error_msg: str) -> AnalysisResult:
+    def _create_error_result(self, entity_id: str, error_msg: str) -> AnalysisResult:
         """Crea risultato di errore"""
         return AnalysisResult(
-            ticker=ticker,
+            entity_id=entity_id,
             timestamp=datetime.now(),
             signals=[f"errore analisi: {error_msg}"],
             signal_strengths={},
@@ -530,22 +542,105 @@ class VEEAnalyzer:
             kpi_count=0,
             missing_indicators=[]
         )
+    
+    # Domain-aware methods for explainability provider integration
+    
+    def _normalize_metrics(self, metrics: Dict[str, Any]) -> Dict[str, float]:
+        """Normalizza le metriche in valori 0-1 per analisi uniforme (domain-agnostic)"""
+        return self._normalize_kpi(metrics)  # Reuse existing logic
+    
+    def _identify_signals_domain_aware(self, normalized_metrics: Dict[str, float], 
+                                      signal_descriptions: Dict[str, str]) -> Tuple[List[str], Dict[str, float]]:
+        """Identifica segnali significativi usando descrizioni domain-specific"""
+        signals = []
+        strengths = {}
+        
+        # Create dynamic categories from factor mappings (reverse lookup)
+        category_to_keys = {}
+        for metric_key in normalized_metrics.keys():
+            # Try to find category for this metric (this is simplified - in practice
+            # the provider would give us category groupings)
+            category = "technical"  # Default fallback
+            for cat_name in signal_descriptions.keys():
+                if cat_name.lower() in metric_key.lower():
+                    category = cat_name
+                    break
+            
+            if category not in category_to_keys:
+                category_to_keys[category] = []
+            category_to_keys[category].append(metric_key)
+        
+        # Analyze each category
+        for category, metric_keys in category_to_keys.items():
+            category_values = [normalized_metrics[key] for key in metric_keys if key in normalized_metrics]
+            
+            if not category_values:
+                continue
+                
+            # Calculate category strength
+            avg_strength = np.mean(category_values)
+            max_strength = max(category_values)
+            
+            # Determine signal intensity
+            if max_strength >= self.signal_thresholds['strong']:
+                intensity = 'strong'
+                signal_strength = max_strength
+            elif max_strength >= self.signal_thresholds['moderate']:
+                intensity = 'moderate'
+                signal_strength = avg_strength
+            elif max_strength >= self.signal_thresholds['weak']:
+                intensity = 'weak'
+                signal_strength = avg_strength
+            else:
+                continue
+            
+            # Create semantic signal description using domain descriptions
+            category_desc = signal_descriptions.get(category, f"{category} indicators")
+            
+            if avg_strength > 0.6:
+                signals.append(f"{intensity} positive {category_desc}")
+            elif avg_strength < 0.4:
+                signals.append(f"{intensity} negative {category_desc}")
+            else:
+                signals.append(f"{intensity} neutral {category_desc}")
+            
+            strengths[category] = signal_strength
+        
+        return signals, strengths
+    
+    def _find_dominant_factor_domain_aware(self, normalized_metrics: Dict[str, float], 
+                                          factor_categories: Dict[str, str]) -> Tuple[str, float]:
+        """Identifica il fattore dominante usando categorie domain-specific"""
+        if not normalized_metrics:
+            return "no factor", 0.0
+        
+        # Find metric with highest absolute value
+        dominant_key = max(normalized_metrics.keys(), key=lambda k: normalized_metrics[k])
+        dominant_value = normalized_metrics[dominant_key]
+        
+        # Map to semantic category using domain provider
+        semantic_factor = factor_categories.get(dominant_key, "technical factor")
+        
+        return semantic_factor, dominant_value
 
 
 # Convenience function for standalone usage
-def analyze_kpi(ticker: str, kpi: Dict[str, Any]) -> AnalysisResult:
+def analyze_kpi(entity_id: str, kpi: Dict[str, Any]) -> AnalysisResult:
     """
     Convenience function per analisi KPI standalone
     
     Args:
-        ticker: Symbol del ticker
+        entity_id: Entity identifier (domain-agnostic)
         kpi: Dictionary con KPI da analizzare
         
     Returns:
         AnalysisResult con analisi completa
     """
+    from vitruvyan_core.domains.finance_explainability_provider import FinanceExplainabilityProvider
+    
     analyzer = VEEAnalyzer()
-    return analyzer.analyze_kpi(ticker, kpi)
+    provider = FinanceExplainabilityProvider()
+    return analyzer.analyze_metrics(entity_id, kpi, provider)
 
 
 if __name__ == "__main__":
@@ -561,7 +656,7 @@ if __name__ == "__main__":
     
     result = analyze_kpi("AAPL", test_kpi)
     
-    print(f"=== VEE Analyzer Test Results for {result.ticker} ===")
+    print(f"=== VEE Analyzer Test Results for {result.entity_id} ===")
     print(f"Signals: {', '.join(result.signals)}")
     print(f"Dominant Factor: {result.dominant_factor} (strength: {result.dominant_strength:.2f})")
     print(f"Overall Intensity: {result.overall_intensity:.2f}")
