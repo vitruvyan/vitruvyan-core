@@ -15,14 +15,15 @@ from abc import ABC, abstractmethod
 
 # Core imports
 from vitruvyan_core.core.cognitive.neural_engine import EvaluationOrchestrator
-from vitruvyan_core.core.cognitive.vitruvyan_proprietary.vwre_engine import VWREngine
-from vitruvyan_core.core.cognitive.vitruvyan_proprietary.vare_engine import VAREngine
+# Import engines after other modules are loaded
+from vitruvyan_core.core.cognitive.vitruvyan_proprietary.vwre_engine import VWREEngine
+from vitruvyan_core.core.cognitive.vitruvyan_proprietary.vare_engine import VAREEngine
 from vitruvyan_core.core.cognitive.vitruvyan_proprietary.vee.vee_engine import VEEEngine
 
 # Domain contracts
-from vitruvyan_core.domains import (
-    AggregationProvider, RiskProvider, ExplainabilityProvider
-)
+from vitruvyan_core.domains.aggregation_contract import AggregationProvider
+from vitruvyan_core.domains.risk_contract import RiskProvider
+from vitruvyan_core.domains.explainability_contract import ExplainabilityProvider
 
 
 @dataclass
