@@ -20,6 +20,95 @@ Vitruvyan Core **IS**:
 
 ---
 
+## 🧠 Philosophy: Structure, Not Solution
+
+### What Vitruvyan Core Is NOT
+
+Vitruvyan Core is not a framework with ready-made components.  
+It is not a library of best practices.  
+It is not a collection of domain-specific tools.
+
+**It is a blank cognitive substrate.**
+
+Think of it as:
+- A CPU without an operating system
+- An empty factory floor with conveyor belts, but no workers or products
+- A spreadsheet with formula support, but no data
+
+### Core Has Zero Opinions
+
+The core has **zero opinions** about:
+
+- What makes an entity "good" or "bad"
+- Which factors matter in your domain
+- How to weigh different dimensions of quality
+- What "normal" or "optimal" means
+- How to interpret scores or rankings
+
+It provides **no domain knowledge**:
+- No stock tickers, sectors, or financial ratios
+- No patient symptoms, diagnoses, or treatments
+- No routes, vehicles, or delivery windows
+- No weapons systems, threat levels, or readiness scores
+
+### What The Core DOES Provide
+
+The core provides **structure without content**:
+
+1. **Abstract contracts** that define what evaluation means
+2. **Orchestration flows** that coordinate cognitive processes
+3. **Data structures** for inputs, outputs, and state management
+4. **One reference implementation** to show how contracts work
+
+### Ontological Neutrality
+
+The core does not teach you **what to evaluate**.  
+It teaches you **how to structure evaluation**.
+
+It says: "If you have dimensions of quality, here's how to:
+- Normalize them to comparable scales
+- Combine them into composites
+- Track contributions and explanations"
+
+But it never tells you:
+- Which dimensions matter
+- How to compute them
+- What the results mean
+
+### Verticals Are Epistemologically Specific
+
+Your vertical makes the **epistemological choices**:
+
+- **Mercator** says: "Quality = momentum + trend + volatility"
+- **AEGIS** says: "Readiness = training + equipment + morale"
+- **Your domain** says: "[YOUR DEFINITION OF QUALITY]"
+
+The core doesn't care. It executes the structure you define.
+
+### Anti-Framework Design
+
+Most systems are frameworks that suggest what to do.  
+Vitruvyan Core inverts this: it provides zero suggestions.
+
+By providing **only structure**, the core forces you to think:
+- What does "better" mean in my domain?
+- How do I measure the qualities that matter?
+- What tradeoffs am I making?
+
+You can't cargo-cult from the core. You must understand your domain.
+
+### The Inevitable Discomfort
+
+Using Vitruvyan Core **should feel uncomfortable at first**.
+
+You will think: "But where are the examples?"  
+You will ask: "What's the best way to do X?"
+
+**This discomfort is intentional.**  
+It's the discomfort of taking responsibility for your domain's conceptual model.
+
+---
+
 ## 🏗️ Architecture
 
 ### Sacred Orders (Cognitive Layers)
