@@ -492,7 +492,7 @@ services:
       
     volumes:
       - ../../services/core/api_memory_orders:/app/api_memory_orders:ro
-      - ../../vitruvyan_core/core/foundation/memory_orders:/app/core/foundation/memory_orders:ro
+      - ../../vitruvyan_core/core/foundation/semantic_sync:/app/core/foundation/semantic_sync:ro
       - ../../vitruvyan_core/core/foundation/persistence:/app/core/foundation/persistence:ro
       - ../../vitruvyan_core/core/foundation/cognitive_bus:/app/core/foundation/cognitive_bus:ro
       - ./logs/memory_orders:/app/logs/memory_orders

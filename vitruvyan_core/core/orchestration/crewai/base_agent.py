@@ -260,5 +260,5 @@ Step 4: Build crew with your agents
 Step 5: Execute crew
     result = crew.kickoff()
     
-See domains/trade/crewai/ for a complete working example (finance domain).
+See verticals/ for complete working examples (domain-specific implementations).
 """

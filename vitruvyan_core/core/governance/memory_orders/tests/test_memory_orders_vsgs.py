@@ -102,8 +102,8 @@ class TestMemoryOrdersVSGS:
     # TEST 3: Sync Job Marks Synced
     # ============================================================
     
-    @patch("core.memory_orders.vsgs_sync.fetch_unsynced_groundings")
-    @patch("core.memory_orders.vsgs_sync.mark_grounding_synced")
+    @patch("core.foundation.semantic_sync.vsgs_sync.fetch_unsynced_groundings")
+    @patch("core.foundation.semantic_sync.vsgs_sync.mark_grounding_synced")
     @patch("core.leo.qdrant_agent.QdrantAgent.upsert_point_from_grounding")
     def test_sync_job_marks_synced(self, mock_qdrant, mock_mark, mock_fetch):
         """
@@ -129,7 +129,7 @@ class TestMemoryOrdersVSGS:
         mock_mark.return_value = True
         
         # Simulate sync
-        from core.memory_orders.vsgs_sync import sync_semantic_states
+        from core.foundation.semantic_sync.vsgs_sync import sync_semantic_states
         result = sync_semantic_states(limit=1)
         
         # Verify sync flow
@@ -315,7 +315,7 @@ class TestMemoryOrdersIntegration:
     
     def test_real_sync_job(self):
         """Test sync job against real services"""
-        from core.memory_orders.vsgs_sync import sync_semantic_states
+        from core.foundation.semantic_sync.vsgs_sync import sync_semantic_states
         
         result = sync_semantic_states(limit=10)
         
