@@ -459,12 +459,12 @@ class Inspector(BaseHunter):
             with self.postgres_agent.connection.cursor() as cursor:
                 if table_name == "sentiment_scores":
                     cursor.execute("""
-                        SELECT ticker, created_at, dedupe_key 
+                        SELECT entity_id, created_at, dedupe_key 
                         FROM sentiment_scores 
                         ORDER BY created_at DESC 
                         LIMIT %s
                     """, (limit,))
-                    columns = ["ticker", "created_at", "dedupe_key"]
+                    columns = ["entity_id", "created_at", "dedupe_key"]
                 elif table_name == "phrases":
                     try:
                         cursor.execute("""
@@ -530,7 +530,7 @@ class Inspector(BaseHunter):
             return str(record.get("id", ""))
         else:
             # Use first available ID field
-            for id_field in ["id", "dedupe_key", "ticker"]:
+            for id_field in ["id", "dedupe_key", "entity_id"]:
                 if id_field in record:
                     return str(record[id_field])
             return ""

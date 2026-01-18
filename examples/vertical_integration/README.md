@@ -128,7 +128,7 @@ Each entity analysis returns:
 
 ```python
 {
-    "entity_id": "AAPL",
+    "entity_id": "EXAMPLE_ENTITY_1",
     "timestamp": "2025-12-30T...",
     "neural_evaluation": {
         "composite_score": 1.234,

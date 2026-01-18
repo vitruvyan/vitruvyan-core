@@ -34,7 +34,7 @@ class DockerManager:
             "vitruvyan_api_audit",  # This container
             "vitruvyan_gemma_cognitive",  # NEW: Gemma Cognitive Layer
             "vitruvyan_vault_keepers",  # Backup system (Vault Keepers)
-            "vitruvyan_portfolio_guardian",  # NEW: Portfolio guardian
+            "vitruvyan_portfolio_guardian",  # NEW: Collection guardian
             "vitruvyan_redis",
             "vitruvyan_qdrant"
         ]

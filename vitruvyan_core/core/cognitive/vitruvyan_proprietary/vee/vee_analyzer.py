@@ -27,7 +27,7 @@ from vitruvyan_core.domains.explainability_contract import ExplainabilityProvide
 @dataclass
 class AnalysisResult:
     """Risultato dell'analisi KPI"""
-    entity_id: str  # Changed from ticker
+    entity_id: str  # Changed from entity_id
     timestamp: datetime
     
     # Segnali identificati
@@ -654,7 +654,7 @@ if __name__ == "__main__":
         'composite_score': 70
     }
     
-    result = analyze_kpi("AAPL", test_kpi)
+    result = analyze_kpi("EXAMPLE_ENTITY_1", test_kpi)
     
     print(f"=== VEE Analyzer Test Results for {result.entity_id} ===")
     print(f"Signals: {', '.join(result.signals)}")

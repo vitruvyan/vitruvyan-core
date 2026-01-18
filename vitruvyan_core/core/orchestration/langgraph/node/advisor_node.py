@@ -11,8 +11,8 @@ Decision Rules:
 1. Composite Score: >1.0=BUY, 0.5-1.0=BUY_cautious, -0.3-0.5=HOLD, <-0.3=SELL/AVOID
 2. Divergences: Momentum↑+Sentiment↓ → Caution
 3. Volatility: High volatility → Reduce confidence
-4. Comparison: Prefer ticker with highest composite
-5. Portfolio: Sector concentration → Rebalancing advice
+4. Comparison: Prefer entity_id with highest composite
+5. Collection: Sector concentration → Rebalancing advice
 
 Author: Vitruvyan Sacred Orders
 Date: December 26, 2025
@@ -83,7 +83,7 @@ def advisor_node(state: Dict[str, Any]) -> Dict[str, Any]:
     return state
 
 
-def _advisor_single_ticker(ticker_data: Dict[str, Any], horizon: str, vee_data: Dict[str, Any] = None) -> Dict[str, Any]:
+def _advisor_single_entity(entity_data: Dict[str, Any], horizon: str, vee_data: Dict[str, Any] = None) -> Dict[str, Any]:
     """PRESERVED HELPER: Single entity advisory structure (not implemented)"""
     return {
         "action": "NO_ACTION",

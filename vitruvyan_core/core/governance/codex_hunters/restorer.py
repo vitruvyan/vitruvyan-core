@@ -44,7 +44,7 @@ class Restorer(BaseHunter):
     def __init__(self):
         super().__init__("Restorer")
         
-        # Deduplication cache (ticker -> set of hashes)
+        # Deduplication cache (entity_id -> set of hashes)
         self.seen_hashes: Dict[str, set] = defaultdict(set)
         
         # Track normalization statistics
@@ -78,11 +78,11 @@ class Restorer(BaseHunter):
         
         return hashlib.md5(hash_input.encode()).hexdigest()
     
-    def is_duplicate(self, ticker: str, record_hash: str) -> bool:
-        """Check if record hash is already seen for this ticker"""
-        if record_hash in self.seen_hashes[ticker]:
+    def is_duplicate(self, entity_id: str, record_hash: str) -> bool:
+        """Check if record hash is already seen for this entity_id"""
+        if record_hash in self.seen_hashes[entity_id]:
             return True
-        self.seen_hashes[ticker].add(record_hash)
+        self.seen_hashes[entity_id].add(record_hash)
         return False
     
     def clean_text(self, text: str) -> str:
@@ -208,7 +208,7 @@ class Restorer(BaseHunter):
         if "error" in data:
             return data  # Don't normalize error responses
         
-        ticker = data.get("ticker", "UNKNOWN")
+        entity_id = data.get("entity_id", "UNKNOWN")
         
         # Deduplicate history records
         history = data.get("history", [])
@@ -216,7 +216,7 @@ class Restorer(BaseHunter):
         
         for record in history:
             record_hash = self.compute_hash(record, ["date", "close"])
-            if not self.is_duplicate(f"{ticker}_history", record_hash):
+            if not self.is_duplicate(f"{entity_id}_history", record_hash):
                 unique_history.append(record)
             else:
                 self.norm_stats["duplicates_removed"] += 1
@@ -224,7 +224,7 @@ class Restorer(BaseHunter):
         # Impute missing info fields
         info = data.get("info", {})
         info = self.impute_missing_fields(info, {
-            "name": ticker,
+            "name": entity_id,
             "sector": "Unknown",
             "industry": "Unknown",
             "market_cap": None,
@@ -233,7 +233,7 @@ class Restorer(BaseHunter):
         })
         
         normalized = {
-            "ticker": ticker,
+            "entity_id": entity_id,
             "info": info,
             "history": unique_history,
             "source": "yfinance",
@@ -256,7 +256,7 @@ class Restorer(BaseHunter):
         if "error" in data:
             return data
         
-        ticker = data.get("ticker", "UNKNOWN")
+        entity_id = data.get("entity_id", "UNKNOWN")
         posts = data.get("posts", [])
         
         # Clean and deduplicate posts
@@ -270,7 +270,7 @@ class Restorer(BaseHunter):
             # Compute hash
             record_hash = self.compute_hash(post, ["title", "created_utc"])
             
-            if not self.is_duplicate(f"{ticker}_reddit", record_hash):
+            if not self.is_duplicate(f"{entity_id}_reddit", record_hash):
                 # Impute missing fields
                 post = self.impute_missing_fields(post, {
                     "subreddit": "unknown",
@@ -283,7 +283,7 @@ class Restorer(BaseHunter):
                 self.norm_stats["duplicates_removed"] += 1
         
         normalized = {
-            "ticker": ticker,
+            "entity_id": entity_id,
             "posts": unique_posts,
             "source": "reddit",
             "normalized_at": datetime.now().isoformat()
@@ -305,7 +305,7 @@ class Restorer(BaseHunter):
         if "error" in data:
             return data
         
-        ticker = data.get("ticker", "UNKNOWN")
+        entity_id = data.get("entity_id", "UNKNOWN")
         articles = data.get("articles", [])
         
         # Clean and deduplicate articles
@@ -319,7 +319,7 @@ class Restorer(BaseHunter):
             # Compute hash
             record_hash = self.compute_hash(article, ["title", "link"])
             
-            if not self.is_duplicate(f"{ticker}_news", record_hash):
+            if not self.is_duplicate(f"{entity_id}_news", record_hash):
                 # Impute missing fields
                 article = self.impute_missing_fields(article, {
                     "source": "Unknown",
@@ -331,7 +331,7 @@ class Restorer(BaseHunter):
                 self.norm_stats["duplicates_removed"] += 1
         
         normalized = {
-            "ticker": ticker,
+            "entity_id": entity_id,
             "articles": unique_articles,
             "source": "google_news",
             "normalized_at": datetime.now().isoformat()
@@ -350,7 +350,7 @@ class Restorer(BaseHunter):
         Returns:
             Normalized sentiment data
         """
-        ticker = data.get("ticker", "UNKNOWN")
+        entity_id = data.get("entity_id", "UNKNOWN")
         
         # Extract scores
         reddit_score = data.get("reddit_score")
@@ -374,7 +374,7 @@ class Restorer(BaseHunter):
         sentiment_tag = self.validate_sentiment_tag(data.get("sentiment_tag", ""))
         
         normalized = {
-            "ticker": ticker,
+            "entity_id": entity_id,
             "reddit_score": reddit_score,
             "google_score": google_score,
             "combined_score": combined_score,
@@ -479,7 +479,7 @@ if __name__ == "__main__":
     # Sample raw data for testing
     sample_raw_data = [
         {
-            "ticker": "AAPL",
+            "entity_id": "EXAMPLE_ENTITY_1",
             "info": {"name": "Apple Inc.", "sector": "Technology"},
             "history": [
                 {"date": "2025-10-01", "close": 150.0},
@@ -489,11 +489,11 @@ if __name__ == "__main__":
             "timestamp": datetime.now().isoformat()
         },
         {
-            "ticker": "AAPL",
+            "entity_id": "EXAMPLE_ENTITY_1",
             "posts": [
                 {
                     "title": "**AAPL** to the moon! http://spam.com",
-                    "selftext": "Great   stock   with /u/user mention",
+                    "selftext": "Great   entity   with /u/user mention",
                     "score": 100,
                     "created_utc": datetime.now().isoformat()
                 }
@@ -502,7 +502,7 @@ if __name__ == "__main__":
             "timestamp": datetime.now().isoformat()
         },
         {
-            "ticker": "AAPL",
+            "entity_id": "EXAMPLE_ENTITY_1",
             "reddit_score": 0.8,
             "google_score": 0.6,
             "combined_score": 0.7,

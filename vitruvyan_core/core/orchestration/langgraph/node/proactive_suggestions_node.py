@@ -3,7 +3,7 @@ Proactive Suggestions Node - Phase 2.1
 Anticipate user needs and provide intelligent suggestions based on analysis context.
 
 Suggestion Types:
-1. Correlation Alerts: When analyzing single ticker, suggest correlated assets
+1. Correlation Alerts: When analyzing single entity_id, suggest correlated assets
 2. Earnings Safety: Warn about upcoming earnings for short-term horizons
 3. Smart Money Flow: Highlight institutional buying/selling patterns
 4. Sector Rotation: Suggest related sectors based on market conditions
@@ -16,39 +16,39 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def generate_correlation_alert(tickers: List[str], state: Dict[str, Any]) -> Dict[str, str]:
+def generate_correlation_alert(entity_ids: List[str], state: Dict[str, Any]) -> Dict[str, str]:
     """
-    Generate correlation alert when user analyzes a single ticker.
+    Generate correlation alert when user analyzes a single entity_id.
     Suggest highly correlated assets for diversification or concentration.
     """
-    if len(tickers) != 1:
+    if len(entity_ids) != 1:
         return None
     
-    ticker = tickers[0]
+    entity_id = entity_ids[0]
     
     # Common correlation patterns (simplified - in production, query from correlation matrix)
     correlations = {
-        "AAPL": ["MSFT", "GOOGL", "META"],
-        "TSLA": ["RIVN", "LCID", "NIO"],
+        "EXAMPLE_ENTITY_1": ["EXAMPLE_ENTITY_4", "EXAMPLE_ENTITY_5", "META"],
+        "EXAMPLE_ENTITY_3": ["RIVN", "LCID", "NIO"],
         "JPM": ["BAC", "WFC", "C"],
         "XOM": ["CVX", "COP", "SLB"],
-        "NVDA": ["AMD", "INTC", "AVGO"],
+        "EXAMPLE_ENTITY_2": ["AMD", "INTC", "AVGO"],
         "SPY": ["VOO", "IVV", "QQQ"],
     }
     
-    related = correlations.get(ticker.upper())
+    related = correlations.get(entity_id.upper())
     if not related:
         return None
     
     return {
         "type": "correlation_alert",
         "title": "💡 Asset correlati",
-        "message": f"Stai analizzando {ticker}. Potresti considerare anche: {', '.join(related[:2])} per diversificazione o concentrazione settoriale.",
+        "message": f"Stai analizzando {entity_id}. Potresti considerare anche: {', '.join(related[:2])} per diversificazione o concentrazione settoriale.",
         "priority": "medium"
     }
 
 
-def generate_earnings_warning(tickers: List[str], horizon: str, state: Dict[str, Any]) -> Dict[str, str]:
+def generate_earnings_warning(entity_ids: List[str], horizon: str, state: Dict[str, Any]) -> Dict[str, str]:
     """
     Warn about upcoming earnings when user has short-term horizon (<30 days).
     Earnings create volatility that can disrupt short-term technical analysis.
@@ -70,22 +70,22 @@ def generate_earnings_warning(tickers: List[str], horizon: str, state: Dict[str,
         return None
     
     # Simplified earnings calendar (in production, query from earnings API)
-    upcoming_earnings = ["AAPL", "TSLA", "NVDA", "MSFT", "GOOGL"]
+    upcoming_earnings = ["EXAMPLE_ENTITY_1", "EXAMPLE_ENTITY_3", "EXAMPLE_ENTITY_2", "EXAMPLE_ENTITY_4", "EXAMPLE_ENTITY_5"]
     
-    at_risk_tickers = [t for t in tickers if t.upper() in upcoming_earnings]
+    at_risk_entities = [t for t in entity_ids if t.upper() in upcoming_earnings]
     
-    if not at_risk_tickers:
+    if not at_risk_entities:
         return None
     
     return {
         "type": "earnings_warning",
         "title": "⚠️ Attenzione earnings",
-        "message": f"Con orizzonte breve ({horizon_text}), attenzione: {', '.join(at_risk_tickers)} ha earnings imminenti. La volatilità potrebbe aumentare.",
+        "message": f"Con orizzonte breve ({horizon_text}), attenzione: {', '.join(at_risk_entities)} ha earnings imminenti. La volatilità potrebbe aumentare.",
         "priority": "high"
     }
 
 
-def generate_smart_money_insight(tickers: List[str], state: Dict[str, Any]) -> Dict[str, str]:
+def generate_smart_money_insight(entity_ids: List[str], state: Dict[str, Any]) -> Dict[str, str]:
     """
     Highlight institutional buying/selling patterns (smart money flow).
     Based on recent 13F filings or unusual institutional volume.
@@ -93,17 +93,17 @@ def generate_smart_money_insight(tickers: List[str], state: Dict[str, Any]) -> D
     # Check if we have raw_output with ranking data
     raw_output = state.get("raw_output", {})
     ranking = raw_output.get("ranking", {})
-    stocks = ranking.get("stocks", [])
+    entities = ranking.get("entities", [])
     
-    if not stocks:
+    if not entities:
         return None
     
     # Look for sentiment or momentum indicators (proxy for smart money)
-    top_stock = stocks[0] if stocks else None
+    top_stock = entities[0] if entities else None
     if not top_stock:
         return None
     
-    ticker = top_stock.get("ticker")
+    entity_id = top_stock.get("entity_id")
     factors = top_stock.get("factors", {})
     sentiment_z = factors.get("sentiment_z") or 0
     momentum_z = factors.get("momentum_z") or 0
@@ -113,7 +113,7 @@ def generate_smart_money_insight(tickers: List[str], state: Dict[str, Any]) -> D
         return {
             "type": "smart_money_flow",
             "title": "🎯 Smart money in azione",
-            "message": f"{ticker} mostra forte momentum ({momentum_z:.1f}) e sentiment positivo. Possibile accumulo istituzionale in corso.",
+            "message": f"{entity_id} mostra forte momentum ({momentum_z:.1f}) e sentiment positivo. Possibile accumulo istituzionale in corso.",
             "priority": "medium"
         }
     
@@ -122,35 +122,35 @@ def generate_smart_money_insight(tickers: List[str], state: Dict[str, Any]) -> D
         return {
             "type": "smart_money_flow",
             "title": "⚠️ Distribuzione istituzionale",
-            "message": f"{ticker} mostra momentum debole ({momentum_z:.1f}) e sentiment negativo. Possibile distribuzione da parte degli istituzionali.",
+            "message": f"{entity_id} mostra momentum debole ({momentum_z:.1f}) e sentiment negativo. Possibile distribuzione da parte degli istituzionali.",
             "priority": "high"
         }
     
     return None
 
 
-def generate_risk_hedge_suggestion(tickers: List[str], state: Dict[str, Any]) -> Dict[str, str]:
+def generate_risk_hedge_suggestion(entity_ids: List[str], state: Dict[str, Any]) -> Dict[str, str]:
     """
     Suggest hedging strategies for volatile or risky positions.
     Based on volatility z-score and market conditions.
     """
     raw_output = state.get("raw_output", {})
     ranking = raw_output.get("ranking", {})
-    stocks = ranking.get("stocks", [])
+    entities = ranking.get("entities", [])
     
-    if not stocks:
+    if not entities:
         return None
     
-    # Check for high volatility stocks
+    # Check for high volatility entities
     high_vol_stocks = []
-    for stock in stocks[:3]:  # Check top 3
-        ticker = stock.get("ticker")
-        factors = stock.get("factors", {})
+    for entity in entities[:3]:  # Check top 3
+        entity_id = entity.get("entity_id")
+        factors = entity.get("factors", {})
         vola_z = factors.get("vola_z")
         
         # Skip if vola_z is None
         if vola_z is not None and abs(vola_z) > 1.5:  # High volatility (>1.5 std dev)
-            high_vol_stocks.append(ticker)
+            high_vol_stocks.append(entity_id)
     
     if not high_vol_stocks:
         return None
@@ -180,17 +180,17 @@ def proactive_suggestions_node(state: Dict[str, Any]) -> Dict[str, Any]:
         return state
     
     # Extract context
-    tickers = state.get("tickers", [])
+    entity_ids = state.get("entity_ids", [])
     horizon = state.get("horizon", "unspecified")
     intent = state.get("intent", "")
     
-    logger.info(f"[proactive_suggestions] Generating suggestions for tickers={tickers}, horizon={horizon}, intent={intent}")
+    logger.info(f"[proactive_suggestions] Generating suggestions for entity_ids={entity_ids}, horizon={horizon}, intent={intent}")
     
     suggestions = []
     
     # Generate different types of suggestions with proper argument passing
     try:
-        suggestion = generate_correlation_alert(tickers, state)
+        suggestion = generate_correlation_alert(entity_ids, state)
         if suggestion:
             suggestions.append(suggestion)
             logger.info(f"[proactive_suggestions] Added suggestion: {suggestion['type']}")
@@ -198,7 +198,7 @@ def proactive_suggestions_node(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.warning(f"[proactive_suggestions] Error in generate_correlation_alert: {e}")
     
     try:
-        suggestion = generate_earnings_warning(tickers, horizon, state)
+        suggestion = generate_earnings_warning(entity_ids, horizon, state)
         if suggestion:
             suggestions.append(suggestion)
             logger.info(f"[proactive_suggestions] Added suggestion: {suggestion['type']}")
@@ -206,7 +206,7 @@ def proactive_suggestions_node(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.warning(f"[proactive_suggestions] Error in generate_earnings_warning: {e}")
     
     try:
-        suggestion = generate_smart_money_insight(tickers, state)
+        suggestion = generate_smart_money_insight(entity_ids, state)
         if suggestion:
             suggestions.append(suggestion)
             logger.info(f"[proactive_suggestions] Added suggestion: {suggestion['type']}")
@@ -214,7 +214,7 @@ def proactive_suggestions_node(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.warning(f"[proactive_suggestions] Error in generate_smart_money_insight: {e}")
     
     try:
-        suggestion = generate_risk_hedge_suggestion(tickers, state)
+        suggestion = generate_risk_hedge_suggestion(entity_ids, state)
         if suggestion:
             suggestions.append(suggestion)
             logger.info(f"[proactive_suggestions] Added suggestion: {suggestion['type']}")

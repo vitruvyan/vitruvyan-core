@@ -6,12 +6,12 @@ The conversational gateway of Vitruvyan. Does NOT generate technical analysis
 (Neural Engine does that). Instead, it:
 1. Orchestrates conversation flow based on mental mode
 2. Injects VSGS semantic context for multi-turn coherence
-3. Routes to specialized nodes (single, comparison, screening, portfolio, sector)
+3. Routes to specialized nodes (single, comparison, screening, collection, sector)
 4. Assembles VEE narratives into natural conversation
 5. Handles follow-ups, referent resolution, sector queries
 
 Architecture:
-    semantic_grounding → intent_detection → weavers → ticker_resolver → 
+    semantic_grounding → intent_detection → weavers → entity_resolver → 
     ... → compose → CAN v2 → proactive_suggestions → END
 
 🌐 LANGUAGE GOLDEN RULE (Dec 27, 2025):
@@ -50,7 +50,7 @@ BABEL_GARDENS_URL = os.getenv("BABEL_GARDENS_URL", "http://vitruvyan_babel_garde
 class CANResponse(BaseModel):
     """Structured CAN response for frontend consumption."""
     mode: str                          # analytical | exploratory | urgent | conversational
-    route: str                         # Target UI: single | comparison | screening | portfolio | allocation | sector | chat
+    route: str                         # Target UI: single | comparison | screening | collection | allocation | sector | chat
     narrative: str                     # Main conversational response
     technical_summary: Optional[str] = None   # VEE technical digest
     follow_ups: List[str] = []         # Suggested next questions
@@ -98,7 +98,7 @@ def detect_mental_mode(state: Dict[str, Any]) -> str:
         Mental mode string
     """
     intent = state.get("intent", "")
-    tickers = state.get("tickers", [])
+    entity_ids = state.get("entity_ids", [])
     emotion = state.get("emotion_detected", "neutral")
     weaver = state.get("weaver_context") or {}
     
@@ -108,7 +108,7 @@ def detect_mental_mode(state: Dict[str, Any]) -> str:
         return "urgent"
     
     # Priority 2: Analytical mode (specific technical analysis intent)
-    if intent in ANALYTICAL_INTENTS and tickers:
+    if intent in ANALYTICAL_INTENTS and entity_ids:
         logger.info(f"📊 CAN: Analytical mode detected (intent={intent})")
         return "analytical"
     
@@ -131,10 +131,10 @@ def can_route_decision(state: Dict[str, Any], mode: str) -> str:
     Determine target UI node based on conversation context and mode.
     
     Routes:
-    - single: Single ticker technical analysis
-    - comparison: Head-to-head ticker comparison
-    - screening: Multi-ticker ranking (2-4 tickers)
-    - portfolio: Portfolio analysis (5+ tickers)
+    - single: Single entity_id technical analysis
+    - comparison: Head-to-head entity_id comparison
+    - screening: Multi-entity_id ranking (2-4 entity_ids)
+    - collection: Collection analysis (5+ entity_ids)
     - allocation: Investment distribution
     - sector: Sector-level analysis (Pattern Weavers)
     - chat: General conversational response
@@ -147,11 +147,11 @@ def can_route_decision(state: Dict[str, Any], mode: str) -> str:
         Target UI route string
     """
     conv_type = state.get("conversation_type", "conversational")
-    tickers = state.get("tickers") or []
+    entity_ids = state.get("entity_ids") or []
     weaver = state.get("weaver_context") or {}
     
-    # Sector mode: Pattern Weavers detected sector query without specific tickers
-    if weaver.get("concepts") and not tickers:
+    # Sector mode: Pattern Weavers detected sector query without specific entity_ids
+    if weaver.get("concepts") and not entity_ids:
         logger.info(f"🕸️ CAN: Routing to sector (concepts: {weaver.get('concepts')})")
         return "sector"
     
@@ -160,13 +160,13 @@ def can_route_decision(state: Dict[str, Any], mode: str) -> str:
         "single": "single",
         "comparison": "comparison",
         "screening": "screening",
-        "portfolio": "portfolio",
+        "collection": "collection",
         "allocation": "allocation",
         "onboarding": "onboarding"
     }
     
     route = route_map.get(conv_type, "chat")
-    logger.info(f"🔀 CAN: Routing to {route} (conv_type={conv_type}, tickers={len(tickers)})")
+    logger.info(f"🔀 CAN: Routing to {route} (conv_type={conv_type}, entity_ids={len(entity_ids)})")
     return route
 
 
@@ -236,7 +236,7 @@ def resolve_referents(state: Dict[str, Any]) -> Dict[str, Any]:
         if score > 0.5:
             payload = top_match.get("payload", {})
             inherited = {
-                "inherited_tickers": payload.get("tickers", []),
+                "inherited_tickers": payload.get("entity_ids", []),
                 "inherited_intent": payload.get("intent"),
                 "inherited_horizon": payload.get("horizon")
             }
@@ -282,7 +282,7 @@ def process_sector_query(state: Dict[str, Any]) -> Dict[str, Any]:
 # Follow-Up Suggestions (Language-Aware via LLM)
 # =============================================================================
 
-async def _generate_follow_ups_llm(tickers: List[str], route: str, language: str, weaver: Dict) -> List[str]:
+async def _generate_follow_ups_llm(entity_ids: List[str], route: str, language: str, weaver: Dict) -> List[str]:
     """
     Generate follow-up suggestions using Babel Gardens LLM endpoint.
     
@@ -291,11 +291,11 @@ async def _generate_follow_ups_llm(tickers: List[str], route: str, language: str
         No hardcoded translations - LLM handles multilingual output.
     """
     try:
-        ticker_str = ", ".join(tickers[:3]) if tickers else "market"
+        entity_str = ", ".join(entity_ids[:3]) if entity_ids else "market"
         sector_str = ", ".join(weaver.get("concepts", [])) if weaver else ""
         
         prompt = f"""Generate 3 short follow-up questions in {language} for a financial analysis conversation.
-Context: route={route}, tickers={ticker_str}, sector={sector_str}
+Context: route={route}, entity_ids={entity_str}, sector={sector_str}
 Requirements: 
 - Questions must be in {language} language
 - Maximum 10 words each
@@ -339,25 +339,25 @@ def generate_follow_ups(state: Dict[str, Any], mode: str, route: str) -> List[st
     Returns:
         List of suggested follow-up questions (English fallback)
     """
-    tickers = state.get("tickers") or []
+    entity_ids = state.get("entity_ids") or []
     weaver = state.get("weaver_context") or {}
     
     # MVP: English-only fallback suggestions (UI is hardcoded English)
     # These are template-based, context-aware, but language-neutral
     follow_ups = []
     
-    if route == "single" and tickers:
-        ticker = tickers[0]
+    if route == "single" and entity_ids:
+        entity_id = entity_ids[0]
         follow_ups = [
-            f"Compare {ticker} with a competitor",
-            f"Show sentiment for {ticker}",
+            f"Compare {entity_id} with a competitor",
+            f"Show sentiment for {entity_id}",
             "What are the main risks?"
         ]
     elif route == "comparison":
         follow_ups = [
             "Which one for long-term?",
             "Show volatility comparison",
-            "Add another ticker"
+            "Add another entity_id"
         ]
     elif route == "sector":
         sectors = weaver.get("concepts", ["sector"])
@@ -366,7 +366,7 @@ def generate_follow_ups(state: Dict[str, Any], mode: str, route: str) -> List[st
             "Show sector trend",
             "Compare sectors"
         ]
-    elif route == "portfolio":
+    elif route == "collection":
         follow_ups = [
             "Show concentration risk",
             "Rebalancing suggestions?",
@@ -374,9 +374,9 @@ def generate_follow_ups(state: Dict[str, Any], mode: str, route: str) -> List[st
         ]
     else:
         follow_ups = [
-            "Analyze a ticker",
+            "Analyze a entity_id",
             "Market overview",
-            "Build a portfolio"
+            "Build a collection"
         ]
     
     return follow_ups[:3]
@@ -407,27 +407,27 @@ def assemble_narrative(state: Dict[str, Any], mode: str, route: str) -> str:
         Assembled narrative string (English - VEE constraint)
     """
     vee = state.get("vee_explanations") or {}
-    tickers = state.get("tickers") or []
+    entity_ids = state.get("entity_ids") or []
     numerical_panel = state.get("numerical_panel") or []
     
     # If VEE narrative exists, use it as base
     narrative_parts = []
     
-    for ticker in tickers[:3]:  # Max 3 tickers in narrative
-        ticker_vee = vee.get(ticker, {})
+    for entity_id in entity_ids[:3]:  # Max 3 entity_ids in narrative
+        entity_vee = vee.get(entity_id, {})
         
         if mode == "analytical":
             # Technical mode: use VEE technical summary
-            technical = ticker_vee.get("technical", ticker_vee.get("summary", ""))
+            technical = entity_vee.get("technical", entity_vee.get("summary", ""))
             if technical:
                 narrative_parts.append(technical)
         
         elif mode == "urgent":
             # Urgent mode: concise actionable summary
-            summary = ticker_vee.get("summary", "")
-            # Find ticker data in numerical panel
-            ticker_data = next((t for t in numerical_panel if t.get("ticker") == ticker), {})
-            composite = ticker_data.get("composite_score", 0)
+            summary = entity_vee.get("summary", "")
+            # Find entity_id data in numerical panel
+            entity_data = next((t for t in numerical_panel if t.get("entity_id") == entity_id), {})
+            composite = entity_data.get("composite_score", 0)
             
             # Data-driven action hints (English - VEE constraint)
             if composite > 0.5:
@@ -437,11 +437,11 @@ def assemble_narrative(state: Dict[str, Any], mode: str, route: str) -> str:
             else:
                 action_hint = "neutral positioning"
             
-            narrative_parts.append(f"{ticker}: {action_hint}. {summary[:200]}")
+            narrative_parts.append(f"{entity_id}: {action_hint}. {summary[:200]}")
         
         else:
             # Conversational/exploratory: use summary
-            summary = ticker_vee.get("summary", "")
+            summary = entity_vee.get("summary", "")
             if summary:
                 narrative_parts.append(summary)
     
@@ -498,9 +498,9 @@ def can_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     # Step 3: Resolve vague referents
     inherited = resolve_referents(state)
-    if inherited.get("inherited_tickers") and not state.get("tickers"):
-        state["tickers"] = inherited["inherited_tickers"]
-        logger.info(f"🔗 CAN: Inherited tickers from context: {inherited['inherited_tickers']}")
+    if inherited.get("inherited_tickers") and not state.get("entity_ids"):
+        state["entity_ids"] = inherited["inherited_tickers"]
+        logger.info(f"🔗 CAN: Inherited entity_ids from context: {inherited['inherited_tickers']}")
     if inherited.get("inherited_intent") and state.get("intent") == "unknown":
         state["intent"] = inherited["inherited_intent"]
         logger.info(f"🔗 CAN: Inherited intent from context: {inherited['inherited_intent']}")
@@ -526,7 +526,7 @@ def can_node(state: Dict[str, Any]) -> Dict[str, Any]:
         route=route,
         narrative=narrative,
         technical_summary=state.get("vee_explanations", {}).get(
-            state.get("tickers", [""])[0] if state.get("tickers") else "", {}
+            state.get("entity_ids", [""])[0] if state.get("entity_ids") else "", {}
         ).get("technical"),
         follow_ups=follow_ups,
         sector_insights=sector_insights,

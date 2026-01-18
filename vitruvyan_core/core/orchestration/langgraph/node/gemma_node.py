@@ -23,7 +23,7 @@ def gemma_node(state: Dict[str, Any]) -> Dict[str, Any]:
     # Aggiorna lo stato con i campi di Gemma
     new_state = dict(state)
     new_state["intent"] = result.get("intent", "unknown")
-    new_state["tickers"] = result.get("tickers") or []
+    new_state["entity_ids"] = result.get("entity_ids") or []
     new_state["horizon"] = result.get("horizon")
     new_state["budget"] = result.get("budget")
     new_state["gemma_raw"] = result.get("raw_output")

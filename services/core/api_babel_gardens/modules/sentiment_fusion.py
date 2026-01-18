@@ -330,7 +330,7 @@ class SentimentFusionModule(GemmaServiceBase):
         financial_terms = {
             "it": ["borsa", "mercato", "azioni", "titolo", "investimento", "economia"],
             "es": ["bolsa", "mercado", "acciones", "inversion", "economia"],
-            "en": ["market", "stock", "investment", "economy", "financial", "trading"]
+            "en": ["market", "entity", "investment", "economy", "financial", "trading"]
         }
         
         for lang, terms in financial_terms.items():

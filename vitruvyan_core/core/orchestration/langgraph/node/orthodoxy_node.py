@@ -164,7 +164,7 @@ def _extract_state_summary(state: Dict[str, Any]) -> Dict[str, Any]:
         "input_text": state.get("input_text", "")[:500],  # Truncate long inputs
         "route": state.get("route"),
         "intent": state.get("intent"),
-        "tickers": state.get("tickers", []),
+        "entity_ids": state.get("entity_ids", []),
         "horizon": state.get("horizon"),
         "budget": state.get("budget"),
         "top_k": state.get("top_k"),
@@ -181,7 +181,7 @@ def _extract_state_summary(state: Dict[str, Any]) -> Dict[str, Any]:
         summary["response_summary"] = {
             "type": type(response).__name__,
             "length": len(str(response)),
-            "has_tickers": "tickers" in str(response).lower(),
+            "has_entitys": "entity_ids" in str(response).lower(),
             "has_analysis": "analysis" in str(response).lower()
         }
     

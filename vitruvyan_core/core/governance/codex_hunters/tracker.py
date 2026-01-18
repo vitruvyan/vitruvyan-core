@@ -68,7 +68,7 @@ class Tracker(BaseHunter):
     Multi-source data fetcher with intelligent rate limiting.
     
     Supported sources:
-    - yfinance: Stock prices, fundamentals, historical data
+    - yfinance: Entity prices, fundamentals, historical data
     - reddit: Social sentiment from financial subreddits
     - google_news: News articles and headlines
     - fred: Macro economic indicators
@@ -107,13 +107,13 @@ class Tracker(BaseHunter):
             )
         return self._reddit_client
     
-    def fetch_yfinance_data(self, ticker: str, period: str = "1mo") -> Dict[str, Any]:
+    def fetch_yfinance_data(self, entity_id: str, period: str = "1mo") -> Dict[str, Any]:
         """
-        Fetch stock data from yfinance.
+        Fetch entity data from yfinance.
         
         Returns:
             {
-                "ticker": str,
+                "entity_id": str,
                 "info": dict,           # Company fundamentals
                 "history": list[dict],  # Price history
                 "source": "yfinance",
@@ -123,9 +123,9 @@ class Tracker(BaseHunter):
         self.rate_limiters["yfinance"].wait_if_needed()
         
         try:
-            stock = yf.Ticker(ticker)
-            info = stock.info
-            history = stock.history(period=period)
+            entity = yf.EntityId(entity_id)
+            info = entity.info
+            history = entity.history(period=period)
             
             # Convert DataFrame to list of dicts
             history_data = []
@@ -140,9 +140,9 @@ class Tracker(BaseHunter):
                 })
             
             result = {
-                "ticker": ticker,
+                "entity_id": entity_id,
                 "info": {
-                    "name": info.get("longName", ticker),
+                    "name": info.get("longName", entity_id),
                     "sector": info.get("sector"),
                     "industry": info.get("industry"),
                     "market_cap": info.get("marketCap"),
@@ -156,26 +156,26 @@ class Tracker(BaseHunter):
             
             self.fetch_stats["yfinance"]["success"] += 1
             self.fetch_stats["yfinance"]["total_records"] += len(history_data)
-            logger.info(f"✅ [yfinance] Fetched {ticker}: {len(history_data)} records")
+            logger.info(f"✅ [yfinance] Fetched {entity_id}: {len(history_data)} records")
             return result
             
         except Exception as e:
             self.fetch_stats["yfinance"]["failed"] += 1
-            logger.error(f"❌ [yfinance] Failed to fetch {ticker}: {e}")
+            logger.error(f"❌ [yfinance] Failed to fetch {entity_id}: {e}")
             return {
-                "ticker": ticker,
+                "entity_id": entity_id,
                 "error": str(e),
                 "source": "yfinance",
                 "timestamp": datetime.now().isoformat()
             }
     
-    def fetch_reddit_sentiment(self, ticker: str, limit: int = 10) -> Dict[str, Any]:
+    def fetch_reddit_sentiment(self, entity_id: str, limit: int = 10) -> Dict[str, Any]:
         """
-        Fetch Reddit posts mentioning the ticker.
+        Fetch Reddit posts mentioning the entity_id.
         
         Returns:
             {
-                "ticker": str,
+                "entity_id": str,
                 "posts": list[dict],  # Post data
                 "source": "reddit",
                 "timestamp": str
@@ -184,16 +184,16 @@ class Tracker(BaseHunter):
         self.rate_limiters["reddit"].wait_if_needed()
         
         try:
-            query = f"{ticker} stock"
+            query = f"{entity_id} entity"
             posts = []
             
             # Search across financial subreddits
-            subreddits = ["investing", "stocks", "wallstreetbets", "ValueInvesting"]
+            subreddits = ["investing", "entities", "wallstreetbets", "ValueInvesting"]
             for subreddit_name in subreddits[:2]:  # Limit to 2 for speed
                 try:
                     subreddit = self.reddit_client.subreddit(subreddit_name)
                     for post in subreddit.search(query, sort="new", limit=limit // 2):
-                        if ticker.upper() in post.title.upper():
+                        if entity_id.upper() in post.title.upper():
                             posts.append({
                                 "subreddit": subreddit_name,
                                 "title": post.title,
@@ -208,7 +208,7 @@ class Tracker(BaseHunter):
                     continue
             
             result = {
-                "ticker": ticker,
+                "entity_id": entity_id,
                 "posts": posts,
                 "source": "reddit",
                 "timestamp": datetime.now().isoformat()
@@ -216,27 +216,27 @@ class Tracker(BaseHunter):
             
             self.fetch_stats["reddit"]["success"] += 1
             self.fetch_stats["reddit"]["total_records"] += len(posts)
-            logger.info(f"✅ [reddit] Fetched {ticker}: {len(posts)} posts")
+            logger.info(f"✅ [reddit] Fetched {entity_id}: {len(posts)} posts")
             return result
             
         except Exception as e:
             self.fetch_stats["reddit"]["failed"] += 1
-            logger.error(f"❌ [reddit] Failed to fetch {ticker}: {e}")
+            logger.error(f"❌ [reddit] Failed to fetch {entity_id}: {e}")
             return {
-                "ticker": ticker,
+                "entity_id": entity_id,
                 "error": str(e),
                 "posts": [],
                 "source": "reddit",
                 "timestamp": datetime.now().isoformat()
             }
     
-    def fetch_google_news(self, ticker: str, limit: int = 10) -> Dict[str, Any]:
+    def fetch_google_news(self, entity_id: str, limit: int = 10) -> Dict[str, Any]:
         """
-        Fetch Google News articles for the ticker.
+        Fetch Google News articles for the entity_id.
         
         Returns:
             {
-                "ticker": str,
+                "entity_id": str,
                 "articles": list[dict],  # News articles
                 "source": "google_news",
                 "timestamp": str
@@ -245,7 +245,7 @@ class Tracker(BaseHunter):
         self.rate_limiters["google_news"].wait_if_needed()
         
         try:
-            query = quote(f"{ticker} stock")
+            query = quote(f"{entity_id} entity")
             rss_url = f"https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
             
             feed = feedparser.parse(rss_url)
@@ -261,7 +261,7 @@ class Tracker(BaseHunter):
                 })
             
             result = {
-                "ticker": ticker,
+                "entity_id": entity_id,
                 "articles": articles,
                 "source": "google_news",
                 "timestamp": datetime.now().isoformat()
@@ -269,14 +269,14 @@ class Tracker(BaseHunter):
             
             self.fetch_stats["google_news"]["success"] += 1
             self.fetch_stats["google_news"]["total_records"] += len(articles)
-            logger.info(f"✅ [google_news] Fetched {ticker}: {len(articles)} articles")
+            logger.info(f"✅ [google_news] Fetched {entity_id}: {len(articles)} articles")
             return result
             
         except Exception as e:
             self.fetch_stats["google_news"]["failed"] += 1
-            logger.error(f"❌ [google_news] Failed to fetch {ticker}: {e}")
+            logger.error(f"❌ [google_news] Failed to fetch {entity_id}: {e}")
             return {
-                "ticker": ticker,
+                "entity_id": entity_id,
                 "error": str(e),
                 "articles": [],
                 "source": "google_news",
@@ -357,18 +357,18 @@ class Tracker(BaseHunter):
     
     def fetch_batch(
         self,
-        tickers: List[str],
+        entity_ids: List[str],
         sources: List[str] = ["yfinance", "reddit", "google_news"],
         batch_size: int = 10,
         sleep_between_batches: float = 2.0
     ) -> List[Dict[str, Any]]:
         """
-        Fetch data for multiple tickers with batching.
+        Fetch data for multiple entity_ids with batching.
         
         Args:
-            tickers: List of ticker symbols
+            entity_ids: List of entity_id symbols
             sources: List of data sources to fetch from
-            batch_size: Number of tickers per batch
+            batch_size: Number of entity_ids per batch
             sleep_between_batches: Seconds to sleep between batches
         
         Returns:
@@ -376,27 +376,27 @@ class Tracker(BaseHunter):
         """
         all_results = []
         
-        for i in range(0, len(tickers), batch_size):
-            batch = tickers[i:i + batch_size]
-            logger.info(f"📦 Processing batch {i // batch_size + 1}/{(len(tickers) - 1) // batch_size + 1}: {batch}")
+        for i in range(0, len(entity_ids), batch_size):
+            batch = entity_ids[i:i + batch_size]
+            logger.info(f"📦 Processing batch {i // batch_size + 1}/{(len(entity_ids) - 1) // batch_size + 1}: {batch}")
             
-            for ticker in batch:
+            for entity_id in batch:
                 ticker_results = {}
                 
                 if "yfinance" in sources:
-                    ticker_results["yfinance"] = self.fetch_yfinance_data(ticker)
+                    ticker_results["yfinance"] = self.fetch_yfinance_data(entity_id)
                 
                 if "reddit" in sources:
-                    ticker_results["reddit"] = self.fetch_reddit_sentiment(ticker)
+                    ticker_results["reddit"] = self.fetch_reddit_sentiment(entity_id)
                 
                 if "google_news" in sources:
-                    ticker_results["google_news"] = self.fetch_google_news(ticker)
+                    ticker_results["google_news"] = self.fetch_google_news(entity_id)
                 
                 # Publish raw data event
                 self.publish_event(
                     event_type="codex.discovered",
                     payload={
-                        "ticker": ticker,
+                        "entity_id": entity_id,
                         "sources": ticker_results,
                         "timestamp": datetime.now().isoformat(),
                         "batch_id": i // batch_size
@@ -405,7 +405,7 @@ class Tracker(BaseHunter):
                 all_results.append(ticker_results)
             
             # Sleep between batches to avoid overwhelming APIs
-            if i + batch_size < len(tickers):
+            if i + batch_size < len(entity_ids):
                 logger.info(f"⏳ Sleeping {sleep_between_batches}s before next batch...")
                 time.sleep(sleep_between_batches)
         
@@ -416,23 +416,23 @@ class Tracker(BaseHunter):
         Main execution method (required by BaseHunter).
         
         Kwargs:
-            tickers: List[str] - Tickers to fetch
+            entity_ids: List[str] - EntityIds to fetch
             sources: List[str] - Data sources to use
             batch_size: int - Batch size
             fred_series: List[str] - FRED series to fetch
         """
-        tickers = kwargs.get("tickers", [])
+        entity_ids = kwargs.get("entity_ids", [])
         sources = kwargs.get("sources", ["yfinance", "reddit", "google_news"])
         batch_size = kwargs.get("batch_size", 10)
         fred_series = kwargs.get("fred_series", [])
         
-        logger.info(f"🚀 [Tracker] Starting execution: {len(tickers)} tickers, sources={sources}")
+        logger.info(f"🚀 [Tracker] Starting execution: {len(entity_ids)} entity_ids, sources={sources}")
         
-        # Fetch ticker data
+        # Fetch entity_id data
         results = []
-        if tickers:
+        if entity_ids:
             results = self.fetch_batch(
-                tickers=tickers,
+                entity_ids=entity_ids,
                 sources=sources,
                 batch_size=batch_size
             )
@@ -469,7 +469,7 @@ class Tracker(BaseHunter):
                 "records_succeeded": total_success,
                 "records_failed": total_failed,
                 "sources": sources,
-                "tickers_count": len(tickers),
+                "tickers_count": len(entity_ids),
                 "fetch_stats": self.fetch_stats
             },
             severity="info"
@@ -491,7 +491,7 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description="Tracker CLI")
-    parser.add_argument("--tickers", nargs="+", default=["AAPL", "MSFT"], help="Tickers to fetch")
+    parser.add_argument("--entity_ids", nargs="+", default=["EXAMPLE_ENTITY_1", "EXAMPLE_ENTITY_4"], help="EntityIds to fetch")
     parser.add_argument("--sources", nargs="+", default=["yfinance", "reddit", "google_news"],
                        choices=["yfinance", "reddit", "google_news", "fred"])
     parser.add_argument("--batch-size", type=int, default=5, help="Batch size")
@@ -501,7 +501,7 @@ if __name__ == "__main__":
     
     with Tracker() as agent:
         result = agent.execute(
-            tickers=args.tickers,
+            entity_ids=args.entity_ids,
             sources=args.sources,
             batch_size=args.batch_size,
             fred_series=args.fred_series

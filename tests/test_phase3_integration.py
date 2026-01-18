@@ -40,7 +40,7 @@ def test_complete_phase3_integration():
     aggregation_provider = MercatorAggregationProvider()
 
     # Test entity (finance domain)
-    entity_id = "AAPL"
+    entity_id = "EXAMPLE_ENTITY_1"
     composite_score = 1.85
 
     # Factor data
@@ -95,8 +95,8 @@ def test_complete_phase3_integration():
     # Test batch processing
     print("5️⃣ Testing Batch Processing...")
     batch_entities = [
-        {"entity_id": "AAPL", "composite_score": 1.85, "factors": factors},
-        {"entity_id": "TSLA", "composite_score": 0.95, "factors": {
+        {"entity_id": "EXAMPLE_ENTITY_1", "composite_score": 1.85, "factors": factors},
+        {"entity_id": "EXAMPLE_ENTITY_3", "composite_score": 0.95, "factors": {
             "momentum_z": 1.8, "trend_z": 0.2, "vola_z": 1.1, "sentiment_z": -0.5,
             "fundamentals_z": 0.8, "technical_z": 0.3, "quality_z": 0.1, "size_z": 0.2
         }}

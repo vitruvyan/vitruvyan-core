@@ -253,7 +253,7 @@ class ResultAggregator:
     Utility for aggregating and analyzing pipeline results
 
     Provides domain-agnostic aggregation capabilities that verticals
-    can use for portfolio-level analysis, ranking, etc.
+    can use for collection-level analysis, ranking, etc.
     """
 
     @staticmethod
@@ -279,7 +279,7 @@ class ResultAggregator:
 
     @staticmethod
     def get_portfolio_summary(results: List[PipelineResult]) -> Dict[str, Any]:
-        """Generate portfolio-level summary statistics"""
+        """Generate collection-level summary statistics"""
         successful_results = [r for r in results if r.success]
 
         if not successful_results:

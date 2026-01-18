@@ -32,7 +32,7 @@
 - ✅ Health endpoint responding: `{"status":"healthy"}`
 - ✅ **CRITICAL FIX**: Neutralized `exec_node.py` (removed Neural Engine import)
 - ✅ All 5 nodes neutralized and verified:
-  1. ✅ **ticker_resolver_node → entity_resolver** - DOMAIN_NEUTRAL logs confirmed
+  1. ✅ **entity_resolver_node → entity_resolver** - DOMAIN_NEUTRAL logs confirmed
   2. ✅ **screener_node → entity_screener** - Neutralized
   3. ✅ **portfolio_node → collection_analyzer** - Neutralized
   4. ✅ **advisor_node → decision_advisor** - Neutralized
@@ -40,7 +40,7 @@
 
 ### 5. Boot Test Results
 - ✅ **2 API calls executed successfully** (no crashes)
-- ✅ Response structure intact: `{"route":"conversational_complete", "tickers":[], "action":"conversation"}`
+- ✅ Response structure intact: `{"route":"conversational_complete", "entity_ids":[], "action":"conversation"}`
 - ✅ Domain-neutral log confirmed:
   ```
   🌐 [entity_resolver] DOMAIN_NEUTRAL / NOT_IMPLEMENTED - input: 'Analyze entity X under uncertainty'
@@ -79,7 +79,7 @@
 |-----------|--------|----------|
 | No import errors | ✅ PASS | Container started without ModuleNotFoundError (after exec_node fix) |
 | Nodes log DOMAIN_NEUTRAL | ✅ PASS | `entity_resolver` logs show "🌐 DOMAIN_NEUTRAL / NOT_IMPLEMENTED" |
-| LangGraph state propagates | ✅ PASS | API returns valid JSON with route/action/tickers fields |
+| LangGraph state propagates | ✅ PASS | API returns valid JSON with route/action/entity_ids fields |
 | No Python exceptions | ✅ PASS | 2 test queries completed without tracebacks |
 | Zero breaking changes | ✅ PASS | Function signatures unchanged, backup files preserved |
 
@@ -89,16 +89,16 @@
 
 ### Total Lines Removed: **~900 lines** (including exec_node)
 
-1. **ticker_resolver_node.py** → **entity_resolver**
-   - Removed: 200+ line COMPANY_SYNONYMS dict, LLM extraction, PostgreSQL ticker validation
-   - Backup: `ticker_resolver_node.py.backup` (298 lines)
+1. **entity_resolver_node.py** → **entity_resolver**
+   - Removed: 200+ line COMPANY_SYNONYMS dict, LLM extraction, PostgreSQL entity_id validation
+   - Backup: `entity_resolver_node.py.backup` (298 lines)
 
 2. **screener_node.py** → **entity_screener**
-   - Removed: Neural Engine API calls (`get_ne_ranking`), stock ranking logic
+   - Removed: Neural Engine API calls (`get_ne_ranking`), entity ranking logic
    - Backup: `screener_node.py.backup` (199 lines)
 
 3. **portfolio_node.py** → **collection_analyzer**
-   - Removed: PostgreSQL portfolio queries, concentration calculation
+   - Removed: PostgreSQL collection queries, concentration calculation
    - Backup: `portfolio_node.py.backup` (341 lines)
 
 4. **advisor_node.py** → **decision_advisor**

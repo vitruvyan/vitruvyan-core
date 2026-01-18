@@ -27,7 +27,7 @@ def test_vwre_with_provider():
     provider = MercatorAggregationProvider()
 
     # Test data (finance domain)
-    entity_id = "AAPL"
+    entity_id = "EXAMPLE_ENTITY_1"
     composite_score = 1.85
     factors = {
         "momentum_z": 2.1,
@@ -59,8 +59,8 @@ def test_vwre_with_provider():
 
     # Test batch analysis
     batch_data = [
-        {"entity_id": "AAPL", "composite_score": 1.85, "factors": factors},
-        {"entity_id": "TSLA", "composite_score": 0.95, "factors": {
+        {"entity_id": "EXAMPLE_ENTITY_1", "composite_score": 1.85, "factors": factors},
+        {"entity_id": "EXAMPLE_ENTITY_3", "composite_score": 0.95, "factors": {
             "momentum_z": 1.8, "trend_z": 0.2, "vola_z": 1.1, "sentiment_z": -0.5,
             "fundamentals_z": 0.8, "technical_z": 0.3, "quality_z": 0.1, "size_z": 0.2
         }}
@@ -76,10 +76,10 @@ def test_vwre_with_provider():
     # Test convenience functions
     from vitruvyan_core.core.cognitive.vitruvyan_proprietary.vwre_engine import explain_rank, compare_two
 
-    explanation = explain_rank("AAPL", 1.85, factors, provider)
+    explanation = explain_rank("EXAMPLE_ENTITY_1", 1.85, factors, provider)
     print(f"✅ Convenience function passed: {explanation}")
 
-    comparison = compare_two("AAPL", 1.85, factors, "TSLA", 0.95, {
+    comparison = compare_two("EXAMPLE_ENTITY_1", 1.85, factors, "EXAMPLE_ENTITY_3", 0.95, {
         "momentum_z": 1.8, "trend_z": 0.2, "vola_z": 1.1, "sentiment_z": -0.5,
         "fundamentals_z": 0.8, "technical_z": 0.3, "quality_z": 0.1, "size_z": 0.2
     }, provider)

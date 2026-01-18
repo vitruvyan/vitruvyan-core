@@ -11,9 +11,41 @@ from typing import Dict, List, Tuple
 
 REPO_ROOT = Path(__file__).parent.parent.parent
 
-# Terminology mapping
+# Terminology mapping (ORDER MATTERS - longer patterns first)
 REPLACEMENTS: Dict[str, str] = {
-    # Variable/parameter names (word boundaries)
+    # === COMPOUND VARIABLE/FUNCTION NAMES (before simple words) ===
+    # Longer patterns MUST come first
+    r'_extract_tickers_from_ne_output': '_extract_entities_from_output',
+    r'_extract_ticker_from_vague_query': '_extract_entity_from_vague_query',
+    r'_is_valid_ticker': '_is_valid_entity',
+    r'invalidate_cache_for_tickers': 'invalidate_cache_for_entities',
+    r'get_active_tickers': 'get_active_entities',
+    r'explain_ticker': 'explain_entity',
+    r'ticker_disambiguation': 'entity_disambiguation',
+    r'ticker_validation': 'entity_validation',
+    r'ticker_choice': 'entity_choice',
+    r'at_risk_tickers': 'at_risk_entities',
+    r'extracted_tickers': 'extracted_entities',
+    r'top_tickers': 'top_entities',
+    r'tickers_list': 'entities_list',
+    r'ticker_names': 'entity_names',
+    r'ticker_vee': 'entity_vee',
+    r'has_ticker': 'has_entity',
+    r'has_tickers': 'has_entities',
+    r'current_ticker': 'current_entity',
+    r'current_tickers': 'current_entities',
+    r'context_tickers': 'context_entities',
+    r'validated_tickers': 'validated_entities',
+    r'for_ticker': 'for_entity',
+    r'single_ticker': 'single_entity',
+    r'multi_ticker': 'multi_entity',
+    r'ticker_data': 'entity_data',
+    r'ticker_str': 'entity_str',
+    r'ticker_context': 'entity_context',
+    r'ticker_resolver': 'entity_resolver',
+    r'ticker_node': 'entity_node',
+    
+    # === SIMPLE WORD BOUNDARIES (after compounds) ===
     r'\bticker\b': 'entity_id',
     r'\btickers\b': 'entity_ids',
     r'\bTicker\b': 'EntityId',

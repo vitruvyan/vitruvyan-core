@@ -15,7 +15,7 @@ Key Features:
 - Synchronous implementation: Avoids async/sync event loop conflicts
 
 Pipeline Position:
-    parse → intent_detection → ticker_resolver → babel_emotion → params_extraction → decide
+    parse → intent_detection → entity_resolver → babel_emotion → params_extraction → decide
 
 State Enrichment:
     - emotion_detected (str): Primary emotion label
@@ -30,7 +30,7 @@ State Enrichment:
 
 Usage:
     g.add_node("babel_emotion", babel_emotion_node)
-    g.add_edge("ticker_resolver", "babel_emotion")
+    g.add_edge("entity_resolver", "babel_emotion")
     g.add_edge("babel_emotion", "params_extraction")
 
 Sacred Orders: DISCOURSE (Linguistic Reasoning Layer)

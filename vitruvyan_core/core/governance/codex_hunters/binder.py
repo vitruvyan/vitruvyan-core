@@ -112,7 +112,7 @@ class Binder(BaseHunter):
             Success boolean
         """
         try:
-            ticker = data.get("ticker")
+            entity_id = data.get("entity_id")
             reddit_score = data.get("reddit_score")
             google_score = data.get("google_score")
             combined_score = data.get("combined_score")
@@ -122,11 +122,11 @@ class Binder(BaseHunter):
             
             # Generate dedupe key
             timestamp = datetime.now().isoformat()
-            dedupe_key = f"{ticker}_{timestamp}"
+            dedupe_key = f"{entity_id}_{timestamp}"
             
             # Use PostgresAgent.insert_sentiment
             success = self.postgres_agent.insert_sentiment(
-                ticker=ticker,
+                entity_id=entity_id,
                 reddit=reddit_score,
                 google=google_score,
                 combined=combined_score,
@@ -138,10 +138,10 @@ class Binder(BaseHunter):
             if success:
                 self.write_stats["postgres"]["success"] += 1
                 self.write_stats["postgres"]["records"] += 1
-                logger.debug(f"✅ [PostgreSQL] Inserted sentiment for {ticker}")
+                logger.debug(f"✅ [PostgreSQL] Inserted sentiment for {entity_id}")
             else:
                 self.write_stats["postgres"]["failed"] += 1
-                logger.error(f"❌ [PostgreSQL] Failed to insert sentiment for {ticker}")
+                logger.error(f"❌ [PostgreSQL] Failed to insert sentiment for {entity_id}")
             
             return success
             
@@ -245,7 +245,7 @@ class Binder(BaseHunter):
         success_count = 0
         
         for data in sentiment_data_list:
-            ticker = data.get("ticker")
+            entity_id = data.get("entity_id")
             combined_score = data.get("combined_score")
             sentiment_tag = data.get("sentiment_tag")
             reddit_titles = data.get("reddit_titles", [])
@@ -257,19 +257,19 @@ class Binder(BaseHunter):
             # Create embedding text
             titles_text = " ".join(reddit_titles[:3] + google_titles[:3])  # First 3 from each
             embedding_text = (
-                f"{ticker} sentiment: {sentiment_tag}. "
+                f"{entity_id} sentiment: {sentiment_tag}. "
                 f"Score: {combined_score:.2f}. "
                 f"Context: {titles_text[:200]}"
             )
             
             # Write to Qdrant sentiment_context collection
-            point_id = f"{ticker}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            point_id = f"{entity_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
             qdrant_success = self.write_to_qdrant(
                 collection="sentiment_context",
                 point_id=point_id,
                 text=embedding_text,
                 payload={
-                    "ticker": ticker,
+                    "entity_id": entity_id,
                     "sentiment_tag": sentiment_tag,
                     "combined_score": combined_score,
                     "reddit_titles": reddit_titles,
@@ -298,33 +298,33 @@ class Binder(BaseHunter):
         
         for data in market_data_list:
             if "error" in data:
-                logger.warning(f"⚠️ Skipping error record: {data.get('ticker')}")
+                logger.warning(f"⚠️ Skipping error record: {data.get('entity_id')}")
                 continue
             
-            ticker = data.get("ticker")
+            entity_id = data.get("entity_id")
             info = data.get("info", {})
             history = data.get("history", [])
             
             if not history:
-                logger.warning(f"⚠️ No history data for {ticker}, skipping")
+                logger.warning(f"⚠️ No history data for {entity_id}, skipping")
                 continue
             
             # Create embedding text from company info
             embedding_text = (
-                f"{ticker} {info.get('name', '')}. "
+                f"{entity_id} {info.get('name', '')}. "
                 f"Sector: {info.get('sector', 'Unknown')}. "
                 f"Industry: {info.get('industry', 'Unknown')}. "
                 f"Latest price: {history[-1].get('close', 0):.2f}"
             )
             
             # Write to Qdrant market_data collection
-            point_id = f"{ticker}_market_{datetime.now().strftime('%Y%m%d')}"
+            point_id = f"{entity_id}_market_{datetime.now().strftime('%Y%m%d')}"
             qdrant_success = self.write_to_qdrant(
                 collection="market_data",
                 point_id=point_id,
                 text=embedding_text,
                 payload={
-                    "ticker": ticker,
+                    "entity_id": entity_id,
                     "name": info.get("name"),
                     "sector": info.get("sector"),
                     "industry": info.get("industry"),
@@ -357,7 +357,7 @@ class Binder(BaseHunter):
             if "error" in data:
                 continue
             
-            ticker = data.get("ticker")
+            entity_id = data.get("entity_id")
             posts = data.get("posts", [])
             
             for post in posts:
@@ -378,14 +378,14 @@ class Binder(BaseHunter):
                 
                 # Write to Qdrant vitruvyan_notes collection
                 phrase_hash = hashlib.md5(full_text.encode()).hexdigest()[:16]
-                point_id = f"reddit_{ticker}_{phrase_hash}"
+                point_id = f"reddit_{entity_id}_{phrase_hash}"
                 
                 qdrant_success = self.write_to_qdrant(
                     collection="vitruvyan_notes",
                     point_id=point_id,
                     text=full_text,
                     payload={
-                        "ticker": ticker,
+                        "entity_id": entity_id,
                         "source": source,
                         "subreddit": post.get("subreddit"),
                         "score": post.get("score"),
@@ -416,7 +416,7 @@ class Binder(BaseHunter):
             if "error" in data:
                 continue
             
-            ticker = data.get("ticker")
+            entity_id = data.get("entity_id")
             articles = data.get("articles", [])
             
             for article in articles:
@@ -437,14 +437,14 @@ class Binder(BaseHunter):
                 
                 # Write to Qdrant vitruvyan_notes collection
                 phrase_hash = hashlib.md5(full_text.encode()).hexdigest()[:16]
-                point_id = f"news_{ticker}_{phrase_hash}"
+                point_id = f"news_{entity_id}_{phrase_hash}"
                 
                 qdrant_success = self.write_to_qdrant(
                     collection="vitruvyan_notes",
                     point_id=point_id,
                     text=full_text,
                     payload={
-                        "ticker": ticker,
+                        "entity_id": entity_id,
                         "source": source,
                         "published": article.get("published"),
                         "link": article.get("link"),
@@ -555,17 +555,17 @@ if __name__ == "__main__":
     # Sample normalized data for testing
     sample_normalized = [
         {
-            "ticker": "AAPL",
+            "entity_id": "EXAMPLE_ENTITY_1",
             "reddit_score": 0.7,
             "google_score": 0.6,
             "combined_score": 0.65,
             "sentiment_tag": "BULLISH",
             "reddit_titles": ["AAPL great buy", "Apple earnings strong"],
-            "google_titles": ["Apple stock rises", "AAPL hits new high"],
+            "google_titles": ["Apple entity rises", "AAPL hits new high"],
             "source": "sentiment"
         },
         {
-            "ticker": "AAPL",
+            "entity_id": "EXAMPLE_ENTITY_1",
             "info": {
                 "name": "Apple Inc.",
                 "sector": "Technology",

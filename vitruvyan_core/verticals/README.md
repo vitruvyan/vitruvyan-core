@@ -3,7 +3,7 @@
 This directory is intentionally empty in vitruvyan-core.
 
 Verticals are implemented in separate repositories:
-- `mercator/` — Financial analysis (trading signals, portfolio management)
+- `mercator/` — Financial analysis (trading signals, collection management)
 - `aegis/` — Emergency response (disaster management, resource allocation)
 - `[your-vertical]/` — Your domain
 

@@ -155,11 +155,11 @@ class MercatorVertical:
         self.orchestrator = VerticalOrchestrator()
 
     def analyze_portfolio(self, portfolio_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Analyze entire portfolio using cognitive stack"""
+        """Analyze entire collection using cognitive stack"""
         results = []
 
         for position in portfolio_data:
-            entity_id = position['ticker']  # or position['entity_id']
+            entity_id = position['entity_id']  # or position['entity_id']
             analysis = self.orchestrator.process_entity(entity_id, position)
             results.append(analysis)
 
@@ -167,7 +167,7 @@ class MercatorVertical:
 
     def get_risk_exposure_report(self, portfolio_analysis: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Generate domain-specific risk report"""
-        # Business logic for aggregating portfolio-level insights
+        # Business logic for aggregating collection-level insights
         pass
 ```
 
@@ -192,26 +192,26 @@ class MercatorVertical:
 
 ```python
 {
-    "entity_id": "AAPL",
+    "entity_id": "EXAMPLE_ENTITY_1",
     "neural_evaluation": {
         "scores": {"overall": 0.85, "factors": {...}},
         "factor_contributions": {...},
         "confidence": 0.92
     },
     "attribution_analysis": {
-        "entity_id": "AAPL",
+        "entity_id": "EXAMPLE_ENTITY_1",
         "factor_weights": {...},
         "attribution_breakdown": {...},
         "aggregation_profile": "balanced_mid"
     },
     "risk_assessment": {
-        "entity_id": "AAPL",
+        "entity_id": "EXAMPLE_ENTITY_1",
         "risk_profile": {...},
         "exposure_metrics": {...},
         "recommendations": [...]
     },
     "explanation": {
-        "entity_id": "AAPL",
+        "entity_id": "EXAMPLE_ENTITY_1",
         "narrative": "Clear, actionable explanation...",
         "key_factors": [...],
         "confidence_intervals": {...}
@@ -252,10 +252,10 @@ def test_vertical_integration():
 
     # Setup
     orchestrator = VerticalOrchestrator()
-    test_entity = {"ticker": "AAPL", "price": 150.0, "volume": 1000000}
+    test_entity = {"entity_id": "EXAMPLE_ENTITY_1", "price": 150.0, "volume": 1000000}
 
     # Execute pipeline
-    result = orchestrator.process_entity("AAPL", test_entity)
+    result = orchestrator.process_entity("EXAMPLE_ENTITY_1", test_entity)
 
     # Verify all components executed
     assert 'neural_evaluation' in result
@@ -264,9 +264,9 @@ def test_vertical_integration():
     assert 'explanation' in result
 
     # Verify data flow
-    assert result['attribution_analysis']['entity_id'] == "AAPL"
-    assert result['risk_assessment']['entity_id'] == "AAPL"
-    assert result['explanation']['entity_id'] == "AAPL"
+    assert result['attribution_analysis']['entity_id'] == "EXAMPLE_ENTITY_1"
+    assert result['risk_assessment']['entity_id'] == "EXAMPLE_ENTITY_1"
+    assert result['explanation']['entity_id'] == "EXAMPLE_ENTITY_1"
 ```
 
 ---

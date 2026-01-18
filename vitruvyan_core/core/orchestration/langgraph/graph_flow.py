@@ -26,7 +26,7 @@ from core.orchestration.langgraph.node.quality_check_node import quality_check_n
 from core.orchestration.langgraph.node.params_extraction_node import params_extraction_node
 
 # 🔥 New planned nodes (stubs + new)
-from core.orchestration.langgraph.node.ticker_resolver_node import ticker_resolver_node
+from core.orchestration.langgraph.node.entity_resolver_node import entity_resolver_node
 from core.orchestration.langgraph.node.screener_node import screener_node
 from core.orchestration.langgraph.node.output_normalizer_node import output_normalizer_node
 from core.orchestration.langgraph.node.audit_node_simple import audit_node
@@ -50,7 +50,7 @@ from core.orchestration.langgraph.node.proactive_suggestions_node import proacti
 # 🔌 MCP Integration - Phase 4 (Model Context Protocol + OpenAI Function Calling)
 from core.orchestration.langgraph.node.llm_mcp_node import llm_mcp_node
 
-# 🏛️ Portfolio Analysis - Day 3
+# 🏛️ Collection Analysis - Day 3
 from core.orchestration.langgraph.node.portfolio_node import portfolio_node
 
 # 🧠 VSGS (Vitruvyan Semantic Grounding System) - PR-A Bootstrap
@@ -73,7 +73,7 @@ class GraphState(TypedDict, total=False):
     error: Optional[str]
     response: Dict[str, Any]
     budget: Optional[str]
-    tickers: Optional[list[str]]
+    entity_ids: Optional[list[str]]
     horizon: Optional[str]
     user_id: Optional[str]
     sentiment: Optional[Dict[str, Any]]
@@ -108,7 +108,7 @@ class GraphState(TypedDict, total=False):
     
     # 🛡️ Sentinel Order Fields
     sentinel_risk_score: Optional[float]     # Current risk assessment (0.0-1.0)
-    sentinel_portfolio_value: Optional[float] # Portfolio value under protection
+    sentinel_portfolio_value: Optional[float] # Collection value under protection
     sentinel_protection_mode: Optional[str]  # conservative, balanced, aggressive, emergency
     sentinel_alerts: Optional[List[str]]     # Active alerts
     sentinel_status: Optional[str]           # monitoring, alert_issued, emergency, recovery
@@ -167,9 +167,9 @@ class GraphState(TypedDict, total=False):
     # 🧠 CAN v2 Fields (Dec 27, 2025)
     can_response: Optional[Dict[str, Any]]  # CAN structured response (CANResponse schema)
     can_mode: Optional[str]  # urgent | analytical | exploratory | conversational
-    can_route: Optional[str]  # single | comparison | screening | portfolio | allocation | sector | chat
+    can_route: Optional[str]  # single | comparison | screening | collection | allocation | sector | chat
     follow_ups: Optional[List[str]]  # Suggested next questions
-    conversation_type: Optional[str]  # single | comparison | portfolio | screening | allocation | sector
+    conversation_type: Optional[str]  # single | comparison | collection | screening | allocation | sector
 
 
 def run_graph_once(user_input: str, user_id: str = "demo"):
@@ -194,8 +194,8 @@ def run_graph_once(user_input: str, user_id: str = "demo"):
     # 🕸️ Pattern Weavers - Semantic enrichment after intent detection (Nov 2025)
     state = weaver_node(state)
 
-    # 4) Resolve ticker
-    state = ticker_resolver_node(state)
+    # 4) Resolve entity_id
+    state = entity_resolver_node(state)
 
     # 5) Parse horizon
     state = horizon_parser_node(state)
@@ -211,7 +211,7 @@ def run_graph_once(user_input: str, user_id: str = "demo"):
     # Old code (kept as reference for Phase 2 removal):
     # try:
     #     slots_to_save = {
-    #         "tickers": state.get("tickers"),
+    #         "entity_ids": state.get("entity_ids"),
     #         "budget": state.get("budget"),
     #         "horizon": state.get("horizon"),
     #         "language": state.get("language"),
@@ -240,7 +240,7 @@ def build_graph():
     # 🕸️ Pattern Weavers - Semantic enrichment after intent detection (Nov 2025)
     g.add_node("weaver", weaver_node)
     
-    g.add_node("ticker_resolver", ticker_resolver_node)
+    g.add_node("entity_resolver", entity_resolver_node)
     
     # ⚙️ PHASE 2.3 - Consolidated Parameter Extraction (horizon_parser + topk_parser)
     g.add_node("params_extraction", params_extraction_node)
@@ -272,8 +272,8 @@ def build_graph():
     # 🧠 CAN v2 - Conversational Advisor Node (Dec 27, 2025)
     g.add_node("can", can_node)
     
-    # �🏛️ Portfolio Analysis - Day 3
-    g.add_node("portfolio", portfolio_node)
+    # �🏛️ Collection Analysis - Day 3
+    g.add_node("collection", portfolio_node)
     
     # 🏛️ Sacred Orders Integration  
     g.add_node("orthodoxy", orthodoxy_node)
@@ -294,12 +294,12 @@ def build_graph():
     g.set_entry_point("parse")
 
     # 🧠 PHASE 2: Consolidated pipeline
-    # parse → intent_detection → weaver → ticker_resolver → babel_emotion → semantic_grounding → params_extraction → decide
+    # parse → intent_detection → weaver → entity_resolver → babel_emotion → semantic_grounding → params_extraction → decide
     g.add_edge("parse", "intent_detection")
     g.add_edge("intent_detection", "weaver") # New edge
-    g.add_edge("weaver", "ticker_resolver") # New edge
-    # 🎭 PHASE 2.1: Emotion detection after ticker resolution
-    g.add_edge("ticker_resolver", "babel_emotion")
+    g.add_edge("weaver", "entity_resolver") # New edge
+    # 🎭 PHASE 2.1: Emotion detection after entity_id resolution
+    g.add_edge("entity_resolver", "babel_emotion")
     # 🧠 PR-A: VSGS Semantic Grounding (after emotion, before params extraction)
     g.add_edge("babel_emotion", "semantic_grounding")
     g.add_edge("semantic_grounding", "params_extraction")
@@ -317,7 +317,7 @@ def build_graph():
         
         route_value = state.get("route")
         intent_value = state.get("intent")
-        tickers_value = state.get("tickers")
+        tickers_value = state.get("entity_ids")
         
         # 🔌 MCP Integration: Check if MCP should handle this route
         use_mcp = os.getenv("USE_MCP", "0") == "1"
@@ -334,7 +334,7 @@ def build_graph():
         print(f"🔀 [CONDITIONAL_EDGE] Evaluating route from 'decide' node:")
         print(f"  - state['route'] = '{route_value}'")
         print(f"  - state['intent'] = '{intent_value}'")
-        print(f"  - state['tickers'] = {tickers_value}")
+        print(f"  - state['entity_ids'] = {tickers_value}")
         print(f"  - All state keys: {list(state.keys())}")
         print(f"🔀 Target node: '{route_value}'")
         print(f"{'🔀'*40}\n")
@@ -352,17 +352,17 @@ def build_graph():
             "llm_soft": "llm_soft",
             "screener": "screener",
             "codex_expedition": "codex_hunters",  # 🗝️ New route for Codex Hunters
-            "sentinel_monitoring": "sentinel",    # 🛡️ Portfolio Guardian / Sentinel Order
+            "sentinel_monitoring": "sentinel",    # 🛡️ Collection Guardian / Sentinel Order
             "portfolio_guardian": "sentinel",     # 🛡️ Alternative route name
             "risk_assessment": "sentinel",        # 🛡️ Risk analysis route
             "emergency": "sentinel",              # 🛡️ Emergency response route
-            "portfolio_review": "portfolio",      # 🏛️ Portfolio analysis with LLM reasoning (Day 3)
+            "portfolio_review": "collection",      # 🏛️ Collection analysis with LLM reasoning (Day 3)
             "crew_strategy": "crew",              # 🧠 CrewAI strategic analysis
             "trend": "crew",                      # 🧠 Trend analysis via CrewAI
             "momentum": "crew",                   # 🧠 Momentum analysis via CrewAI
             "volatility": "crew",                 # 🧠 Volatility analysis via CrewAI
             "backtest": "crew",                   # 🧠 Backtest via CrewAI
-            "portfolio": "crew",                  # 🧠 Portfolio analysis via CrewAI (legacy)
+            "collection": "crew",                  # 🧠 Collection analysis via CrewAI (legacy)
         },
     )
 
@@ -421,13 +421,13 @@ def build_graph():
         }
     )
     
-    # 🏛️ Portfolio Analysis routing (Day 3)
+    # 🏛️ Collection Analysis routing (Day 3)
     g.add_conditional_edges(
-        "portfolio",
+        "collection",
         lambda state: state.get("route"),
         {
-            "portfolio_complete": "compose",        # Portfolio analysis complete → Direct to compose (skip normalizer)
-            "error": "quality_check",               # Error in portfolio fetch → Quality check
+            "portfolio_complete": "compose",        # Collection analysis complete → Direct to compose (skip normalizer)
+            "error": "quality_check",               # Error in collection fetch → Quality check
         }
     )
 
@@ -463,7 +463,7 @@ def build_graph():
         
         Preserves:
         - sentiment (legacy)
-        - tickers (legacy)
+        - entity_ids (legacy)
         - emotion_detected, emotion_confidence, etc (PHASE 2.1)
         - language_detected, cultural_context (Babel Gardens)
         """
@@ -484,11 +484,11 @@ def build_graph():
         
         final_state = original_invoke(state)
         
-        # Restore sentiment/tickers if lost (legacy)
+        # Restore sentiment/entity_ids if lost (legacy)
         if "sentiment" in state and "sentiment" not in final_state:
             final_state["sentiment"] = state["sentiment"]
-        if "tickers" in state and "tickers" not in final_state:
-            final_state["tickers"] = state["tickers"]
+        if "entity_ids" in state and "entity_ids" not in final_state:
+            final_state["entity_ids"] = state["entity_ids"]
         
         # 🎭 PHASE 2.1: Restore UX fields if lost during Sacred Orders pipeline
         for field, snapshot_value in ux_snapshot.items():

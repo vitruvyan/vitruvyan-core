@@ -360,7 +360,7 @@ class SentinelAgent(BaseKeeper):
             return True
         
         significant_keywords = [
-            "portfolio", "analysis", "recommendation", "strategy",
+            "collection", "analysis", "recommendation", "strategy",
             "risk", "allocation", "backtest", "signal"
         ]
         

@@ -20,11 +20,11 @@ Pattern Weavers enriches financial analysis with **semantic understanding** by c
 
 ```
 User Query → LangGraph (intent_detection) → Pattern Weavers (weaver_node) → 
-Ticker Resolver → Neural Engine → VEE → Response
+EntityId Resolver → Neural Engine → VEE → Response
 ```
 
 **Integration Point**: `core/langgraph/graph_flow.py`
-- Node: `weaver_node` (between intent_detection and ticker_resolver)
+- Node: `weaver_node` (between intent_detection and entity_resolver)
 - State key: `state["weaver_context"]` (concepts + patterns)
 
 ---

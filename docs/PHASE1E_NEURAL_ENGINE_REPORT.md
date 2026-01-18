@@ -66,7 +66,7 @@ All required components have been implemented:
 ## 🎯 COMPLIANCE WITH RULES
 
 ### ✅ NO DOMAIN KNOWLEDGE
-- Zero mentions of: ticker, stock, sector, RSI, momentum, route, patient
+- Zero mentions of: entity_id, entity, sector, RSI, momentum, route, patient
 - Only generic terms: entity_id, factor_name, factor_value, group_field
 
 ### ✅ NO CONCRETE FACTORS

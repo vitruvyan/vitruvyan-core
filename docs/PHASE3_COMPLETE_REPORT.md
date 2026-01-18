@@ -39,12 +39,12 @@ Phase 3 has successfully transformed VEE/VARE/VWRE engines from finance-specific
 2. **VARE Engine** (`vare_engine.py`)
    - `analyze_entity()` now accepts `RiskProvider`
    - Domain-agnostic risk analysis
-   - Updated `VAREResult` dataclass (entity_id instead of ticker)
+   - Updated `VAREResult` dataclass (entity_id instead of entity_id)
 
 3. **VWRE Engine** (`vwre_engine.py`)
    - `analyze_attribution()` now accepts `AggregationProvider`
    - Domain-agnostic attribution analysis
-   - Updated `VWREResult` dataclass (entity_id instead of ticker)
+   - Updated `VWREResult` dataclass (entity_id instead of entity_id)
 
 ### 🧪 Testing & Validation
 
@@ -63,9 +63,9 @@ Phase 3 has successfully transformed VEE/VARE/VWRE engines from finance-specific
 ```
 
 ### 🔄 Database Schema Updates
-- **vee_explanations table**: `ticker` → `entity_id` for domain agnosticism
-- **vwre_attributions table**: `ticker` → `entity_id` for domain agnosticism
-- All queries updated to use `entity_id` instead of hardcoded ticker references
+- **vee_explanations table**: `entity_id` → `entity_id` for domain agnosticism
+- **vwre_attributions table**: `entity_id` → `entity_id` for domain agnosticism
+- All queries updated to use `entity_id` instead of hardcoded entity_id references
 
 ### 🚀 Multi-Domain Enablement
 

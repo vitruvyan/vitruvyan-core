@@ -22,7 +22,7 @@ All service Dockerfiles for container builds:
 - `Dockerfile.api_conclave` (port 8012) - Synaptic Conclave
 - `Dockerfile.orthodoxy_wardens` (port 8006) - Schema validation
 - `Dockerfile.vault_keepers` (port 8007) - Memory custodians
-- `Dockerfile.portfolio_guardian` (port 8011) - Portfolio risk monitoring
+- `Dockerfile.portfolio_guardian` (port 8011) - Collection risk monitoring
 - `Dockerfile.api_crewai` (port 8005) - CrewAI orchestration
 - `Dockerfile.api_memory_orders` (port 8016) - Memory operations
 - `Dockerfile.api_codex_hunters` (port 8008) - Data ingestion

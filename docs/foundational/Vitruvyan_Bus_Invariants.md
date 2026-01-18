@@ -118,7 +118,7 @@ The following are concrete examples of invariant violations:
 |--------------|-----------|----------------|
 | "Route high-sentiment events to a priority queue" | 3.1 (Payload Inspection) | Routing decisions based on semantic content |
 | "Auto-generate `session_started` when first event arrives" | 3.2 (Event Synthesis) | Bus creating events, not just transporting |
-| "Link events that mention the same ticker symbol" | 3.3 (Correlation Inference) | Bus inferring relationships from content |
+| "Link events that mention the same entity_id symbol" | 3.3 (Correlation Inference) | Bus inferring relationships from content |
 | "Compute rolling average of sentiment scores" | 3.4 (Semantic Aggregation) | Bus performing analytics on payloads |
 | "Throttle events when anomaly pattern detected" | 3.5 (Conditional Routing) | Bus implementing semantic policies |
 | "Cluster events by embedding similarity" | 3.4 (Semantic Aggregation) | Bus performing meaning-based grouping |

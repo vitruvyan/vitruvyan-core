@@ -110,7 +110,7 @@ class CodexIntent(Enum):
 
 
 class SentinelIntent(Enum):
-    """Sentinel Order event intents - Phase 4.7 Portfolio Guardian Cognitive Integration"""
+    """Sentinel Order event intents - Phase 4.7 Collection Guardian Cognitive Integration"""
     # Risk assessment events
     RISK_ASSESSED = "risk.assessed"
     ALERT_ISSUED = "alert.issued"
@@ -135,7 +135,7 @@ class CrewIntent(Enum):
     MOMENTUM_ANALYSIS_REQUESTED = "momentum.analysis.requested"
     VOLATILITY_ANALYSIS_REQUESTED = "volatility.analysis.requested"
     RISK_ANALYSIS_REQUESTED = "risk.analysis.requested"
-    PORTFOLIO_ANALYSIS_REQUESTED = "portfolio.analysis.requested"
+    PORTFOLIO_ANALYSIS_REQUESTED = "collection.analysis.requested"
     BACKTEST_REQUESTED = "backtest.requested"
     
     # Outgoing responses from CrewAI
@@ -144,7 +144,7 @@ class CrewIntent(Enum):
     MOMENTUM_COMPLETED = "momentum.completed"
     VOLATILITY_COMPLETED = "volatility.completed"
     RISK_COMPLETED = "risk.completed"
-    PORTFOLIO_COMPLETED = "portfolio.completed"
+    PORTFOLIO_COMPLETED = "collection.completed"
     BACKTEST_COMPLETED = "backtest.completed"
     
     # Task lifecycle events
@@ -218,7 +218,7 @@ class AuditAlertPayload:
 class SentinelRiskPayload:
     """Payload schema for sentinel risk assessment events"""
     risk_score: float                  # 0.0 to 1.0 risk score
-    portfolio_value: float             # Current portfolio value
+    portfolio_value: float             # Current collection value
     daily_pnl_pct: float              # Daily P&L percentage
     drawdown: float                    # Current drawdown
     market_condition: str              # "bull_market", "bear_market", "high_volatility", etc.
@@ -269,8 +269,8 @@ class VaultRestorePayload:
 @dataclass
 class CodexDataRefreshPayload:
     """Payload schema for data refresh requests (PHASE 4.5)"""
-    ticker: Optional[str] = None               # Specific ticker to refresh
-    tickers: Optional[List[str]] = None        # Multiple tickers to refresh
+    entity_id: Optional[str] = None               # Specific entity_id to refresh
+    entity_ids: Optional[List[str]] = None        # Multiple entity_ids to refresh
     sources: Optional[List[str]] = None        # Data sources to query
     priority: str = "medium"                   # "critical", "high", "medium", "low"
     batch_size: int = 10                       # Batch processing size
@@ -294,8 +294,8 @@ class CodexDiscoveryPayload:
 @dataclass
 class BabelSentimentPayload:
     """Payload schema for Babel sentiment analysis - EPOCH II"""
-    ticker: Optional[str] = None               # Single ticker
-    tickers: Optional[List[str]] = None        # Multiple tickers
+    entity_id: Optional[str] = None               # Single entity_id
+    entity_ids: Optional[List[str]] = None        # Multiple entity_ids
     text: Optional[str] = None                 # Direct text analysis
     language: Optional[str] = None             # Target language (en, it, es, etc.)
     mode: str = "enhanced"                     # "enhanced", "conservative", "aggressive"
@@ -307,7 +307,7 @@ class BabelSentimentPayload:
 @dataclass
 class BabelSentimentFusedPayload:
     """Payload schema for Babel sentiment fusion results - EPOCH II"""
-    ticker: Optional[str] = None               # Analyzed ticker
+    entity_id: Optional[str] = None               # Analyzed entity_id
     sentiment_score: float = 0.0               # -1.0 to 1.0
     sentiment_label: str = "neutral"           # "positive", "neutral", "negative"
     confidence: float = 0.0                    # 0.0 to 1.0
@@ -336,7 +336,7 @@ class BabelLanguagePayload:
 class MemoryReadPayload:
     """Payload schema for Memory read requests - EPOCH II"""
     query: str                                 # Search query
-    collection: Optional[str] = None           # "phrases", "tickers", etc.
+    collection: Optional[str] = None           # "phrases", "entity_ids", etc.
     limit: int = 10                           # Max results
     memory_type: str = "dual"                 # "archivarium", "mnemosyne", "dual"
     time_range: Optional[Dict[str, str]] = None  # {"start": ISO, "end": ISO}
@@ -404,11 +404,11 @@ class EventSchemaValidator:
     @staticmethod
     def validate_codex_data_refresh(payload: Dict[str, Any]) -> bool:
         """Validate codex data refresh request payload (PHASE 4.5)"""
-        # At least one ticker specification is required
-        has_ticker = payload.get('ticker') is not None
-        has_tickers = payload.get('tickers') is not None and len(payload.get('tickers', [])) > 0
+        # At least one entity_id specification is required
+        has_entity = payload.get('entity_id') is not None
+        has_entitys = payload.get('entity_ids') is not None and len(payload.get('entity_ids', [])) > 0
         
-        return has_ticker or has_tickers
+        return has_entity or has_entitys
     
     @staticmethod
     def validate_codex_discovery(payload: Dict[str, Any]) -> bool:
@@ -419,11 +419,11 @@ class EventSchemaValidator:
     @staticmethod
     def validate_babel_sentiment(payload: Dict[str, Any]) -> bool:
         """Validate Babel sentiment request payload - EPOCH II"""
-        has_ticker = payload.get('ticker') is not None
-        has_tickers = payload.get('tickers') is not None and len(payload.get('tickers', [])) > 0
+        has_entity = payload.get('entity_id') is not None
+        has_entitys = payload.get('entity_ids') is not None and len(payload.get('entity_ids', [])) > 0
         has_text = payload.get('text') is not None
         
-        return has_ticker or has_tickers or has_text
+        return has_entity or has_entitys or has_text
     
     @staticmethod
     def validate_memory_read(payload: Dict[str, Any]) -> bool:
@@ -535,8 +535,8 @@ def create_vault_restore_event(
 def create_codex_data_refresh_request(
     emitter: str = "langgraph",
     target: str = "codex_hunters",
-    ticker: str = None,
-    tickers: List[str] = None,
+    entity_id: str = None,
+    entity_ids: List[str] = None,
     sources: List[str] = None,
     priority: str = "medium",
     **kwargs
@@ -544,8 +544,8 @@ def create_codex_data_refresh_request(
     """Create standardized data refresh request event (PHASE 4.5)"""
     
     payload = CodexDataRefreshPayload(
-        ticker=ticker,
-        tickers=tickers,
+        entity_id=entity_id,
+        entity_ids=entity_ids,
         sources=sources or ["yfinance", "reddit", "google_news"],
         priority=priority,
         batch_size=kwargs.get('batch_size', 10),
@@ -701,7 +701,7 @@ EVENT_ROUTING_MAP = {
         f"{EventDomain.SENTINEL.value}.{SentinelIntent.EMERGENCY_TRIGGERED.value}"
     ],
     
-    # Portfolio Guardian / Sentinel Order listens to these events
+    # Collection Guardian / Sentinel Order listens to these events
     "portfolio_guardian": [
         f"{EventDomain.ORTHODOXY.value}.{OrthodoxIntent.HEALING_APPLIED.value}",
         f"{EventDomain.VAULT.value}.{VaultIntent.BACKUP_CREATED.value}",
@@ -759,7 +759,7 @@ if __name__ == "__main__":
     
     # Test PHASE 4.5 Codex data refresh request
     refresh_request = create_codex_data_refresh_request(
-        ticker="AAPL",
+        entity_id="EXAMPLE_ENTITY_1",
         sources=["yfinance", "reddit"],
         priority="high",
         correlation_id="test_codex_001"
@@ -770,8 +770,8 @@ if __name__ == "__main__":
     # Test PHASE 4.5 Codex discovery response
     discovery_response = create_codex_discovery_event(
         discovery_id="discovery_001",
-        collections_mapped=["phrases", "tickers"],
-        consistency_scores={"phrases": 0.95, "tickers": 0.98},
+        collections_mapped=["phrases", "entity_ids"],
+        consistency_scores={"phrases": 0.95, "entity_ids": 0.98},
         inconsistencies_found=2,
         recommendations=["Update AAPL price data", "Refresh sentiment analysis"],
         sources_found=["yahoo", "reddit_post_12345"],

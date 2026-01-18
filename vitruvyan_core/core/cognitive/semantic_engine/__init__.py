@@ -3,7 +3,7 @@ Semantic Engine — Cognitive Tier 1
 Sacred Order: Perception (Order I)
 
 Intent-based semantic parsing engine for user input understanding.
-Extracts tickers, budget, horizon, and semantic intent from natural language.
+Extracts entity_ids, budget, horizon, and semantic intent from natural language.
 
 Architecture:
 - Intent Module: classify_intents, extract_horizon

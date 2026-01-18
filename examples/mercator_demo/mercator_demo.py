@@ -3,7 +3,7 @@ Mercator Vertical Demo: Complete Financial Analysis
 
 This demo showcases Mercator Vertical's complete financial analysis capabilities:
 - Single entity analysis with different investment strategies
-- Portfolio-level analysis and risk assessment
+- Collection-level analysis and risk assessment
 - Multi-factor quantitative evaluation
 - Investment recommendation generation
 
@@ -35,7 +35,7 @@ def create_sample_financial_data() -> List[Dict[str, Any]]:
     """
     return [
         {
-            "entity_id": "AAPL",
+            "entity_id": "EXAMPLE_ENTITY_1",
             "company_name": "Apple Inc.",
             "current_price": 195.50,
             "price_1m": 185.20,
@@ -64,7 +64,7 @@ def create_sample_financial_data() -> List[Dict[str, Any]]:
             "shares_outstanding": 15800  # millions
         },
         {
-            "entity_id": "MSFT",
+            "entity_id": "EXAMPLE_ENTITY_4",
             "company_name": "Microsoft Corporation",
             "current_price": 420.30,
             "price_1m": 395.50,
@@ -93,7 +93,7 @@ def create_sample_financial_data() -> List[Dict[str, Any]]:
             "shares_outstanding": 7400
         },
         {
-            "entity_id": "GOOGL",
+            "entity_id": "EXAMPLE_ENTITY_5",
             "company_name": "Alphabet Inc.",
             "current_price": 142.80,
             "price_1m": 138.50,
@@ -166,7 +166,7 @@ def demonstrate_single_entity_analysis():
     sample_data = create_sample_financial_data()
 
     # Analyze AAPL with different strategies
-    aapl_data = next(item for item in sample_data if item["entity_id"] == "AAPL")
+    aapl_data = next(item for item in sample_data if item["entity_id"] == "EXAMPLE_ENTITY_1")
 
     strategies = ["balanced", "growth", "value", "defensive"]
 
@@ -174,7 +174,7 @@ def demonstrate_single_entity_analysis():
         print(f"\n🎯 Analyzing AAPL with {strategy.upper()} strategy")
         print("-" * 60)
 
-        analysis = mercator.analyze_entity("AAPL", aapl_data, strategy=strategy)
+        analysis = mercator.analyze_entity("EXAMPLE_ENTITY_1", aapl_data, strategy=strategy)
 
         print(f"📊 Composite Score: {analysis.neural_evaluation['composite_score']:.3f}")
         print(f"🎖️  Rank: {analysis.neural_evaluation['rank']}")
@@ -191,24 +191,24 @@ def demonstrate_single_entity_analysis():
 
 
 def demonstrate_portfolio_analysis():
-    """Demonstrate portfolio-level analysis"""
+    """Demonstrate collection-level analysis"""
     print("\n" + "=" * 80)
-    print("🏛️ MERCATOR VERTICAL DEMO: Portfolio Analysis")
+    print("🏛️ MERCATOR VERTICAL DEMO: Collection Analysis")
     print("=" * 80)
 
     # Initialize Mercator
     mercator = MercatorVertical()
 
-    # Create sample portfolio
+    # Create sample collection
     sample_data = create_sample_financial_data()
     portfolio_holdings = [
         {"entity_id": item["entity_id"], "data": item}
         for item in sample_data
     ]
 
-    print(f"\n📊 Analyzing portfolio with {len(portfolio_holdings)} holdings")
+    print(f"\n📊 Analyzing collection with {len(portfolio_holdings)} holdings")
 
-    # Analyze portfolio with balanced strategy
+    # Analyze collection with balanced strategy
     portfolio_analysis = mercator.analyze_portfolio(
         portfolio_holdings,
         portfolio_id="tech_diversified",
@@ -216,7 +216,7 @@ def demonstrate_portfolio_analysis():
     )
 
     print("
-📈 Portfolio Metrics:"    metrics = portfolio_analysis.portfolio_metrics
+📈 Collection Metrics:"    metrics = portfolio_analysis.portfolio_metrics
     print(".3f"    print(".3f"    print(".3f"    print(".3f"    print(".3f"    print(".3f"
     print(f"\n🎯 Diversification Score: {portfolio_analysis.diversification_score:.1%}")
     print(f"📋 Recommendation: {portfolio_analysis.recommendation}")
@@ -242,10 +242,10 @@ def demonstrate_factor_analysis():
     sample_data = create_sample_financial_data()
 
     # Analyze MSFT with detailed factor breakdown
-    msft_data = next(item for item in sample_data if item["entity_id"] == "MSFT")
+    msft_data = next(item for item in sample_data if item["entity_id"] == "EXAMPLE_ENTITY_4")
 
     print("
-🔍 Deep Factor Analysis for MSFT"    analysis = mercator.analyze_entity("MSFT", msft_data, strategy="growth")
+🔍 Deep Factor Analysis for MSFT"    analysis = mercator.analyze_entity("EXAMPLE_ENTITY_4", msft_data, strategy="growth")
 
     print("
 📊 Neural Engine Factor Contributions:"    factors = analysis.neural_evaluation['factor_contributions']
@@ -290,7 +290,7 @@ def main():
         # Demo 1: Single entity with multiple strategies
         demonstrate_single_entity_analysis()
 
-        # Demo 2: Portfolio analysis
+        # Demo 2: Collection analysis
         demonstrate_portfolio_analysis()
 
         # Demo 3: Deep factor analysis

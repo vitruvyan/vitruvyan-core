@@ -32,7 +32,7 @@ def test_vare_domain_agnostic():
         'Volume': np.random.randint(1000000, 10000000, n_days)
     }, index=dates)
 
-    entity_id = "AAPL"
+    entity_id = "EXAMPLE_ENTITY_1"
 
     # Initialize components
     engine = VAREEngine()

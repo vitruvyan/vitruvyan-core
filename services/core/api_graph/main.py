@@ -456,21 +456,21 @@ async def get_semantic_clusters():
     finally:
         pg.connection.close()
 
-# --- Fuzzy Ticker Search Endpoint ---
-@app.get("/api/tickers/search")
+# --- Fuzzy EntityId Search Endpoint ---
+@app.get("/api/entity_ids/search")
 async def search_tickers(q: str = ""):
     """
-    Fuzzy ticker search endpoint for UI autocomplete.
-    Searches both ticker symbols and company names.
+    Fuzzy entity_id search endpoint for UI autocomplete.
+    Searches both entity_id symbols and company names.
     
     Args:
-        q: Query string (partial ticker or company name)
+        q: Query string (partial entity_id or company name)
     
     Returns:
-        List of matching tickers with metadata:
+        List of matching entity_ids with metadata:
         [
             {
-                "ticker": "C",
+                "entity_id": "C",
                 "name": "Citigroup Inc.",
                 "sector": "Finance",
                 "match_score": 0.95
@@ -479,8 +479,8 @@ async def search_tickers(q: str = ""):
         ]
     
     Example:
-        /api/tickers/search?q=citi → Returns Citigroup (C)
-        /api/tickers/search?q=micro → Returns Microsoft (MSFT), MicroStrategy (MSTR)
+        /api/entity_ids/search?q=citi → Returns Citigroup (C)
+        /api/entity_ids/search?q=micro → Returns Microsoft (MSFT), MicroStrategy (MSTR)
     """
     from core.foundation.persistence.postgres_agent import PostgresAgent
     
@@ -499,28 +499,28 @@ async def search_tickers(q: str = ""):
         query_lower = q.lower()
         
         # Fuzzy search query with PostgreSQL ILIKE + similarity scoring
-        # Priority 1: Exact ticker match
-        # Priority 2: Ticker starts with query
+        # Priority 1: Exact entity_id match
+        # Priority 2: EntityId starts with query
         # Priority 3: Company name contains query (case-insensitive)
         sql_query = """
             SELECT 
-                ticker,
+                entity_id,
                 company_name,
                 sector,
                 CASE
-                    WHEN ticker = %s THEN 1.0
-                    WHEN ticker LIKE %s THEN 0.9
+                    WHEN entity_id = %s THEN 1.0
+                    WHEN entity_id LIKE %s THEN 0.9
                     WHEN LOWER(company_name) LIKE %s THEN 0.7
                     WHEN LOWER(company_name) LIKE %s THEN 0.5
                     ELSE 0.3
                 END as match_score
-            FROM tickers
+            FROM entity_ids
             WHERE 
-                ticker = %s
-                OR ticker LIKE %s
+                entity_id = %s
+                OR entity_id LIKE %s
                 OR LOWER(company_name) LIKE %s
                 OR LOWER(company_name) LIKE %s
-            ORDER BY match_score DESC, ticker ASC
+            ORDER BY match_score DESC, entity_id ASC
             LIMIT 10
         """
         
@@ -540,7 +540,7 @@ async def search_tickers(q: str = ""):
         
         results = [
             {
-                "ticker": row[0],
+                "entity_id": row[0],
                 "name": row[1],
                 "sector": row[2] or "Unknown",
                 "match_score": float(row[3])

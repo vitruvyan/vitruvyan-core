@@ -46,7 +46,7 @@ The core has **zero opinions** about:
 - How to interpret scores or rankings
 
 It provides **no domain knowledge**:
-- No stock tickers, sectors, or financial ratios
+- No entity entity_ids, sectors, or financial ratios
 - No patient symptoms, diagnoses, or treatments
 - No routes, vehicles, or delivery windows
 - No weapons systems, threat levels, or readiness scores
@@ -155,7 +155,7 @@ Any domain must implement:
 
 ### Example Domains (Future)
 
-- **Trade**: entities=stocks, signals=momentum/volatility, factors=RSI/MACD
+- **Trade**: entities=entities, signals=momentum/volatility, factors=RSI/MACD
 - **Logistics**: entities=routes, signals=traffic/weather, factors=cost/time  
 - **Healthcare**: entities=patients, signals=vitals, factors=risk_scores
 - **Defense**: entities=assets, signals=threats, factors=readiness

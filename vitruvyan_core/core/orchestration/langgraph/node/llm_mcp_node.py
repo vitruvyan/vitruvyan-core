@@ -158,7 +158,7 @@ def llm_mcp_node(state: Dict[str, Any]) -> Dict[str, Any]:
         state: LangGraph state dict with keys:
             - input_text: User query
             - user_id: User identifier
-            - tickers: Extracted tickers (optional)
+            - entity_ids: Extracted entity_ids (optional)
             - language: Detected language (optional)
     
     Returns:
@@ -174,10 +174,10 @@ def llm_mcp_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     user_input = state.get("input_text", "")
     user_id = state.get("user_id", "anonymous")
-    tickers = state.get("tickers", [])
+    entity_ids = state.get("entity_ids", [])
     language = state.get("language", "en")
     
-    logger.info(f"🧠 LLM MCP Node: input='{user_input[:50]}...', tickers={tickers}, language={language}")
+    logger.info(f"🧠 LLM MCP Node: input='{user_input[:50]}...', entity_ids={entity_ids}, language={language}")
     
     # Step 1: Fetch available tools (handle nested event loop with threading)
     _ensure_nest_asyncio()
@@ -213,7 +213,7 @@ def llm_mcp_node(state: Dict[str, Any]) -> Dict[str, Any]:
         # Construct system prompt with context
         system_prompt = f"""You are Vitruvyan AI, a financial analysis assistant.
 User query language: {language}
-Available tickers: {', '.join(tickers) if tickers else 'None extracted yet'}
+Available entity_ids: {', '.join(entity_ids) if entity_ids else 'None extracted yet'}
 
 Select the most appropriate tool to answer the user's question.
 If no tool matches, respond directly without tool calling."""
@@ -266,7 +266,7 @@ If no tool matches, respond directly without tool calling."""
             
             if tool_name == "screen_tickers":
                 # Update numerical_panel with screening results
-                updated_state["numerical_panel"] = tool_data.get("tickers", [])
+                updated_state["numerical_panel"] = tool_data.get("entity_ids", [])
                 updated_state["screening_data"] = {
                     "profile": tool_data.get("profile"),
                     "universe_size": tool_data.get("universe_size"),
@@ -275,18 +275,18 @@ If no tool matches, respond directly without tool calling."""
             
             elif tool_name == "generate_vee_summary":
                 # Update VEE explanations
-                ticker = tool_args.get("ticker")
-                if ticker:
+                entity_id = tool_args.get("entity_id")
+                if entity_id:
                     if "vee_explanations" not in updated_state:
                         updated_state["vee_explanations"] = {}
-                    updated_state["vee_explanations"][ticker] = {
+                    updated_state["vee_explanations"][entity_id] = {
                         "summary": tool_data.get("narrative", "")
                     }
             
             elif tool_name == "query_sentiment":
                 # Update sentiment data
                 updated_state["sentiment_data"] = {
-                    "ticker": tool_args.get("ticker"),
+                    "entity_id": tool_args.get("entity_id"),
                     "avg_sentiment": tool_data.get("avg_sentiment"),
                     "trend": tool_data.get("trend"),
                     "sample_count": tool_data.get("sample_count")

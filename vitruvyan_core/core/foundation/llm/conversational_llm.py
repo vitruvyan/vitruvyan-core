@@ -356,7 +356,7 @@ class ConversationalLLM:
         
         Args:
             user_input: Original user query
-            missing_slots: List of missing parameters (tickers, horizon, budget)
+            missing_slots: List of missing parameters (entity_ids, horizon, budget)
             known_context: Already collected information
             language: Response language ("auto" for Babel Gardens detection, or specific code)
             semantic_matches: Recent similar discussions from Qdrant (optional contextual boost)
@@ -365,7 +365,7 @@ class ConversationalLLM:
             Natural question asking for missing information with contextual suggestions
             
         Example:
-            Input: user_input="Voglio investire 10k", missing_slots=["tickers", "horizon"],
+            Input: user_input="Voglio investire 10k", missing_slots=["entity_ids", "horizon"],
                    semantic_matches=[{"text": "NVDA momentum forte", "score": 0.85}]
             Output: "Ottimo! Ho visto discussioni recenti su NVDA con forte momentum.
                      Su quali titoli vorresti investire questi 10k? 
@@ -527,7 +527,7 @@ Genera una spiegazione conversazionale (NON tecnica) che:
         return "\n".join(lines)
     
     # ============================================================
-    # METHOD 3: PORTFOLIO REASONING (EXPLAIN WHY)
+    # METHOD 3: COLLECTION REASONING (EXPLAIN WHY)
     # ============================================================
     
     def generate_portfolio_reasoning(
@@ -538,12 +538,12 @@ Genera una spiegazione conversazionale (NON tecnica) che:
         language: str = "auto"
     ) -> str:
         """
-        Generate persuasive reasoning for portfolio recommendations.
+        Generate persuasive reasoning for collection recommendations.
         
         Explains PERCHÉ behind rebalancing, buying, selling decisions.
         
         Args:
-            portfolio_data: Current portfolio composition
+            portfolio_data: Current collection composition
             analysis: Risk/concentration/performance analysis
             action: Recommended action (rebalance, reduce, increase)
             language: Response language ("auto" for detection, or specific code)
@@ -553,11 +553,11 @@ Genera una spiegazione conversazionale (NON tecnica) che:
             
         Example:
             Input: action="reduce_shop", concentration=65%
-            Output: "Il tuo portfolio è esposto al 65% su SHOP. Se il titolo 
+            Output: "Il tuo collection è esposto al 65% su SHOP. Se il titolo 
                     scende del 10%, perdi 6.5% del capitale totale. 
                     Considera di ridurre a 30-40% per dormire sonni tranquilli 💤"
         """
-        # Auto-detect language from portfolio context or action description
+        # Auto-detect language from collection context or action description
         if language == "auto":
             # Try to detect from action string or default to user's previous language
             lang_info = self.detect_language(action)
@@ -577,11 +577,11 @@ Genera una spiegazione conversazionale (NON tecnica) che:
             system_prompt = get_combined_prompt("portfolio_review", "en")
         
         # Build user prompt
-        user_prompt = f"""Genera ragionamento persuasivo per questa raccomandazione portfolio:
+        user_prompt = f"""Genera ragionamento persuasivo per questa raccomandazione collection:
 
 AZIONE RACCOMANDATA: {action}
 
-DATI PORTFOLIO:
+DATI COLLECTION:
 {self._format_portfolio_data(portfolio_data)}
 
 ANALISI:
@@ -603,7 +603,7 @@ Spiega PERCHÉ questa azione è importante con:
         )
     
     def _format_portfolio_data(self, data: Dict[str, Any]) -> str:
-        """Format portfolio data for LLM prompt."""
+        """Format collection data for LLM prompt."""
         lines = []
         if "holdings" in data:
             lines.append(f"Holdings: {data['holdings']}")
@@ -621,7 +621,7 @@ Spiega PERCHÉ questa azione è importante con:
         return "\n".join(lines)
     
     # ============================================================
-    # METHOD 4: COMPARISON NARRATIVE (MULTI-TICKER)
+    # METHOD 4: COMPARISON NARRATIVE (MULTI-ENTITY_ID)
     # ============================================================
     
     def generate_comparison_narrative(
@@ -630,10 +630,10 @@ Spiega PERCHÉ questa azione è importante con:
         language: str = "auto"
     ) -> str:
         """
-        Generate comparative narrative for multi-ticker analysis.
+        Generate comparative narrative for multi-entity_id analysis.
         
         Args:
-            comparison_matrix: Comparative metrics for 2+ tickers
+            comparison_matrix: Comparative metrics for 2+ entity_ids
             language: Response language ("auto" for detection, or specific code)
             
         Returns:
@@ -647,10 +647,10 @@ Spiega PERCHÉ questa azione è importante con:
         """
         # Auto-detect language from comparison context
         if language == "auto":
-            # Use first ticker or default to EN
-            tickers = comparison_matrix.get("tickers", [])
-            if tickers:
-                lang_info = self.detect_language(" ".join(tickers))
+            # Use first entity_id or default to EN
+            entity_ids = comparison_matrix.get("entity_ids", [])
+            if entity_ids:
+                lang_info = self.detect_language(" ".join(entity_ids))
                 language = lang_info["language_detected"]
             else:
                 language = "en"
@@ -669,7 +669,7 @@ Spiega PERCHÉ questa azione è importante con:
             system_prompt = get_combined_prompt("comparison", "en")
         
         # Build user prompt
-        user_prompt = f"""Genera narrativa comparativa per questi ticker:
+        user_prompt = f"""Genera narrativa comparativa per questi entity_id:
 
 COMPARISON MATRIX:
 {self._format_comparison_matrix(comparison_matrix)}
@@ -693,9 +693,9 @@ Evidenzia:
         """Format comparison matrix for LLM prompt."""
         lines = []
         
-        # Extract tickers
-        tickers = matrix.get("tickers", [])
-        lines.append(f"Tickers: {', '.join(tickers)}")
+        # Extract entity_ids
+        entity_ids = matrix.get("entity_ids", [])
+        lines.append(f"EntityIds: {', '.join(entity_ids)}")
         
         # Extract metrics
         if "metrics" in matrix:

@@ -15,7 +15,7 @@ Moduli:
 from .vee_analyzer import analyze_kpi, AnalysisResult
 from .vee_generator import generate_explanation, ExplanationLevels
 from .vee_memory_adapter import retrieve_similar_explanations, store_explanation
-from .vee_engine import explain_ticker, VEEEngine
+from .vee_engine import explain_entity, VEEEngine
 
 __all__ = [
     'analyze_kpi',
@@ -24,7 +24,7 @@ __all__ = [
     'ExplanationLevels',
     'retrieve_similar_explanations',
     'store_explanation',
-    'explain_ticker',
+    'explain_entity',
     'VEEEngine'
 ]
 

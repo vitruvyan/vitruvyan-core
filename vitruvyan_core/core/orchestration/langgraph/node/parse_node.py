@@ -11,22 +11,22 @@ from core.foundation.persistence.postgres_agent import PostgresAgent
 # Setup logger
 logger = logging.getLogger(__name__)
 
-def _is_valid_ticker(ticker: str) -> bool:
+def _is_valid_entity(entity_id: str) -> bool:
     """
-    Validates if a ticker exists in PostgreSQL tickers table.
+    Validates if a entity_id exists in PostgreSQL entity_ids table.
     Used by vague query resolution to avoid false positives.
     """
     try:
         pg = PostgresAgent()
-        query = "SELECT 1 FROM tickers WHERE ticker = %s LIMIT 1"
-        rows = pg.fetch_all(query, (ticker.upper(),))
+        query = "SELECT 1 FROM entity_ids WHERE entity_id = %s LIMIT 1"
+        rows = pg.fetch_all(query, (entity_id.upper(),))
         return len(rows) > 0
     except Exception:
         return False
 
 def _detect_vague_query(text: str) -> bool:
     """
-    Detects vague queries where ticker extraction failed but user intent is clear.
+    Detects vague queries where entity_id extraction failed but user intent is clear.
     Examples: 'E NVDA?', 'What about Tesla?', 'anche TSLA', 'AAPL?'
     """
     if not text:
@@ -39,7 +39,7 @@ def _detect_vague_query(text: str) -> bool:
         r"how about",             # "How about AAPL?"
         r"come prima",            # "Come prima ma con NVDA"
         r"anche\s+\w+",           # "anche TSLA"
-        r"^\s*[A-Z]{2,5}\s*\??$"  # Solo ticker: "NVDA?" or "AAPL"
+        r"^\s*[A-Z]{2,5}\s*\??$"  # Solo entity_id: "NVDA?" or "EXAMPLE_ENTITY_1"
     ]
     return any(re.search(p, txt, re.IGNORECASE) for p in patterns)
 
@@ -114,53 +114,53 @@ Answer:"""
             'rispetto', 'what about', 'how about', 'compared to'
         ])
 
-def _extract_ticker_from_vague_query(text: str) -> list[str]:
+def _extract_entity_from_vague_query(text: str) -> list[str]:
     """
-    Extracts ticker from vague queries when semantic_engine fails.
-    Returns list of tickers (usually 1 ticker, or empty if extraction fails).
+    Extracts entity_id from vague queries when semantic_engine fails.
+    Returns list of entity_ids (usually 1 entity_id, or empty if extraction fails).
     """
     if not text:
         return []
     
-    # Pattern 1: "E TICKER?" or "What about TICKER?" (1-5 char tickers)
+    # Pattern 1: "E ENTITY_ID?" or "What about ENTITY_ID?" (1-5 char entity_ids)
     # Use \s+ to handle spaces, and allow 1-5 uppercase letters
     m = re.search(r"\b(e|and|what about|how about|anche)\s+([A-Z]{1,5})\b", text, re.IGNORECASE)
     if m:
         potential = m.group(2).upper()
-        if _is_valid_ticker(potential):
+        if _is_valid_entity(potential):
             return [potential]
     
-    # Pattern 2: Solo ticker "NVDA?" or "AAPL" or "C?"
+    # Pattern 2: Solo entity_id "NVDA?" or "EXAMPLE_ENTITY_1" or "C?"
     m = re.search(r"^([A-Z]{1,5})\??$", text.strip())
     if m:
         potential = m.group(1).upper()
-        if _is_valid_ticker(potential):
+        if _is_valid_entity(potential):
             return [potential]
     
-    # Pattern 3: Company name extraction (fallback via ticker_resolver logic)
+    # Pattern 3: Company name extraction (fallback via entity_resolver logic)
     # Try common company names
     companies_map = {
-        "nvidia": "NVDA",
-        "apple": "AAPL",
-        "microsoft": "MSFT",
-        "tesla": "TSLA",
+        "nvidia": "EXAMPLE_ENTITY_2",
+        "apple": "EXAMPLE_ENTITY_1",
+        "microsoft": "EXAMPLE_ENTITY_4",
+        "tesla": "EXAMPLE_ENTITY_3",
         "amazon": "AMZN",
-        "google": "GOOGL",
+        "google": "EXAMPLE_ENTITY_5",
         "meta": "META",
         "facebook": "META"
     }
-    for company, ticker in companies_map.items():
+    for company, entity_id in companies_map.items():
         if company in text.lower():
-            if _is_valid_ticker(ticker):
-                return [ticker]
+            if _is_valid_entity(entity_id):
+                return [entity_id]
     
     return []
 
-def _fallback_intent(user_input: str, tickers: list[str], budget: int, horizon: str) -> str:
+def _fallback_intent(user_input: str, entity_ids: list[str], budget: int, horizon: str) -> str:
     txt = (user_input or "").lower()
 
-    # Allocation: requires ticker + budget
-    if tickers and budget:
+    # Allocation: requires entity_id + budget
+    if entity_ids and budget:
         return "allocate"
 
     # Soft intents: fiducia, paura, preoccupazione, ecc.
@@ -181,8 +181,8 @@ def _fallback_intent(user_input: str, tickers: list[str], budget: int, horizon: 
         return "risk"
     if "backtest" in txt:
         return "backtest"
-    if "portfolio" in txt or "portafoglio" in txt:
-        return "portfolio"
+    if "collection" in txt or "portafoglio" in txt:
+        return "collection"
 
     return "unknown"
 
@@ -204,7 +204,7 @@ def _extract_budget(text: str) -> int | None:
 def parse_node(state: dict) -> dict:
     """
     Parses the user input with the semantic engine and updates the state.
-    Always populates tickers, budget, and horizon if found.
+    Always populates entity_ids, budget, and horizon if found.
     If the intent remains 'unknown', applies local fallback.
     Also merges with the last conversation slots from Postgres/Qdrant.
     """
@@ -243,11 +243,11 @@ def parse_node(state: dict) -> dict:
     user_id = state.get("user_id", "demo")
     
     # 🧠 Semantic Engine: Extract entities WITHOUT intent (delegated to GPT)
-    # ⚠️ TICKERS DISABLED: Delegated to ticker_resolver_node (Nuclear Option LLM-first)
+    # ⚠️ ENTITY_IDS DISABLED: Delegated to entity_resolver_node (Nuclear Option LLM-first)
     parsed = parse_user_input(user_input, extract_intent=False)
 
     # Extract base fields (NO INTENT SETTING - handled by intent_detection_node)
-    tickers = []  # ✅ DISABLED - ticker_resolver_node will extract via LLM
+    entity_ids = []  # ✅ DISABLED - entity_resolver_node will extract via LLM
     horizon = parsed.get("horizon")
     budget = parsed.get("amount")
     semantic_matches = parsed.get("semantic_matches", [])  # ✅ Qdrant retrieval preserved
@@ -288,33 +288,33 @@ def parse_node(state: dict) -> dict:
         # Use most recent semantic match (already in last_slots)
         contextual_slots = last_slots
         print(f"🧠 [parse_node] Contextual reference detected! Using VSGS match")
-        print(f"   Context slots: tickers={contextual_slots.get('tickers')}, horizon={contextual_slots.get('horizon')}")
+        print(f"   Context slots: entity_ids={contextual_slots.get('entity_ids')}, horizon={contextual_slots.get('horizon')}")
     
     # Merge: current input > contextual search > last conversation
-    # ✅ TICKERS: Delegated to ticker_resolver_node (Nuclear Option)
-    # 🎯 NUCLEAR OPTION: Store context tickers separately, don't set state["tickers"]
-    context_tickers = contextual_slots.get("tickers", []) or last_slots.get("tickers", [])
+    # ✅ ENTITY_IDS: Delegated to entity_resolver_node (Nuclear Option)
+    # 🎯 NUCLEAR OPTION: Store context entity_ids separately, don't set state["entity_ids"]
+    context_entities = contextual_slots.get("entity_ids", []) or last_slots.get("entity_ids", [])
     
     merged_slots = {
         "budget": budget or contextual_slots.get("budget") or last_slots.get("budget"),
-        "context_tickers": context_tickers,  # 🆕 Store as fallback, don't use immediately
+        "context_entities": context_entities,  # 🆕 Store as fallback, don't use immediately
         "horizon": horizon or contextual_slots.get("horizon") or last_slots.get("horizon"),
         # ❌ REMOVED: intent (delegated to intent_detection_node GPT-3.5)
     }
 
     # --- 🎯 VAGUE QUERY RESOLUTION ---
-    # If no tickers extracted and query looks vague, try explicit extraction
-    if not tickers and _detect_vague_query(user_input):
-        vague_tickers = _extract_ticker_from_vague_query(user_input)
+    # If no entity_ids extracted and query looks vague, try explicit extraction
+    if not entity_ids and _detect_vague_query(user_input):
+        vague_tickers = _extract_entity_from_vague_query(user_input)
         if vague_tickers:
-            tickers = vague_tickers
-            merged_slots["context_tickers"] = vague_tickers  # 🆕 Update fallback
+            entity_ids = vague_tickers
+            merged_slots["context_entities"] = vague_tickers  # 🆕 Update fallback
 
     # Update state with merged slots (NO INTENT - delegated to intent_detection_node)
     state["input_text"] = user_input  # ✅ CRITICAL: Always preserve original user input
     # ❌ REMOVED: state["intent"] = intent  (delegated to GPT intent_detection_node)
-    # 🎯 NUCLEAR OPTION: Don't set state["tickers"] here - ticker_resolver_node will set it
-    state["context_tickers"] = merged_slots.get("context_tickers", [])  # 🆕 Fallback for ticker_resolver
+    # 🎯 NUCLEAR OPTION: Don't set state["entity_ids"] here - entity_resolver_node will set it
+    state["context_entities"] = merged_slots.get("context_entities", [])  # 🆕 Fallback for entity_resolver
     state["horizon"] = merged_slots["horizon"]
     state["budget"] = merged_slots["budget"]
     state["amount"] = merged_slots["budget"]  # 🔑 ensure route_node sees amount

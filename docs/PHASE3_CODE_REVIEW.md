@@ -59,7 +59,7 @@ class FinanceExplainabilityProvider(ExplainabilityProvider):
 - ✅ Backward compatibility mantenuta
 
 **Domain Confrontation Capability:**
-- ✅ Schema database da 'ticker' a 'entity_id' ✓
+- ✅ Schema database da 'entity_id' a 'entity_id' ✓
 - ✅ Engine accettano qualunque provider conforme al contratto
 - ✅ Testing valida funzionamento across domains
 

@@ -10,7 +10,7 @@ def test_vee_domain_agnostic():
     """Test the refactored VEE components with domain provider"""
 
     # Test data
-    entity_id = "AAPL"
+    entity_id = "EXAMPLE_ENTITY_1"
     test_metrics = {
         'momentum_z': 0.8,
         'vola_z': -0.5,

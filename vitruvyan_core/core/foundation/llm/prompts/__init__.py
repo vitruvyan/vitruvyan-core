@@ -7,7 +7,7 @@ Tutti i prompt sono Git-versionabili per tracking, A/B testing, e rollback.
 
 Struttura:
 - base_prompts.py: VITRUVYAN_SYSTEM_PROMPT principale
-- scenario_prompts.py: Prompt specifici per scenari (analysis, recommendation, portfolio)
+- scenario_prompts.py: Prompt specifici per scenari (analysis, recommendation, collection)
 - emotion_fragments.py: Fragment emotivi per adattamento contestuale
 - version.py: Gestione versioning prompt
 

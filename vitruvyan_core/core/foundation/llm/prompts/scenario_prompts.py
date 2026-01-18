@@ -3,11 +3,11 @@
 🎯 Scenario-Specific Prompts per Vitruvyan AI
 
 Prompt specializzati per diversi tipi di interazioni:
-- detailed_analysis: Analisi approfondita ticker
+- detailed_analysis: Analisi approfondita entity_id
 - recommendation: Raccomandazioni operative
 - market_overview: Quadro di mercato
-- portfolio_review: Analisi portfolio
-- comparison: Confronto multi-ticker
+- portfolio_review: Analisi collection
+- comparison: Confronto multi-entity_id
 - onboarding: Assistenza nuovi utenti
 
 Version: 1.0
@@ -79,7 +79,7 @@ FORMATO:
 
 TONE: Market strategist che connette i punti.""",
 
-        "portfolio_review": """OBIETTIVO: Analizzare portfolio complessivo e suggerire ottimizzazioni.
+        "portfolio_review": """OBIETTIVO: Analizzare collection complessivo e suggerire ottimizzazioni.
 
 FOCUS:
 - Concentrazione e diversificazione
@@ -95,9 +95,9 @@ FORMATO:
 📈 OTTIMIZZAZIONI: [come migliorare Sharpe]
 ⚠️ RISCHI CONCENTRATI: [esposizioni pericolose]
 
-TONE: Portfolio manager prudente ma costruttivo.""",
+TONE: Collection manager prudente ma costruttivo.""",
 
-        "comparison": """OBIETTIVO: Confrontare ticker su base quantitativa e qualitativa.
+        "comparison": """OBIETTIVO: Confrontare entity_id su base quantitativa e qualitativa.
 
 FOCUS:
 - Metriche comparative (z-scores, valuation, growth)
@@ -107,7 +107,7 @@ FOCUS:
 - Winner per profilo investitore
 
 FORMATO:
-🏆 VINCITORE: [ticker migliore per profilo]
+🏆 VINCITORE: [entity_id migliore per profilo]
 📊 CONFRONTO: [tabella metriche chiave]
 💡 CONSIDERAZIONI: [fattori qualitativi]
 ⚖️ TRADE-OFF: [cosa sacrifichi scegliendo uno vs altro]
@@ -127,7 +127,7 @@ FORMATO:
 👋 BENVENUTO: [tono friendly e non intimidatorio]
 ❓ DOMANDE CHIAVE: [budget, orizzonte, esperienza, tolleranza rischio]
 💡 CONCETTI BASE: [spiegazioni semplici]
-🎯 SUGGERIMENTI INIZIALI: [ticker/settori adatti a principianti]
+🎯 SUGGERIMENTI INIZIALI: [entity_id/settori adatti a principianti]
 📚 RISORSE: [dove imparare di più]
 
 TONE: Educatore paziente e incoraggiante."""
@@ -186,7 +186,7 @@ FORMAT:
 
 TONE: Market strategist connecting the dots.""",
 
-        "portfolio_review": """OBJECTIVE: Analyze portfolio and suggest optimizations.
+        "portfolio_review": """OBJECTIVE: Analyze collection and suggest optimizations.
 
 FOCUS:
 - Concentration and diversification
@@ -202,9 +202,9 @@ FORMAT:
 📈 OPTIMIZATIONS: [how to improve Sharpe]
 ⚠️ CONCENTRATED RISKS: [dangerous exposures]
 
-TONE: Prudent but constructive portfolio manager.""",
+TONE: Prudent but constructive collection manager.""",
 
-        "comparison": """OBJECTIVE: Compare tickers quantitatively and qualitatively.
+        "comparison": """OBJECTIVE: Compare entity_ids quantitatively and qualitatively.
 
 FOCUS:
 - Comparative metrics
@@ -214,7 +214,7 @@ FOCUS:
 - Winner per investor profile
 
 FORMAT:
-🏆 WINNER: [best ticker for profile]
+🏆 WINNER: [best entity_id for profile]
 📊 COMPARISON: [key metrics table]
 💡 CONSIDERATIONS: [qualitative factors]
 ⚖️ TRADE-OFFS: [what you sacrifice choosing one vs other]
@@ -234,7 +234,7 @@ FORMAT:
 👋 WELCOME: [friendly, non-intimidating tone]
 ❓ KEY QUESTIONS: [budget, horizon, experience, risk tolerance]
 💡 BASIC CONCEPTS: [simple explanations]
-🎯 INITIAL SUGGESTIONS: [tickers/sectors for beginners]
+🎯 INITIAL SUGGESTIONS: [entity_ids/sectors for beginners]
 📚 RESOURCES: [where to learn more]
 
 TONE: Patient and encouraging educator."""

@@ -70,7 +70,7 @@ vsgs_prompt_injections = Counter(
 vee_generation = Counter(
     'vee_generation_total',
     'Total VEE explanations generated with semantic grounding (PR-C)',
-    ['ticker', 'layers', 'semantic_grounding']  # layers: count, semantic_grounding: true/false
+    ['entity_id', 'layers', 'semantic_grounding']  # layers: count, semantic_grounding: true/false
 )
 
 # ============================================================
@@ -162,19 +162,19 @@ def record_prompt_injection(user_id: str = "demo", node: str = "llm_soft_node",
     vsgs_prompt_injections.labels(user_id=user_id, node=node, intent=intent).inc()
 
 
-def record_vee_generation(ticker: str, layers: int, semantic_grounding: bool,
+def record_vee_generation(entity_id: str, layers: int, semantic_grounding: bool,
                          user_id: str = "demo"):
     """
     Increment VEE generation counter (PR-C)
     
     Args:
-        ticker: Stock ticker analyzed
+        entity_id: Entity entity_id analyzed
         layers: Number of explanation layers generated (3-5)
         semantic_grounding: Whether semantic_context was included
         user_id: User identifier
     """
     vee_generation.labels(
-        ticker=ticker,
+        entity_id=entity_id,
         layers=str(layers),
         semantic_grounding=str(semantic_grounding).lower()
     ).inc()

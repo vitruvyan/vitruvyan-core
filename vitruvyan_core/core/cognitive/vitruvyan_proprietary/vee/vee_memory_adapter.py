@@ -10,7 +10,7 @@ Gestisce la persistenza e recupero di spiegazioni storiche:
 
 Principi:
 - Persistenza automatica delle spiegazioni
-- Recupero contextuale per ticker/timeframe
+- Recupero contextuale per entity_id/timeframe
 - Integrazione con knowledge base esistente
 - Fallback graceful per errori di connessione
 """
@@ -41,7 +41,7 @@ except ImportError:
 class HistoricalExplanation:
     """Spiegazione storica recuperata dal database"""
     id: int
-    entity_id: str  # Changed from ticker
+    entity_id: str  # Changed from entity_id
     summary: str
     technical: str
     detailed: str
@@ -131,7 +131,7 @@ class VEEMemoryAdapter:
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS vee_explanations (
                         id SERIAL PRIMARY KEY,
-                        entity_id VARCHAR(100) NOT NULL,  -- Changed from ticker VARCHAR(10)
+                        entity_id VARCHAR(100) NOT NULL,  -- Changed from entity_id VARCHAR(10)
                         summary TEXT NOT NULL,
                         technical TEXT NOT NULL,
                         detailed TEXT NOT NULL,
@@ -162,7 +162,7 @@ class VEEMemoryAdapter:
                 # Insert explanation
                 cur.execute("""
                     INSERT INTO vee_explanations (
-                        entity_id, summary, technical, detailed, language,  -- Changed ticker to entity_id
+                        entity_id, summary, technical, detailed, language,  -- Changed entity_id to entity_id
                         confidence_level, dominant_factor, sentiment_direction,
                         kpi_count, overall_intensity, analysis_data, created_at
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -197,7 +197,7 @@ class VEEMemoryAdapter:
             self.logger.error(f"Error storing explanation for {analysis.entity_id}: {e}")
             return False
     
-    def retrieve_similar_explanations(self, entity_id: str,  # Changed from ticker
+    def retrieve_similar_explanations(self, entity_id: str,  # Changed from entity_id
                                     analysis: Optional[AnalysisResult] = None,
                                     language: str = "en",  # Changed from "it"
                                     limit: int = None) -> List[HistoricalExplanation]:
@@ -223,11 +223,11 @@ class VEEMemoryAdapter:
             
             # Base query for entity-specific explanations
             base_query = """
-                SELECT id, entity_id, summary, technical, detailed, language,  -- Changed ticker to entity_id
+                SELECT id, entity_id, summary, technical, detailed, language,  -- Changed entity_id to entity_id
                        created_at, confidence_level, dominant_factor, sentiment_direction,
                        kpi_count, overall_intensity
                 FROM vee_explanations
-                WHERE entity_id = %s  -- Changed ticker to entity_id
+                WHERE entity_id = %s  -- Changed entity_id to entity_id
                   AND created_at >= %s
                   AND language = %s
                 ORDER BY created_at DESC
@@ -240,7 +240,7 @@ class VEEMemoryAdapter:
             for row in results:
                 historical.append(HistoricalExplanation(
                     id=row[0],
-                    entity_id=row[1],  # Changed ticker to entity_id
+                    entity_id=row[1],  # Changed entity_id to entity_id
                     summary=row[2],
                     technical=row[3],
                     detailed=row[4],
@@ -262,11 +262,11 @@ class VEEMemoryAdapter:
                     if sim.id not in existing_ids:
                         historical.append(sim)
             
-            self.logger.info(f"Retrieved {len(historical)} historical explanations for {ticker}")
+            self.logger.info(f"Retrieved {len(historical)} historical explanations for {entity_id}")
             return historical
             
         except Exception as e:
-            self.logger.error(f"Error retrieving explanations for {ticker}: {e}")
+            self.logger.error(f"Error retrieving explanations for {entity_id}: {e}")
             return []
     
     def enrich_with_context(self, explanation: ExplanationLevels,
@@ -292,12 +292,12 @@ class VEEMemoryAdapter:
                 # Generate contextual reference
                 if explanation.language == 'en':  # Changed from 'it'
                     context_text = (f"This analysis is consistent with {len(historical)} previous "
-                                  f"evaluations of {explanation.entity_id}. The most recent similar analysis, "  # Changed ticker to entity_id
+                                  f"evaluations of {explanation.entity_id}. The most recent similar analysis, "  # Changed entity_id to entity_id
                                   f"from {most_similar.created_at.strftime('%m/%d/%Y')}, highlighted "
                                   f"{most_similar.dominant_factor} as the dominant factor.")
                 else:
                     context_text = (f"Questa analisi è coerente con {len(historical)} valutazioni precedenti "
-                                  f"di {explanation.entity_id}. L'ultima analisi simile, del "  # Changed ticker to entity_id
+                                  f"di {explanation.entity_id}. L'ultima analisi simile, del "  # Changed entity_id to entity_id
                                   f"{most_similar.created_at.strftime('%d/%m/%Y')}, evidenziava "
                                   f"{most_similar.dominant_factor} come fattore dominante.")
                 
@@ -312,13 +312,13 @@ class VEEMemoryAdapter:
             self.logger.error(f"Error enriching context for {explanation.entity_id}: {e}")
             return explanation
     
-    def get_explanation_trends(self, ticker: str, 
+    def get_explanation_trends(self, entity_id: str, 
                              days: int = 30) -> Dict[str, Any]:
         """
-        Analizza i trend delle spiegazioni per un ticker
+        Analizza i trend delle spiegazioni per un entity_id
         
         Args:
-            ticker: Symbol del ticker
+            entity_id: Symbol del entity_id
             days: Giorni da analizzare
             
         Returns:
@@ -334,11 +334,11 @@ class VEEMemoryAdapter:
                 SELECT dominant_factor, sentiment_direction, confidence_level,
                        overall_intensity, created_at
                 FROM vee_explanations
-                WHERE ticker = %s AND created_at >= %s
+                WHERE entity_id = %s AND created_at >= %s
                 ORDER BY created_at DESC
             """
             
-            results = self.postgres_agent.fetch_all(query, (ticker, cutoff_date))
+            results = self.postgres_agent.fetch_all(query, (entity_id, cutoff_date))
             
             if not results:
                 return {}
@@ -363,7 +363,7 @@ class VEEMemoryAdapter:
             return trends
             
         except Exception as e:
-            self.logger.error(f"Error analyzing trends for {ticker}: {e}")
+            self.logger.error(f"Error analyzing trends for {entity_id}: {e}")
             return {}
     
     def _ensure_schema(self):
@@ -375,7 +375,7 @@ class VEEMemoryAdapter:
             create_table_query = """
                 CREATE TABLE IF NOT EXISTS explanations (
                     id SERIAL PRIMARY KEY,
-                    ticker VARCHAR(10) NOT NULL,
+                    entity_id VARCHAR(10) NOT NULL,
                     summary TEXT NOT NULL,
                     technical TEXT NOT NULL,
                     detailed TEXT NOT NULL,
@@ -389,9 +389,9 @@ class VEEMemoryAdapter:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
                 
-                CREATE INDEX IF NOT EXISTS idx_explanations_ticker ON explanations(ticker);
+                CREATE INDEX IF NOT EXISTS idx_explanations_ticker ON explanations(entity_id);
                 CREATE INDEX IF NOT EXISTS idx_explanations_created_at ON explanations(created_at);
-                CREATE INDEX IF NOT EXISTS idx_explanations_ticker_lang ON explanations(ticker, language);
+                CREATE INDEX IF NOT EXISTS idx_explanations_ticker_lang ON explanations(entity_id, language);
             """
             
             # Create table using PostgresAgent pattern
@@ -502,13 +502,13 @@ def store_explanation(analysis: AnalysisResult, explanation: ExplanationLevels) 
     return adapter.store_explanation(analysis, explanation)
 
 
-def retrieve_similar_explanations(ticker: str, language: str = "it", 
+def retrieve_similar_explanations(entity_id: str, language: str = "it", 
                                 limit: int = 3) -> List[HistoricalExplanation]:
     """
     Convenience function per retrieve standalone
     
     Args:
-        ticker: Symbol del ticker
+        entity_id: Symbol del entity_id
         language: Lingua preferita
         limit: Numero massimo di risultati
         
@@ -516,7 +516,7 @@ def retrieve_similar_explanations(ticker: str, language: str = "it",
         List di spiegazioni storiche
     """
     adapter = VEEMemoryAdapter()
-    return adapter.retrieve_similar_explanations(ticker, language=language, limit=limit)
+    return adapter.retrieve_similar_explanations(entity_id, language=language, limit=limit)
 
 
 if __name__ == "__main__":
@@ -533,8 +533,8 @@ if __name__ == "__main__":
     }
     
     # Create analysis and explanation
-    analysis = analyze_kpi("AAPL", test_kpi)
-    explanation = generate_explanation("AAPL", analysis, {'lang': 'it'})
+    analysis = analyze_kpi("EXAMPLE_ENTITY_1", test_kpi)
+    explanation = generate_explanation("EXAMPLE_ENTITY_1", analysis, {'lang': 'it'})
     
     # Test memory adapter
     adapter = VEEMemoryAdapter()
@@ -546,7 +546,7 @@ if __name__ == "__main__":
     print(f"Storage result: {stored}")
     
     # Test retrieval
-    historical = adapter.retrieve_similar_explanations("AAPL", language="it")
+    historical = adapter.retrieve_similar_explanations("EXAMPLE_ENTITY_1", language="it")
     print(f"Retrieved {len(historical)} historical explanations")
     
     for h in historical:
@@ -558,6 +558,6 @@ if __name__ == "__main__":
         print(f"Contextualized: {enriched.contextualized}")
     
     # Test trends
-    trends = adapter.get_explanation_trends("AAPL", days=30)
+    trends = adapter.get_explanation_trends("EXAMPLE_ENTITY_1", days=30)
     if trends:
         print(f"Trends: {trends}")

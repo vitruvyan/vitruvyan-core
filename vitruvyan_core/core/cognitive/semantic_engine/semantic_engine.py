@@ -63,7 +63,7 @@ def parse_user_input(text: str, extract_intent: bool = False) -> Dict:
     
     🧠 Sacred Orders Architecture — Perception Layer (Order 1)
     This function feeds the Cognition Layer (LangGraph) with semantic context:
-    - Entity extraction (tickers, amounts, horizons) → Features #1, #3, #4
+    - Entity extraction (entity_ids, amounts, horizons) → Features #1, #3, #4
     - Semantic retrieval (Qdrant 34K vectors) → Features #1, #4
     - Enrichment (company names) → Feature #9 (VEE cooperation)
     
@@ -80,7 +80,7 @@ def parse_user_input(text: str, extract_intent: bool = False) -> Dict:
     cleaned = clean_text(text)
 
     # 1) Extract base entities first
-    tickers = extract_tickers(cleaned)
+    entity_ids = extract_tickers(cleaned)
 
     # Amount detection (robust first, then fallback with guards)
     amount_robust = _parse_amount_robust(cleaned)
@@ -102,13 +102,13 @@ def parse_user_input(text: str, extract_intent: bool = False) -> Dict:
 
     # 3) Intent classification (OPTIONAL - delegated to GPT by default)
     if extract_intent:
-        intent = classify_intents(cleaned, tickers=tickers, amount=amount)
+        intent = classify_intents(cleaned, entity_ids=entity_ids, amount=amount)
     else:
         intent = None  # Delegated to intent_detection_node (GPT-3.5)
 
     # 4) Other fields
     sectors = extract_sector(cleaned)
-    companies = get_company_names(tickers)
+    companies = get_company_names(entity_ids)
     route = decide_strategy({"intent": intent}) if intent else None
 
     # 5) Enrichment
@@ -116,7 +116,7 @@ def parse_user_input(text: str, extract_intent: bool = False) -> Dict:
         "raw_input": text,
         "cleaned_input": cleaned,
         "intent": intent,
-        "tickers": tickers,
+        "entity_ids": entity_ids,
         "companies": companies,
         "amount": amount,
         "horizon": horizon,
@@ -158,7 +158,7 @@ def parse_user_input(text: str, extract_intent: bool = False) -> Dict:
 
     horizon = extract_horizon(cleaned)
     sectors = extract_sector(cleaned)
-    companies = get_company_names(tickers)
+    companies = get_company_names(entity_ids)
     route = decide_strategy({"intent": intent})
 
     # 2) Enrichment
@@ -166,7 +166,7 @@ def parse_user_input(text: str, extract_intent: bool = False) -> Dict:
         "raw_input": text,
         "cleaned_input": cleaned,
         "intent": intent,
-        "tickers": tickers,
+        "entity_ids": entity_ids,
         "companies": companies,
         "amount": amount,           # pass iniziale
         "horizon": horizon,

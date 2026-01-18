@@ -196,12 +196,12 @@ vertical: mercator
 version: "1.0"
 
 entities:
-  - name: ticker
+  - name: entity_id
     description: "Simbolo di un titolo finanziario"
     validation:
       type: lookup
       source: postgresql
-      table: tickers
+      table: entity_ids
       field: symbol
     
   - name: price
@@ -227,12 +227,12 @@ entities:
       max: 5
 
 relationships:
-  - subject: ticker
+  - subject: entity_id
     predicate: has_price
     object: price
     cardinality: one_to_many
     
-  - subject: ticker
+  - subject: entity_id
     predicate: has_sentiment
     object: sentiment
     cardinality: one_to_many
@@ -240,13 +240,13 @@ relationships:
 event_types:
   - name: price_update
     payload_schema:
-      ticker: ticker
+      entity_id: entity_id
       price: price
       timestamp: datetime
       
   - name: sentiment_computed
     payload_schema:
-      ticker: ticker
+      entity_id: entity_id
       sentiment: sentiment
       source: string
       confidence: float
@@ -268,10 +268,10 @@ L'ontologia definisce come validare i dati del dominio:
 
 | Tipo Validazione | Descrizione | Esempio |
 |------------------|-------------|---------|
-| `lookup` | Verifica esistenza in tabella | ticker esiste in DB |
+| `lookup` | Verifica esistenza in tabella | entity_id esiste in DB |
 | `numeric` | Range numerico | price > 0 |
 | `enum` | Valore in lista | sentiment in ['positive', 'negative', 'neutral'] |
-| `regex` | Pattern testuale | ticker matches `^[A-Z]{1,5}$` |
+| `regex` | Pattern testuale | entity_id matches `^[A-Z]{1,5}$` |
 | `custom` | Funzione Python | logica complessa |
 
 ---
@@ -484,7 +484,7 @@ alerts:
   ood_detection: 0.7           # Rilevamento fuori distribuzione
   
 risk:
-  # Soglie di rischio (per Portfolio Guardian equivalente)
+  # Soglie di rischio (per Collection Guardian equivalente)
   concentration_warning: 0.3   # 30% in singola posizione
   concentration_critical: 0.5  # 50% in singola posizione
   drawdown_alert: 0.1          # -10% drawdown
@@ -567,7 +567,7 @@ rules:
       action_type: modify_portfolio
     escalation_level: 2
     timeout: 60s
-    rationale: "Modifica portfolio richiede conferma"
+    rationale: "Modifica collection richiede conferma"
     
   - trigger:
       action_type: execute_trade
@@ -665,12 +665,12 @@ templates:
 
   analysis_result:
     summary: |
-      {ticker} mostra segnali {sentiment_word} nel {timeframe}.
+      {entity_id} mostra segnali {sentiment_word} nel {timeframe}.
       {key_factor_explanation}
       Confidenza: {confidence_description}.
       
     detailed: |
-      L'analisi di {ticker} su orizzonte {timeframe} indica {direction}.
+      L'analisi di {entity_id} su orizzonte {timeframe} indica {direction}.
       
       Fattori principali:
       {factors_list}
@@ -679,7 +679,7 @@ templates:
       {uncertainty_note}
       
     technical: |
-      {ticker} - Analisi {timeframe}
+      {entity_id} - Analisi {timeframe}
       
       Composite Z-Score: {composite_z} (rank: {rank}/{total})
       
@@ -695,18 +695,18 @@ templates:
 
   abstention:
     summary: |
-      Non ho informazioni sufficienti per analizzare {ticker}.
+      Non ho informazioni sufficienti per analizzare {entity_id}.
       {reason_simple}
       
     detailed: |
-      Non posso fornire un'analisi affidabile di {ticker}.
+      Non posso fornire un'analisi affidabile di {entity_id}.
       
       Motivo: {reason_detailed}
       
       Suggerimento: {suggestion}
       
     technical: |
-      ASTENSIONE per {ticker}
+      ASTENSIONE per {entity_id}
       
       Trigger: {abstention_trigger}
       Confidenza stimata: {estimated_confidence}% (sotto soglia {threshold}%)
@@ -996,8 +996,8 @@ Oltre ai test obbligatori, ogni verticale aggiunge test specifici:
 class TestMercatorDomain:
     """Test specifici per dominio finanziario"""
     
-    def test_ticker_validation(self):
-        """Ticker inesistenti devono essere rifiutati"""
+    def test_entity_validation(self):
+        """EntityId inesistenti devono essere rifiutati"""
         pass
     
     def test_market_hours_awareness(self):

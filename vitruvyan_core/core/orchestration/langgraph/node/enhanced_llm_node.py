@@ -24,7 +24,7 @@ class VitruvyanLLMOrchestrator:
         lang = state.get("language", "en")
         user_input = state.get("input_text", "")
         intent = state.get("intent", "soft")
-        tickers = state.get("tickers", [])
+        entity_ids = state.get("entity_ids", [])
         
         # Market context (dynamic)
         market_context = self._get_market_context()
@@ -55,13 +55,13 @@ CONVERSATIONAL GUIDELINES:
 2. Use storytelling: connect data to market narratives
 3. Acknowledge emotions: "I understand your concern about..."  
 4. Vary language: avoid repetitive patterns
-5. Contextual insights: relate ticker performance to sector/market trends
+5. Contextual insights: relate entity_id performance to sector/market trends
 6. Educational tone: explain WHY something happens, not just WHAT
 7. Never invent numbers - always ground in provided data
 8. Include appropriate disclaimers naturally in conversation
 
 LANGUAGE: Always respond in {lang}
-TICKERS IN FOCUS: {', '.join(tickers) if tickers else 'General market discussion'}
+ENTITY_IDS IN FOCUS: {', '.join(entity_ids) if entity_ids else 'General market discussion'}
 """
 
         user_message = f"""
@@ -155,14 +155,14 @@ Tu enfoque: Basado en datos pero centrado en humanos. Entiendes que invertir es 
             
             if all_stocks:
                 top_3 = sorted(all_stocks, key=lambda x: x.get("composite_score", 0), reverse=True)[:3]
-                top_tickers = [stock["ticker"] for stock in top_3]
-                summary.append(f"Top performers: {', '.join(top_tickers)}")
+                top_entities = [entity["entity_id"] for entity in top_3]
+                summary.append(f"Top performers: {', '.join(top_entities)}")
         
         if sentiment:
             sentiment_summary = []
-            for ticker, data in sentiment.items():
+            for entity_id, data in sentiment.items():
                 label = data.get("sentiment_label", "NEUTRAL")
-                sentiment_summary.append(f"{ticker}: {label}")
+                sentiment_summary.append(f"{entity_id}: {label}")
             summary.append(f"Sentiment analysis: {', '.join(sentiment_summary)}")
         
         return "\n".join(summary) if summary else "Limited technical data available"

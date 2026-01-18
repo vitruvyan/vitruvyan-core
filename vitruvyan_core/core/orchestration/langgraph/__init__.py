@@ -23,11 +23,11 @@ Components:
 Key Nodes:
 ----------
 - intent_detection_node: LLM-first intent classification
-- ticker_resolver_node: Nuclear Option LLM ticker extraction
+- entity_resolver_node: Nuclear Option LLM entity_id extraction
 - exec_node: Neural Engine execution orchestrator
 - compose_node: VEE + LLM narrative fusion
 - sentiment_node: Babel Gardens sentiment analysis
-- portfolio_node: Portfolio Guardian integration
+- portfolio_node: Collection Guardian integration
 - vault_node: Vault Keepers archival
 - orthodoxy_node: Orthodoxy Wardens validation
 

@@ -756,7 +756,7 @@ async def handle_redis_event(channel: str, data: Dict[str, Any]):
                     "event_source": "redis_event_scheduler",
                     "neural_engine_function": "H",
                     "indicators": ["RSI", "MACD", "Stochastic"],
-                    "tickers": payload.get("tickers", []),
+                    "entity_ids": payload.get("entity_ids", []),
                     **payload
                 },
                 correlation_id=correlation_id
@@ -791,7 +791,7 @@ async def handle_redis_event(channel: str, data: Dict[str, Any]):
                     "event_source": "redis_event_scheduler",
                     "neural_engine_function": "I",
                     "timeframes": ["1d", "1wk", "1mo"],
-                    "tickers": payload.get("tickers", []),
+                    "entity_ids": payload.get("entity_ids", []),
                     **payload
                 },
                 correlation_id=correlation_id
@@ -824,7 +824,7 @@ async def handle_redis_event(channel: str, data: Dict[str, Any]):
                     "event_source": "redis_event_scheduler",
                     "neural_engine_function": "E",
                     "volatility_windows": [20, 60, 120],
-                    "tickers": payload.get("tickers", []),
+                    "entity_ids": payload.get("entity_ids", []),
                     **payload
                 },
                 correlation_id=correlation_id
@@ -886,7 +886,7 @@ async def handle_redis_event(channel: str, data: Dict[str, Any]):
                 parameters={
                     "event_source": "redis_event_scheduler",
                     "sources": payload.get("sources", ["yfinance", "reddit"]),
-                    "tickers": payload.get("tickers", []),
+                    "entity_ids": payload.get("entity_ids", []),
                     **payload
                 },
                 correlation_id=correlation_id

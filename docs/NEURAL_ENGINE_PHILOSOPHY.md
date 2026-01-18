@@ -26,7 +26,7 @@ The Neural Engine Core has **zero opinions** about:
 - How to interpret scores or rankings
 
 It provides **no domain knowledge**:
-- No stock tickers, sectors, or financial ratios
+- No entity entity_ids, sectors, or financial ratios
 - No patient symptoms, diagnoses, or treatments
 - No routes, vehicles, or delivery windows
 - No weapons systems, threat levels, or readiness scores

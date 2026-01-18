@@ -42,22 +42,22 @@ Neural Engine → VWRE → VARE → VEE
 from vitruvyan_core.verticals.mercator import MercatorVertical
 
 mercator = MercatorVertical()
-analysis = mercator.analyze_entity("AAPL", financial_data, strategy="growth")
+analysis = mercator.analyze_entity("EXAMPLE_ENTITY_1", financial_data, strategy="growth")
 ```
 
-- Analyzes individual stocks with different investment strategies
+- Analyzes individual entities with different investment strategies
 - Shows how strategy affects factor weighting and recommendations
 - Demonstrates complete pipeline execution
 
-### 2. Portfolio Analysis
+### 2. Collection Analysis
 ```python
 portfolio_analysis = mercator.analyze_portfolio(holdings, strategy="balanced")
 ```
 
-- Multi-asset portfolio evaluation
+- Multi-asset collection evaluation
 - Risk contribution analysis by holding
 - Diversification scoring
-- Portfolio-level recommendations
+- Collection-level recommendations
 
 ### 3. Deep Factor Analysis
 - Detailed factor contribution breakdown
@@ -87,7 +87,7 @@ The demo will show:
 - Factor contribution comparisons
 - Risk assessment breakdowns
 - Investment recommendations with confidence scores
-- Portfolio-level aggregation and diversification analysis
+- Collection-level aggregation and diversification analysis
 
 ## Key Insights
 
@@ -97,7 +97,7 @@ The demo will show:
 
 3. **Factor Interactions**: How different factors contribute to the overall investment thesis
 
-4. **Portfolio Effects**: How individual analyses aggregate to portfolio-level insights
+4. **Collection Effects**: How individual analyses aggregate to collection-level insights
 
 ## Architecture Validation
 

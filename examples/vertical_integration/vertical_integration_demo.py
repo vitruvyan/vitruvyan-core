@@ -10,7 +10,7 @@ Architecture:
 - VARE: Risk assessment (multi-dimensional risk profiles)
 - VEE: Explainability (human-understandable narratives)
 
-Domain: Finance (stocks/portfolio analysis)
+Domain: Finance (entities/collection analysis)
 Vertical: Mercator-lite (simplified finance vertical)
 
 Author: Vitruvyan Development Team
@@ -526,21 +526,21 @@ def demonstrate_vertical_integration():
     # Sample entity data (finance domain)
     sample_entities = [
         {
-            "entity_id": "AAPL",
+            "entity_id": "EXAMPLE_ENTITY_1",
             "current_price": 185.0,
             "previous_price": 180.0,
             "volume": 50000000,
             "market_cap": 2900000000000
         },
         {
-            "entity_id": "TSLA",
+            "entity_id": "EXAMPLE_ENTITY_3",
             "current_price": 245.0,
             "previous_price": 250.0,
             "volume": 75000000,
             "market_cap": 780000000000
         },
         {
-            "entity_id": "MSFT",
+            "entity_id": "EXAMPLE_ENTITY_4",
             "current_price": 415.0,
             "previous_price": 410.0,
             "volume": 25000000,

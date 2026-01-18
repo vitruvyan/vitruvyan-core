@@ -27,7 +27,7 @@ INTENT_PATTERNS = {
         r"(analizza|analyze|analysis)",  # "analizza SHOP"
     ],
     "strategy": [
-        r"build.*portfolio", r"\bstrategy\b", r"investment plan", r"create.*allocation",
+        r"build.*collection", r"\bstrategy\b", r"investment plan", r"create.*allocation",
         r"(help|guide).*(invest|build)"
     ],
     "risk": [
@@ -41,11 +41,11 @@ INTENT_PATTERNS = {
         r"(cosa|what|qué).*(pensa|think|piensa).*(mercato|market)"
     ],
     "portfolio_review": [
-        r"(check|controlla|verifica|review|analizza).*(my|il mio|mi).*(portfolio|portafoglio)",
-        r"(portfolio|portafoglio).*(status|stato|check|review|analysis|analisi)",
+        r"(check|controlla|verifica|review|analizza).*(my|il mio|mi).*(collection|portafoglio)",
+        r"(collection|portafoglio).*(status|stato|check|review|analysis|analisi)",
         r"(dovrei|should I|devo).*(riequilibrare|rebalance)",
-        r"(come sta|how.*doing|come va).*(my|il mio)?.*(portfolio|portafoglio)",
-        r"(portfolio|portafoglio).*(risk|rischio|performance|rendimento|concentration|concentrazione)"
+        r"(come sta|how.*doing|come va).*(my|il mio)?.*(collection|portafoglio)",
+        r"(collection|portafoglio).*(risk|rischio|performance|rendimento|concentration|concentrazione)"
     ],
     "onboarding": [
         # Help/Support requests (IT/EN/ES)
@@ -78,20 +78,20 @@ FALLBACK_INTENT = "unknown"
 # ------------------ Intent classification ------------------
 def classify_intents(
     text: str,
-    tickers: List[str] = None,
+    entity_ids: List[str] = None,
     amount: Union[int, None] = None,
     allow_multiple: bool = False
 ) -> List[str] | str:
     """
     Classify the user intent.
-    If budget + ticker are present → allocate.
+    If budget + entity_id are present → allocate.
     Otherwise fallback to regex patterns.
     """
     text = (text or "").lower()
-    tickers = tickers or []
+    entity_ids = entity_ids or []
 
-    # Rule: allocation if ticker + budget
-    if tickers and amount:
+    # Rule: allocation if entity_id + budget
+    if entity_ids and amount:
         return "allocate"
 
     matched = []
@@ -143,11 +143,11 @@ if __name__ == "__main__":
         "I want to invest 100k in Tesla",
         "Vorrei comprare TSLA senza rischi",
         "What is the long term trend for NVDA?",
-        "Help me build a portfolio",
+        "Help me build a collection",
         "What's the sentiment around AI?"
     ]
     for s in samples:
-        intent = classify_intents(s, tickers=["AAPL"], amount=5000)
+        intent = classify_intents(s, entity_ids=["EXAMPLE_ENTITY_1"], amount=5000)
         horizon = extract_horizon(s)
         print(f"🧩 Input: {s}")
         print(f"➡️ Intent: {intent} | Horizon: {horizon}")

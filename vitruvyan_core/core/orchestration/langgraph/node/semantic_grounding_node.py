@@ -422,7 +422,7 @@ def semantic_grounding_node(state: Dict[str, Any]) -> Dict[str, Any]:
                     "text": input_text,  # Alias for compatibility
                     "intent": intent,
                     "language": language,
-                    "tickers": state.get("tickers", []),
+                    "entity_ids": state.get("entity_ids", []),
                     "horizon": state.get("horizon", "medium"),
                     "trace_id": trace_id,
                     "timestamp": datetime.now().isoformat(),

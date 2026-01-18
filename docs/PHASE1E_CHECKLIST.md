@@ -107,7 +107,7 @@
 ### Compliance Verification
 
 - [x] NO domain knowledge
-  - [x] Zero mentions: ticker, stock, sector, RSI, momentum, route, patient
+  - [x] Zero mentions: entity_id, entity, sector, RSI, momentum, route, patient
   - [x] Only generic: entity_id, factor_name, factor_value, group_field
 
 - [x] NO concrete factors

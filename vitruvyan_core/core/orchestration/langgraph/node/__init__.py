@@ -10,11 +10,11 @@ Each node performs a specific task in the conversational workflow.
 Key Nodes:
 ----------
 - intent_detection_node: GPT-3.5 + Babel sentiment + regex cascade
-- ticker_resolver_node: Nuclear Option LLM ticker extraction (95% accuracy)
+- entity_resolver_node: Nuclear Option LLM entity_id extraction (95% accuracy)
 - exec_node: Neural Engine execution router
 - compose_node: VEE + ConversationalLLM narrative fusion
 - sentiment_node: Babel Gardens sentiment analysis
-- portfolio_node: Portfolio Guardian risk monitoring
+- portfolio_node: Collection Guardian risk monitoring
 - vault_node: Vault Keepers archival
 - orthodoxy_node: Orthodoxy Wardens validation
 - sentinel_node: Sentinel alerts

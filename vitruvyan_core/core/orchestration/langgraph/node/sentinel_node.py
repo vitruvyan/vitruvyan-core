@@ -2,13 +2,13 @@
 """
 🛡️ SENTINEL NODE - LANGGRAPH INTEGRATION
 ========================================
-Sentinel Order Node for Portfolio Guardian Cognitive Integration
+Sentinel Order Node for Collection Guardian Cognitive Integration
 Phase 4.7 - From Dispatcher Legacy to Cognitive Vigilance
 
 "The Sentinel does not sleep. It dreams of markets and wakes at their tremors."
 
 Author: Vitruvian Development Team  
-Created: 2025-01-18 - Portfolio Guardian Sentinel Order Integration
+Created: 2025-01-18 - Collection Guardian Sentinel Order Integration
 """
 
 from typing import Dict, Any, List, Optional
@@ -31,13 +31,13 @@ logger = logging.getLogger(__name__)
 
 def sentinel_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """
-    🛡️ Sentinel Order Node - Portfolio Guardian Cognitive Processing
+    🛡️ Sentinel Order Node - Collection Guardian Cognitive Processing
     
     Processes sentinel events from the Synaptic Conclave and coordinates
     cognitive responses with other Sacred Orders.
     
     Event Types Handled:
-    - sentinel.risk.assessed: Portfolio risk analysis results
+    - sentinel.risk.assessed: Collection risk analysis results
     - sentinel.emergency.triggered: Emergency financial situations  
     - sentinel.alert.issued: Risk threshold breaches
     - sentinel.recovery.completed: Recovery confirmation
@@ -81,17 +81,17 @@ def sentinel_node(state: Dict[str, Any]) -> Dict[str, Any]:
             response, route = _process_recovery_event(payload, correlation_id)
             
         else:
-            # Handle user queries about portfolio/risk
+            # Handle user queries about collection/risk
             if any(keyword in user_query.lower() for keyword in 
-                   ["portfolio", "risk", "emergency", "protection", "guardian"]):
+                   ["collection", "risk", "emergency", "protection", "guardian"]):
                 response, route = _process_user_query(user_query, state)
             else:
                 response = f"🛡️ Sentinel monitoring - Unknown event type: {event_type}"
     
     else:
-        # No event - check if user query is portfolio-related
+        # No event - check if user query is collection-related
         if any(keyword in user_query.lower() for keyword in 
-               ["portfolio", "risk", "emergency", "protection", "guardian", "market"]):
+               ["collection", "risk", "emergency", "protection", "guardian", "market"]):
             response, route = _process_user_query(user_query, state)
     
     # Update state
@@ -124,7 +124,7 @@ def _process_risk_assessment(payload: Dict[str, Any], correlation_id: str) -> tu
         response = f"""🚨 **SENTINEL ALERT: HIGH RISK DETECTED**
         
 Risk Score: {risk_score:.2f}/1.0 ⚠️
-Portfolio Value: ${portfolio_value:,.2f}
+Collection Value: ${portfolio_value:,.2f}
 Daily P&L: {daily_pnl_pct:.2%}
 Market Condition: {market_condition.replace('_', ' ').title()}
 Protection Mode: {protection_mode.upper()}
@@ -137,7 +137,7 @@ Active Alerts: {', '.join(alerts) if alerts else 'None'}
 • Backup and audit systems alerted
 • Risk thresholds reduced to emergency levels
 
-*The Sentinel watches - Your portfolio is under active protection.*"""
+*The Sentinel watches - Your collection is under active protection.*"""
         
         route = "emergency"  # Route to emergency handling
         
@@ -146,7 +146,7 @@ Active Alerts: {', '.join(alerts) if alerts else 'None'}
         response = f"""⚠️ **SENTINEL ADVISORY: ELEVATED RISK MONITORING**
         
 Risk Score: {risk_score:.2f}/1.0
-Portfolio Value: ${portfolio_value:,.2f}
+Collection Value: ${portfolio_value:,.2f}
 Daily P&L: {daily_pnl_pct:.2%}
 Market Condition: {market_condition.replace('_', ' ').title()}
 
@@ -156,7 +156,7 @@ Protection Mode: {protection_mode.title()}
 **Advisory Actions:**
 • Enhanced risk monitoring active
 • Protective measures ready for deployment
-• Regular portfolio health checks scheduled
+• Regular collection health checks scheduled
 
 *The Sentinel remains vigilant - Balanced protection maintained.*"""
         
@@ -164,10 +164,10 @@ Protection Mode: {protection_mode.title()}
         
     else:
         # LOW RISK - Normal operations
-        response = f"""✅ **SENTINEL STATUS: PORTFOLIO STABLE**
+        response = f"""✅ **SENTINEL STATUS: COLLECTION STABLE**
         
 Risk Score: {risk_score:.2f}/1.0 ✓
-Portfolio Value: ${portfolio_value:,.2f}
+Collection Value: ${portfolio_value:,.2f}
 Daily P&L: {daily_pnl_pct:.2%}
 Market Condition: {market_condition.replace('_', ' ').title()}
 Protection Mode: {protection_mode.title()}
@@ -201,7 +201,7 @@ def _process_emergency_event(payload: Dict[str, Any], correlation_id: str) -> tu
 
 Emergency Type: {emergency_type.replace('_', ' ').title()}
 Severity Level: {severity.upper()}
-Portfolio Impact: {portfolio_impact:.2%}
+Collection Impact: {portfolio_impact:.2%}
 
 **Emergency Details:**
 {reason}
@@ -281,7 +281,7 @@ Final Status: {final_status.title()}
 {chr(10).join(f'• {action}' for action in actions_taken)}
 
 **System Status:**
-• Portfolio protection restored
+• Collection protection restored
 • Risk monitoring normalized
 • All Sacred Orders synchronized
 • Emergency protocols deactivated
@@ -298,7 +298,7 @@ Correlation ID: `{correlation_id}`"""
 
 
 def _process_user_query(user_query: str, state: Dict[str, Any]) -> tuple[str, str]:
-    """Process user queries related to portfolio/sentinel functionality"""
+    """Process user queries related to collection/sentinel functionality"""
     
     query_lower = user_query.lower()
     
@@ -306,7 +306,7 @@ def _process_user_query(user_query: str, state: Dict[str, Any]) -> tuple[str, st
     if any(word in query_lower for word in ["emergency", "panic", "crash", "help"]):
         response = """🚨 **SENTINEL EMERGENCY ASSISTANCE**
 
-The Sentinel Order stands ready to protect your portfolio. Emergency protocols available:
+The Sentinel Order stands ready to protect your collection. Emergency protocols available:
 
 **Available Commands:**
 • `trigger emergency [reason]` - Activate emergency protection
@@ -327,10 +327,10 @@ The Sentinel Order stands ready to protect your portfolio. Emergency protocols a
     elif any(word in query_lower for word in ["risk", "assessment", "danger"]):
         response = """📊 **SENTINEL RISK ANALYSIS**
 
-The Sentinel continuously monitors portfolio risk across multiple dimensions:
+The Sentinel continuously monitors collection risk across multiple dimensions:
 
 **Risk Factors Monitored:**
-• Portfolio drawdown and volatility
+• Collection drawdown and volatility
 • Market condition analysis
 • Value-at-Risk calculations
 • Correlation and concentration risk
@@ -350,14 +350,14 @@ The Sentinel continuously monitors portfolio risk across multiple dimensions:
 *Ask for 'current risk' to get immediate assessment.*"""
         route = "monitor"
         
-    # Portfolio status queries
-    elif any(word in query_lower for word in ["portfolio", "status", "health"]):
-        response = """💼 **SENTINEL PORTFOLIO OVERVIEW**
+    # Collection status queries
+    elif any(word in query_lower for word in ["collection", "status", "health"]):
+        response = """💼 **SENTINEL COLLECTION OVERVIEW**
 
 The Sentinel maintains constant vigilance over your financial assets:
 
 **Monitoring Capabilities:**
-• Real-time portfolio valuation
+• Real-time collection valuation
 • Daily P&L tracking
 • Market correlation analysis
 • Risk-adjusted returns
@@ -381,13 +381,13 @@ The Sentinel maintains constant vigilance over your financial assets:
     else:
         response = """🛡️ **SENTINEL ORDER OPERATIONAL**
 
-The Portfolio Guardian operates as the Sentinel Order within the Synaptic Conclave:
+The Collection Guardian operates as the Sentinel Order within the Synaptic Conclave:
 
 **Core Mission:**
 Protecting wealth through intelligent vigilance and cognitive coordination.
 
 **Capabilities:**
-• 24/7 portfolio risk monitoring
+• 24/7 collection risk monitoring
 • Real-time market analysis
 • Emergency response protocols
 • Sacred Orders integration
@@ -395,7 +395,7 @@ Protecting wealth through intelligent vigilance and cognitive coordination.
 **Commands Available:**
 • `risk assessment` - Current risk analysis
 • `emergency trigger` - Activate protection
-• `portfolio status` - Health overview
+• `collection status` - Health overview
 • `market conditions` - Market analysis
 
 **Cognitive Integration:**
@@ -404,7 +404,7 @@ Connected to all Sacred Orders through the Synaptic Conclave for coordinated res
 *How may the Sentinel serve your financial protection needs?*"""
         route = "compose"
     
-    logger.info(f"💬 User query processed - Type: portfolio/sentinel related")
+    logger.info(f"💬 User query processed - Type: collection/sentinel related")
     
     return response, route
 
@@ -446,7 +446,7 @@ if __name__ == "__main__":
     
     # Test user query
     query_state = {
-        "user_query": "I need an emergency risk assessment of my portfolio",
+        "user_query": "I need an emergency risk assessment of my collection",
         "conclave_event": {}
     }
     

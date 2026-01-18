@@ -168,18 +168,18 @@ def codex_node(state: Dict[str, Any]) -> Dict[str, Any]:
 def _handle_data_refresh_event(payload: Dict[str, Any], correlation_id: str) -> Dict[str, Any]:
     """Handle data refresh request events"""
     
-    ticker = payload.get("ticker", "")
-    tickers = payload.get("tickers", [])
+    entity_id = payload.get("entity_id", "")
+    entity_ids = payload.get("entity_ids", [])
     sources = payload.get("sources", [])
     priority = payload.get("priority", "medium")
     
     # Determine scope
-    if ticker:
-        scope = f"ticker {ticker}"
-        target_list = [ticker]
-    elif tickers:
-        scope = f"{len(tickers)} tickers"
-        target_list = tickers
+    if entity_id:
+        scope = f"entity_id {entity_id}"
+        target_list = [entity_id]
+    elif entity_ids:
+        scope = f"{len(entity_ids)} entity_ids"
+        target_list = entity_ids
     else:
         scope = "general market data"
         target_list = []
@@ -481,7 +481,7 @@ if __name__ == "__main__":
         "conclave_event": {
             "event_type": "codex.data.refresh.requested",
             "payload": {
-                "ticker": "AAPL",
+                "entity_id": "EXAMPLE_ENTITY_1",
                 "sources": ["yfinance", "reddit"],
                 "priority": "high"
             }
@@ -497,7 +497,7 @@ if __name__ == "__main__":
     test_state_results = {
         "codex_discovery_results": {
             "sources_found": ["yahoo_finance_aapl", "reddit_post_12345"],
-            "collections_mapped": ["phrases", "tickers"],
+            "collections_mapped": ["phrases", "entity_ids"],
             "inconsistencies_found": 0,
             "expedition_type": "data_refresh"
         },

@@ -325,13 +325,13 @@ concepts:
     sector: "Regional"
     region: "Asia"
     risk_level: "high"
-    synonyms: ["China stocks", "Chinese companies", "A-shares"]
+    synonyms: ["China entities", "Chinese companies", "A-shares"]
 
   - name: "European Market"
     sector: "Regional"
     region: "Europe"
     risk_level: "medium"
-    synonyms: ["European stocks", "EU companies", "Eurozone"]
+    synonyms: ["European entities", "EU companies", "Eurozone"]
 
   - name: "Emerging Markets"
     sector: "Regional"
@@ -489,7 +489,7 @@ themes:
 
 # --- Instruments (New) ---
 instruments:
-  - name: "Stocks"
+  - name: "Entities"
     category: "Equities"
     risk_level: "medium"
     

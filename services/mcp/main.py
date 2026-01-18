@@ -125,14 +125,14 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "screen_tickers",
-            "description": "Screen tickers using Vitruvyan Neural Engine multi-factor ranking system. Returns composite scores, z-scores for momentum/trend/volatility/sentiment/fundamentals, and percentile ranks.",
+            "description": "Screen entity_ids using Vitruvyan Neural Engine multi-factor ranking system. Returns composite scores, z-scores for momentum/trend/volatility/sentiment/fundamentals, and percentile ranks.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "tickers": {
+                    "entity_ids": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "List of stock ticker symbols (e.g., ['AAPL', 'NVDA']). Max 10 tickers per call.",
+                        "description": "List of entity entity_id symbols (e.g., ['EXAMPLE_ENTITY_1', 'EXAMPLE_ENTITY_2']). Max 10 entity_ids per call.",
                         "minItems": 1,
                         "maxItems": 10
                     },
@@ -149,7 +149,7 @@ TOOL_SCHEMAS = [
                         "default": "medium"
                     }
                 },
-                "required": ["tickers"]
+                "required": ["entity_ids"]
             }
         }
     },
@@ -157,13 +157,13 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "generate_vee_summary",
-            "description": "Generate Vitruvyan Explainability Engine (VEE) narrative summary for a ticker. Returns conversational Italian explanation (120-180 words) suitable for non-technical users.",
+            "description": "Generate Vitruvyan Explainability Engine (VEE) narrative summary for a entity_id. Returns conversational Italian explanation (120-180 words) suitable for non-technical users.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "ticker": {
+                    "entity_id": {
                         "type": "string",
-                        "description": "Stock ticker symbol (e.g., 'AAPL')"
+                        "description": "Entity entity_id symbol (e.g., 'EXAMPLE_ENTITY_1')"
                     },
                     "language": {
                         "type": "string",
@@ -172,7 +172,7 @@ TOOL_SCHEMAS = [
                         "default": "it"
                     }
                 },
-                "required": ["ticker"]
+                "required": ["entity_id"]
             }
         }
     },
@@ -180,13 +180,13 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "query_sentiment",
-            "description": "Query sentiment scores from Vitruvyan database for a ticker. Returns average sentiment, trend, and recent sample phrases from Reddit/GNews.",
+            "description": "Query sentiment scores from Vitruvyan database for a entity_id. Returns average sentiment, trend, and recent sample phrases from Reddit/GNews.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "ticker": {
+                    "entity_id": {
                         "type": "string",
-                        "description": "Stock ticker symbol (e.g., 'AAPL')"
+                        "description": "Entity entity_id symbol (e.g., 'EXAMPLE_ENTITY_1')"
                     },
                     "days": {
                         "type": "integer",
@@ -201,7 +201,7 @@ TOOL_SCHEMAS = [
                         "default": True
                     }
                 },
-                "required": ["ticker"]
+                "required": ["entity_id"]
             }
         }
     },
@@ -209,14 +209,14 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "compare_tickers",
-            "description": "Compare multiple tickers side-by-side using Vitruvyan comparison analysis. Returns winner/loser classification and factor deltas.",
+            "description": "Compare multiple entity_ids side-by-side using Vitruvyan comparison analysis. Returns winner/loser classification and factor deltas.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "tickers": {
+                    "entity_ids": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "List of ticker symbols to compare (e.g., ['AAPL', 'MSFT', 'GOOGL']). Min 2, max 5 tickers.",
+                        "description": "List of entity_id symbols to compare (e.g., ['EXAMPLE_ENTITY_1', 'EXAMPLE_ENTITY_4', 'EXAMPLE_ENTITY_5']). Min 2, max 5 entity_ids.",
                         "minItems": 2,
                         "maxItems": 5
                     },
@@ -227,7 +227,7 @@ TOOL_SCHEMAS = [
                         "default": "composite"
                     }
                 },
-                "required": ["tickers"]
+                "required": ["entity_ids"]
             }
         }
     },
@@ -289,7 +289,7 @@ async def sacred_orders_middleware(
     1. Synaptic Conclave orchestration (Redis Cognitive Bus)
     2. Orthodoxy Wardens validation (heresy detection)
     3. Vault Keepers archiving (PostgreSQL audit trail)
-    4. Sentinel risk checks (if portfolio operation)
+    4. Sentinel risk checks (if collection operation)
     
     Returns:
         orthodoxy_status: "blessed" | "purified" | "heretical"
@@ -322,12 +322,12 @@ async def sacred_orders_middleware(
             # Rationale: Financial events can have extreme z-scores (crashes, booms)
             # Neural Engine calculations are mathematically valid
             # Production validation of weights/thresholds will use real-world data
-            for ticker_data in result.get("data", {}).get("tickers", []):
-                z_scores = ticker_data.get("z_scores", {})
+            for entity_data in result.get("data", {}).get("entity_ids", []):
+                z_scores = entity_data.get("z_scores", {})
                 for factor, z in z_scores.items():
                     if z is not None and (z < -3 or z > 3):
                         logger.warning(
-                            f"⚠️ Outlier detected: {factor}={z:.3f} for {ticker_data.get('ticker')} "
+                            f"⚠️ Outlier detected: {factor}={z:.3f} for {entity_data.get('entity_id')} "
                             f"(>3σ, rare event - validating in production)"
                         )
                         if orthodoxy_status == "blessed":
@@ -335,10 +335,10 @@ async def sacred_orders_middleware(
                 
                 # Validate composite score: allow negative (underperformers), warn if extreme
                 # Rationale: Composite score is z-score weighted sum, can be negative
-                composite = ticker_data.get("composite_score", 0)
+                composite = entity_data.get("composite_score", 0)
                 if composite < -5 or composite > 5:
                     logger.warning(
-                        f"⚠️ Extreme composite_score={composite:.3f} for {ticker_data.get('ticker')} "
+                        f"⚠️ Extreme composite_score={composite:.3f} for {entity_data.get('entity_id')} "
                         f"(>5σ, validating in production)"
                     )
                     if orthodoxy_status == "blessed":
@@ -405,7 +405,7 @@ async def sacred_orders_middleware(
     except Exception as e:
         logger.error(f"❌ Vault Keepers archiving failed: {e}", exc_info=True)
     
-    # 4. Sentinel risk checks (TODO: Implement in Phase 2 for portfolio operations)
+    # 4. Sentinel risk checks (TODO: Implement in Phase 2 for collection operations)
     
     return orthodoxy_status
 
@@ -421,9 +421,9 @@ async def execute_screen_tickers(args: Dict[str, Any], user_id: str) -> Dict[str
     
     Test Mode: Supports _test_inject_heretical flag for Orthodoxy testing
     """
-    logger.info(f"🧠 Executing screen_tickers: tickers={args.get('tickers')}, profile={args.get('profile', 'balanced_mid')}")
+    logger.info(f"🧠 Executing screen_tickers: entity_ids={args.get('entity_ids')}, profile={args.get('profile', 'balanced_mid')}")
     
-    tickers = args.get("tickers", [])
+    entity_ids = args.get("entity_ids", [])
     profile = args.get("profile", "balanced_mid")
     
     # Test mode: Inject heretical z-score for Orthodoxy testing
@@ -436,7 +436,7 @@ async def execute_screen_tickers(args: Dict[str, Any], user_id: str) -> Dict[str
     langgraph_url = os.getenv("LANGGRAPH_URL", "http://omni_api_graph:8004")
     
     # Construct screening query for LangGraph
-    tickers_str = ", ".join(tickers)
+    tickers_str = ", ".join(entity_ids)
     query = f"screen {tickers_str} with {profile} profile"
     
     try:
@@ -456,33 +456,33 @@ async def execute_screen_tickers(args: Dict[str, Any], user_id: str) -> Dict[str
             numerical_panel = langgraph_data.get("numerical_panel", [])
             stocks_data = numerical_panel  # LangGraph already provides the right format
             
-            logger.info(f"✅ LangGraph response received: {len(stocks_data)} tickers")
+            logger.info(f"✅ LangGraph response received: {len(stocks_data)} entity_ids")
             
             # LangGraph numerical_panel already has correct format, minimal transformation needed
             transformed_tickers = []
-            for ticker_data in stocks_data:
+            for entity_data in stocks_data:
                 # LangGraph uses composite_score (not composite), vola_z (not volatility_z)
                 transformed_tickers.append({
-                    "ticker": ticker_data.get("ticker"),
-                    "composite_score": ticker_data.get("composite_score", ticker_data.get("composite", 0.0)),
-                    "rank": ticker_data.get("rank", 0),
-                    "percentile": ticker_data.get("percentile", 0.0),
+                    "entity_id": entity_data.get("entity_id"),
+                    "composite_score": entity_data.get("composite_score", entity_data.get("composite", 0.0)),
+                    "rank": entity_data.get("rank", 0),
+                    "percentile": entity_data.get("percentile", 0.0),
                     "z_scores": {
-                        "momentum_z": ticker_data.get("momentum_z", 0.0),
-                        "trend_z": ticker_data.get("trend_z", 0.0),
-                        "volatility_z": ticker_data.get("vola_z", 0.0),  # LangGraph uses vola_z
-                        "sentiment_z": ticker_data.get("sentiment_z", 0.0),
-                        "fundamental_z": ticker_data.get("fundamental_z", 0.0)
+                        "momentum_z": entity_data.get("momentum_z", 0.0),
+                        "trend_z": entity_data.get("trend_z", 0.0),
+                        "volatility_z": entity_data.get("vola_z", 0.0),  # LangGraph uses vola_z
+                        "sentiment_z": entity_data.get("sentiment_z", 0.0),
+                        "fundamental_z": entity_data.get("fundamental_z", 0.0)
                     },
                     "vare": {
-                        "risk_score": ticker_data.get("vare_risk_score", 0.0),
-                        "risk_category": ticker_data.get("vare_risk_category", "unknown"),
-                        "confidence": ticker_data.get("vare_confidence", 0.0)
+                        "risk_score": entity_data.get("vare_risk_score", 0.0),
+                        "risk_category": entity_data.get("vare_risk_category", "unknown"),
+                        "confidence": entity_data.get("vare_confidence", 0.0)
                     }
                 })
             
             mock_data = {
-                "tickers": transformed_tickers,
+                "entity_ids": transformed_tickers,
                 "profile_used": profile,
                 "total_screened": len(transformed_tickers)
             }
@@ -507,9 +507,9 @@ async def execute_screen_tickers(args: Dict[str, Any], user_id: str) -> Dict[str
         )
     
     # Inject heretical z-score if test mode enabled
-    if test_inject_heretical and mock_data["tickers"]:
+    if test_inject_heretical and mock_data["entity_ids"]:
         logger.warning(f"⚠️  TEST MODE: Injecting heretical z-score {test_heretical_factor}={test_heretical_value}")
-        mock_data["tickers"][0]["z_scores"][test_heretical_factor] = test_heretical_value
+        mock_data["entity_ids"][0]["z_scores"][test_heretical_factor] = test_heretical_value
     
     return mock_data
 
@@ -517,23 +517,23 @@ async def execute_generate_vee_summary(args: Dict[str, Any], user_id: str) -> Di
     """
     Execute generate_vee_summary tool via LangGraph VEE Engine.
     
-    Phase 3: Calls actual omni_api_graph:8004/run with ticker query
+    Phase 3: Calls actual omni_api_graph:8004/run with entity_id query
     """
-    ticker = args.get("ticker")
+    entity_id = args.get("entity_id")
     language = args.get("language", "it")
     level = args.get("level", "summary")
     
-    logger.info(f"📝 Executing generate_vee_summary: ticker={ticker}, language={language}, level={level}")
+    logger.info(f"📝 Executing generate_vee_summary: entity_id={entity_id}, language={language}, level={level}")
     
     # Phase 3: Real VEE Engine call via LangGraph
     langgraph_url = os.getenv("LANGGRAPH_API", "http://omni_api_graph:8004")
     
     # Construct query based on language
     query_templates = {
-        "it": f"analizza {ticker} momentum breve termine",
-        "en": f"analyze {ticker} momentum short term",
-        "es": f"analizar {ticker} momentum corto plazo",
-        "fr": f"analyser {ticker} momentum court terme"
+        "it": f"analizza {entity_id} momentum breve termine",
+        "en": f"analyze {entity_id} momentum short term",
+        "es": f"analizar {entity_id} momentum corto plazo",
+        "fr": f"analyser {entity_id} momentum court terme"
     }
     query = query_templates.get(language, query_templates["en"])
     
@@ -554,17 +554,17 @@ async def execute_generate_vee_summary(args: Dict[str, Any], user_id: str) -> Di
             
             # Extract VEE narrative from response
             vee_explanations = langgraph_data.get("vee_explanations", {})
-            ticker_vee = vee_explanations.get(ticker, {})
+            entity_vee = vee_explanations.get(entity_id, {})
             
             # Select level-specific narrative
-            narrative = ticker_vee.get(level, ticker_vee.get("summary", ""))
+            narrative = entity_vee.get(level, entity_vee.get("summary", ""))
             
             # Fallback if no VEE data
             if not narrative:
                 narrative = langgraph_data.get("response", {}).get("narrative", "")
             
             return {
-                "ticker": ticker,
+                "entity_id": entity_id,
                 "level": level,
                 "narrative": narrative,
                 "word_count": len(narrative.split()),
@@ -595,13 +595,13 @@ async def execute_query_sentiment(args: Dict[str, Any], user_id: str) -> Dict[st
     """
     Execute query_sentiment tool via PostgreSQL (real implementation).
     
-    Queries sentiment_scores table for ticker sentiment data.
+    Queries sentiment_scores table for entity_id sentiment data.
     """
-    ticker = args.get("ticker")
+    entity_id = args.get("entity_id")
     days = args.get("days", 7)
     include_phrases = args.get("include_phrases", True)
     
-    logger.info(f"💭 Executing query_sentiment: ticker={ticker}, days={days}")
+    logger.info(f"💭 Executing query_sentiment: entity_id={entity_id}, days={days}")
     
     try:
         pg = PostgresAgent()
@@ -614,9 +614,9 @@ async def execute_query_sentiment(args: Dict[str, Any], user_id: str) -> Dict[st
                     COUNT(*) as samples,
                     MAX(created_at) as latest_timestamp
                 FROM sentiment_scores
-                WHERE ticker = %s 
+                WHERE entity_id = %s 
                   AND created_at >= NOW() - INTERVAL '%s days'
-            """, (ticker, days))
+            """, (entity_id, days))
             
             row = cur.fetchone()
             
@@ -637,10 +637,10 @@ async def execute_query_sentiment(args: Dict[str, Any], user_id: str) -> Dict[st
                 cur.execute("""
                     SELECT combined_score, sentiment_tag
                     FROM sentiment_scores
-                    WHERE ticker = %s
+                    WHERE entity_id = %s
                     ORDER BY created_at DESC
                     LIMIT 1
-                """, (ticker,))
+                """, (entity_id,))
                 
                 latest_row = cur.fetchone()
                 latest_score = float(latest_row[0]) if latest_row else 0.0
@@ -652,13 +652,13 @@ async def execute_query_sentiment(args: Dict[str, Any], user_id: str) -> Dict[st
                     # Note: sentiment_scores doesn't have phrases column
                     # Mock some generic phrases for Phase 2
                     phrases = [
-                        f"Positive outlook on {ticker}",
-                        f"{ticker} showing strong performance",
-                        f"Market sentiment favors {ticker}"
+                        f"Positive outlook on {entity_id}",
+                        f"{entity_id} showing strong performance",
+                        f"Market sentiment favors {entity_id}"
                     ]
                 
                 return {
-                    "ticker": ticker,
+                    "entity_id": entity_id,
                     "avg_sentiment": round(avg_sentiment, 3),
                     "trend": trend,
                     "samples": samples,
@@ -670,9 +670,9 @@ async def execute_query_sentiment(args: Dict[str, Any], user_id: str) -> Dict[st
                 }
             else:
                 # No sentiment data found
-                logger.warning(f"No sentiment data found for {ticker} in last {days} days")
+                logger.warning(f"No sentiment data found for {entity_id} in last {days} days")
                 return {
-                    "ticker": ticker,
+                    "entity_id": entity_id,
                     "avg_sentiment": 0.0,
                     "trend": "unknown",
                     "samples": 0,
@@ -681,11 +681,11 @@ async def execute_query_sentiment(args: Dict[str, Any], user_id: str) -> Dict[st
                     "phrases": [],
                     "days_analyzed": days,
                     "latest_timestamp": None,
-                    "message": f"No sentiment data found for {ticker} in last {days} days"
+                    "message": f"No sentiment data found for {entity_id} in last {days} days"
                 }
                 
     except Exception as e:
-        logger.error(f"Error querying sentiment for {ticker}: {str(e)}")
+        logger.error(f"Error querying sentiment for {entity_id}: {str(e)}")
         raise
 
 async def execute_compare_tickers(args: Dict[str, Any], user_id: str) -> Dict[str, Any]:
@@ -694,19 +694,19 @@ async def execute_compare_tickers(args: Dict[str, Any], user_id: str) -> Dict[st
     
     Phase 3: Calls actual omni_api_graph:8004/run with comparison query
     """
-    tickers = args.get("tickers", [])
+    entity_ids = args.get("entity_ids", [])
     criteria = args.get("criteria", "composite")
     
-    logger.info(f"⚖️  Executing compare_tickers: tickers={tickers}, criteria={criteria}")
+    logger.info(f"⚖️  Executing compare_tickers: entity_ids={entity_ids}, criteria={criteria}")
     
-    if len(tickers) < 2:
-        raise MCPError("compare_tickers requires at least 2 tickers", "INVALID_ARGS")
+    if len(entity_ids) < 2:
+        raise MCPError("compare_tickers requires at least 2 entity_ids", "INVALID_ARGS")
     
     # Phase 3: Real comparison via LangGraph
     langgraph_url = os.getenv("LANGGRAPH_API", "http://omni_api_graph:8004")
     
     # Construct comparison query
-    tickers_str = " vs ".join(tickers)
+    tickers_str = " vs ".join(entity_ids)
     query = f"compare {tickers_str}"
     
     try:
@@ -730,29 +730,29 @@ async def execute_compare_tickers(args: Dict[str, Any], user_id: str) -> Dict[st
             
             # Build comparison result
             comparison_data = []
-            for ticker_data in numerical_panel:
-                ticker = ticker_data.get("ticker")
+            for entity_data in numerical_panel:
+                entity_id = entity_data.get("entity_id")
                 comparison_data.append({
-                    "ticker": ticker,
-                    "composite_score": ticker_data.get("composite_score", 0.0),
-                    "rank": ticker_data.get("rank", 0),
-                    "percentile": ticker_data.get("percentile", 0.0),
+                    "entity_id": entity_id,
+                    "composite_score": entity_data.get("composite_score", 0.0),
+                    "rank": entity_data.get("rank", 0),
+                    "percentile": entity_data.get("percentile", 0.0),
                     "factors": {
-                        "momentum_z": ticker_data.get("momentum_z", 0.0),
-                        "trend_z": ticker_data.get("trend_z", 0.0),
-                        "volatility_z": ticker_data.get("volatility_z", 0.0),
-                        "sentiment_z": ticker_data.get("sentiment_z", 0.0),
-                        "fundamental_z": ticker_data.get("fundamental_z", 0.0)
+                        "momentum_z": entity_data.get("momentum_z", 0.0),
+                        "trend_z": entity_data.get("trend_z", 0.0),
+                        "volatility_z": entity_data.get("volatility_z", 0.0),
+                        "sentiment_z": entity_data.get("sentiment_z", 0.0),
+                        "fundamental_z": entity_data.get("fundamental_z", 0.0)
                     }
                 })
             
             # Extract winner/loser from comparison matrix
-            winner = comparison_matrix.get("winner", tickers[0] if tickers else "")
-            loser = comparison_matrix.get("loser", tickers[-1] if len(tickers) > 1 else "")
+            winner = comparison_matrix.get("winner", entity_ids[0] if entity_ids else "")
+            loser = comparison_matrix.get("loser", entity_ids[-1] if len(entity_ids) > 1 else "")
             deltas = comparison_matrix.get("deltas", {})
             
             return {
-                "tickers": tickers,
+                "entity_ids": entity_ids,
                 "comparison": comparison_data,
                 "winner": winner,
                 "loser": loser,

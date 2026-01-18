@@ -18,7 +18,7 @@
 - **vitruvyan_core/integration/**: Helper classes for verticals
 - `VerticalOrchestrator`: Abstract base for domain implementations
 - `BatchProcessor`: Multi-entity processing capabilities
-- `ResultAggregator`: Portfolio-level analysis utilities
+- `ResultAggregator`: Collection-level analysis utilities
 
 ### ✅ Working Integration Example
 - **examples/vertical_integration/**: Complete working demo
@@ -71,7 +71,7 @@
 ### Mercator (Finance Vertical)
 - Implement real financial factors and providers
 - Connect to market data sources
-- Build portfolio analysis capabilities
+- Build collection analysis capabilities
 - Domain-specific reporting and insights
 
 ### AEGIS (Defense/Logistics Vertical)  

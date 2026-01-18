@@ -22,7 +22,7 @@ STATE OUTPUTS:
 - language_detected: str - Detected language (en, it, ru, sr, etc.)
 - language_confidence: float - Detection confidence (0.0-1.0)
 - cultural_context: str - Cultural interpretation
-- intent: str - Canonical intent (trend, risk, portfolio, sentiment, etc.)
+- intent: str - Canonical intent (trend, risk, collection, sentiment, etc.)
 - screening_filters: dict - Extracted filters (risk_tolerance, momentum_breakout, sector, mode)
 - route: str - "intent_detection"
 """
@@ -57,7 +57,7 @@ BABEL_API_URL = os.getenv("SENTIMENT_API_URL", "http://vitruvyan_babel_gardens:8
 # Intent labels
 INTENT_LABELS = [
     "trend", "momentum", "volatility", "risk", "backtest",
-    "allocate", "portfolio", "sentiment",
+    "allocate", "collection", "sentiment",
     "soft", "horizon_advice", "unknown"
 ]
 
@@ -69,17 +69,17 @@ INTENT_SYNONYMS = {
     "buy": "allocate",
     "acquista": "allocate",
     "acquisto": "allocate",
-    "portfolio analysis": "portfolio",
-    "analizza portafoglio": "portfolio",
+    "collection analysis": "collection",
+    "analizza portafoglio": "collection",
 }
 
 # GPT-3.5 Prompt Template
 INTENT_PROMPT_TEMPLATE = """You are Vitruvyan's intent classification engine. Analyze the user's financial query and extract structured parameters.
 
 INTENT CATEGORIES:
-- trend: stock analysis, technical analysis
-- risk: risk assessment of specific tickers
-- portfolio: portfolio management
+- trend: entity analysis, technical analysis
+- risk: risk assessment of specific entity_ids
+- collection: collection management
 - sentiment: market sentiment analysis
 - momentum: momentum indicators (RSI, MACD, breakout detection)
 - volatility: volatility analysis
@@ -91,12 +91,12 @@ INTENT CATEGORIES:
 
 EXTRACT SCREENING FILTERS (if applicable):
 - risk_tolerance: "low" (conservative, prudent, stable), "medium" (balanced), "high" (aggressive, growth)
-- momentum_breakout: true if user wants strong momentum/breakout stocks (keywords: breakout, momentum forte, explosive, rottura resistenza)
-- value_screening: true if user wants undervalued stocks (keywords: sottovalutati, undervalued, cheap, buon prezzo, bargain, economici)
+- momentum_breakout: true if user wants strong momentum/breakout entities (keywords: breakout, momentum forte, explosive, rottura resistenza)
+- value_screening: true if user wants undervalued entities (keywords: sottovalutati, undervalued, cheap, buon prezzo, bargain, economici)
 - divergence_detection: true if user wants divergence/contrarian signals (keywords: divergenza, divergence, segnale contrarian, reversal, inversione, price-RSI divergence)
 - multi_timeframe_filter: true if user wants multi-timeframe consensus (keywords: consensus multi-timeframe, allineamento timeframe, trend confermato su tutti i timeframe, bullish across timeframes)
 - sector: extract sector name if mentioned (Technology, Healthcare, Energy, Financial Services, Consumer Cyclical, Industrials, Real Estate, Basic Materials, Communication Services, Utilities, Consumer Defensive)
-- mode: "analyze" (specific tickers), "discovery" (general screening), "comparative" (compare alternatives), "sector" (sector-focused)
+- mode: "analyze" (specific entity_ids), "discovery" (general screening), "comparative" (compare alternatives), "sector" (sector-focused)
 
 EXAMPLES:
 "Analizza AAPL" → {{"intent": "trend", "mode": "analyze"}}
@@ -343,8 +343,8 @@ def _has_explicit_context(user_input: str, intent: str) -> bool:
     Examples:
     - intent=risk + "volatility" in text → True ✅
     - intent=risk + "ho troppo SHOP" → False ❌ (no risk keywords)
-    - intent=portfolio_review + "my portfolio" → True ✅
-    - intent=portfolio_review + "ho troppo SHOP" → False ❌ (no portfolio keywords)
+    - intent=portfolio_review + "my collection" → True ✅
+    - intent=portfolio_review + "ho troppo SHOP" → False ❌ (no collection keywords)
     - intent=trend + "analizza NVDA" → True ✅ (generic OK for trend)
     - intent=sentiment + "sentiment AAPL" → True ✅
     
@@ -376,12 +376,12 @@ def _has_explicit_context(user_input: str, intent: str) -> bool:
         ],
         "portfolio_review": [
             # Italian
-            "portfolio", "portafoglio", "il mio", "mio", "my", "holdings",
+            "collection", "portafoglio", "il mio", "mio", "my", "holdings",
             "posizioni", "investimenti", "asset", "allocazione",
             # English
-            "my portfolio", "my holdings", "my positions", "my investments",
+            "my collection", "my holdings", "my positions", "my investments",
             # Spanish
-            "mi cartera", "mis inversiones", "mi portfolio"
+            "mi cartera", "mis inversiones", "mi collection"
         ],
         "sentiment": [
             # Italian
@@ -427,10 +427,10 @@ def _has_explicit_context(user_input: str, intent: str) -> bool:
         "unknown": []         # Unknown = already rejected
     }
     
-    # ✅ CRITICAL FIX (Nov 2, 2025): Check for ambiguous portfolio statements FIRST
+    # ✅ CRITICAL FIX (Nov 2, 2025): Check for ambiguous collection statements FIRST
     # These are ALWAYS ambiguous regardless of GPT intent classification
     ambiguous_portfolio_patterns = [
-        # Italian portfolio statements without explicit analysis request
+        # Italian collection statements without explicit analysis request
         r'\b(ho|posseggo|detengo)\s+(troppo|poco|tanto|molto)\s+[A-Z]{1,5}\b',
         # "ho troppo SHOP", "posseggo poco NVDA", "detengo tanto AAPL"
         r'\b(conviene|vale la pena)\s*\??$',  # "conviene?", "vale la pena?"
@@ -445,7 +445,7 @@ def _has_explicit_context(user_input: str, intent: str) -> bool:
     for pattern in ambiguous_portfolio_patterns:
         if re.search(pattern, user_input, re.IGNORECASE):
             logger.warning(
-                f"🚨 [PROFESSIONAL_BOUNDARIES] AMBIGUOUS PORTFOLIO STATEMENT detected: "
+                f"🚨 [PROFESSIONAL_BOUNDARIES] AMBIGUOUS COLLECTION STATEMENT detected: "
                 f"'{user_input[:80]}...' (pattern: {pattern})"
             )
             return False  # Force rejection regardless of intent
@@ -486,8 +486,8 @@ def intent_detection_node(state: Dict[str, Any]) -> Dict[str, Any]:
     - GPT intent MUST be validated with _has_explicit_context()
     - Ambiguous queries → override to intent='unknown'
     - Examples:
-      ❌ "ho troppo SHOP" → lacks portfolio context → intent='unknown'
-      ✅ "controlla il mio portfolio" → explicit context → intent='portfolio_review'
+      ❌ "ho troppo SHOP" → lacks collection context → intent='unknown'
+      ✅ "controlla il mio collection" → explicit context → intent='portfolio_review'
     
     State Updates:
     - language_detected: str
@@ -564,7 +564,7 @@ def intent_detection_node(state: Dict[str, Any]) -> Dict[str, Any]:
             state["needs_clarification"] = True
             state["clarification_reason"] = (
                 f"Query ambigua per intent {detected_intent}. "
-                f"Specifica cosa vuoi sapere (es: sentiment, trend, rischio, portfolio)"
+                f"Specifica cosa vuoi sapere (es: sentiment, trend, rischio, collection)"
             )
             
             # Add UX counter for monitoring

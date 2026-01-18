@@ -127,7 +127,7 @@ def evaluate_entities():
     
     # 1. Prepare entity data (from Mercator's data layer)
     entities = pd.DataFrame({
-        'entity_id': ['AAPL', 'GOOGL', 'MSFT', 'AMZN'],
+        'entity_id': ['EXAMPLE_ENTITY_1', 'EXAMPLE_ENTITY_5', 'EXAMPLE_ENTITY_4', 'AMZN'],
         'current_price': [150.0, 2800.0, 380.0, 3400.0],
         'previous_price': [145.0, 2750.0, 375.0, 3500.0],
     })
@@ -176,7 +176,7 @@ def evaluate_entities():
     
     print("\n" + "=" * 60)
     print("✅ Core remains domain-agnostic!")
-    print("   - No knowledge of stocks, prices, or momentum")
+    print("   - No knowledge of entities, prices, or momentum")
     print("   - Only computed: factor → normalize → aggregate")
     print("   - All domain logic lives in Mercator")
 

@@ -65,10 +65,10 @@ class Scribe:
         Calculate technical indicators for normalized market data.
         
         Args:
-            normalized_data: List of ticker dictionaries from Restorer
+            normalized_data: List of entity_id dictionaries from Restorer
                 Expected structure:
                 {
-                    "ticker": "AAPL",
+                    "entity_id": "EXAMPLE_ENTITY_1",
                     "history": [
                         {"date": "2024-01-01", "open": 100, "high": 105, 
                          "low": 99, "close": 103, "volume": 1000000},
@@ -76,7 +76,7 @@ class Scribe:
                     ],
                     "source": "yfinance"
                 }
-            batch_size: Number of tickers to process before checkpointing
+            batch_size: Number of entity_ids to process before checkpointing
         
         Returns:
             {
@@ -96,48 +96,48 @@ class Scribe:
             "tickers_processed": []
         }
         
-        logger.info(f"🔬 Scribe starting expedition on {len(normalized_data)} tickers")
+        logger.info(f"🔬 Scribe starting expedition on {len(normalized_data)} entity_ids")
         
-        for idx, ticker_data in enumerate(normalized_data):
-            ticker = ticker_data.get("ticker", "UNKNOWN")
+        for idx, entity_data in enumerate(normalized_data):
+            entity_id = entity_data.get("entity_id", "UNKNOWN")
             
             try:
                 # Validate required data
-                if "history" not in ticker_data or not ticker_data["history"]:
-                    raise ValueError(f"No history data for {ticker}")
+                if "history" not in entity_data or not entity_data["history"]:
+                    raise ValueError(f"No history data for {entity_id}")
                 
                 # Calculate all indicators
-                indicators = self._calculate_indicators(ticker_data)
+                indicators = self._calculate_indicators(entity_data)
                 
                 if indicators:
                     # Store using existing loggers
-                    self._store_trend(ticker, indicators["trend"])
-                    self._store_momentum(ticker, indicators["momentum"])
-                    self._store_volatility(ticker, indicators["volatility"])
+                    self._store_trend(entity_id, indicators["trend"])
+                    self._store_momentum(entity_id, indicators["momentum"])
+                    self._store_volatility(entity_id, indicators["volatility"])
                     
                     results["successful"] += 1
-                    results["tickers_processed"].append(ticker)
-                    logger.info(f"✅ {ticker} indicators calculated and stored")
+                    results["tickers_processed"].append(entity_id)
+                    logger.info(f"✅ {entity_id} indicators calculated and stored")
                 else:
                     results["failed"] += 1
                     results["errors"].append({
-                        "ticker": ticker,
+                        "entity_id": entity_id,
                         "error": "Insufficient data for indicator calculation"
                     })
                     
             except Exception as e:
                 results["failed"] += 1
                 results["errors"].append({
-                    "ticker": ticker,
+                    "entity_id": entity_id,
                     "error": str(e)
                 })
-                logger.error(f"❌ Error processing {ticker}: {e}", exc_info=True)
+                logger.error(f"❌ Error processing {entity_id}: {e}", exc_info=True)
             
             results["processed"] += 1
             
             # Checkpoint progress
             if (idx + 1) % batch_size == 0:
-                logger.info(f"📊 Checkpoint: {idx + 1}/{len(normalized_data)} tickers processed")
+                logger.info(f"📊 Checkpoint: {idx + 1}/{len(normalized_data)} entity_ids processed")
         
         duration = (datetime.now() - start_time).total_seconds()
         results["duration_seconds"] = duration
@@ -152,19 +152,19 @@ class Scribe:
     
     def _calculate_indicators(
         self,
-        ticker_data: Dict[str, Any]
+        entity_data: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
         """
         Calculate all technical indicators using pandas-ta.
         
         Args:
-            ticker_data: Normalized ticker data from Restorer
+            entity_data: Normalized entity_id data from Restorer
         
         Returns:
             Dictionary with trend, momentum, volatility sections or None
         """
-        ticker = ticker_data.get("ticker", "UNKNOWN")
-        history = ticker_data.get("history", [])
+        entity_id = entity_data.get("entity_id", "UNKNOWN")
+        history = entity_data.get("history", [])
         
         # Convert to DataFrame
         df = pd.DataFrame(history)
@@ -172,7 +172,7 @@ class Scribe:
         # Ensure required columns
         required_cols = ["date", "open", "high", "low", "close", "volume"]
         if not all(col in df.columns for col in required_cols):
-            logger.warning(f"Missing required columns for {ticker}")
+            logger.warning(f"Missing required columns for {entity_id}")
             return None
         
         # Convert date to datetime
@@ -181,7 +181,7 @@ class Scribe:
         
         # Need at least 200 days for SMA200
         if len(df) < 200:
-            logger.warning(f"{ticker} has only {len(df)} days (need 200 for SMA200)")
+            logger.warning(f"{entity_id} has only {len(df)} days (need 200 for SMA200)")
             return None
         
         # Calculate all indicators using pandas-ta
@@ -201,7 +201,7 @@ class Scribe:
             df.ta.stdev(length=20, append=True)
             
         except Exception as e:
-            logger.error(f"pandas-ta calculation error for {ticker}: {e}")
+            logger.error(f"pandas-ta calculation error for {entity_id}: {e}")
             return None
         
         # Get latest values (most recent row)
@@ -222,13 +222,13 @@ class Scribe:
         
         # Validate we have data
         if pd.isna([sma_20, sma_50, sma_200]).any():
-            logger.warning(f"{ticker}: SMA values contain NaN")
+            logger.warning(f"{entity_id}: SMA values contain NaN")
             return None
         
         # Build result structure
         return {
             "trend": {
-                "ticker": ticker,
+                "entity_id": entity_id,
                 "trend": {
                     "short": self._determine_trend(close, sma_20),
                     "medium": self._determine_trend(close, sma_50),
@@ -242,7 +242,7 @@ class Scribe:
                 }
             },
             "momentum": {
-                "ticker": ticker,
+                "entity_id": entity_id,
                 "horizon": "medium",
                 "rsi": float(rsi_14) if not pd.isna(rsi_14) else None,
                 "roc": float(roc_12) if not pd.isna(roc_12) else 0.0,
@@ -253,7 +253,7 @@ class Scribe:
                 "macd_trend": "bullish" if (not pd.isna(macd) and not pd.isna(macd_signal) and macd > macd_signal) else "bearish"
             },
             "volatility": {
-                "ticker": ticker,
+                "entity_id": entity_id,
                 "horizon": "medium",
                 "atr": float(atr_14) if not pd.isna(atr_14) else 0.0,
                 "stdev": float(stdev_20) if not pd.isna(stdev_20) else 0.0,
@@ -305,49 +305,49 @@ class Scribe:
         else:
             return "high"
     
-    def _store_trend(self, ticker: str, trend_data: Dict[str, Any]) -> None:
+    def _store_trend(self, entity_id: str, trend_data: Dict[str, Any]) -> None:
         """
         Store trend indicators using existing trend_logger.
         
         Args:
-            ticker: Stock ticker symbol
+            entity_id: Entity entity_id symbol
             trend_data: Trend section from _calculate_indicators
         """
         try:
-            log_trend_result(self.user_id, ticker, trend_data)
-            logger.debug(f"📈 Trend data logged for {ticker}")
+            log_trend_result(self.user_id, entity_id, trend_data)
+            logger.debug(f"📈 Trend data logged for {entity_id}")
         except Exception as e:
-            logger.error(f"Failed to log trend for {ticker}: {e}")
+            logger.error(f"Failed to log trend for {entity_id}: {e}")
             raise
     
-    def _store_momentum(self, ticker: str, momentum_data: Dict[str, Any]) -> None:
+    def _store_momentum(self, entity_id: str, momentum_data: Dict[str, Any]) -> None:
         """
         Store momentum indicators using existing momentum_logger.
         
         Args:
-            ticker: Stock ticker symbol
+            entity_id: Entity entity_id symbol
             momentum_data: Momentum section from _calculate_indicators
         """
         try:
             log_momentum_result(self.user_id, momentum_data)
-            logger.debug(f"📊 Momentum data logged for {ticker}")
+            logger.debug(f"📊 Momentum data logged for {entity_id}")
         except Exception as e:
-            logger.error(f"Failed to log momentum for {ticker}: {e}")
+            logger.error(f"Failed to log momentum for {entity_id}: {e}")
             raise
     
-    def _store_volatility(self, ticker: str, volatility_data: Dict[str, Any]) -> None:
+    def _store_volatility(self, entity_id: str, volatility_data: Dict[str, Any]) -> None:
         """
         Store volatility indicators using existing volatility_logger.
         
         Args:
-            ticker: Stock ticker symbol
+            entity_id: Entity entity_id symbol
             volatility_data: Volatility section from _calculate_indicators
         """
         try:
-            log_volatility_result(self.user_id, ticker, volatility_data)
-            logger.debug(f"📉 Volatility data logged for {ticker}")
+            log_volatility_result(self.user_id, entity_id, volatility_data)
+            logger.debug(f"📉 Volatility data logged for {entity_id}")
         except Exception as e:
-            logger.error(f"Failed to log volatility for {ticker}: {e}")
+            logger.error(f"Failed to log volatility for {entity_id}: {e}")
             raise
 
 
@@ -357,7 +357,7 @@ if __name__ == "__main__":
     
     # Mock normalized data
     mock_data = [{
-        "ticker": "AAPL",
+        "entity_id": "EXAMPLE_ENTITY_1",
         "history": [
             {"date": f"2024-{i//30+1:02d}-{i%30+1:02d}", "open": 150+i*0.1, 
              "high": 152+i*0.1, "low": 149+i*0.1, "close": 151+i*0.1, "volume": 1000000}

@@ -111,7 +111,7 @@ class AlgorithmMemoryAdapter:
             return stored
             
         except Exception as e:
-            logger.error(f"Error storing {table} result for {result.ticker}: {e}")
+            logger.error(f"Error storing {table} result for {result.entity_id}: {e}")
             try:
                 self.postgres_agent.connection.rollback()
             except:
@@ -124,12 +124,12 @@ class AlgorithmMemoryAdapter:
             if table == 'vare_risk_analysis':
                 cur.execute("""
                     INSERT INTO vare_risk_analysis (
-                        ticker, market_risk, volatility_risk, liquidity_risk,
+                        entity_id, market_risk, volatility_risk, liquidity_risk,
                         correlation_risk, overall_risk, risk_category, confidence,
                         risk_factors, explanation, created_at
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
-                    result.ticker, result.market_risk, result.volatility_risk,
+                    result.entity_id, result.market_risk, result.volatility_risk,
                     result.liquidity_risk, result.correlation_risk, result.overall_risk,
                     result.risk_category, result.confidence,
                     json.dumps(self._clean_json_data(result.risk_factors), default=str),
@@ -140,12 +140,12 @@ class AlgorithmMemoryAdapter:
             elif table == 'vhsw_strength_analysis':
                 cur.execute("""
                     INSERT INTO vhsw_strength_analysis (
-                        ticker, momentum_score, stability_score, volatility_score,
+                        entity_id, momentum_score, stability_score, volatility_score,
                         trend_strength, confidence, windows_analyzed, explanation,
                         technical_details, created_at
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
-                    result.ticker, result.momentum_score, result.stability_score,
+                    result.entity_id, result.momentum_score, result.stability_score,
                     result.volatility_score, result.trend_strength, result.confidence,
                     json.dumps(self._clean_json_data(result.windows_analyzed), default=str),
                     json.dumps(self._clean_json_data(result.explanation), default=str),
@@ -156,13 +156,13 @@ class AlgorithmMemoryAdapter:
             elif table == 'vmfl_factor_analysis':
                 cur.execute("""
                     INSERT INTO vmfl_factor_analysis (
-                        ticker, technical_score, fundamental_score, sentiment_score,
+                        entity_id, technical_score, fundamental_score, sentiment_score,
                         momentum_score, composite_score, strength_category, confidence,
                         factor_weights, factor_details, pattern_signals, explanation,
                         created_at
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
-                    result.ticker, result.technical_score, result.fundamental_score,
+                    result.entity_id, result.technical_score, result.fundamental_score,
                     result.sentiment_score, result.momentum_score, result.composite_score,
                     result.strength_category, result.confidence,
                     json.dumps(self._clean_json_data(result.factor_weights), default=str),
@@ -173,7 +173,7 @@ class AlgorithmMemoryAdapter:
                 ))
             
         self.postgres_agent.connection.commit()
-        logger.info(f"Stored {table} result for {result.ticker}")
+        logger.info(f"Stored {table} result for {result.entity_id}")
         return True
     
     def _store_in_qdrant(self, collection: str, result):
@@ -194,7 +194,7 @@ class AlgorithmMemoryAdapter:
                 "id": int(result.timestamp.timestamp()),
                 "vector": vector,
                 "payload": {
-                    "ticker": result.ticker,
+                    "entity_id": result.entity_id,
                     "timestamp": result.timestamp.isoformat(),
                     "algorithm": collection.replace('_embeddings', ''),
                     "summary": embedding_text[:500]  # Truncate for storage
@@ -202,7 +202,7 @@ class AlgorithmMemoryAdapter:
             }
             
             self.qdrant_agent.upsert(collection, [point])
-            logger.info(f"Stored {collection} embedding for {result.ticker}")
+            logger.info(f"Stored {collection} embedding for {result.entity_id}")
             
         except Exception as e:
             logger.warning(f"Failed to store Qdrant embedding: {e}")
@@ -211,8 +211,8 @@ class AlgorithmMemoryAdapter:
         """Create text representation for embedding"""
         if hasattr(result, 'explanation') and isinstance(result.explanation, dict):
             return " ".join(result.explanation.values())
-        elif hasattr(result, 'ticker'):
-            return f"Analysis result for {result.ticker}"
+        elif hasattr(result, 'entity_id'):
+            return f"Analysis result for {result.entity_id}"
         else:
             return str(result)
     
@@ -250,9 +250,9 @@ class AlgorithmMemoryAdapter:
         else:
             return data
     
-    def get_historical_results(self, algorithm: str, ticker: str, 
+    def get_historical_results(self, algorithm: str, entity_id: str, 
                              limit: int = 10) -> List[Dict]:
-        """Retrieve historical results for a ticker"""
+        """Retrieve historical results for a entity_id"""
         if not self.postgres_agent:
             return []
         
@@ -269,10 +269,10 @@ class AlgorithmMemoryAdapter:
         try:
             results = self.postgres_agent.fetch_all(f"""
                 SELECT * FROM {table}
-                WHERE ticker = %s
+                WHERE entity_id = %s
                 ORDER BY created_at DESC
                 LIMIT %s
-            """, (ticker, limit))
+            """, (entity_id, limit))
             
             return [dict(zip([desc[0] for desc in self.postgres_agent.connection.cursor().description], row)) 
                    for row in results]

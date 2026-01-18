@@ -61,7 +61,7 @@ The Neural Engine sits at the **bottom of Vitruvyan's cognitive stack** as the p
 The Neural Engine must maintain **absolute computational purity** and never cross these boundaries:
 
 **1. No Domain Semantics**
-- ❌ Never mention: ticker, stock, patient, route, sector, RSI, momentum
+- ❌ Never mention: entity_id, entity, patient, route, sector, RSI, momentum
 - ❌ Never implement: MomentumFactor, PatientRiskFactor, RouteEfficiencyFactor
 - ✅ Only: entity_id, factor_name, factor_value, composite_score
 
@@ -102,7 +102,7 @@ The Neural Engine must maintain **absolute computational purity** and never cros
 ### d) What common architectural misunderstandings should future developers avoid?
 
 **Misunderstanding 1: "NE is a recommendation engine"**
-- ❌ Wrong: "NE will tell us which stocks to buy"
+- ❌ Wrong: "NE will tell us which entities to buy"
 - ✅ Correct: "NE gives us standardized scores that VEE can explain and VARE can risk-assess"
 
 **Misunderstanding 2: "NE is finance-specific"**
@@ -126,7 +126,7 @@ The Neural Engine must maintain **absolute computational purity** and never cros
 - ✅ Correct: "NE is a library embedded in vertical services, not a standalone service"
 
 **Misunderstanding 7: "NE provides business insights"**
-- ❌ Wrong: "NE will optimize our portfolio allocation"
+- ❌ Wrong: "NE will optimize our collection allocation"
 - ✅ Correct: "NE provides computational substrate; business optimization happens in vertical logic"
 
 **Architectural Mantra:** "NE computes, verticals decide. NE measures, VEE/VARE/VWRE interpret."

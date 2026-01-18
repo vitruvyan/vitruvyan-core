@@ -2,7 +2,7 @@
 Pattern Weaver Node — LangGraph Integration
 
 Epistemic Order: REASON (Semantic Layer)
-Position: Between intent_detection and ticker_resolver
+Position: Between intent_detection and entity_resolver
 
 Enriches user queries with semantic context (concepts, sectors, regions, risk).
 Populates state["weaver_context"] for downstream nodes.
@@ -41,9 +41,9 @@ def weaver_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 "status": "skipped_no_query"
             }
         }
-        # 🎯 Preserve validated_tickers
-        if state.get("validated_tickers") is not None:
-            return_dict["validated_tickers"] = state["validated_tickers"]
+        # 🎯 Preserve validated_entities
+        if state.get("validated_entities") is not None:
+            return_dict["validated_entities"] = state["validated_entities"]
         return return_dict
     
     # Call Pattern Weaver API
@@ -59,10 +59,10 @@ def weaver_node(state: Dict[str, Any]) -> Dict[str, Any]:
         # Add status
         result["status"] = "success" if result["concepts"] else "no_matches"
         
-        # 🎯 CONVERSATIONAL-FIRST: Preserve validated_tickers (Nov 23, 2025)
+        # 🎯 CONVERSATIONAL-FIRST: Preserve validated_entities (Nov 23, 2025)
         return_dict = {"weaver_context": result}
-        if state.get("validated_tickers") is not None:
-            return_dict["validated_tickers"] = state["validated_tickers"]
+        if state.get("validated_entities") is not None:
+            return_dict["validated_entities"] = state["validated_entities"]
         
         return return_dict
     
@@ -78,9 +78,9 @@ def weaver_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 "error": str(e)
             }
         }
-        # 🎯 Preserve validated_tickers
-        if state.get("validated_tickers") is not None:
-            return_dict["validated_tickers"] = state["validated_tickers"]
+        # 🎯 Preserve validated_entities
+        if state.get("validated_entities") is not None:
+            return_dict["validated_entities"] = state["validated_entities"]
         return return_dict
 
 

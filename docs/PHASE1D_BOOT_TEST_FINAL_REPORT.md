@@ -61,9 +61,9 @@ ModuleNotFoundError: No module named 'core.cognitive.neural_engine'
 
 | Node | Original Name | Neutralized Name | Lines Removed | Backup | Verified |
 |------|--------------|------------------|---------------|--------|----------|
-| 1 | ticker_resolver | entity_resolver | 200+ | ✅ | ✅ |
+| 1 | entity_resolver | entity_resolver | 200+ | ✅ | ✅ |
 | 2 | screener | entity_screener | ~100 | ✅ | ✅ |
-| 3 | portfolio | collection_analyzer | ~150 | ✅ | ✅ |
+| 3 | collection | collection_analyzer | ~150 | ✅ | ✅ |
 | 4 | advisor | decision_advisor | ~350 | ✅ | ✅ |
 | 5 | exec_node | exec_node (neutral) | ~70 | ✅ | ✅ |
 
@@ -86,7 +86,7 @@ curl -X POST http://localhost:9004/run \
 {
   "route": "conversational_complete",
   "action": "conversation",
-  "tickers": [],
+  "entity_ids": [],
   "narrative": "Hello! I'm Leonardo, your financial analysis assistant...",
   "intent": "unknown",
   "emotion_detected": "neutral"
@@ -115,12 +115,12 @@ curl -X POST http://localhost:9004/run \
 {
   "route": "conversational_complete",
   "action": "conversation",
-  "tickers": 0,
+  "entity_ids": 0,
   "vsgs_status": "disabled"
 }
 ```
 
-**Status**: ✅ PASS (no crashes, empty tickers as expected)
+**Status**: ✅ PASS (no crashes, empty entity_ids as expected)
 
 **Logs**:
 ```
@@ -178,7 +178,7 @@ curl -X POST http://localhost:9004/run \
 3. ✅ **PHASE1D_BOOT_TEST_FINAL_REPORT.md** - This file
 
 ### Backup Files Created
-1. `ticker_resolver_node.py.backup` (298 lines)
+1. `entity_resolver_node.py.backup` (298 lines)
 2. `screener_node.py.backup` (199 lines)
 3. `portfolio_node.py.backup` (341 lines)
 4. `advisor_node.py.backup` (452 lines)
@@ -197,9 +197,9 @@ curl -X POST http://localhost:9004/run \
 ### Phase 2B: Finance Domain Plugin
 - [ ] Restore 900+ lines of logic as pluggable module
 - [ ] Implement plugin hooks in neutralized nodes
-- [ ] Migrate ticker extraction to plugin
+- [ ] Migrate entity_id extraction to plugin
 - [ ] Migrate Neural Engine calls to plugin
-- [ ] Migrate portfolio analysis to plugin
+- [ ] Migrate collection analysis to plugin
 - [ ] Migrate advisor rules to plugin
 
 ### Phase 2C: Verification

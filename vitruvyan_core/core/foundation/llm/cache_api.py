@@ -64,19 +64,19 @@ async def cleanup_expired_entries() -> Dict[str, Any]:
 
 
 @router.post("/invalidate")
-async def invalidate_cache_for_tickers(tickers: List[str]) -> Dict[str, Any]:
-    """Invalidate cache entries for specific tickers"""
+async def invalidate_cache_for_entities(entity_ids: List[str]) -> Dict[str, Any]:
+    """Invalidate cache entries for specific entity_ids"""
     try:
-        if not tickers:
-            raise HTTPException(status_code=400, detail="Tickers list cannot be empty")
+        if not entity_ids:
+            raise HTTPException(status_code=400, detail="EntityIds list cannot be empty")
         
         cache_manager = get_cache_manager()
-        cache_manager.invalidate_cache_for_tickers(tickers)
+        cache_manager.invalidate_cache_for_entities(entity_ids)
         
         return {
             "status": "success",
-            "message": f"Invalidated cache for tickers: {', '.join(tickers)}",
-            "tickers": tickers,
+            "message": f"Invalidated cache for entity_ids: {', '.join(entity_ids)}",
+            "entity_ids": entity_ids,
             "invalidated_at": datetime.now().isoformat()
         }
         
@@ -136,7 +136,7 @@ async def find_similar_queries(query: str, limit: int = 5) -> Dict[str, Any]:
         state = {
             "input_text": query,
             "language": "it",
-            "tickers": [],
+            "entity_ids": [],
             "intent": "analysis"
         }
         
@@ -225,7 +225,7 @@ async def preload_common_queries() -> Dict[str, Any]:
         common_queries = [
             {"input_text": "Analisi del mercato azionario oggi", "intent": "market_overview"},
             {"input_text": "Migliori titoli da comprare", "intent": "recommendation"},
-            {"input_text": "Analisi rischio portafoglio", "intent": "portfolio"},
+            {"input_text": "Analisi rischio portafoglio", "intent": "collection"},
             {"input_text": "Trend tecnologico settore", "intent": "sector_analysis"},
             {"input_text": "Opportunità investimento lungo termine", "intent": "investment"}
         ]
@@ -238,7 +238,7 @@ async def preload_common_queries() -> Dict[str, Any]:
                 "input_text": query_data["input_text"],
                 "intent": query_data["intent"],
                 "language": "it",
-                "tickers": [],
+                "entity_ids": [],
                 "user_id": "preload_system"
             }
             

@@ -53,8 +53,8 @@ class ProfileProcessorModule(GemmaServiceBase):
         self.topic_categories = {
             "trading": ["trading", "buy", "sell", "position", "strategy"],
             "analysis": ["analysis", "chart", "technical", "fundamental", "research"],
-            "market": ["market", "index", "stock", "sector", "performance"],
-            "risk": ["risk", "volatility", "hedge", "diversification", "portfolio"],
+            "market": ["market", "index", "entity", "sector", "performance"],
+            "risk": ["risk", "volatility", "hedge", "diversification", "collection"],
             "news": ["news", "earnings", "announcement", "report", "update"],
             "crypto": ["crypto", "bitcoin", "blockchain", "defi", "token"],
             "macro": ["economy", "inflation", "rates", "policy", "gdp"]

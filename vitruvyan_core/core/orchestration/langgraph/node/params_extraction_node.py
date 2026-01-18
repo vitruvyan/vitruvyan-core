@@ -140,7 +140,7 @@ Reply with just the classification word: short, medium, or long
 
 TOPK_PATTERNS = [
     r"\b(?:top|best|migliori?|mejores?)\s+(\d+)\b",
-    r"\b(\d+)\s+(?:top|best|migliori?|mejores?|stocks?|titoli|acciones?|etfs?)\b",
+    r"\b(\d+)\s+(?:top|best|migliori?|mejores?|entities?|titoli|acciones?|etfs?)\b",
     r"\b(?:first|primi?|primeros?)\s+(\d+)\b",
     r"\b(\d+)\s+(?:recommendations?|raccomandazioni?|recomendaciones?)\b",
     r"\b(?:show|mostra|muestra)\s+(?:me\s+)?(\d+)\b",
@@ -187,7 +187,7 @@ Language: {language}
 
 Extract the number of items requested (top-k) from this financial query.
 Examples:
-- "top 5 stocks" → 5
+- "top 5 entities" → 5
 - "best 3 ETFs" → 3  
 - "migliori 10 titoli" → 10
 - "show me your recommendations" → 10 (default)

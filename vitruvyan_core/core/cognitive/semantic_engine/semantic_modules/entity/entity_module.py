@@ -12,7 +12,7 @@ _cached_companies: Dict[str, str] = {}
 
 def _load_tickers_and_companies() -> None:
     """
-    Load active tickers and company names from PostgreSQL.
+    Load active entity_ids and company names from PostgreSQL.
     Fills local caches: _cached_tickers and _cached_companies.
     """
     global _cached_tickers, _cached_companies
@@ -23,27 +23,27 @@ def _load_tickers_and_companies() -> None:
         conn = psycopg2.connect(**db_params)
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT ticker, company_name
-                FROM tickers
+                SELECT entity_id, company_name
+                FROM entity_ids
                 WHERE active = true
             """)
             rows = cur.fetchall()
         conn.close()
 
-        # ✅ keep tickers list
+        # ✅ keep entity_ids list
         _cached_tickers = [r[0].upper() for r in rows]
 
-        # ✅ company names map (normalized lowercase → ticker)
+        # ✅ company names map (normalized lowercase → entity_id)
         # Store full name AND keywords (first significant word)
         _cached_companies = {}
         for r in rows:
             if not r[1]:
                 continue
-            ticker = r[0].upper()
+            entity_id = r[0].upper()
             full_name = (r[1] or "").lower()
             
             # Add full name mapping
-            _cached_companies[full_name] = ticker
+            _cached_companies[full_name] = entity_id
             
             # Extract keyword (first word, excluding common suffixes)
             words = full_name.replace(",", "").replace(".", "").split()
@@ -53,29 +53,29 @@ def _load_tickers_and_companies() -> None:
             # Add keyword mappings (first 2 significant words)
             for keyword in keywords[:2]:
                 if keyword not in _cached_companies:  # Don't overwrite existing
-                    _cached_companies[keyword] = ticker
+                    _cached_companies[keyword] = entity_id
     except Exception as e:
-        print(f"⚠️ Failed to load tickers from PostgreSQL: {e}")
-        _cached_tickers = ["MSFT", "TSLA", "NVDA", "GOOGL", "AMZN"]
+        print(f"⚠️ Failed to load entity_ids from PostgreSQL: {e}")
+        _cached_tickers = ["EXAMPLE_ENTITY_4", "EXAMPLE_ENTITY_3", "EXAMPLE_ENTITY_2", "EXAMPLE_ENTITY_5", "AMZN"]
         _cached_companies = {
-            "apple": "AAPL",
-            "microsoft": "MSFT",
-            "tesla": "TSLA",
-            "nvidia": "NVDA",
-            "alphabet": "GOOGL",
+            "apple": "EXAMPLE_ENTITY_1",
+            "microsoft": "EXAMPLE_ENTITY_4",
+            "tesla": "EXAMPLE_ENTITY_3",
+            "nvidia": "EXAMPLE_ENTITY_2",
+            "alphabet": "EXAMPLE_ENTITY_5",
             "amazon": "AMZN"
         }
 
 
 def extract_tickers(text: str) -> List[str]:
     """
-    Extract tickers or company names from the text (case-insensitive).
+    Extract entity_ids or company names from the text (case-insensitive).
     
-    If multiple tickers match, returns ALL of them. The UI/LLM fallback 
+    If multiple entity_ids match, returns ALL of them. The UI/LLM fallback 
     should handle disambiguation by asking user for clarification.
     
     Returns:
-        List[str]: All matched tickers (may include ambiguous matches)
+        List[str]: All matched entity_ids (may include ambiguous matches)
     """
     _load_tickers_and_companies()
     if not text:
@@ -85,7 +85,7 @@ def extract_tickers(text: str) -> List[str]:
     t_low = text.lower()
     matches = set()  # Use set for deduplication
 
-    # 1) Match ticker symbols (exact word boundary)
+    # 1) Match entity_id symbols (exact word boundary)
     for sym in _cached_tickers:
         if re.search(rf"\b{sym}\b", t_up):
             matches.add(sym)
@@ -99,10 +99,10 @@ def extract_tickers(text: str) -> List[str]:
     return list(matches)
 
 
-def get_company_names(tickers: List[str]) -> List[str]:
-    """Return company names corresponding to tickers (fallback to ticker if missing)."""
+def get_company_names(entity_ids: List[str]) -> List[str]:
+    """Return company names corresponding to entity_ids (fallback to entity_id if missing)."""
     _load_tickers_and_companies()
-    return [_cached_companies.get(t, t) for t in tickers]
+    return [_cached_companies.get(t, t) for t in entity_ids]
 
 
 # ---------- Sector keywords ----------
@@ -197,7 +197,7 @@ if __name__ == "__main__":
         "investo 5k per 12 mesi",  # <- must return 5000
     ]
     for s in samples:
-        tickers = extract_tickers(s)
-        companies = get_company_names(tickers)
+        entity_ids = extract_tickers(s)
+        companies = get_company_names(entity_ids)
         amt = extract_amount(s)
-        print(f"{s} => tickers={tickers}, companies={companies}, amount={amt}")
+        print(f"{s} => entity_ids={entity_ids}, companies={companies}, amount={amt}")

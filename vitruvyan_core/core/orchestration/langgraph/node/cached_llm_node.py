@@ -134,8 +134,8 @@ class CachedLLMOrchestrator:
             return "detailed_analysis"
         elif "recommendation" in intent or "consiglio" in intent:
             return "recommendation"
-        elif "portfolio" in intent:
-            return "portfolio"
+        elif "collection" in intent:
+            return "collection"
         elif "market" in intent or "mercato" in intent:
             return "market_overview"
         elif "compare" in intent or "confronta" in intent:
@@ -241,24 +241,24 @@ class CachedLLMOrchestrator:
         """
         
         # Extract key differences
-        current_tickers = current_state.get("tickers", [])
+        current_entitys = current_state.get("entity_ids", [])
         current_input = current_state.get("input_text", "")
         language = current_state.get("language", "it")
         
         # Simple adaptation prompts (very short to minimize token usage)
         adaptation_prompts = {
-            "it": "Adatta questa analisi per {tickers}: {response}",
-            "en": "Adapt this analysis for {tickers}: {response}"
+            "it": "Adatta questa analisi per {entity_ids}: {response}",
+            "en": "Adapt this analysis for {entity_ids}: {response}"
         }
         
-        # If tickers are different, add a brief adaptation note
-        if current_tickers:
-            ticker_str = ", ".join(current_tickers[:3])  # Limit to 3 tickers
+        # If entity_ids are different, add a brief adaptation note
+        if current_entitys:
+            entity_str = ", ".join(current_entitys[:3])  # Limit to 3 entity_ids
             
             if language == "it":
-                adaptation_note = f"\n\n*Analisi adattata per: {ticker_str}*"
+                adaptation_note = f"\n\n*Analisi adattata per: {entity_str}*"
             else:
-                adaptation_note = f"\n\n*Analysis adapted for: {ticker_str}*"
+                adaptation_note = f"\n\n*Analysis adapted for: {entity_str}*"
             
             return cached_response + adaptation_note
         
@@ -442,7 +442,7 @@ DISTINCTIVE ELEMENTS:
         """Build context-rich user prompt"""
         
         user_input = state.get("input_text", "")
-        tickers = state.get("tickers", [])
+        entity_ids = state.get("entity_ids", [])
         raw_output = state.get("raw_output", {})
         language = state.get("language", "it")
         
@@ -461,23 +461,23 @@ DISTINCTIVE ELEMENTS:
             
             if language == "it":
                 context_sections.append("📊 TOP PERFORMERS:")
-                for stock in top_5:
-                    score = stock.get("composite_score", 0)
-                    momentum = stock.get("momentum_score", 0)
-                    risk = stock.get("risk_score", 0)
-                    context_sections.append(f"• {stock['ticker']}: Score {score:.1f} (Momentum: {momentum:.1f}, Risk: {risk:.1f})")
+                for entity in top_5:
+                    score = entity.get("composite_score", 0)
+                    momentum = entity.get("momentum_score", 0)
+                    risk = entity.get("risk_score", 0)
+                    context_sections.append(f"• {entity['entity_id']}: Score {score:.1f} (Momentum: {momentum:.1f}, Risk: {risk:.1f})")
             else:
                 context_sections.append("📊 TOP PERFORMERS:")
-                for stock in top_5:
-                    score = stock.get("composite_score", 0)
-                    momentum = stock.get("momentum_score", 0)
-                    risk = stock.get("risk_score", 0)
-                    context_sections.append(f"• {stock['ticker']}: Score {score:.1f} (Momentum: {momentum:.1f}, Risk: {risk:.1f})")
+                for entity in top_5:
+                    score = entity.get("composite_score", 0)
+                    momentum = entity.get("momentum_score", 0)
+                    risk = entity.get("risk_score", 0)
+                    context_sections.append(f"• {entity['entity_id']}: Score {score:.1f} (Momentum: {momentum:.1f}, Risk: {risk:.1f})")
         
         # Add user context
-        if tickers:
-            ticker_context = f"🎯 FOCUS TICKERS: {', '.join(tickers[:5])}"
-            context_sections.append(ticker_context)
+        if entity_ids:
+            entity_context = f"🎯 FOCUS ENTITY_IDS: {', '.join(entity_ids[:5])}"
+            context_sections.append(entity_context)
         
         # Combine all context
         context_str = "\n".join(context_sections)

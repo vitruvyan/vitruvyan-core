@@ -33,7 +33,7 @@
 
 ### Phase 1D — Preparazione Node Abstraction
 - ✅ Struttura nodi mantenuta intatta
-- ⏳ **PROSSIMO PASSO**: Svuotare logica finance-specific dai nodi (ticker_resolver, screener, portfolio, advisor)
+- ⏳ **PROSSIMO PASSO**: Svuotare logica finance-specific dai nodi (entity_resolver, screener, collection, advisor)
 
 ---
 
@@ -90,9 +90,9 @@ Questo permette al sistema di avviarsi anche senza dominio specializzato.
 ### Nodi LangGraph da Svuotare (Phase 1D continuation)
 | File | Status | Logica Finance |
 |------|--------|----------------|
-| `ticker_resolver_node.py` | ⏳ TODO | Risolve ticker stocks da DB |
+| `entity_resolver_node.py` | ⏳ TODO | Risolve entity_id entities da DB |
 | `screener_node.py` | ⏳ TODO | Screening titoli finanziari |
-| `portfolio_node.py` | ⏳ TODO | Analisi portfolio trading |
+| `portfolio_node.py` | ⏳ TODO | Analisi collection trading |
 | `advisor_node.py` | ⏳ TODO | Raccomandazioni BUY/SELL/HOLD |
 | `sentiment_node.py` | ⚠️  PARTIAL | Usa Babel Gardens (ok) ma tabella sentiment_scores |
 
@@ -101,12 +101,12 @@ Questo permette al sistema di avviarsi anche senza dominio specializzato.
 |-----------|--------|
 | `engine_core.py` | ❌ FINANCE | RSI, SMA, ATR, GICS sectors, yfinance |
 | Factors | ❌ FINANCE | momentum_z, trend_z, volatility_z, sentiment_z |
-| Tables | ❌ FINANCE | `tickers`, `momentum_logs`, `factors` |
+| Tables | ❌ FINANCE | `entity_ids`, `momentum_logs`, `factors` |
 
 ### GraphState (Phase 1C extension - TODO)
 | Campo | Finance? | Alias Generico |
 |-------|----------|----------------|
-| `tickers` | ❌ | → `entities` |
+| `entity_ids` | ❌ | → `entities` |
 | `sentiment_z` | ❌ | → `signal_score` |
 | `portfolio_value` | ❌ | → `collection_value` |
 | `screening_filters` | ⚠️  | → `analysis_filters` |
@@ -117,7 +117,7 @@ Questo permette al sistema di avviarsi anche senza dominio specializzato.
 
 ### Immediate (Phase 1D continuation)
 1. Svuotare logica finance-specific da:
-   - `ticker_resolver_node.py` → placeholder "entity resolver"
+   - `entity_resolver_node.py` → placeholder "entity resolver"
    - `screener_node.py` → placeholder "entity screener"
    - `portfolio_node.py` → placeholder "collection analyzer"
    - `advisor_node.py` → placeholder "decision advisor"

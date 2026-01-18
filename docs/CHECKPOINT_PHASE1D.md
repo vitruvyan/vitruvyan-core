@@ -48,14 +48,14 @@ def exec_node(state: Dict[str, Any]) -> Dict[str, Any]
 
 ---
 
-### 1. ticker_resolver_node.py → entity_resolver
+### 1. entity_resolver_node.py → entity_resolver
 
-**Location**: `vitruvyan_core/core/orchestration/langgraph/node/ticker_resolver_node.py`
+**Location**: `vitruvyan_core/core/orchestration/langgraph/node/entity_resolver_node.py`
 
 **Changes**:
 - ❌ Removed: 200+ line multilingual COMPANY_SYNONYMS dictionary
-- ❌ Removed: LLM ticker extraction logic (`extract_tickers_with_cache`)
-- ❌ Removed: PostgreSQL ticker validation
+- ❌ Removed: LLM entity_id extraction logic (`extract_tickers_with_cache`)
+- ❌ Removed: PostgreSQL entity_id validation
 - ❌ Removed: Redis caching layer calls
 - ✅ Preserved: Semantic matches integration point
 - ✅ Preserved: Context entity merging logic structure
@@ -65,7 +65,7 @@ def exec_node(state: Dict[str, Any]) -> Dict[str, Any]
 
 **Function Signature**: Unchanged ✅
 ```python
-def ticker_resolver_node(state: Dict[str, Any]) -> Dict[str, Any]
+def entity_resolver_node(state: Dict[str, Any]) -> Dict[str, Any]
 ```
 
 **Behavior**: Passthrough - returns context entities unchanged, logs domain neutrality
@@ -78,7 +78,7 @@ def ticker_resolver_node(state: Dict[str, Any]) -> Dict[str, Any]
 
 **Changes**:
 - ❌ Removed: Neural Engine API calls (`requests.post` to `/neural-engine`)
-- ❌ Removed: Stock ranking logic (stocks/etfs/funds extraction)
+- ❌ Removed: Entity ranking logic (entities/etfs/funds extraction)
 - ❌ Removed: Cache hit/miss detection
 - ❌ Removed: Intent-to-profile mapping implementation
 - ✅ Preserved: Profile-based filtering structure
@@ -102,9 +102,9 @@ def screener_node(state: Dict[str, Any]) -> Dict[str, Any]
 **Location**: `vitruvyan_core/core/orchestration/langgraph/node/portfolio_node.py`
 
 **Changes**:
-- ❌ Removed: PostgreSQL portfolio queries (`user_portfolio` table)
+- ❌ Removed: PostgreSQL collection queries (`user_portfolio` table)
 - ❌ Removed: Concentration risk calculation (>40% threshold logic)
-- ❌ Removed: Portfolio value/weight calculations
+- ❌ Removed: Collection value/weight calculations
 - ❌ Removed: LLM reasoning generation (`ConversationalLLM.generate_portfolio_reasoning()`)
 - ❌ Removed: Issue detection logic (underperforming assets, sector imbalance)
 - ✅ Preserved: Database integration point structure
@@ -134,8 +134,8 @@ def portfolio_node(state: Dict[str, Any]) -> Dict[str, Any]
 - ❌ Removed: Confidence calculation (based on z-scores)
 - ❌ Removed: VEE explanation extraction
 - ✅ Preserved: Multi-source data integration structure (numerical_panel, comparisons, etc.)
-- ✅ Preserved: Conversation type routing pattern (comparison, portfolio, allocation, screening)
-- ✅ Preserved: Helper functions (_advisor_single_ticker, _advisor_comparison, etc.)
+- ✅ Preserved: Conversation type routing pattern (comparison, collection, allocation, screening)
+- ✅ Preserved: Helper functions (_advisor_single_entity, _advisor_comparison, etc.)
 - ✅ Preserved: Recommendation structure format
 - ✅ Added: DOMAIN_NEUTRAL logging
 - ✅ Added: NO_ACTION default action
@@ -164,7 +164,7 @@ def advisor_node(state: Dict[str, Any]) -> Dict[str, Any]
 ## 🛡️ Non-Negotiable Rules: RESPECTED ✅
 
 1. ✅ **No file deletions** - All original files preserved with `.backup` suffix  
-   - ticker_resolver_node.py.backup (298 lines)
+   - entity_resolver_node.py.backup (298 lines)
    - screener_node.py.backup (199 lines)
    - portfolio_node.py.backup (341 lines)
    - advisor_node.py.backup (452 lines)
@@ -230,7 +230,7 @@ return state
 
 ### 3. Error Handling
 ```python
-# Portfolio and screener preserve error response patterns:
+# Collection and screener preserve error response patterns:
 def _build_error_response(state, error_msg): ...
 ```
 
@@ -249,11 +249,11 @@ conversation_type = state.get("conversation_type", "single")
 
 Each node now has clear integration points for domain plugins:
 
-### Entity Resolution (ticker_resolver)
+### Entity Resolution (entity_resolver)
 ```python
 # Domain plugin would implement:
 entities = domain.resolve_entities(input_text, semantic_matches)
-state["tickers"] = entities  # Field name preserved for compatibility
+state["entity_ids"] = entities  # Field name preserved for compatibility
 ```
 
 ### Entity Screening (screener)
@@ -263,12 +263,12 @@ ranked_entities = domain.screen_entities(entities, profile, top_k)
 state["raw_output"] = {"ranking": {"entities": ranked_entities}}
 ```
 
-### Collection Analysis (portfolio)
+### Collection Analysis (collection)
 ```python
 # Domain plugin would implement:
 collection = domain.fetch_user_collection(user_id)
 analysis = domain.analyze_collection(collection)
-state["response"] = {"portfolio": collection, "concentration": analysis}
+state["response"] = {"collection": collection, "concentration": analysis}
 ```
 
 ### Decision Advisory (advisor)
@@ -289,7 +289,7 @@ state["advisor_recommendation"] = recommendation
 - ⛔ Neural Engine deep logic (z-score calculation) - **NOT TOUCHED** (Phase 1E)
 - ⛔ GraphState field structure - **NOT MODIFIED** (field aliasing in future phase)
 - ⛔ VEE template logic - **NOT CHANGED** (neutralization in future phase)
-- ⛔ Database schema - **NOT ALTERED** (tickers→entities migration in future phase)
+- ⛔ Database schema - **NOT ALTERED** (entity_ids→entities migration in future phase)
 
 ---
 
@@ -299,7 +299,7 @@ All original finance-specific versions preserved:
 
 ```
 vitruvyan_core/core/orchestration/langgraph/node/
-├── ticker_resolver_node.py.backup  (298 lines)
+├── entity_resolver_node.py.backup  (298 lines)
 ├── screener_node.py.backup        (199 lines)
 ├── portfolio_node.py.backup       (341 lines)
 └── advisor_node.py.backup         (452 lines)
@@ -311,7 +311,7 @@ vitruvyan_core/core/orchestration/langgraph/node/
 
 ### Node Execution Flow
 
-1. **entity_resolver** (ticker_resolver):
+1. **entity_resolver** (entity_resolver):
    - Logs: `🌐 [entity_resolver] DOMAIN_NEUTRAL / NOT_IMPLEMENTED`
    - Returns: Context entities unchanged
    - Sets: `state["route"] = "entity_resolver"`
@@ -321,7 +321,7 @@ vitruvyan_core/core/orchestration/langgraph/node/
    - Returns: Empty ranking structure
    - Sets: `state["screening_meta"]["domain_neutral"] = True`
 
-3. **collection_analyzer** (portfolio):
+3. **collection_analyzer** (collection):
    - Logs: `🌐 [collection_analyzer] Would analyze entity collection`
    - Returns: Empty collection response
    - Sets: `state["response"]["domain_neutral"] = True`

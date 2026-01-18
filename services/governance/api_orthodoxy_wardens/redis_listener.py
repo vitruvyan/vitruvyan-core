@@ -173,12 +173,12 @@ class OrthodoxyWardensCognitiveBusListener:
     
     async def handle_screening_validation(self, data: Dict[str, Any]):
         """⚖️ Validate Neural Engine screening results"""
-        logger.info(f"⚖️ Screening validation: {data.get('ticker', 'unknown')}")
+        logger.info(f"⚖️ Screening validation: {data.get('entity_id', 'unknown')}")
         # Implement validation logic here
     
     async def handle_sentiment_validation(self, data: Dict[str, Any]):
         """⚖️ Validate Babel Gardens sentiment scores"""
-        logger.info(f"⚖️ Sentiment validation: {data.get('ticker', 'unknown')}")
+        logger.info(f"⚖️ Sentiment validation: {data.get('entity_id', 'unknown')}")
         # Implement validation logic here
     
     async def handle_memory_audit(self, data: Dict[str, Any]):
@@ -188,7 +188,7 @@ class OrthodoxyWardensCognitiveBusListener:
     
     async def handle_vee_validation(self, data: Dict[str, Any]):
         """⚖️ Validate VEE explanation outputs"""
-        logger.info(f"⚖️ VEE validation: {data.get('ticker', 'unknown')}")
+        logger.info(f"⚖️ VEE validation: {data.get('entity_id', 'unknown')}")
         # Implement validation logic here
     
     async def handle_response_audit(self, data: Dict[str, Any]):

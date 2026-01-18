@@ -81,7 +81,7 @@ omni_qdrant       Up 7 hours               - Ports 9333, 9334
 
 1. ⏳ Attendere completamento build graph (~5-10 minuti)
 2. ✅ Avviare `omni_api_graph` container
-3. 🔍 Testare nodi neutralizzati (ticker_resolver, screener, portfolio, advisor)
+3. 🔍 Testare nodi neutralizzati (entity_resolver, screener, collection, advisor)
 4. 📝 Verificare log `DOMAIN_NEUTRAL`
 
 ---

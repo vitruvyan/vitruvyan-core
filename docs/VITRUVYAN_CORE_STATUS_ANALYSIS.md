@@ -81,7 +81,7 @@ Patterns (400 lines):
 ```
 
 **Compliance Verification**:
-- ✅ Zero domain knowledge (no ticker, stock, sector, RSI)
+- ✅ Zero domain knowledge (no entity_id, entity, sector, RSI)
 - ✅ No concrete factors (only AbstractFactor interface)
 - ✅ No concrete profiles (only AggregationProfile interface)
 - ✅ No data access (accepts pd.DataFrame from caller)
@@ -112,7 +112,7 @@ feat(mercator): Phase 4 - Complete Mercator financial vertical implementation
 - ✅ **MercatorRiskProvider**: 5 dimensioni rischio (market/volatility/liquidity/credit/concentration)
 - ✅ **MercatorExplainabilityProvider**: Narrative investimento con tesi e raccomandazioni
 - ✅ **MercatorVertical**: Orchestratore completo pipeline NE → VWRE → VARE → VEE
-- ✅ **Portfolio Analysis**: Analisi multi-asset con scoring diversificazione
+- ✅ **Collection Analysis**: Analisi multi-asset con scoring diversificazione
 - ✅ **Demo Completo**: Esempi realistici con dati finanziari
 - ✅ **Pattern Validation**: Incarnazione provider completamente funzionante
 
@@ -137,11 +137,11 @@ Verticals/
 
 #### Phase 1: Core Abstractions (Day 1-2) - ✅ DONE
 - ✅ Neural Engine abstraction (`engine_core.py` → abstract substrate)
-- ✅ Semantic Engine generalization (entity extraction, not ticker-specific)
-- ⚠️ **PARZIALE**: Parse node, ticker_resolver_node non ancora refactored
+- ✅ Semantic Engine generalization (entity extraction, not entity_id-specific)
+- ⚠️ **PARZIALE**: Parse node, entity_resolver_node non ancora refactored
   - Questi sono in `vitruvyan_core/core/orchestration/langgraph/node/`
   - Ancora contengono logica finance-specific
-  - **AZIONE**: Rinominare + astrarre (ticker → entity)
+  - **AZIONE**: Rinominare + astrarre (entity_id → entity)
 
 #### Phase 2: Domain Configuration (Day 3-4) - ✅ DONE (Partial)
 - ✅ `base_domain.py` creato con abstract interfaces
@@ -176,11 +176,11 @@ Verticals/
 **Problema identificato**:
 ```python
 # VEE Engine (516 lines)
-def explain_ticker(self, ticker: str, kpi: Dict[str, Any], ...
+def explain_entity(self, entity_id: str, kpi: Dict[str, Any], ...
 # Hardcoded: "market_risk", "volatility_risk", "momentum signals"
 
 # VARE Engine (752 lines)
-def analyze_ticker(self, ticker: str, benchmark_ticker: Optional[str] = None)
+def analyze_ticker(self, entity_id: str, benchmark_ticker: Optional[str] = None)
 market_risk: float, volatility_risk: float, liquidity_risk: float
 # Imports: import yfinance as yf
 
@@ -210,7 +210,7 @@ from core.cognitive.neural_engine.engine_core import PROFILE_WEIGHTS, FACTOR_MAP
 - ✅ **VEEEngine**: `explain_entity()` accepts `ExplainabilityProvider` parameter
 - ✅ **VEEAnalyzer**: Domain-aware signal analysis with provider templates
 - ✅ **VEEGenerator**: Template-based explanation generation
-- ✅ **VEEMemoryAdapter**: Database schema `entity_id` instead of `ticker`
+- ✅ **VEEMemoryAdapter**: Database schema `entity_id` instead of `entity_id`
 - ✅ **Data Structures**: `AnalysisResult`, `ExplanationLevels` updated to `entity_id`
 - ✅ **Backward Compatibility**: Standalone functions maintain original API
 - ✅ **Test Suite**: Full validation of domain-agnostic operation
@@ -236,7 +236,7 @@ VEE Components (Refactored):
 - ✅ Database: entity_id storage working
 - ✅ Compatibility: Finance domain backward compatible
 
-**Impact**: VEE can now explain any entity type (stocks, patients, logistics routes, etc.)
+**Impact**: VEE can now explain any entity type (entities, patients, logistics routes, etc.)
 
 #### ✅ Phase 3B: VARE Domain Abstraction - COMPLETED (30 Dicembre)
 **Status**: ✅ **FULLY IMPLEMENTED** - VARE Engine now domain-agnostic
@@ -245,7 +245,7 @@ VEE Components (Refactored):
 - ✅ **RiskContract**: `RiskProvider` abstract interface
 - ✅ **FinanceRiskProvider**: Concrete implementation for finance domain
 - ✅ **VAREEngine**: `analyze_entity()` accepts `RiskProvider` parameter
-- ✅ **VAREResult**: Dataclass aggiornato da `ticker` a `entity_id`
+- ✅ **VAREResult**: Dataclass aggiornato da `entity_id` a `entity_id`
 - ✅ **Risk Calculations**: Domain-aware risk dimension calculations
 - ✅ **Weighted Aggregation**: Profile-based risk aggregation
 - ✅ **Domain Explanations**: Provider-generated risk explanations
@@ -271,7 +271,7 @@ VARE Components (Refactored):
 - ✅ Risk Explanations: Multi-level domain explanations
 - ✅ Backward compatibility: analyze_ticker() function working
 
-**Impact**: VARE can now assess risk for any entity type (stocks, portfolios, logistics routes, etc.)
+**Impact**: VARE can now assess risk for any entity type (entities, collections, logistics routes, etc.)
 
 #### Phase 3C: VWRE Domain Abstraction (IN PROGRESS)
 - ✅ Neural Engine tests complete (390 lines)
@@ -293,7 +293,7 @@ VARE Components (Refactored):
 **Issues**:
 - `yfinance` imports: 20+ matches
 - `fundamentalist.py`, `scholastic.py` - Finance-specific names
-- Hardcoded ticker extraction logic
+- Hardcoded entity_id extraction logic
 - Financial API calls embedded
 
 **Impact**: HIGH - Prevents other domains from using data collection
@@ -314,7 +314,7 @@ VARE Components (Refactored):
 **Issues**:
 - `ModelType.FINANCIAL` enum
 - Financial sentiment hardcoded
-- Topic categories: "trading", "market", "stock"
+- Topic categories: "trading", "market", "entity"
 
 **Impact**: LOW - Can coexist with other domains
 **Action**: Make model types configurable per domain
@@ -330,7 +330,7 @@ VARE Components (Refactored):
 #### 5. Neural Engine Service (External API)
 **Location**: `vitruvyan_core/services/core/api_neural_engine/main.py`
 **Issues**:
-- Request params: `tickers`, `sector`, `portfolio_diversification`
+- Request params: `entity_ids`, `sector`, `portfolio_diversification`
 
 **Impact**: HIGH - API should accept generic entities
 **Action**: Refactor to accept domain-agnostic requests
@@ -474,11 +474,11 @@ vitruvyan_core/domains/logistics/
 
 **Files to refactor**:
 - `vitruvyan_core/core/orchestration/langgraph/node/parse_node.py`
-- `vitruvyan_core/core/orchestration/langgraph/node/ticker_resolver_node.py` → `entity_resolver_node.py`
+- `vitruvyan_core/core/orchestration/langgraph/node/entity_resolver_node.py` → `entity_resolver_node.py`
 - `vitruvyan_core/core/orchestration/utilities/llm_ticker_extractor.py` → `llm_entity_extractor.py`
 
 **Changes**:
-- [ ] `ticker` → `entity_id`
+- [ ] `entity_id` → `entity_id`
 - [ ] Extract domain from context (not hardcoded finance)
 - [ ] Domain-provided entity extraction logic
 - [ ] Update LangGraph pipeline to be domain-aware
@@ -489,7 +489,7 @@ vitruvyan_core/domains/logistics/
 
 #### 4A: Code Cleanup
 - [ ] Remove ALL finance references from core/ (target: 0 matches)
-- [ ] Update API endpoints (tickers → entities)
+- [ ] Update API endpoints (entity_ids → entities)
 - [ ] Update Orthodoxy Wardens (domain-agnostic compliance)
 - [ ] Update Babel Gardens (configurable model types)
 

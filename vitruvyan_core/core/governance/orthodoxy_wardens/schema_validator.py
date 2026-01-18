@@ -26,7 +26,7 @@ class SchemaValidator:
     """
     
     # Required columns for financial datasets
-    REQUIRED_FINANCIAL = {"ticker", "date", "open", "close", "volume"}
+    REQUIRED_FINANCIAL = {"entity_id", "date", "open", "close", "volume"}
     
     # Required columns for sentiment datasets
     REQUIRED_SENTIMENT = {"text", "sentiment"}
@@ -246,8 +246,8 @@ class DataQualityChecker:
         }
     
     @staticmethod
-    def check_ticker_validity(df: pd.DataFrame, ticker_column: str = "ticker") -> Dict[str, Any]:
-        """Check ticker format and validity."""
+    def check_ticker_validity(df: pd.DataFrame, ticker_column: str = "entity_id") -> Dict[str, Any]:
+        """Check entity_id format and validity."""
         if ticker_column not in df.columns:
             return {"error": f"Column '{ticker_column}' not found"}
         

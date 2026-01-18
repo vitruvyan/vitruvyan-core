@@ -13,7 +13,7 @@ A domain provides:
 5. Explanation Templates — How to translate scores into human language
 
 Examples of domains:
-- Trade: entities=stocks, signals=momentum/volatility, factors=RSI/MACD
+- Trade: entities=entities, signals=momentum/volatility, factors=RSI/MACD
 - Logistics: entities=routes, signals=traffic/weather, factors=cost/time
 - Healthcare: entities=patients, signals=vitals, factors=risk_scores
 
@@ -47,12 +47,12 @@ class EntitySchema:
     Defines the structure of domain entities.
     
     Examples:
-    - Trade: ticker="AAPL", type="stock", sector="Technology"
+    - Trade: entity_id="EXAMPLE_ENTITY_1", type="entity", sector="Technology"
     - Logistics: route_id="NYC-LAX", type="air", carrier="DHL"
     - Healthcare: patient_id="P12345", type="inpatient", ward="ICU"
     """
     entity_id: str                    # Unique identifier
-    entity_type: str                  # Classification (stock, route, patient, etc.)
+    entity_type: str                  # Classification (entity, route, patient, etc.)
     category: Optional[str] = None    # Higher-level grouping (sector, region, specialty)
     metadata: Dict[str, Any] = None   # Domain-specific attributes
 

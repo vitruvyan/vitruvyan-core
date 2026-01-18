@@ -54,9 +54,9 @@ try:
     CREWAI_AVAILABLE = True
 except ImportError:
     CREWAI_AVAILABLE = False
-    def explain_with_motley_style(ticker: str, kpi: dict, profile: dict = None) -> dict:
+    def explain_with_motley_style(entity_id: str, kpi: dict, profile: dict = None) -> dict:
         return {
-            "summary": f"Spiegazione semplificata per {ticker}.",
+            "summary": f"Spiegazione semplificata per {entity_id}.",
             "technical": f"KPI disponibili: {list(kpi.keys()) if isinstance(kpi, dict) else 'N/A'}",
             "detailed": "Explainability completa non disponibile in questo container (crew non caricato)."
         }
@@ -127,7 +127,7 @@ class VEEEngine:
             # Record Prometheus metric
             user_id = profile.get("user_id", "unknown") if profile else "unknown"
             record_vee_generation(
-                entity_id=entity_id,  # Changed from ticker
+                entity_id=entity_id,  # Changed from entity_id
                 layers=len(layers_generated),
                 semantic_grounding=bool(semantic_context),
                 user_id=user_id
@@ -138,7 +138,7 @@ class VEEEngine:
             # audit(
             #     agent="vee_generation",
             #     payload={
-            #         "entity_id": entity_id,  # Changed from ticker
+            #         "entity_id": entity_id,  # Changed from entity_id
             #         "layers": layers_generated,
             #         "semantic_grounding": bool(semantic_context),
             #         "semantic_matches": len(semantic_context) if semantic_context else 0,
@@ -152,7 +152,7 @@ class VEEEngine:
             if self.use_memory_context:
                 try:
                     historical = self.memory.retrieve_similar_explanations(
-                        entity_id, analysis, explanations.language  # Changed from ticker
+                        entity_id, analysis, explanations.language  # Changed from entity_id
                     )
                     if historical:
                         explanations = self.memory.enrich_with_context(explanations, historical)
@@ -257,8 +257,8 @@ class VEEEngine:
             }
             
         except Exception as e:
-            self.logger.error(f"Comprehensive explanation failed for {ticker}: {e}")
-            return self._fallback_comprehensive(ticker, kpi, profile, str(e))
+            self.logger.error(f"Comprehensive explanation failed for {entity_id}: {e}")
+            return self._fallback_comprehensive(entity_id, kpi, profile, str(e))
     
     def get_explanation_insights(self, entity_id: str, days: int = 30) -> Dict[str, Any]:
         """
@@ -403,13 +403,13 @@ class VEEEngine:
 
 
 # Compatibility function with original interface
-def explain_ticker(ticker: str, kpi: Dict[str, Any], 
+def explain_entity(entity_id: str, kpi: Dict[str, Any], 
                   profile: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
     """
     Funzione di compatibilità con l'interfaccia VEE originale
     
     Args:
-        ticker: Symbol del ticker
+        entity_id: Symbol del entity_id
         kpi: KPI e metriche da analizzare
         profile: Profilo utente opzionale
         
@@ -420,7 +420,7 @@ def explain_ticker(ticker: str, kpi: Dict[str, Any],
     
     engine = VEEEngine()
     provider = FinanceExplainabilityProvider()
-    return engine.explain_entity(ticker, kpi, provider, profile)
+    return engine.explain_entity(entity_id, kpi, provider, profile)
 
 
 # LangGraph Node Integration
@@ -521,20 +521,20 @@ if __name__ == "__main__":
     print("=== VEE Engine 2.0 Test ===")
     
     # Test standard explanation
-    result = engine.explain_entity("AAPL", test_metrics, provider, test_profile)
+    result = engine.explain_entity("EXAMPLE_ENTITY_1", test_metrics, provider, test_profile)
     print(f"Summary: {result['summary']}")
     print(f"Technical: {result['technical']}")
     print(f"Detailed: {result['detailed'][:200]}...")
     
     # Test comprehensive explanation
-    comprehensive = engine.explain_comprehensive("AAPL", test_metrics, provider, test_profile)
+    comprehensive = engine.explain_comprehensive("EXAMPLE_ENTITY_1", test_metrics, provider, test_profile)
     print(f"\nVEE Analysis Signals: {comprehensive['vee_analysis']['signals']}")
     print(f"Dominant Factor: {comprehensive['vee_analysis']['dominant_factor']}")
     print(f"Confidence: {comprehensive['vee_analysis']['confidence_level']:.2f}")
     print(f"Language: {comprehensive['vee_metadata']['language']}")
     
     # Test insights
-    insights = engine.get_explanation_insights("AAPL", days=30)
+    insights = engine.get_explanation_insights("EXAMPLE_ENTITY_1", days=30)
     if insights:
         print(f"\nInsights: {insights}")
     else:

@@ -44,9 +44,9 @@ class ConversationContextManager:
         
         # Analyze conversation patterns
         for conv in history:
-            # Extract tickers mentioned
-            if "tickers" in conv:
-                themes["preferred_tickers"].extend(conv["tickers"])
+            # Extract entity_ids mentioned
+            if "entity_ids" in conv:
+                themes["preferred_tickers"].extend(conv["entity_ids"])
             
             # Extract risk signals
             input_text = conv.get("input_text", "").lower()
@@ -55,7 +55,7 @@ class ConversationContextManager:
             elif any(word in input_text for word in ["aggressive", "growth", "high return"]):
                 themes["risk_tolerance"] = "aggressive"
         
-        # Deduplicate preferred tickers
+        # Deduplicate preferred entity_ids
         themes["preferred_tickers"] = list(set(themes["preferred_tickers"]))
         
         return themes
@@ -76,9 +76,9 @@ class ConversationContextManager:
             context_parts.append(f"Investment horizon: {themes['investment_horizon']}")
         
         # Current session context
-        current_tickers = current_state.get("tickers", [])
-        if current_tickers:
-            context_parts.append(f"Current focus: {', '.join(current_tickers)}")
+        current_entitys = current_state.get("entity_ids", [])
+        if current_entitys:
+            context_parts.append(f"Current focus: {', '.join(current_entitys)}")
         
         return "CONVERSATION CONTEXT:\n" + "\n".join(f"- {part}" for part in context_parts)
 
@@ -88,18 +88,18 @@ class MarketContextProvider:
     Provides dynamic market context for LLM responses
     """
     
-    def get_market_narrative(self, tickers: List[str] = None) -> str:
+    def get_market_narrative(self, entity_ids: List[str] = None) -> str:
         """Get current market narrative context"""
         
         # Base market context
         base_context = self._get_base_market_context()
         
-        # Ticker-specific context
-        ticker_context = ""
-        if tickers:
-            ticker_context = self._get_ticker_specific_context(tickers)
+        # EntityId-specific context
+        entity_context = ""
+        if entity_ids:
+            entity_context = self._get_ticker_specific_context(entity_ids)
         
-        return f"{base_context}\n{ticker_context}".strip()
+        return f"{base_context}\n{entity_context}".strip()
     
     def _get_base_market_context(self) -> str:
         """Base market environment context"""
@@ -113,23 +113,23 @@ CURRENT MARKET ENVIRONMENT:
 - Consumer discretionary showing mixed signals
 """
     
-    def _get_ticker_specific_context(self, tickers: List[str]) -> str:
-        """Get specific context for mentioned tickers"""
+    def _get_ticker_specific_context(self, entity_ids: List[str]) -> str:
+        """Get specific context for mentioned entity_ids"""
         
         # Sector mapping for context
-        tech_tickers = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA"]
+        tech_tickers = ["EXAMPLE_ENTITY_1", "EXAMPLE_ENTITY_4", "EXAMPLE_ENTITY_5", "AMZN", "EXAMPLE_ENTITY_3", "EXAMPLE_ENTITY_2"]
         finance_tickers = ["JPM", "BAC", "WFC", "GS"]
         
         context_parts = []
         
-        for ticker in tickers:
-            if ticker in tech_tickers:
-                context_parts.append(f"{ticker}: Part of AI/tech revolution theme")
-            elif ticker in finance_tickers:
-                context_parts.append(f"{ticker}: Sensitive to interest rate environment")
+        for entity_id in entity_ids:
+            if entity_id in tech_tickers:
+                context_parts.append(f"{entity_id}: Part of AI/tech revolution theme")
+            elif entity_id in finance_tickers:
+                context_parts.append(f"{entity_id}: Sensitive to interest rate environment")
             # Add more sector classifications as needed
         
-        return "TICKER-SPECIFIC CONTEXT:\n" + "\n".join(f"- {part}" for part in context_parts) if context_parts else ""
+        return "ENTITY_ID-SPECIFIC CONTEXT:\n" + "\n".join(f"- {part}" for part in context_parts) if context_parts else ""
 
 
 # Integration function for enhanced LLM node
@@ -137,7 +137,7 @@ def enhance_llm_with_context(state: Dict[str, Any]) -> Dict[str, Any]:
     """Enhance LLM state with conversation and market context"""
     
     user_id = state.get("user_id", "demo")
-    tickers = state.get("tickers", [])
+    entity_ids = state.get("entity_ids", [])
     
     # Add conversation context
     context_manager = ConversationContextManager()
@@ -145,7 +145,7 @@ def enhance_llm_with_context(state: Dict[str, Any]) -> Dict[str, Any]:
     
     # Add market context  
     market_provider = MarketContextProvider()
-    market_context = market_provider.get_market_narrative(tickers)
+    market_context = market_provider.get_market_narrative(entity_ids)
     
     # Enhance state
     state["conversation_context"] = conversation_context

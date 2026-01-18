@@ -136,7 +136,7 @@ class BaseHunter(ABC):
             
             if table == "sentiment_scores":
                 success = self.postgres_agent.insert_sentiment(
-                    ticker=record.get("ticker", ""),
+                    entity_id=record.get("entity_id", ""),
                     reddit=record.get("reddit_score", 0.0),
                     google=record.get("google_score", 0.0),
                     combined=record.get("combined_score", 0.0),
@@ -155,7 +155,7 @@ class BaseHunter(ABC):
                 )
             elif table == "signals":
                 success = self.postgres_agent.insert_signal(
-                    ticker=record.get("ticker", ""),
+                    entity_id=record.get("entity_id", ""),
                     pattern=record.get("pattern", ""),
                     confidence=record.get("confidence", 0.0),
                     source=record.get("source", "codex_hunters"),

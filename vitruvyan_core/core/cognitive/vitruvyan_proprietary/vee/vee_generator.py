@@ -26,7 +26,7 @@ from vitruvyan_core.domains.explainability_contract import ExplainabilityProvide
 @dataclass
 class ExplanationLevels:
     """Spiegazioni multilivello per un'entità (domain-agnostic)"""
-    entity_id: str  # Changed from ticker
+    entity_id: str  # Changed from entity_id
     timestamp: datetime
     
     # Tre livelli di spiegazione
@@ -64,33 +64,33 @@ class VEEGenerator:
         self.templates = {
             'summary': {
                 'positive': [
-                    "{ticker} shows {signals_text} with {dominant_factor} as the prevailing element.",
-                    "Analysis of {ticker} highlights {signals_text}, dominated by {dominant_factor}.",
-                    "{ticker} displays {signals_text}, primarily characterized by {dominant_factor}."
+                    "{entity_id} shows {signals_text} with {dominant_factor} as the prevailing element.",
+                    "Analysis of {entity_id} highlights {signals_text}, dominated by {dominant_factor}.",
+                    "{entity_id} displays {signals_text}, primarily characterized by {dominant_factor}."
                 ],
                 'negative': [
-                    "{ticker} exhibits {signals_text} with {dominant_factor} as a critical factor.",
-                    "Analysis of {ticker} reveals {signals_text}, negatively influenced by {dominant_factor}.",
-                    "{ticker} demonstrates {signals_text}, primarily penalized by {dominant_factor}."
+                    "{entity_id} exhibits {signals_text} with {dominant_factor} as a critical factor.",
+                    "Analysis of {entity_id} reveals {signals_text}, negatively influenced by {dominant_factor}.",
+                    "{entity_id} demonstrates {signals_text}, primarily penalized by {dominant_factor}."
                 ],
                 'neutral': [
-                    "{ticker} presents {signals_text} in a context of {dominant_factor}.",
-                    "Analysis of {ticker} shows {signals_text} with {dominant_factor} as neutral element.",
-                    "{ticker} exhibits {signals_text}, characterized by {dominant_factor}."
+                    "{entity_id} presents {signals_text} in a context of {dominant_factor}.",
+                    "Analysis of {entity_id} shows {signals_text} with {dominant_factor} as neutral element.",
+                    "{entity_id} exhibits {signals_text}, characterized by {dominant_factor}."
                 ]
             },
             'technical': {
                 'base': [
-                    "Technical analysis of {ticker}: {dominant_factor} emerges as prevailing factor (intensity: {intensity:.1%}). Relevant parameters: {signals_summary}. Sentiment direction: {sentiment_direction}.",
-                    "Technical breakdown {ticker}: {dominant_factor} dominates analysis with {intensity:.1%} intensity. Signals identified: {signals_summary}. Overall sentiment: {sentiment_direction}.",
-                    "Technical assessment {ticker}: {dominant_factor} represents main driver (strength: {intensity:.1%}). Significant metrics: {signals_summary}. Orientation: {sentiment_direction}."
+                    "Technical analysis of {entity_id}: {dominant_factor} emerges as prevailing factor (intensity: {intensity:.1%}). Relevant parameters: {signals_summary}. Sentiment direction: {sentiment_direction}.",
+                    "Technical breakdown {entity_id}: {dominant_factor} dominates analysis with {intensity:.1%} intensity. Signals identified: {signals_summary}. Overall sentiment: {sentiment_direction}.",
+                    "Technical assessment {entity_id}: {dominant_factor} represents main driver (strength: {intensity:.1%}). Significant metrics: {signals_summary}. Orientation: {sentiment_direction}."
                 ]
             },
             'detailed': {
                 'comprehensive': [
-                    "In-depth analysis of {ticker}: Performance reflects a complex balance between various factors. {dominant_factor} emerges as dominant element with {intensity:.1%} intensity, followed by {secondary_factors}. {patterns_text} {confidence_text} This analysis provides no direct buy/sell indications but represents an objective assessment of current state.",
-                    "Detailed study {ticker}: Technical-fundamental framework highlights {dominant_factor} as main driver (intensity {intensity:.1%}). {patterns_text} Current configuration suggests {sentiment_direction} sentiment with {secondary_factors} as complementary factors. {confidence_text} Interpretive caution is recommended with no direct action based solely on this analysis.",
-                    "Comprehensive assessment {ticker}: Multidimensional analysis identifies {dominant_factor} as prevailing factor (strength {intensity:.1%}). {patterns_text} The {sentiment_direction} sentiment is supported by {secondary_factors}. {confidence_text} This evaluation is purely informational and does not constitute investment recommendation."
+                    "In-depth analysis of {entity_id}: Performance reflects a complex balance between various factors. {dominant_factor} emerges as dominant element with {intensity:.1%} intensity, followed by {secondary_factors}. {patterns_text} {confidence_text} This analysis provides no direct buy/sell indications but represents an objective assessment of current state.",
+                    "Detailed study {entity_id}: Technical-fundamental framework highlights {dominant_factor} as main driver (intensity {intensity:.1%}). {patterns_text} Current configuration suggests {sentiment_direction} sentiment with {secondary_factors} as complementary factors. {confidence_text} Interpretive caution is recommended with no direct action based solely on this analysis.",
+                    "Comprehensive assessment {entity_id}: Multidimensional analysis identifies {dominant_factor} as prevailing factor (strength {intensity:.1%}). {patterns_text} The {sentiment_direction} sentiment is supported by {secondary_factors}. {confidence_text} This evaluation is purely informational and does not constitute investment recommendation."
                 ]
             }
         }
@@ -323,16 +323,16 @@ class VEEGenerator:
         
         return detailed + expert_addition
     
-    def _create_error_explanation(self, entity_id: str, error_msg: str,  # Changed from ticker
+    def _create_error_explanation(self, entity_id: str, error_msg: str,  # Changed from entity_id
                                 profile: Optional[Dict[str, Any]]) -> ExplanationLevels:
         """Create error explanation (English only)"""
-        summary = f"Error in explanation generation for {entity_id}: {error_msg}"  # Changed ticker to entity_id
+        summary = f"Error in explanation generation for {entity_id}: {error_msg}"  # Changed entity_id to entity_id
         technical = "Unable to process analysis data."
         detailed = f"A technical error occurred during explanation generation. Details: {error_msg}"
         confidence_note = "Analysis unavailable due to technical error."
         
         return ExplanationLevels(
-            entity_id=entity_id,  # Changed ticker to entity_id
+            entity_id=entity_id,  # Changed entity_id to entity_id
             timestamp=datetime.now(),
             summary=summary,
             technical=technical,
@@ -420,7 +420,7 @@ if __name__ == "__main__":
     }
     
     # Analyze first
-    analysis = analyze_kpi("AAPL", test_kpi)
+    analysis = analyze_kpi("EXAMPLE_ENTITY_1", test_kpi)
     
     # Generate explanations
     generator = VEEGenerator()

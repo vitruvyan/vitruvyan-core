@@ -1,6 +1,6 @@
 from typing import Dict, Any
 from core.orchestration.langgraph.memory_utils import merge_slots, check_slots
-from core.cognitive.vitruvyan_proprietary.vee.vee_engine import explain_ticker
+from core.cognitive.vitruvyan_proprietary.vee.vee_engine import explain_entity
 from core.cognitive.vitruvyan_proprietary.vee.vee_engine import VEEEngine
 from core.orchestration.langgraph.node.emotion_detector import detect_emotion, format_emotion_aware_response
 from core.foundation.persistence.postgres_agent import PostgresAgent
@@ -23,17 +23,17 @@ def _add_language_metadata(response: Dict[str, Any], state: Dict[str, Any]) -> D
     response["babel_status"] = state.get("babel_status")
     response["cultural_context"] = state.get("cultural_context")
     
-    # 🆕 CRITICAL FIX (Nov 1, 2025): Include tickers in API response
-    # Without this, frontend and tests receive tickers=null even when extracted
-    response["tickers"] = state.get("tickers")
+    # 🆕 CRITICAL FIX (Nov 1, 2025): Include entity_ids in API response
+    # Without this, frontend and tests receive entity_ids=null even when extracted
+    response["entity_ids"] = state.get("entity_ids")
     
     return response
 
 # ----------------------------
-# Intents that require technical parameters (ticker/budget/horizon)
+# Intents that require technical parameters (entity_id/budget/horizon)
 # ----------------------------
 TECHNICAL_INTENTS = [
-    "portfolio", "trend", "momentum", "volatility", "backtest", "sentiment", 
+    "collection", "trend", "momentum", "volatility", "backtest", "sentiment", 
     "horizon_advice", "risk_assessment", "soft", "screener", "exec", "unknown"
 ]
 
@@ -44,17 +44,17 @@ DEFAULT_QUESTIONS = {
     "en": {
         "budget": "What is your investment budget?",
         "horizon": "Do you prefer a short, medium or long investment horizon?",
-        "tickers": "Which stock would you like to invest in? (e.g., MSFT for Microsoft)"
+        "entity_ids": "Which entity would you like to invest in? (e.g., MSFT for Microsoft)"
     },
     "it": {
         "budget": "Qual è il tuo budget di investimento?",
         "horizon": "Preferisci un orizzonte breve, medio o lungo?",
-        "tickers": "Su quale titolo vuoi investire? (es. MSFT per Microsoft)"
+        "entity_ids": "Su quale titolo vuoi investire? (es. MSFT per Microsoft)"
     },
     "es": {
         "budget": "¿Cuál es tu presupuesto de inversión?",
         "horizon": "¿Prefieres un horizonte de inversión corto, medio o largo?",
-        "tickers": "¿En qué acción te gustaría invertir? (p. ej., MSFT para Microsoft)"
+        "entity_ids": "¿En qué acción te gustaría invertir? (p. ej., MSFT para Microsoft)"
     }
 }
 
@@ -102,7 +102,7 @@ def _humanize_slot_questions_bundled(missing: list[str], state: Dict[str, Any]) 
     This provides ChatGPT-level conversational fluidity.
     
     Args:
-        missing: List of missing slot names (e.g., ["tickers", "horizon"])
+        missing: List of missing slot names (e.g., ["entity_ids", "horizon"])
         state: Full conversation state with user_input, known context, language, emotion
     
     Returns:
@@ -113,7 +113,7 @@ def _humanize_slot_questions_bundled(missing: list[str], state: Dict[str, Any]) 
     
     # Gather already known context
     merged = merge_slots(state, state.get("result", {}))
-    known_context = {k: merged.get(k) for k in ["tickers", "budget", "horizon", "sectors"] if merged.get(k)}
+    known_context = {k: merged.get(k) for k in ["entity_ids", "budget", "horizon", "sectors"] if merged.get(k)}
     
     # 🔍 Extract semantic matches from Qdrant (Feature #1 + #4 integration)
     semantic_matches = state.get("semantic_matches", [])
@@ -165,7 +165,7 @@ def _humanize_slot_questions_bundled_template(missing: list[str], state: Dict[st
     pieces = []
     for slot in missing:
         sample = defaults.get(slot, slot)
-        if slot == "tickers":
+        if slot == "entity_ids":
             pieces.append(f"{sample} (es: AAPL, MSFT)")
         elif slot == "budget":
             pieces.append(f"{sample} (es: 5000, 10000 EUR)")
@@ -204,7 +204,7 @@ def _generate_chain_of_thought_clarification(state: Dict[str, Any], missing: lis
     inferred = []
 
     merged = merge_slots(state, state.get("result", {}))
-    for k in ["tickers", "budget", "horizon"]:
+    for k in ["entity_ids", "budget", "horizon"]:
         if merged.get(k):
             understood.append(f"{k}: {merged.get(k)}")
 
@@ -251,27 +251,27 @@ def _generate_chain_of_thought_clarification(state: Dict[str, Any], missing: lis
 # ----------------------------
 # Conversation Type Detection (Multi-Scenario UX)
 # ----------------------------
-def detect_conversation_type(intent: str, tickers: list, has_ne_results: bool, user_input: str = "") -> str:
+def detect_conversation_type(intent: str, entity_ids: list, has_ne_results: bool, user_input: str = "") -> str:
     """
     Detect UX scenario type for frontend rendering based on conversation context.
     
     This enables multi-scenario UX where the frontend adapts based on:
-    - Single ticker analysis → Strategic card with gauges
-    - Multi-ticker comparison → Comparison table with rankings
+    - Single entity_id analysis → Strategic card with gauges
+    - Multi-entity_id comparison → Comparison table with rankings
     - Onboarding/exploratory → Interactive wizard
     - Conversational fallback → Simple chat
     
     Args:
         intent: Detected intent (e.g., "trend", "momentum", "onboarding")
-        tickers: List of extracted tickers
+        entity_ids: List of extracted entity_ids
         has_ne_results: Whether Neural Engine results are available
         user_input: Original user query for context inference
     
     Returns:
-        Conversation type: "single_ticker_analysis" | "multi_ticker_comparison" | 
+        Conversation type: "single_entity_analysis" | "multi_entity_comparison" | 
                           "onboarding" | "conversational"
     """
-    # Scenario 3: Onboarding (no tickers, exploratory intent)
+    # Scenario 3: Onboarding (no entity_ids, exploratory intent)
     onboarding_intents = ["onboarding", "unknown", "general_question"]
     onboarding_keywords = [
         "non so", "aiutami", "vorrei investire", "come faccio", "principiante",
@@ -279,23 +279,23 @@ def detect_conversation_type(intent: str, tickers: list, has_ne_results: bool, u
         "no sé", "ayúdame", "quiero invertir", "cómo hago", "principiante"
     ]
     
-    if intent in onboarding_intents or (not tickers and any(kw in user_input.lower() for kw in onboarding_keywords)):
+    if intent in onboarding_intents or (not entity_ids and any(kw in user_input.lower() for kw in onboarding_keywords)):
         return "onboarding"
     
-    # Scenario 2: Multi-Ticker Comparison (2+ tickers with analysis intent)
+    # Scenario 2: Multi-EntityId Comparison (2+ entity_ids with analysis intent)
     comparison_intents = ["trend", "momentum", "ranking", "screener", "sentiment"]
     comparison_keywords = ["confronta", "compare", "vs", "versus", "mejor", "migliore", "best"]
     
-    if len(tickers) > 1 and has_ne_results:
+    if len(entity_ids) > 1 and has_ne_results:
         # Check if user explicitly requested comparison
         if intent in comparison_intents or any(kw in user_input.lower() for kw in comparison_keywords):
-            return "multi_ticker_comparison"
+            return "multi_entity_comparison"
     
-    # Scenario 1: Single Ticker Analysis (1 ticker with technical analysis)
+    # Scenario 1: Single EntityId Analysis (1 entity_id with technical analysis)
     technical_intents = ["trend", "momentum", "volatility", "sentiment", "ranking", "screener"]
     
-    if len(tickers) == 1 and has_ne_results and intent in technical_intents:
-        return "single_ticker_analysis"
+    if len(entity_ids) == 1 and has_ne_results and intent in technical_intents:
+        return "single_entity_analysis"
     
     # Default: Conversational (slot filling, general chat, unclear intent)
     return "conversational"
@@ -306,7 +306,7 @@ def detect_conversation_type(intent: str, tickers: list, has_ne_results: bool, u
 # ----------------------------
 def generate_final_verdict(composite_score: float) -> Dict[str, Any]:
     """
-    Convert composite score to human-readable verdict for Scenario 1 (Single Ticker).
+    Convert composite score to human-readable verdict for Scenario 1 (Single EntityId).
     
     Maps numerical composite score to actionable investment label with color coding.
     Used by frontend to render strategic card with clear Buy/Hold/Sell recommendation.
@@ -365,7 +365,7 @@ def generate_final_verdict(composite_score: float) -> Dict[str, Any]:
 
 def generate_gauge(momentum_z: float, trend_z: float, vola_z: float, sentiment_z: float) -> Dict[str, str]:
     """
-    Convert z-scores to traffic light colors for Scenario 1 (Single Ticker).
+    Convert z-scores to traffic light colors for Scenario 1 (Single EntityId).
     
     Maps each factor's z-score to visual color indicator (green/yellow/orange/red/gray).
     Used by frontend to render 4 mini circular gauges in strategic card.
@@ -420,26 +420,26 @@ def generate_gauge(momentum_z: float, trend_z: float, vola_z: float, sentiment_z
     }
 
 
-def generate_comparison_matrix(tickers: list, ne_raw: Dict[str, Any]) -> list:
+def generate_comparison_matrix(entity_ids: list, ne_raw: Dict[str, Any]) -> list:
     """
-    Extract comparison data from Neural Engine for Scenario 2 (Multi-Ticker).
+    Extract comparison data from Neural Engine for Scenario 2 (Multi-EntityId).
     
-    Builds ranked comparison matrix with all factors for each ticker.
+    Builds ranked comparison matrix with all factors for each entity_id.
     Used by frontend to render comparison table with rankings and winner indicators.
     
     Args:
-        tickers: List of ticker symbols to compare
+        entity_ids: List of entity_id symbols to compare
         ne_raw: Raw Neural Engine response with screener_results
     
     Returns:
         List of dicts sorted by composite_score (best to worst), each containing:
-        - ticker, rank, momentum_z, trend_z, vola_z, sentiment_z, composite_score
+        - entity_id, rank, momentum_z, trend_z, vola_z, sentiment_z, composite_score
     
     Example:
-        generate_comparison_matrix(["NVDA", "AAPL", "TSLA"], ne_raw) → [
-            {"ticker": "NVDA", "rank": 1, "momentum_z": 2.1, "composite_score": 1.92},
-            {"ticker": "AAPL", "rank": 2, "momentum_z": 1.2, "composite_score": 0.85},
-            {"ticker": "TSLA", "rank": 3, "momentum_z": -0.5, "composite_score": -0.73}
+        generate_comparison_matrix(["EXAMPLE_ENTITY_2", "EXAMPLE_ENTITY_1", "EXAMPLE_ENTITY_3"], ne_raw) → [
+            {"entity_id": "EXAMPLE_ENTITY_2", "rank": 1, "momentum_z": 2.1, "composite_score": 1.92},
+            {"entity_id": "EXAMPLE_ENTITY_1", "rank": 2, "momentum_z": 1.2, "composite_score": 0.85},
+            {"entity_id": "EXAMPLE_ENTITY_3", "rank": 3, "momentum_z": -0.5, "composite_score": -0.73}
         ]
     """
     matrix = []
@@ -450,29 +450,29 @@ def generate_comparison_matrix(tickers: list, ne_raw: Dict[str, Any]) -> list:
         print(f"⚠️ [generate_comparison_matrix] No screener_results in ne_raw")
         return []
     
-    # Build matrix for each ticker
-    for ticker in tickers:
-        # Find ticker in screener results
-        ticker_data = None
+    # Build matrix for each entity_id
+    for entity_id in entity_ids:
+        # Find entity_id in screener results
+        entity_data = None
         for result in screener_results:
-            if result.get("ticker") == ticker:
-                ticker_data = result
+            if result.get("entity_id") == entity_id:
+                entity_data = result
                 break
         
-        if not ticker_data:
-            print(f"⚠️ [generate_comparison_matrix] Ticker {ticker} not found in screener_results")
+        if not entity_data:
+            print(f"⚠️ [generate_comparison_matrix] EntityId {entity_id} not found in screener_results")
             continue
         
-        # Extract factors from ticker data
-        factors = ticker_data.get("factors", {})
+        # Extract factors from entity_id data
+        factors = entity_data.get("factors", {})
         
         matrix.append({
-            "ticker": ticker,
+            "entity_id": entity_id,
             "momentum_z": factors.get("momentum_z"),
             "trend_z": factors.get("trend_z"),
             "vola_z": factors.get("vola_z"),
             "sentiment_z": factors.get("sentiment_z"),
-            "composite_score": ticker_data.get("composite_score"),
+            "composite_score": entity_data.get("composite_score"),
             "rank": 0  # Will be set after sorting
         })
     
@@ -483,7 +483,7 @@ def generate_comparison_matrix(tickers: list, ne_raw: Dict[str, Any]) -> list:
     for i, item in enumerate(matrix):
         item["rank"] = i + 1
     
-    print(f"✅ [generate_comparison_matrix] Built matrix for {len(matrix)} tickers")
+    print(f"✅ [generate_comparison_matrix] Built matrix for {len(matrix)} entity_ids")
     return matrix
 
 
@@ -627,17 +627,17 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     # ----------------------------
     # 🧠 CONVERSATIONAL ROUTING FIX (Oct 31, 2025)
-    # Early return for pure conversational queries (no tickers + generic intent)
+    # Early return for pure conversational queries (no entity_ids + generic intent)
     # Prevents using stale raw_output from previous technical queries
     # ----------------------------
-    tickers = state.get("tickers", [])
+    entity_ids = state.get("entity_ids", [])
     user_input = state.get("input_text", "")
     
-    # Intents that should trigger natural conversation when NO tickers present
+    # Intents that should trigger natural conversation when NO entity_ids present
     CONVERSATIONAL_INTENTS = ['unknown', 'help', 'greeting', 'clarify']
     
-    if intent in CONVERSATIONAL_INTENTS and len(tickers) == 0:
-        print(f"🧠 [compose_node] CONVERSATIONAL MODE: intent={intent}, tickers=[], bypassing Neural Engine")
+    if intent in CONVERSATIONAL_INTENTS and len(entity_ids) == 0:
+        print(f"🧠 [compose_node] CONVERSATIONAL MODE: intent={intent}, entity_ids=[], bypassing Neural Engine")
         
         # Get emotion from Babel Gardens if available
         emotion = state.get("emotion_detected", "neutral")
@@ -739,7 +739,7 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "emotion_confidence": emotion_conf,
             "explainability": {
                 "simple": f"Natural conversation (intent: {intent})",
-                "technical": f"• Route: conversational_llm\n• Intent: {intent}\n• Tickers: 0\n• Emotion: {emotion} ({emotion_conf:.2f})",
+                "technical": f"• Route: conversational_llm\n• Intent: {intent}\n• EntityIds: 0\n• Emotion: {emotion} ({emotion_conf:.2f})",
                 "detailed": f"Pure conversational query without technical parameters. Generated response with emotion awareness ({emotion})."
             },
             "user_id": uid
@@ -760,14 +760,14 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
     # Check slots BEFORE any other processing for intents that need technical params
     # BUT: Skip if we already have Neural Engine results to show!
     # ----------------------------
-    # LLM Fallback: Ticker Disambiguation (if multiple tickers from same query)
+    # LLM Fallback: EntityId Disambiguation (if multiple entity_ids from same query)
     # ----------------------------
-    tickers = state.get("tickers", [])
-    if len(tickers) > 1 and intent in TECHNICAL_INTENTS:
-        # Check if user intended multiple tickers or it's ambiguous extraction
+    entity_ids = state.get("entity_ids", [])
+    if len(entity_ids) > 1 and intent in TECHNICAL_INTENTS:
+        # Check if user intended multiple entity_ids or it's ambiguous extraction
         user_input = state.get("input_text", "").lower()
         
-        # Heuristic: if query has "confronta", "compare", "vs", it's intentional multi-ticker
+        # Heuristic: if query has "confronta", "compare", "vs", it's intentional multi-entity_id
         is_intentional = any(kw in user_input for kw in ["confronta", "compare", "vs", "versus", "e", "and", ","])
         
         if not is_intentional:
@@ -775,47 +775,47 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
             from core.foundation.persistence.postgres_agent import PostgresAgent
             pg = PostgresAgent()
             
-            # Get company names for tickers
-            ticker_names = {}
-            for ticker in tickers:
-                query = "SELECT company_name FROM tickers WHERE ticker = %s LIMIT 1"
-                rows = pg.fetch_all(query, (ticker,))
+            # Get company names for entity_ids
+            entity_names = {}
+            for entity_id in entity_ids:
+                query = "SELECT company_name FROM entity_ids WHERE entity_id = %s LIMIT 1"
+                rows = pg.fetch_all(query, (entity_id,))
                 if rows:
-                    ticker_names[ticker] = rows[0][0]
+                    entity_names[entity_id] = rows[0][0]
                 else:
-                    ticker_names[ticker] = ticker
+                    entity_names[entity_id] = entity_id
             
             # Build clarification message
             lang = state.get("language", "en")
             if lang == "it":
-                options = " o ".join([f"{t} ({ticker_names.get(t, t)})" for t in tickers])
+                options = " o ".join([f"{t} ({entity_names.get(t, t)})" for t in entity_ids])
                 clarification = f"Non ho capito quale titolo intendevi. Cercavi {options}?"
             elif lang == "es":
-                options = " o ".join([f"{t} ({ticker_names.get(t, t)})" for t in tickers])
-                clarification = f"No entendí qué ticker querías. ¿Buscabas {options}?"
+                options = " o ".join([f"{t} ({entity_names.get(t, t)})" for t in entity_ids])
+                clarification = f"No entendí qué entity_id querías. ¿Buscabas {options}?"
             else:
-                options = " or ".join([f"{t} ({ticker_names.get(t, t)})" for t in tickers])
-                clarification = f"I didn't understand which ticker you meant. Were you looking for {options}?"
+                options = " or ".join([f"{t} ({entity_names.get(t, t)})" for t in entity_ids])
+                clarification = f"I didn't understand which entity_id you meant. Were you looking for {options}?"
             
             response_dict = {
                 "action": "clarify",
-                "needed_slots": ["ticker_choice"],
+                "needed_slots": ["entity_choice"],
                 "bundled_question": clarification,
                 "questions": [clarification],
-                "ticker_options": [{"ticker": t, "name": ticker_names.get(t, t)} for t in tickers],
+                "ticker_options": [{"entity_id": t, "name": entity_names.get(t, t)} for t in entity_ids],
                 "semantic_fallback": True,
                 "proposed_changes": [],
                 "explainability": {
-                    "simple": "Multiple tickers matched - requesting user clarification",
-                    "technical": f"Ambiguous extraction: {tickers}",
-                    "detailed": f"Query '{user_input}' matched multiple tickers: {', '.join(tickers)}. No explicit comparison keywords found."
+                    "simple": "Multiple entity_ids matched - requesting user clarification",
+                    "technical": f"Ambiguous extraction: {entity_ids}",
+                    "detailed": f"Query '{user_input}' matched multiple entity_ids: {', '.join(entity_ids)}. No explicit comparison keywords found."
                 }
             }
             
             return {
                 **state,
                 "response": _add_language_metadata(response_dict, state),
-                "route": "ticker_disambiguation"
+                "route": "entity_disambiguation"
             }
     
     # ----------------------------
@@ -971,10 +971,10 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
             }
             phrases = FACTOR_PHRASES.get(lang, FACTOR_PHRASES["en"])
 
-            for group_name in ["stocks", "etf", "funds"]:
+            for group_name in ["entities", "etf", "funds"]:
                 items = ne_raw.get("ranking", {}).get(group_name, [])
                 for item in items:
-                    ticker = item.get("ticker")
+                    entity_id = item.get("entity_id")
                     comp = item.get("composite_score")
                     factors = item.get("factors", {})
 
@@ -1013,18 +1013,18 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
                                 desc_text += ", but the score is borderline: consider the risk"
                         # Placeholder narrative (will be replaced by VEE)
                         if desc_text:
-                            narrative_parts.append(f"{ticker} {desc_text}. Composite score {comp}.")
+                            narrative_parts.append(f"{entity_id} {desc_text}. Composite score {comp}.")
                         else:
-                            narrative_parts.append(f"{ticker}: Composite score {comp}.")
+                            narrative_parts.append(f"{entity_id}: Composite score {comp}.")
                     else:
                         if desc_text:
-                            narrative_parts.append(f"{ticker}: {desc_text} (score not available).")
+                            narrative_parts.append(f"{entity_id}: {desc_text} (score not available).")
                         else:
-                            narrative_parts.append(f"{ticker}: Data being processed.")
+                            narrative_parts.append(f"{entity_id}: Data being processed.")
 
                     # --- Panel row ---
                     numerical_panel.append({
-                        "ticker": ticker,
+                        "entity_id": entity_id,
                         "momentum_z": mom,
                         "trend_z": trd,
                         "vola_z": vol,
@@ -1034,7 +1034,7 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
                     })
 
                     # --- Explainability VEE 2.0 ---
-                    tech_parts[ticker] = {
+                    tech_parts[entity_id] = {
                         "momentum_z": mom,
                         "trend_z": trd,
                         "vola_z": vol,
@@ -1045,11 +1045,11 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
                     # Use VEE 2.0 with fallback to legacy - PRESERVE MULTI-LEVEL STRUCTURE
                     vee_expl = None
                     vee_narrative = ""
-                    print(f"🔮 [compose_node] Generating VEE for {ticker}...")
+                    print(f"🔮 [compose_node] Generating VEE for {entity_id}...")
                     try:
                         vee_engine = VEEEngine()
-                        vee_expl = vee_engine.explain_ticker(
-                            ticker=ticker,
+                        vee_expl = vee_engine.explain_entity(
+                            entity_id=entity_id,
                             kpi={"momentum_z": mom, "trend_z": trd, "vola_z": vol, "sentiment_z": sent, "composite_score": comp},
                             profile={"level": "intermediate", "lang": lang, "source": "oracle"}
                         )
@@ -1066,10 +1066,10 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
                             print(f"🔮 [compose_node] VEE narrative (str): {vee_narrative[:100]}")
                     except Exception as e:
                         # Fallback to legacy VEE
-                        print(f"⚠️ VEE 2.0 fallback for {ticker}: {e}")
+                        print(f"⚠️ VEE 2.0 fallback for {entity_id}: {e}")
                         try:
-                            vee_expl = explain_ticker(
-                                ticker=ticker,
+                            vee_expl = explain_entity(
+                                entity_id=entity_id,
                                 kpi={"momentum_z": mom, "trend_z": trd, "vola_z": vol, "sentiment_z": sent, "composite_score": comp},
                                 profile={"lang": lang}
                             )
@@ -1080,14 +1080,14 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
                                 vee_narrative = vee_expl
                             print(f"🔮 [compose_node] Legacy VEE narrative: {vee_narrative[:100] if vee_narrative else 'EMPTY'}")
                         except Exception as e2:
-                            print(f"❌ Legacy VEE fallback also failed for {ticker}: {e2}")
+                            print(f"❌ Legacy VEE fallback also failed for {entity_id}: {e2}")
                             vee_narrative = ""
                     
                     # ✅ PRESERVE FULL MULTI-LEVEL VEE STRUCTURE
-                    tech_parts[ticker]["vee"] = vee_expl
+                    tech_parts[entity_id]["vee"] = vee_expl
                     
                     # 🧠 VEE + LLM COOPERATION: Transform technical VEE into conversational narrative
-                    print(f"🔮 [compose_node] VEE narrative for {ticker}: {len(vee_narrative)} chars")
+                    print(f"🔮 [compose_node] VEE narrative for {entity_id}: {len(vee_narrative)} chars")
                     conversational_narrative = ""
                     
                     if vee_narrative and vee_narrative.strip():
@@ -1110,30 +1110,30 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
                             
                             # Use conversational narrative for user-facing response
                             if conversational_narrative and conversational_narrative.strip():
-                                narrative_parts[-1] = f"{ticker}: {conversational_narrative}"
+                                narrative_parts[-1] = f"{entity_id}: {conversational_narrative}"
                                 # Store conversational version in vee structure
-                                if isinstance(tech_parts[ticker]["vee"], dict):
-                                    tech_parts[ticker]["vee"]["conversational"] = conversational_narrative
+                                if isinstance(tech_parts[entity_id]["vee"], dict):
+                                    tech_parts[entity_id]["vee"]["conversational"] = conversational_narrative
                             else:
                                 # Fallback to VEE technical narrative
-                                narrative_parts[-1] = f"{ticker}: {vee_narrative}"
+                                narrative_parts[-1] = f"{entity_id}: {vee_narrative}"
                                 
                         except Exception as llm_error:
-                            print(f"⚠️ [compose_node] LLM narrative generation failed for {ticker}: {llm_error}, using VEE technical")
+                            print(f"⚠️ [compose_node] LLM narrative generation failed for {entity_id}: {llm_error}, using VEE technical")
                             # Fallback to VEE technical narrative
                             if narrative_parts:
-                                narrative_parts[-1] = f"{ticker}: {vee_narrative}"
+                                narrative_parts[-1] = f"{entity_id}: {vee_narrative}"
                     else:
-                        print(f"⚠️ [compose_node] VEE narrative is empty for {ticker}!")
+                        print(f"⚠️ [compose_node] VEE narrative is empty for {entity_id}!")
 
             narrative = ". ".join([n.strip() for n in narrative_parts]) or "No data available."
             print(f"✨ [compose_node] Final narrative ({len(narrative)} chars): {narrative[:200]}...")
 
             # ✅ Extract VEE multi-level explanations from tech_parts
             vee_explanations = {}
-            for ticker, data in tech_parts.items():
+            for entity_id, data in tech_parts.items():
                 if "vee" in data and isinstance(data["vee"], dict):
-                    vee_explanations[ticker] = {
+                    vee_explanations[entity_id] = {
                         "summary": data["vee"].get("summary", ""),
                         "technical": data["vee"].get("technical", ""),
                         "detailed": data["vee"].get("detailed", ""),
@@ -1142,14 +1142,14 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
                     }
             
             # 🎯 Detect conversation type for frontend multi-scenario UX
-            tickers_list = state.get("tickers", [])
+            entities_list = state.get("entity_ids", [])
             conversation_type = detect_conversation_type(
                 intent=intent,
-                tickers=tickers_list,
+                entity_ids=entities_list,
                 has_ne_results=True,  # We're in NE branch, so results exist
                 user_input=state.get("input_text", "")
             )
-            print(f"🎯 [compose_node] Conversation type: {conversation_type} (tickers={len(tickers_list)}, intent={intent})")
+            print(f"🎯 [compose_node] Conversation type: {conversation_type} (entity_ids={len(entities_list)}, intent={intent})")
 
             # 🎨 Generate scenario-specific data based on conversation type
             final_verdict = None
@@ -1158,28 +1158,28 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
             comparison_narrative = None
             onboarding_cards = None
             
-            if conversation_type == "single_ticker_analysis" and len(tickers_list) == 1:
-                # Scenario 1: Single Ticker Analysis
-                ticker = tickers_list[0]
-                ticker_data = tech_parts.get(ticker, {})
-                composite = ticker_data.get("composite_score")
+            if conversation_type == "single_entity_analysis" and len(entities_list) == 1:
+                # Scenario 1: Single EntityId Analysis
+                entity_id = entities_list[0]
+                entity_data = tech_parts.get(entity_id, {})
+                composite = entity_data.get("composite_score")
                 
                 if composite is not None:
                     final_verdict = generate_final_verdict(composite)
-                    print(f"📊 [compose_node] Final verdict for {ticker}: {final_verdict}")
+                    print(f"📊 [compose_node] Final verdict for {entity_id}: {final_verdict}")
                 
                 gauge = generate_gauge(
-                    momentum_z=ticker_data.get("momentum_z"),
-                    trend_z=ticker_data.get("trend_z"),
-                    vola_z=ticker_data.get("vola_z"),
-                    sentiment_z=ticker_data.get("sentiment_z")
+                    momentum_z=entity_data.get("momentum_z"),
+                    trend_z=entity_data.get("trend_z"),
+                    vola_z=entity_data.get("vola_z"),
+                    sentiment_z=entity_data.get("sentiment_z")
                 )
                 print(f"🚦 [compose_node] Gauge colors: {gauge}")
                 
-            elif conversation_type == "multi_ticker_comparison" and len(tickers_list) > 1:
-                # Scenario 2: Multi-Ticker Comparison
-                comparison_matrix = generate_comparison_matrix(tickers_list, ne_raw)
-                print(f"📊 [compose_node] Comparison matrix: {len(comparison_matrix)} tickers ranked")
+            elif conversation_type == "multi_entity_comparison" and len(entities_list) > 1:
+                # Scenario 2: Multi-EntityId Comparison
+                comparison_matrix = generate_comparison_matrix(entities_list, ne_raw)
+                print(f"📊 [compose_node] Comparison matrix: {len(comparison_matrix)} entity_ids ranked")
                 
                 # Generate LLM comparison narrative
                 if comparison_matrix:
@@ -1217,14 +1217,14 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 "vee_explanations": vee_explanations,
                 
                 # 🎨 NEW: Scenario-specific fields for multi-scenario UX
-                "final_verdict": final_verdict,  # Scenario 1: Single ticker
+                "final_verdict": final_verdict,  # Scenario 1: Single entity_id
                 "gauge": gauge,  # Scenario 1: Traffic light colors
-                "comparison_matrix": comparison_matrix,  # Scenario 2: Multi-ticker rankings
+                "comparison_matrix": comparison_matrix,  # Scenario 2: Multi-entity_id rankings
                 "comparison_narrative": comparison_narrative,  # Scenario 2: LLM comparison text
                 "onboarding_cards": onboarding_cards,  # Scenario 3: Interactive wizard
                 
-                # 🆕 CRITICAL FIX (Nov 1, 2025): Include tickers in response
-                "tickers": state.get("tickers")  # ✅ Frontend and tests need this field
+                # 🆕 CRITICAL FIX (Nov 1, 2025): Include entity_ids in response
+                "entity_ids": state.get("entity_ids")  # ✅ Frontend and tests need this field
             }
             
             # 🎭 Phase 2.1: Inject emotion/language/cultural UX metadata
@@ -1252,10 +1252,10 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
                         sentiment_lines.append(f"Sentiment on {tk} is {tag.lower()} (avg={score:.2f}).")
                 out["response"]["narrative"] += "\n\n" + " ".join(sentiment_lines)
                 for row in out["response"]["numerical_panel"]:
-                    if row["ticker"] in state["sentiment"]:
+                    if row["entity_id"] in state["sentiment"]:
                         # Adapt to sentiment_node format: sentiment_tag instead of sentiment_label
-                        row["sentiment_label"] = state["sentiment"][row["ticker"]].get("sentiment_tag") or state["sentiment"][row["ticker"]].get("sentiment_label")
-                        row["sentiment_avg"] = state["sentiment"][row["ticker"]].get("sentiment_raw") or state["sentiment"][row["ticker"]].get("avg_score", 0.0)
+                        row["sentiment_label"] = state["sentiment"][row["entity_id"]].get("sentiment_tag") or state["sentiment"][row["entity_id"]].get("sentiment_label")
+                        row["sentiment_avg"] = state["sentiment"][row["entity_id"]].get("sentiment_raw") or state["sentiment"][row["entity_id"]].get("avg_score", 0.0)
 
             return out
 
@@ -1275,7 +1275,7 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "proposed_changes": [],
             "explainability": {
                 "simple": "No recent data available.",
-                "technical": f"Route=no_data; PG empty for tickers={state.get('tickers')}",
+                "technical": f"Route=no_data; PG empty for entity_ids={state.get('entity_ids')}",
                 "detailed": "The Neural Engine could not find recent logs in Postgres. CrewAI was triggered in background to populate them."
             },
             "user_id": uid

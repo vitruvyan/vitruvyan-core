@@ -9,7 +9,7 @@ def route_node(state: dict) -> dict:
       1. If LLM suggested a proposed_exec → go to dispatcher_exec (technical analysis).
       2. Else, if intent is soft/horizon_advice → go to llm_soft (empathetic advisor).
       3. Else, if intent is unknown → go to semantic_fallback.
-      4. Else, if intent is technical (trend, momentum, volatility, risk, backtest, allocate, portfolio, sentiment) → dispatcher_exec.
+      4. Else, if intent is technical (trend, momentum, volatility, risk, backtest, allocate, collection, sentiment) → dispatcher_exec.
       5. Fallback: semantic_fallback.
     """
     print(f"\n{'='*80}")
@@ -42,7 +42,7 @@ def route_node(state: dict) -> dict:
         "risk",
         "backtest",
         "allocate",
-        "portfolio",
+        "collection",
         "sentiment"
         # ❌ NOTE: "unknown" NOT included here - routed directly to compose for slot check
     ]
@@ -75,7 +75,7 @@ def route_node(state: dict) -> dict:
     print(f"  - route: {state['route']}")
     print(f"  - intent: {intent}")
     print(f"  - proposed_exec: {proposed_exec}")
-    print(f"  - tickers: {state.get('tickers')}")
+    print(f"  - entity_ids: {state.get('entity_ids')}")
     print(f"  - State keys: {list(state.keys())}")
     print(f"{'='*80}\n")
     

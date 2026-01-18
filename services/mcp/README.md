@@ -104,7 +104,7 @@ CREATE INDEX idx_mcp_created_at ON mcp_tool_calls(created_at DESC);
 6. **analyze_volatility** - Volatility analysis
 7. **analyze_risk** - Risk assessment
 8. **backtest_strategy** - Strategy backtesting
-9. **get_portfolio** - Portfolio status
+9. **get_portfolio** - Collection status
 10. **execute_trade** - Trade execution
 11. **get_market_data** - Market data retrieval
 12. **analyze_fundamentals** - Fundamental analysis
@@ -120,12 +120,12 @@ curl http://localhost:9020/health
 # List tools
 curl -X POST http://localhost:9020/tools/list
 
-# Execute tool (screen ticker)
+# Execute tool (screen entity_id)
 curl -X POST http://localhost:9020/tools/execute \
   -H "Content-Type: application/json" \
   -d '{
     "tool_name": "screen_ticker",
-    "arguments": {"ticker": "AAPL"},
+    "arguments": {"entity_id": "EXAMPLE_ENTITY_1"},
     "user_id": "test_user"
   }'
 ```

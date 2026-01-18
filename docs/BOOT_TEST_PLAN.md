@@ -93,7 +93,7 @@ curl -X POST http://localhost:9004/api/v1/chat \
 1. **Infrastructure boots**: postgres, redis, qdrant healthy
 2. **Neural Engine starts**: No import errors, listens on 9003
 3. **Graph API starts**: LangGraph initializes, listens on 9004
-4. **Nodes execute**: ticker_resolver, screener, portfolio, advisor log DOMAIN_NEUTRAL
+4. **Nodes execute**: entity_resolver, screener, collection, advisor log DOMAIN_NEUTRAL
 5. **No crashes**: All containers stay running for 2+ minutes
 6. **Logs clear**: No Python exceptions, no missing module errors
 
@@ -142,7 +142,7 @@ docker-compose down
 
 # Restore original nodes from backups
 cd /home/caravaggio/projects/vitruvyan-core/vitruvyan_core/core/orchestration/langgraph/node
-mv ticker_resolver_node.py.backup ticker_resolver_node.py
+mv entity_resolver_node.py.backup entity_resolver_node.py
 mv screener_node.py.backup screener_node.py
 mv portfolio_node.py.backup portfolio_node.py
 mv advisor_node.py.backup advisor_node.py

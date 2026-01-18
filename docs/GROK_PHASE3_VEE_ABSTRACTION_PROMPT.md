@@ -44,7 +44,7 @@ Transform VEE/VARE/VWRE from **finance-specific implementations** into **domain-
 
 ### Core Principle
 These engines should NOT know about:
-- ❌ Tickers, stocks, portfolios, trading
+- ❌ EntityIds, entities, collections, trading
 - ❌ yfinance, market data, financial APIs
 - ❌ RSI, MACD, momentum, volatility (as domain concepts)
 - ❌ "Investment advice", "buy/sell signals"
@@ -69,7 +69,7 @@ They SHOULD provide:
 **Current Issues**:
 ```python
 # Line 90: Finance-specific terminology
-def explain_ticker(self, ticker: str, kpi: Dict[str, Any], ...
+def explain_entity(self, entity_id: str, kpi: Dict[str, Any], ...
 
 # Hardcoded financial knowledge
 "market_risk", "volatility_risk", "momentum signals"
@@ -102,7 +102,7 @@ def explain_entity(
 **Current Issues**:
 ```python
 # Line 82: Hardcoded financial concepts
-def analyze_ticker(self, ticker: str, benchmark_ticker: Optional[str] = None)
+def analyze_ticker(self, entity_id: str, benchmark_ticker: Optional[str] = None)
 
 # Line 52-59: Finance-specific risk dimensions
 market_risk: float
@@ -216,7 +216,7 @@ class ExplainabilityProvider(ABC):
     
     @abstractmethod
     def format_entity_reference(self, entity_id: str) -> str:
-        """How to refer to entities in narratives (e.g., "AAPL stock" vs "Route NYC-LAX")"""
+        """How to refer to entities in narratives (e.g., "AAPL entity" vs "Route NYC-LAX")"""
         pass
 ```
 
@@ -269,10 +269,10 @@ class VEEEngine:
 
 #### Step 3: Remove Finance-Specific Code
 Search and replace patterns:
-- `ticker` → `entity_id`
-- `ticker_data` → `entity_metrics`
+- `entity_id` → `entity_id`
+- `entity_data` → `entity_metrics`
 - `analyze_ticker()` → `explain_entity()`
-- Remove hardcoded "market", "stock", "portfolio" references
+- Remove hardcoded "market", "entity", "collection" references
 - Remove `yfinance` imports and financial API calls
 
 #### Step 4: Update Sub-Modules
@@ -325,8 +325,8 @@ class RiskProvider(ABC):
 Transform current finance-specific code:
 ```python
 # BEFORE (finance-specific)
-market_risk = self._calculate_market_risk(ticker_data, benchmark_data)
-volatility_risk = self._calculate_volatility_risk(ticker_data)
+market_risk = self._calculate_market_risk(entity_data, benchmark_data)
+volatility_risk = self._calculate_volatility_risk(entity_data)
 
 # AFTER (domain-agnostic)
 risk_scores = {}
@@ -363,7 +363,7 @@ def analyze_attribution(
 ```
 
 #### Step 2: Remove Finance Terminology
-- `ticker` → `entity_id`
+- `entity_id` → `entity_id`
 - `momentum_z`, `trend_z` → generic factor names from profile
 - Remove financial narrative templates
 
@@ -389,7 +389,7 @@ def analyze_attribution(
 ```bash
 # Check for finance-specific terms
 cd /home/caravaggio/projects/vitruvyan-core
-rg -i "(ticker|stock|market|portfolio|trading|yfinance)" \
+rg -i "(entity_id|entity|market|collection|trading|yfinance)" \
   vitruvyan_core/core/cognitive/vitruvyan_proprietary/
 
 # Should return 0 matches in core engines (allowed in adapters/examples)
@@ -493,7 +493,7 @@ Please read these files to understand current state:
 
 ### Step 2: Identify Finance Coupling
 Search for:
-- `ticker`, `stock`, `market`, `portfolio`
+- `entity_id`, `entity`, `market`, `collection`
 - `yfinance`, financial API imports
 - Hardcoded factor names (`momentum_z`, `trend_z`, etc.)
 - Finance-specific narrative templates

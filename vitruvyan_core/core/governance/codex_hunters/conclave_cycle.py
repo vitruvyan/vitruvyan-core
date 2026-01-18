@@ -10,8 +10,8 @@ Event Flow:
 data.refresh.requested → Codex Expedition → codex.discovery.mapped/failed
 
 Integration Scenarios:
-1. Successful data refresh expedition (real ticker validation)
-2. Failed expedition handling (invalid ticker recovery)
+1. Successful data refresh expedition (real entity_id validation)
+2. Failed expedition handling (invalid entity_id recovery)
 3. Redis pub/sub event routing and response cycle
 4. Event payload schema compliance and validation
 5. LangGraph integration with codex_node.py
@@ -128,7 +128,7 @@ class ConclaveIntegration:
         try:
             # Step 1: Create and publish data refresh request
             refresh_request = create_codex_data_refresh_request(
-                ticker="AAPL",
+                entity_id="EXAMPLE_ENTITY_1",
                 sources=["yfinance", "reddit"],
                 priority="high",
                 correlation_id=correlation_id
@@ -169,16 +169,16 @@ class ConclaveIntegration:
             return self._test_result(test_name, False, f"Exception: {e}")
     
     async def test_failed_expedition(self) -> Dict[str, Any]:
-        """Test Scenario 2: Failed expedition with invalid ticker"""
+        """Test Scenario 2: Failed expedition with invalid entity_id"""
         test_name = "Failed Expedition"
         correlation_id = f"test_failure_{uuid.uuid4().hex[:8]}"
         
         logger.info(f"🚀 Starting {test_name}...")
         
         try:
-            # Step 1: Create request with invalid ticker
+            # Step 1: Create request with invalid entity_id
             refresh_request = create_codex_data_refresh_request(
-                ticker="INVALID_TICKER_XYZ",
+                entity_id="INVALID_TICKER_XYZ",
                 sources=["yfinance"],
                 priority="low",
                 correlation_id=correlation_id
@@ -219,7 +219,7 @@ class ConclaveIntegration:
         try:
             # Step 1: Create mock state with Conclave event
             mock_event = create_codex_data_refresh_request(
-                ticker="MSFT",
+                entity_id="EXAMPLE_ENTITY_4",
                 sources=["yfinance"],
                 priority="medium"
             )
@@ -263,7 +263,7 @@ class ConclaveIntegration:
         try:
             # Test valid refresh request
             valid_request = create_codex_data_refresh_request(
-                ticker="GOOGL",
+                entity_id="EXAMPLE_ENTITY_5",
                 sources=["yfinance", "reddit", "google_news"],
                 priority="critical"
             )
@@ -271,13 +271,13 @@ class ConclaveIntegration:
             if not self.validator.validate_codex_data_refresh(valid_request["payload"]):
                 return self._test_result(test_name, False, "Valid request failed validation")
             
-            # Test invalid refresh request (no ticker)
+            # Test invalid refresh request (no entity_id)
             invalid_request = {
                 "event_type": "codex.data.refresh.requested",
                 "payload": {
                     "sources": ["yfinance"],
                     "priority": "medium"
-                    # Missing ticker/tickers
+                    # Missing entity_id/entity_ids
                 }
             }
             

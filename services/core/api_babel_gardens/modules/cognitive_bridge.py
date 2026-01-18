@@ -283,7 +283,7 @@ class CognitiveBridgeModule(GemmaServiceBase):
         topic_keywords = {
             "trading": ["trading", "buy", "sell", "position"],
             "analysis": ["analysis", "chart", "technical", "fundamental"],
-            "market": ["market", "stock", "index", "sector"],
+            "market": ["market", "entity", "index", "sector"],
             "risk": ["risk", "volatility", "hedge"],
             "news": ["news", "earnings", "announcement"]
         }

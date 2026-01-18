@@ -100,7 +100,7 @@ curl http://localhost:8009/health
 # Test embedding
 curl -X POST http://localhost:8009/embedding/create \
   -H "Content-Type: application/json" \
-  -d '{"text": "Apple stock analysis", "language": "en"}'
+  -d '{"text": "Apple entity analysis", "language": "en"}'
 
 # Test sentiment
 curl -X POST http://localhost:8009/sentiment/analyze \

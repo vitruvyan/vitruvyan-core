@@ -82,12 +82,12 @@ def _assess_protection_requirements(state: Dict[str, Any]) -> Dict[str, Any]:
     high_value_patterns = [
         "backup", "restore", "recovery", "integrity", "audit",
         "critical", "emergency", "disaster", "corruption",
-        "portfolio", "allocation", "investment", "trade"
+        "collection", "allocation", "investment", "trade"
     ]
     
     # Check for high-value operation indicators
     requires_protection = any(pattern in input_text for pattern in high_value_patterns)
-    requires_protection = requires_protection or intent in ["allocate", "portfolio", "screen"]
+    requires_protection = requires_protection or intent in ["allocate", "collection", "screen"]
     
     # Determine protection type based on context
     protection_type = "standard"
@@ -95,7 +95,7 @@ def _assess_protection_requirements(state: Dict[str, Any]) -> Dict[str, Any]:
         protection_type = "critical"
     elif any(pattern in input_text for pattern in ["integrity", "audit", "backup"]):
         protection_type = "integrity_check"
-    elif any(pattern in input_text for pattern in ["portfolio", "allocation", "investment"]):
+    elif any(pattern in input_text for pattern in ["collection", "allocation", "investment"]):
         protection_type = "financial_guardian"
     
     return {
@@ -131,7 +131,7 @@ def _request_divine_protection(protection_type: str, state: Dict[str, Any]) -> D
                 'protection_type': protection_type,
                 'state_context': {
                     'intent': state.get('intent'),
-                    'tickers': state.get('tickers', []),
+                    'entity_ids': state.get('entity_ids', []),
                     'route': state.get('route'),
                     'human_input_preview': state.get('human_input', '')[:100]
                 },
@@ -317,9 +317,9 @@ def _create_fallback_protection() -> Dict[str, Any]:
 def test_vault_node():
     """Test the vault node functionality"""
     test_state = {
-        "human_input": "Show me portfolio allocation for retirement with backup protection",
+        "human_input": "Show me collection allocation for retirement with backup protection",
         "intent": "allocate", 
-        "tickers": ["AAPL", "MSFT"],
+        "entity_ids": ["EXAMPLE_ENTITY_1", "EXAMPLE_ENTITY_4"],
         "route": "vault"
     }
     

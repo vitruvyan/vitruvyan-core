@@ -93,7 +93,7 @@ class ExplainabilityProvider(ABC):
         How to refer to entities in natural language narratives.
 
         Examples:
-        - Finance: "AAPL stock" or "Apple Inc."
+        - Finance: "AAPL entity" or "Apple Inc."
         - Logistics: "NYC-LAX route" or "New York to Los Angeles flight"
         - Healthcare: "Patient P12345" or "Cardiology case #12345"
         """

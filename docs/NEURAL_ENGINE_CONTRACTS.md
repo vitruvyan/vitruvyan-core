@@ -422,7 +422,7 @@ for eval in result.evaluations:
    - Pure function evaluation
 
 4. **Domain Agnosticism**
-   - Core never mentions: stock, patient, route, etc.
+   - Core never mentions: entity, patient, route, etc.
    - Only generic: entity, factor, score, weight
 
 ---

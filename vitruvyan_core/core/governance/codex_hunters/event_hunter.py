@@ -193,17 +193,17 @@ class EventHunter(BaseHunter):
                 return
             
             # Extract expedition parameters
-            ticker = event.payload.get("ticker")
-            tickers = event.payload.get("tickers", [])
+            entity_id = event.payload.get("entity_id")
+            entity_ids = event.payload.get("entity_ids", [])
             sources = event.payload.get("sources", ["yfinance", "reddit"])
             priority = event.payload.get("priority", "medium")
             
-            target_tickers = [ticker] if ticker else tickers
+            target_tickers = [entity_id] if entity_id else entity_ids
             if not target_tickers:
-                self._publish_failure_response(event, "No tickers specified for expedition")
+                self._publish_failure_response(event, "No entity_ids specified for expedition")
                 return
             
-            logger.info(f"📋 [EventHunter] Expedition: {len(target_tickers)} tickers, {len(sources)} sources")
+            logger.info(f"📋 [EventHunter] Expedition: {len(target_tickers)} entity_ids, {len(sources)} sources")
             
             # Execute complete expedition cycle
             expedition_result = self._orchestrate_expedition(target_tickers, sources, event.correlation_id)
@@ -245,14 +245,14 @@ class EventHunter(BaseHunter):
             logger.error(f"❌ [EventHunter] Error handling discovery: {e}")
             self._publish_failure_response(event, f"Discovery error: {str(e)}")
     
-    def _orchestrate_expedition(self, tickers: List[str], sources: List[str], correlation_id: str) -> Dict[str, Any]:
+    def _orchestrate_expedition(self, entity_ids: List[str], sources: List[str], correlation_id: str) -> Dict[str, Any]:
         """Orchestrate complete Codex Hunter expedition: Track → Restore → Bind"""
         try:
-            logger.info(f"🚀 [EXPEDITION] Starting full cycle for {len(tickers)} tickers")
+            logger.info(f"🚀 [EXPEDITION] Starting full cycle for {len(entity_ids)} entity_ids")
             
             # Step 1: Track (data gathering)
             track_result = self.tracker.execute(
-                tickers=tickers,
+                entity_ids=entity_ids,
                 sources=sources,
                 batch_size=10
             )
@@ -275,11 +275,11 @@ class EventHunter(BaseHunter):
             
             # ticker_results is expected to be a list of dicts, each dict has source keys
             if isinstance(ticker_results, list):
-                for i, ticker_data in enumerate(ticker_results):
-                    logger.info(f"🔍 [DEBUG] Processing item {i}: type={type(ticker_data)}")
-                    if isinstance(ticker_data, dict):
-                        logger.info(f"🔍 [DEBUG] Dict keys: {list(ticker_data.keys())}")
-                        for source, source_data in ticker_data.items():
+                for i, entity_data in enumerate(ticker_results):
+                    logger.info(f"🔍 [DEBUG] Processing item {i}: type={type(entity_data)}")
+                    if isinstance(entity_data, dict):
+                        logger.info(f"🔍 [DEBUG] Dict keys: {list(entity_data.keys())}")
+                        for source, source_data in entity_data.items():
                             logger.info(f"🔍 [DEBUG] Source '{source}': type={type(source_data)}, data={bool(source_data)}")
                             if source_data:
                                 if isinstance(source_data, list):
@@ -292,7 +292,7 @@ class EventHunter(BaseHunter):
                                     raw_data.append(source_data)
                                     logger.info(f"✅ [DEBUG] Appended {type(source_data)} from {source}")
                     else:
-                        logger.error(f"❌ [DEBUG] Item {i} is not a dict: {type(ticker_data)}")
+                        logger.error(f"❌ [DEBUG] Item {i} is not a dict: {type(entity_data)}")
             else:
                 logger.error(f"❌ [EXPEDITION] ticker_results is not a list: {type(ticker_results)}")
                 return {"success": False, "error": f"Unexpected ticker_results type: {type(ticker_results)}"}
@@ -324,7 +324,7 @@ class EventHunter(BaseHunter):
             
             return {
                 "success": True,
-                "sources_found": [f"{source}_{ticker}" for ticker in tickers for source in sources],
+                "sources_found": [f"{source}_{entity_id}" for entity_id in entity_ids for source in sources],
                 "collections_updated": ["phrases", "sentiment_scores"],
                 "total_records": track_result["total_records"],
                 "normalized_records": len(restore_result["normalized_results"]),

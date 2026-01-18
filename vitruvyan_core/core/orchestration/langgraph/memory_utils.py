@@ -2,11 +2,11 @@ from typing import Dict, Any, List
 import re
 
 # --- Definition of fundamental slots ---
-SLOTS = ["budget", "tickers", "horizon", "language"]
+SLOTS = ["budget", "entity_ids", "horizon", "language"]
 
 def merge_slots(state: dict, res: dict) -> dict:
     """
-    Merge known slots (budget, tickers, horizon, language) 
+    Merge known slots (budget, entity_ids, horizon, language) 
     between current state, dispatcher output, and user input parsing.
     """
     merged = dict(state)  # copy current state
@@ -25,15 +25,15 @@ def merge_slots(state: dict, res: dict) -> dict:
     if budget:
         merged["budget"] = budget
 
-    # --- Tickers ---
-    # 🎯 NUCLEAR OPTION: Don't merge tickers - ticker_resolver_node will set them
-    # tickers = res.get("tickers") or state.get("tickers")
-    # if tickers:
-    #     merged["tickers"] = tickers
-    # ✅ NEW: Store context tickers separately for ticker_resolver fallback
-    context_tickers = state.get("tickers") or res.get("tickers")
-    if context_tickers:
-        merged["context_tickers"] = context_tickers
+    # --- EntityIds ---
+    # 🎯 NUCLEAR OPTION: Don't merge entity_ids - entity_resolver_node will set them
+    # entity_ids = res.get("entity_ids") or state.get("entity_ids")
+    # if entity_ids:
+    #     merged["entity_ids"] = entity_ids
+    # ✅ NEW: Store context entity_ids separately for entity_resolver fallback
+    context_entities = state.get("entity_ids") or res.get("entity_ids")
+    if context_entities:
+        merged["context_entities"] = context_entities
 
     # --- Horizon ---
     horizon = res.get("horizon") or state.get("horizon")
@@ -51,13 +51,13 @@ def merge_slots(state: dict, res: dict) -> dict:
 def check_slots(state: Dict[str, Any]) -> List[str]:
     """
     Check which fundamental slots are missing.
-    Special handling: tickers must be non-empty list to be considered present.
+    Special handling: entity_ids must be non-empty list to be considered present.
     """
     missing = []
     for slot in SLOTS:
         value = state.get(slot)
-        # Special case: tickers must be a non-empty list
-        if slot == "tickers":
+        # Special case: entity_ids must be a non-empty list
+        if slot == "entity_ids":
             if not value or (isinstance(value, list) and len(value) == 0):
                 missing.append(slot)
         # Other slots: just check truthiness

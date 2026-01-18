@@ -63,7 +63,7 @@ async def test_memory_write_dual_system_roundtrip():
         "language": "en",
         "correlation_id": "test_write_001",
         "metadata": {
-            "ticker": "AAPL",
+            "entity_id": "EXAMPLE_ENTITY_1",
             "analysis_type": "technical",
             "test": True
         }
@@ -238,7 +238,7 @@ async def test_vector_match_from_mnemosyne():
     
     # Prepare vector match payload
     payload = {
-        "query_text": "Apple stock technical analysis bullish pattern",
+        "query_text": "Apple entity technical analysis bullish pattern",
         "top_k": 5,
         "filters": {
             "source": "memory_orders"
@@ -505,7 +505,7 @@ async def test_mnemosyne_node_telemetry():
         "conclave_event": {
             "event_type": "memory.vector.match.fulfilled",
             "payload": {
-                "query_text": "Apple stock analysis",
+                "query_text": "Apple entity analysis",
                 "matches": [
                     {
                         "phrase_id": 2001,

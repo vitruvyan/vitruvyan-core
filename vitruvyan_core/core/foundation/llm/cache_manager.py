@@ -83,7 +83,7 @@ class LLMCacheManager:
         key_elements = {
             "user_input": state.get("input_text", ""),
             "intent": state.get("intent", ""),
-            "tickers": sorted(state.get("tickers", [])),  # Sort for consistency
+            "entity_ids": sorted(state.get("entity_ids", [])),  # Sort for consistency
             "language": state.get("language", "en"),
             "horizon": state.get("horizon", ""),
             "prompt_type": prompt_type
@@ -112,7 +112,7 @@ class LLMCacheManager:
         
         if "ranking" in raw_output:
             ranking = raw_output["ranking"]
-            # Hash top 5 tickers and their scores
+            # Hash top 5 entity_ids and their scores
             all_stocks = []
             for group in ranking.values():
                 all_stocks.extend(group)
@@ -120,10 +120,10 @@ class LLMCacheManager:
             top_5 = sorted(all_stocks, key=lambda x: x.get("composite_score", 0), reverse=True)[:5]
             key_data["top_performers"] = [
                 {
-                    "ticker": stock["ticker"],
-                    "score": round(stock.get("composite_score", 0), 2)
+                    "entity_id": entity["entity_id"],
+                    "score": round(entity.get("composite_score", 0), 2)
                 }
-                for stock in top_5
+                for entity in top_5
             ]
         
         data_string = json.dumps(key_data, sort_keys=True)
@@ -202,7 +202,7 @@ class LLMCacheManager:
             # Get potential matches based on partial key matching
             user_input = state.get("input_text", "").lower()
             intent = state.get("intent", "")
-            tickers = set(state.get("tickers", []))
+            entity_ids = set(state.get("entity_ids", []))
             language = state.get("language", "en")
             
             # Search pattern
@@ -258,11 +258,11 @@ class LLMCacheManager:
         # For now, simplified approach
         score += 0.3  # Base score
         
-        # Ticker overlap (high weight)
-        current_tickers = set(current_state.get("tickers", []))
-        # Would need to extract tickers from cached context
+        # EntityId overlap (high weight)
+        current_entitys = set(current_state.get("entity_ids", []))
+        # Would need to extract entity_ids from cached context
         # Simplified for now
-        if current_tickers:
+        if current_entitys:
             score += 0.4
         
         # Language match (required, already filtered)
@@ -378,8 +378,8 @@ class LLMCacheManager:
             self.logger.error(f"Cleanup error: {e}")
             return 0
     
-    def invalidate_cache_for_tickers(self, tickers: List[str]):
-        """Invalidate cache entries for specific tickers (e.g., after market events)"""
+    def invalidate_cache_for_entities(self, entity_ids: List[str]):
+        """Invalidate cache entries for specific entity_ids (e.g., after market events)"""
         try:
             pattern = "llm_cache:*"
             keys = self.redis_client.keys(pattern)
@@ -388,9 +388,9 @@ class LLMCacheManager:
             for key in keys:
                 try:
                     # This is a simplified approach
-                    # In production, we'd need more sophisticated ticker extraction
-                    for ticker in tickers:
-                        if ticker.lower() in key.lower():
+                    # In production, we'd need more sophisticated entity_id extraction
+                    for entity_id in entity_ids:
+                        if entity_id.lower() in key.lower():
                             self.redis_client.delete(key)
                             invalidated += 1
                             break
@@ -398,7 +398,7 @@ class LLMCacheManager:
                 except Exception:
                     continue
             
-            self.logger.info(f"Invalidated {invalidated} cache entries for tickers: {tickers}")
+            self.logger.info(f"Invalidated {invalidated} cache entries for entity_ids: {entity_ids}")
             
         except Exception as e:
             self.logger.error(f"Cache invalidation error: {e}")

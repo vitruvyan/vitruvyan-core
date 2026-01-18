@@ -91,13 +91,13 @@ class SacredLexicon:
                     },
                     "payload_schemas": {
                         "sentiment.requested": {
-                            "ticker": "string",
+                            "entity_id": "string",
                             "mode": "string",
                             "cultural_weighting": "boolean",
                             "correlation_id": "string"
                         },
                         "sentiment.fused": {
-                            "ticker": "string",
+                            "entity_id": "string",
                             "sentiment_score": "float",
                             "sentiment_label": "string",
                             "confidence": "float",

@@ -165,7 +165,7 @@ class QdrantAgent:
             INCLUDE:
             - seed_human_generated, gpt_paraphrase, seed_multilingual
             - reddit_it/borsaitaliana/*, reddit_it/finanza/*
-            - reddit_en/wallstreetbets/*, reddit_en/stocks/*, reddit_en/investing/*
+            - reddit_en/wallstreetbets/*, reddit_en/entities/*, reddit_en/investing/*
             
             EXCLUDE (noise):
             - reddit_it/italia/*, reddit_it/italy/*
@@ -189,7 +189,7 @@ class QdrantAgent:
             "reddit_it/finanza/hot",
             "reddit_it/finanza/new",
             "reddit_en/wallstreetbets/top",
-            "reddit_en/stocks/top",
+            "reddit_en/entities/top",
             "reddit_en/investing/top",
             "reddit_it/criptovalute/top",
             "reddit_es/criptomonedas/top",

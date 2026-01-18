@@ -66,7 +66,7 @@ def run_graph_once(input_text: str, user_id: str = "demo", return_full: bool = F
     if lang:
         state["language"] = lang
 
-    # Merge slots (budget, tickers, horizon, language)
+    # Merge slots (budget, entity_ids, horizon, language)
     state = merge_slots(state, state)
     print(f"➡️ [run_graph_once] Initial merged state: {state}")
 
@@ -154,10 +154,10 @@ def run_graph_once(input_text: str, user_id: str = "demo", return_full: bool = F
             response["proactive_suggestions_text"] = suggestions_text
             response["proactive_suggestions"] = proactive_suggestions
         
-        # ✅ FIX (Nov 2, 2025): Add intent, route, tickers, horizon to API response
+        # ✅ FIX (Nov 2, 2025): Add intent, route, entity_ids, horizon to API response
         response["intent"] = final_state.get("intent")
         response["route"] = final_state.get("route")
-        response["tickers"] = final_state.get("tickers")
+        response["entity_ids"] = final_state.get("entity_ids")
         response["horizon"] = final_state.get("horizon")
         
         # ✅ FIX (Nov 4, 2025): Add VSGS fields to API response
@@ -203,10 +203,10 @@ def run_graph_once(input_text: str, user_id: str = "demo", return_full: bool = F
             "emotion_sentiment_label": final_state.get("emotion_sentiment_label"),
             "emotion_sentiment_score": final_state.get("emotion_sentiment_score"),
             "emotion_metadata": final_state.get("emotion_metadata"),
-            # ✅ FIX (Nov 2, 2025): Add intent, route, tickers, horizon to API response
+            # ✅ FIX (Nov 2, 2025): Add intent, route, entity_ids, horizon to API response
             "intent": final_state.get("intent"),
             "route": final_state.get("route"),
-            "tickers": final_state.get("tickers"),
+            "entity_ids": final_state.get("entity_ids"),
             "horizon": final_state.get("horizon"),
             # ✅ FIX (Nov 4, 2025): Add VSGS fields to API response
             "vsgs_status": final_state.get("vsgs_status"),
@@ -246,10 +246,10 @@ def run_graph_once(input_text: str, user_id: str = "demo", return_full: bool = F
         # 🎭 Phase 2.1: Include emotion detection even in fallback
         "emotion_detected": final_state.get("emotion_detected") if isinstance(final_state, dict) else None,
         "emotion_confidence": final_state.get("emotion_confidence") if isinstance(final_state, dict) else None,
-        # ✅ FIX (Nov 2, 2025): Add intent, route, tickers, horizon to API response
+        # ✅ FIX (Nov 2, 2025): Add intent, route, entity_ids, horizon to API response
         "intent": final_state.get("intent") if isinstance(final_state, dict) else None,
         "route": final_state.get("route") if isinstance(final_state, dict) else None,
-        "tickers": final_state.get("tickers") if isinstance(final_state, dict) else None,
+        "entity_ids": final_state.get("entity_ids") if isinstance(final_state, dict) else None,
         "horizon": final_state.get("horizon") if isinstance(final_state, dict) else None,
         # ✅ FIX (Nov 4, 2025): Add VSGS fields to API response
         "vsgs_status": final_state.get("vsgs_status") if isinstance(final_state, dict) else None,
