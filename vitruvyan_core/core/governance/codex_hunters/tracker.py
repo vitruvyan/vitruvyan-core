@@ -381,28 +381,28 @@ class Tracker(BaseHunter):
             logger.info(f"📦 Processing batch {i // batch_size + 1}/{(len(entity_ids) - 1) // batch_size + 1}: {batch}")
             
             for entity_id in batch:
-                ticker_results = {}
+                entity_results = {}
                 
                 if "yfinance" in sources:
-                    ticker_results["yfinance"] = self.fetch_yfinance_data(entity_id)
+                    entity_results["yfinance"] = self.fetch_yfinance_data(entity_id)
                 
                 if "reddit" in sources:
-                    ticker_results["reddit"] = self.fetch_reddit_sentiment(entity_id)
+                    entity_results["reddit"] = self.fetch_reddit_sentiment(entity_id)
                 
                 if "google_news" in sources:
-                    ticker_results["google_news"] = self.fetch_google_news(entity_id)
+                    entity_results["google_news"] = self.fetch_google_news(entity_id)
                 
                 # Publish raw data event
                 self.publish_event(
                     event_type="codex.discovered",
                     payload={
                         "entity_id": entity_id,
-                        "sources": ticker_results,
+                        "sources": entity_results,
                         "timestamp": datetime.now().isoformat(),
                         "batch_id": i // batch_size
                     }
                 )
-                all_results.append(ticker_results)
+                all_results.append(entity_results)
             
             # Sleep between batches to avoid overwhelming APIs
             if i + batch_size < len(entity_ids):
@@ -469,7 +469,7 @@ class Tracker(BaseHunter):
                 "records_succeeded": total_success,
                 "records_failed": total_failed,
                 "sources": sources,
-                "tickers_count": len(entity_ids),
+                "entities_count": len(entity_ids),
                 "fetch_stats": self.fetch_stats
             },
             severity="info"
@@ -481,7 +481,7 @@ class Tracker(BaseHunter):
             "status": "completed",
             "total_records": total_records,
             "fetch_stats": self.fetch_stats,
-            "ticker_results": results,
+            "entity_results": results,
             "fred_results": fred_results
         }
 

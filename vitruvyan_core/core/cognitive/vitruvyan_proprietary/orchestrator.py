@@ -100,15 +100,15 @@ class VitruvyanCoreOrchestrator:
             
             # 2. VHSW - Historical Strength
             vhsw_config = config.get('vhsw', {})
-            historical_strength = self.vhsw_engine.analyze_ticker(entity_id, vhsw_config.get('windows'))
+            historical_strength = self.vhsw_engine.analyze_entity(entity_id, vhsw_config.get('windows'))
             
             # 3. VARE - Risk Engine  
             vare_config = config.get('vare', {})
-            risk_profile = self.vare_engine.analyze_ticker(entity_id, vare_config.get('benchmark'))
+            risk_profile = self.vare_engine.analyze_entity(entity_id, vare_config.get('benchmark'))
             
             # 4. VMFL - Multi-Factor Learning
             vmfl_config = config.get('vmfl', {})
-            multi_factor = self.vmfl_engine.analyze_ticker(
+            multi_factor = self.vmfl_engine.analyze_entity(
                 entity_id, 
                 vmfl_config.get('weights'),
                 vmfl_config.get('fundamental_data')

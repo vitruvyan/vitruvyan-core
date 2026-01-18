@@ -34,7 +34,7 @@ class ConversationContextManager:
     def _extract_context_themes(self, history: List[Dict]) -> Dict[str, Any]:
         """Extract recurring themes and user preferences"""
         themes = {
-            "preferred_tickers": [],
+            "preferred_entities": [],
             "risk_tolerance": "unknown",
             "investment_horizon": "unknown", 
             "emotional_state": "neutral",
@@ -46,7 +46,7 @@ class ConversationContextManager:
         for conv in history:
             # Extract entity_ids mentioned
             if "entity_ids" in conv:
-                themes["preferred_tickers"].extend(conv["entity_ids"])
+                themes["preferred_entities"].extend(conv["entity_ids"])
             
             # Extract risk signals
             input_text = conv.get("input_text", "").lower()
@@ -56,7 +56,7 @@ class ConversationContextManager:
                 themes["risk_tolerance"] = "aggressive"
         
         # Deduplicate preferred entity_ids
-        themes["preferred_tickers"] = list(set(themes["preferred_tickers"]))
+        themes["preferred_entities"] = list(set(themes["preferred_entities"]))
         
         return themes
     
@@ -66,8 +66,8 @@ class ConversationContextManager:
         context_parts = []
         
         # User profile
-        if themes["preferred_tickers"]:
-            context_parts.append(f"User often discusses: {', '.join(themes['preferred_tickers'][:5])}")
+        if themes["preferred_entities"]:
+            context_parts.append(f"User often discusses: {', '.join(themes['preferred_entities'][:5])}")
         
         if themes["risk_tolerance"] != "unknown":
             context_parts.append(f"Risk tolerance: {themes['risk_tolerance']}")
@@ -97,7 +97,7 @@ class MarketContextProvider:
         # EntityId-specific context
         entity_context = ""
         if entity_ids:
-            entity_context = self._get_ticker_specific_context(entity_ids)
+            entity_context = self._get_entity_specific_context(entity_ids)
         
         return f"{base_context}\n{entity_context}".strip()
     
@@ -113,19 +113,19 @@ CURRENT MARKET ENVIRONMENT:
 - Consumer discretionary showing mixed signals
 """
     
-    def _get_ticker_specific_context(self, entity_ids: List[str]) -> str:
+    def _get_entity_specific_context(self, entity_ids: List[str]) -> str:
         """Get specific context for mentioned entity_ids"""
         
         # Sector mapping for context
-        tech_tickers = ["EXAMPLE_ENTITY_1", "EXAMPLE_ENTITY_4", "EXAMPLE_ENTITY_5", "AMZN", "EXAMPLE_ENTITY_3", "EXAMPLE_ENTITY_2"]
-        finance_tickers = ["JPM", "BAC", "WFC", "GS"]
+        tech_entities = ["EXAMPLE_ENTITY_1", "EXAMPLE_ENTITY_4", "EXAMPLE_ENTITY_5", "AMZN", "EXAMPLE_ENTITY_3", "EXAMPLE_ENTITY_2"]
+        finance_entities = ["JPM", "BAC", "WFC", "GS"]
         
         context_parts = []
         
         for entity_id in entity_ids:
-            if entity_id in tech_tickers:
+            if entity_id in tech_entities:
                 context_parts.append(f"{entity_id}: Part of AI/tech revolution theme")
-            elif entity_id in finance_tickers:
+            elif entity_id in finance_entities:
                 context_parts.append(f"{entity_id}: Sensitive to interest rate environment")
             # Add more sector classifications as needed
         

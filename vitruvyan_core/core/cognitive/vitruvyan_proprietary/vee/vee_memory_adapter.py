@@ -389,9 +389,9 @@ class VEEMemoryAdapter:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
                 
-                CREATE INDEX IF NOT EXISTS idx_explanations_ticker ON explanations(entity_id);
+                CREATE INDEX IF NOT EXISTS idx_explanations_entity ON explanations(entity_id);
                 CREATE INDEX IF NOT EXISTS idx_explanations_created_at ON explanations(created_at);
-                CREATE INDEX IF NOT EXISTS idx_explanations_ticker_lang ON explanations(entity_id, language);
+                CREATE INDEX IF NOT EXISTS idx_explanations_entity_lang ON explanations(entity_id, language);
             """
             
             # Create table using PostgresAgent pattern

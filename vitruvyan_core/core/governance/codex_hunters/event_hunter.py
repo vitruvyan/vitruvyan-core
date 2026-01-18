@@ -198,15 +198,15 @@ class EventHunter(BaseHunter):
             sources = event.payload.get("sources", ["yfinance", "reddit"])
             priority = event.payload.get("priority", "medium")
             
-            target_tickers = [entity_id] if entity_id else entity_ids
-            if not target_tickers:
+            target_entities = [entity_id] if entity_id else entity_ids
+            if not target_entities:
                 self._publish_failure_response(event, "No entity_ids specified for expedition")
                 return
             
-            logger.info(f"📋 [EventHunter] Expedition: {len(target_tickers)} entity_ids, {len(sources)} sources")
+            logger.info(f"📋 [EventHunter] Expedition: {len(target_entities)} entity_ids, {len(sources)} sources")
             
             # Execute complete expedition cycle
-            expedition_result = self._orchestrate_expedition(target_tickers, sources, event.correlation_id)
+            expedition_result = self._orchestrate_expedition(target_entities, sources, event.correlation_id)
             
             # Publish expedition response
             if expedition_result["success"]:
@@ -264,18 +264,18 @@ class EventHunter(BaseHunter):
             
             # Step 2: Restore (data normalization)
             raw_data = []
-            ticker_results = track_result["ticker_results"]
+            entity_results = track_result["entity_results"]
             
             # DEBUG: Log the actual structure to understand the data format
-            logger.info(f"🔍 [DEBUG] ticker_results type: {type(ticker_results)}")
-            logger.info(f"🔍 [DEBUG] ticker_results length: {len(ticker_results) if hasattr(ticker_results, '__len__') else 'no length'}")
-            if ticker_results and len(ticker_results) > 0:
-                logger.info(f"🔍 [DEBUG] first element type: {type(ticker_results[0])}")
-                logger.info(f"🔍 [DEBUG] first element: {ticker_results[0]}")
+            logger.info(f"🔍 [DEBUG] entity_results type: {type(entity_results)}")
+            logger.info(f"🔍 [DEBUG] entity_results length: {len(entity_results) if hasattr(entity_results, '__len__') else 'no length'}")
+            if entity_results and len(entity_results) > 0:
+                logger.info(f"🔍 [DEBUG] first element type: {type(entity_results[0])}")
+                logger.info(f"🔍 [DEBUG] first element: {entity_results[0]}")
             
-            # ticker_results is expected to be a list of dicts, each dict has source keys
-            if isinstance(ticker_results, list):
-                for i, entity_data in enumerate(ticker_results):
+            # entity_results is expected to be a list of dicts, each dict has source keys
+            if isinstance(entity_results, list):
+                for i, entity_data in enumerate(entity_results):
                     logger.info(f"🔍 [DEBUG] Processing item {i}: type={type(entity_data)}")
                     if isinstance(entity_data, dict):
                         logger.info(f"🔍 [DEBUG] Dict keys: {list(entity_data.keys())}")
@@ -294,8 +294,8 @@ class EventHunter(BaseHunter):
                     else:
                         logger.error(f"❌ [DEBUG] Item {i} is not a dict: {type(entity_data)}")
             else:
-                logger.error(f"❌ [EXPEDITION] ticker_results is not a list: {type(ticker_results)}")
-                return {"success": False, "error": f"Unexpected ticker_results type: {type(ticker_results)}"}
+                logger.error(f"❌ [EXPEDITION] entity_results is not a list: {type(entity_results)}")
+                return {"success": False, "error": f"Unexpected entity_results type: {type(entity_results)}"}
             
             if not raw_data:
                 return {"success": False, "error": "No raw data available for restoration"}

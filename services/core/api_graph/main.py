@@ -458,7 +458,7 @@ async def get_semantic_clusters():
 
 # --- Fuzzy EntityId Search Endpoint ---
 @app.get("/api/entity_ids/search")
-async def search_tickers(q: str = ""):
+async def search_entities(q: str = ""):
     """
     Fuzzy entity_id search endpoint for UI autocomplete.
     Searches both entity_id symbols and company names.

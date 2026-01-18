@@ -236,7 +236,7 @@ def resolve_referents(state: Dict[str, Any]) -> Dict[str, Any]:
         if score > 0.5:
             payload = top_match.get("payload", {})
             inherited = {
-                "inherited_tickers": payload.get("entity_ids", []),
+                "inherited_entities": payload.get("entity_ids", []),
                 "inherited_intent": payload.get("intent"),
                 "inherited_horizon": payload.get("horizon")
             }
@@ -498,9 +498,9 @@ def can_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     # Step 3: Resolve vague referents
     inherited = resolve_referents(state)
-    if inherited.get("inherited_tickers") and not state.get("entity_ids"):
-        state["entity_ids"] = inherited["inherited_tickers"]
-        logger.info(f"🔗 CAN: Inherited entity_ids from context: {inherited['inherited_tickers']}")
+    if inherited.get("inherited_entities") and not state.get("entity_ids"):
+        state["entity_ids"] = inherited["inherited_entities"]
+        logger.info(f"🔗 CAN: Inherited entity_ids from context: {inherited['inherited_entities']}")
     if inherited.get("inherited_intent") and state.get("intent") == "unknown":
         state["intent"] = inherited["inherited_intent"]
         logger.info(f"🔗 CAN: Inherited intent from context: {inherited['inherited_intent']}")

@@ -124,7 +124,7 @@ TOOL_SCHEMAS = [
     {
         "type": "function",
         "function": {
-            "name": "screen_tickers",
+            "name": "screen_entities",
             "description": "Screen entity_ids using Vitruvyan Neural Engine multi-factor ranking system. Returns composite scores, z-scores for momentum/trend/volatility/sentiment/fundamentals, and percentile ranks.",
             "parameters": {
                 "type": "object",
@@ -208,7 +208,7 @@ TOOL_SCHEMAS = [
     {
         "type": "function",
         "function": {
-            "name": "compare_tickers",
+            "name": "compare_entities",
             "description": "Compare multiple entity_ids side-by-side using Vitruvyan comparison analysis. Returns winner/loser classification and factor deltas.",
             "parameters": {
                 "type": "object",
@@ -256,7 +256,7 @@ TOOL_SCHEMAS = [
 
 class ExecuteRequest(BaseModel):
     """MCP tool execution request"""
-    tool: str = Field(..., description="Tool name (e.g., 'screen_tickers')")
+    tool: str = Field(..., description="Tool name (e.g., 'screen_entities')")
     args: Dict[str, Any] = Field(..., description="Tool arguments")
     user_id: str = Field(..., description="User ID for audit trail")
 
@@ -317,7 +317,7 @@ async def sacred_orders_middleware(
     orthodoxy_status = "blessed"
     
     try:
-        if tool_name == "screen_tickers":
+        if tool_name == "screen_entities":
             # Validate z-scores: >3σ = WARNING (not rejection)
             # Rationale: Financial events can have extreme z-scores (crashes, booms)
             # Neural Engine calculations are mathematically valid
@@ -413,15 +413,15 @@ async def sacred_orders_middleware(
 # Tool Implementations (Stubs for Phase 1)
 # ============================================================================
 
-async def execute_screen_tickers(args: Dict[str, Any], user_id: str) -> Dict[str, Any]:
+async def execute_screen_entities(args: Dict[str, Any], user_id: str) -> Dict[str, Any]:
     """
-    Execute screen_tickers tool via Neural Engine API.
+    Execute screen_entities tool via Neural Engine API.
     
     Phase 3: Calls actual omni_neural_engine:8003/screen
     
     Test Mode: Supports _test_inject_heretical flag for Orthodoxy testing
     """
-    logger.info(f"🧠 Executing screen_tickers: entity_ids={args.get('entity_ids')}, profile={args.get('profile', 'balanced_mid')}")
+    logger.info(f"🧠 Executing screen_entities: entity_ids={args.get('entity_ids')}, profile={args.get('profile', 'balanced_mid')}")
     
     entity_ids = args.get("entity_ids", [])
     profile = args.get("profile", "balanced_mid")
@@ -436,8 +436,8 @@ async def execute_screen_tickers(args: Dict[str, Any], user_id: str) -> Dict[str
     langgraph_url = os.getenv("LANGGRAPH_URL", "http://omni_api_graph:8004")
     
     # Construct screening query for LangGraph
-    tickers_str = ", ".join(entity_ids)
-    query = f"screen {tickers_str} with {profile} profile"
+    entities_str = ", ".join(entity_ids)
+    query = f"screen {entities_str} with {profile} profile"
     
     try:
         async with httpx.AsyncClient(timeout=90.0) as client:  # Neural Engine can be slow
@@ -459,10 +459,10 @@ async def execute_screen_tickers(args: Dict[str, Any], user_id: str) -> Dict[str
             logger.info(f"✅ LangGraph response received: {len(stocks_data)} entity_ids")
             
             # LangGraph numerical_panel already has correct format, minimal transformation needed
-            transformed_tickers = []
+            transformed_entities = []
             for entity_data in stocks_data:
                 # LangGraph uses composite_score (not composite), vola_z (not volatility_z)
-                transformed_tickers.append({
+                transformed_entities.append({
                     "entity_id": entity_data.get("entity_id"),
                     "composite_score": entity_data.get("composite_score", entity_data.get("composite", 0.0)),
                     "rank": entity_data.get("rank", 0),
@@ -482,9 +482,9 @@ async def execute_screen_tickers(args: Dict[str, Any], user_id: str) -> Dict[str
                 })
             
             mock_data = {
-                "entity_ids": transformed_tickers,
+                "entity_ids": transformed_entities,
                 "profile_used": profile,
-                "total_screened": len(transformed_tickers)
+                "total_screened": len(transformed_entities)
             }
             
     except httpx.HTTPStatusError as e:
@@ -688,26 +688,26 @@ async def execute_query_sentiment(args: Dict[str, Any], user_id: str) -> Dict[st
         logger.error(f"Error querying sentiment for {entity_id}: {str(e)}")
         raise
 
-async def execute_compare_tickers(args: Dict[str, Any], user_id: str) -> Dict[str, Any]:
+async def execute_compare_entities(args: Dict[str, Any], user_id: str) -> Dict[str, Any]:
     """
-    Execute compare_tickers tool via LangGraph comparison_node.
+    Execute compare_entities tool via LangGraph comparison_node.
     
     Phase 3: Calls actual omni_api_graph:8004/run with comparison query
     """
     entity_ids = args.get("entity_ids", [])
     criteria = args.get("criteria", "composite")
     
-    logger.info(f"⚖️  Executing compare_tickers: entity_ids={entity_ids}, criteria={criteria}")
+    logger.info(f"⚖️  Executing compare_entities: entity_ids={entity_ids}, criteria={criteria}")
     
     if len(entity_ids) < 2:
-        raise MCPError("compare_tickers requires at least 2 entity_ids", "INVALID_ARGS")
+        raise MCPError("compare_entities requires at least 2 entity_ids", "INVALID_ARGS")
     
     # Phase 3: Real comparison via LangGraph
     langgraph_url = os.getenv("LANGGRAPH_API", "http://omni_api_graph:8004")
     
     # Construct comparison query
-    tickers_str = " vs ".join(entity_ids)
-    query = f"compare {tickers_str}"
+    entities_str = " vs ".join(entity_ids)
+    query = f"compare {entities_str}"
     
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
@@ -848,10 +848,10 @@ async def execute_extract_semantic_context(args: Dict[str, Any], user_id: str) -
 
 # Mapping tool names to execution functions
 TOOL_EXECUTORS = {
-    "screen_tickers": execute_screen_tickers,
+    "screen_entities": execute_screen_entities,
     "generate_vee_summary": execute_generate_vee_summary,
     "query_sentiment": execute_query_sentiment,
-    "compare_tickers": execute_compare_tickers,
+    "compare_entities": execute_compare_entities,
     "extract_semantic_context": execute_extract_semantic_context
 }
 

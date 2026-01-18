@@ -802,7 +802,7 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 "needed_slots": ["entity_choice"],
                 "bundled_question": clarification,
                 "questions": [clarification],
-                "ticker_options": [{"entity_id": t, "name": entity_names.get(t, t)} for t in entity_ids],
+                "entity_options": [{"entity_id": t, "name": entity_names.get(t, t)} for t in entity_ids],
                 "semantic_fallback": True,
                 "proposed_changes": [],
                 "explainability": {

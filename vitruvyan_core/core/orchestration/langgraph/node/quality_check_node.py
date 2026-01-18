@@ -100,7 +100,7 @@ def _extract_entities_from_output(raw_output: Dict[str, Any]) -> List[str]:
     return []
 
 
-def _validate_ticker_status(entity_ids: List[str], pg: PostgresAgent) -> Dict[str, List[str]]:
+def _validate_entity_status(entity_ids: List[str], pg: PostgresAgent) -> Dict[str, List[str]]:
     """
     Validate entity_id active status in database
     
@@ -309,7 +309,7 @@ def quality_check_node(state: Dict[str, Any]) -> Dict[str, Any]:
             pg = PostgresAgent()
             
             # EntityId status validation
-            entity_validation = _validate_ticker_status(entity_ids, pg)
+            entity_validation = _validate_entity_status(entity_ids, pg)
             validation["errors"].extend(entity_validation["errors"])
             validation["warnings"].extend(entity_validation["warnings"])
             

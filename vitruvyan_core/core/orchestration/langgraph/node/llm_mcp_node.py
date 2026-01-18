@@ -88,7 +88,7 @@ async def execute_mcp_tool(tool_name: str, args: Dict[str, Any], user_id: str) -
     Execute a tool via MCP Server.
     
     Args:
-        tool_name: Tool to execute (e.g., "screen_tickers")
+        tool_name: Tool to execute (e.g., "screen_entities")
         args: Tool arguments
         user_id: User identifier for audit trail
     
@@ -264,7 +264,7 @@ If no tool matches, respond directly without tool calling."""
         if mcp_result.get("status") == "success":
             tool_data = mcp_result.get("data", {})
             
-            if tool_name == "screen_tickers":
+            if tool_name == "screen_entities":
                 # Update numerical_panel with screening results
                 updated_state["numerical_panel"] = tool_data.get("entity_ids", [])
                 updated_state["screening_data"] = {
@@ -292,7 +292,7 @@ If no tool matches, respond directly without tool calling."""
                     "sample_count": tool_data.get("sample_count")
                 }
             
-            elif tool_name == "compare_tickers":
+            elif tool_name == "compare_entities":
                 # Update comparison matrix
                 updated_state["comparison_matrix"] = {
                     "winner": tool_data.get("winner"),

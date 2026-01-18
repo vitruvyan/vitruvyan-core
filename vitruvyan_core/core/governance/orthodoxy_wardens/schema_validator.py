@@ -246,18 +246,18 @@ class DataQualityChecker:
         }
     
     @staticmethod
-    def check_ticker_validity(df: pd.DataFrame, ticker_column: str = "entity_id") -> Dict[str, Any]:
+    def check_entity_validity(df: pd.DataFrame, entity_column: str = "entity_id") -> Dict[str, Any]:
         """Check entity_id format and validity."""
-        if ticker_column not in df.columns:
-            return {"error": f"Column '{ticker_column}' not found"}
+        if entity_column not in df.columns:
+            return {"error": f"Column '{entity_column}' not found"}
         
-        unique_tickers = df[ticker_column].nunique()
-        invalid_tickers = df[df[ticker_column].str.len() > 5][ticker_column].unique()
+        unique_entities = df[entity_column].nunique()
+        invalid_entities = df[df[entity_column].str.len() > 5][entity_column].unique()
         
         return {
-            "unique_tickers": int(unique_tickers),
-            "invalid_count": len(invalid_tickers),
-            "sample_invalid": list(invalid_tickers[:5]) if len(invalid_tickers) > 0 else []
+            "unique_entities": int(unique_entities),
+            "invalid_count": len(invalid_entities),
+            "sample_invalid": list(invalid_entities[:5]) if len(invalid_entities) > 0 else []
         }
 
 

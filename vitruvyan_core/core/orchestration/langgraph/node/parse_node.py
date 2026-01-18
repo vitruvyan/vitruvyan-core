@@ -305,10 +305,10 @@ def parse_node(state: dict) -> dict:
     # --- 🎯 VAGUE QUERY RESOLUTION ---
     # If no entity_ids extracted and query looks vague, try explicit extraction
     if not entity_ids and _detect_vague_query(user_input):
-        vague_tickers = _extract_entity_from_vague_query(user_input)
-        if vague_tickers:
-            entity_ids = vague_tickers
-            merged_slots["context_entities"] = vague_tickers  # 🆕 Update fallback
+        vague_entities = _extract_entity_from_vague_query(user_input)
+        if vague_entities:
+            entity_ids = vague_entities
+            merged_slots["context_entities"] = vague_entities  # 🆕 Update fallback
 
     # Update state with merged slots (NO INTENT - delegated to intent_detection_node)
     state["input_text"] = user_input  # ✅ CRITICAL: Always preserve original user input

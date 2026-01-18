@@ -93,7 +93,7 @@ class Scribe:
             "successful": 0,
             "failed": 0,
             "errors": [],
-            "tickers_processed": []
+            "entities_processed": []
         }
         
         logger.info(f"🔬 Scribe starting expedition on {len(normalized_data)} entity_ids")
@@ -116,7 +116,7 @@ class Scribe:
                     self._store_volatility(entity_id, indicators["volatility"])
                     
                     results["successful"] += 1
-                    results["tickers_processed"].append(entity_id)
+                    results["entities_processed"].append(entity_id)
                     logger.info(f"✅ {entity_id} indicators calculated and stored")
                 else:
                     results["failed"] += 1

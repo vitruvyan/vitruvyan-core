@@ -317,7 +317,7 @@ def build_graph():
         
         route_value = state.get("route")
         intent_value = state.get("intent")
-        tickers_value = state.get("entity_ids")
+        entities_value = state.get("entity_ids")
         
         # 🔌 MCP Integration: Check if MCP should handle this route
         use_mcp = os.getenv("USE_MCP", "0") == "1"
@@ -334,7 +334,7 @@ def build_graph():
         print(f"🔀 [CONDITIONAL_EDGE] Evaluating route from 'decide' node:")
         print(f"  - state['route'] = '{route_value}'")
         print(f"  - state['intent'] = '{intent_value}'")
-        print(f"  - state['entity_ids'] = {tickers_value}")
+        print(f"  - state['entity_ids'] = {entities_value}")
         print(f"  - All state keys: {list(state.keys())}")
         print(f"🔀 Target node: '{route_value}'")
         print(f"{'🔀'*40}\n")
