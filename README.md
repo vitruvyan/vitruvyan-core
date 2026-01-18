@@ -286,3 +286,44 @@ See individual component READMEs:
 ---
 
 **Built with discipline. Extended with purpose.**
+
+---
+
+## 📜 Foundational Documents
+
+These documents define the immutable principles of the Vitruvyan cognitive architecture:
+
+### [Bus Invariants](docs/foundational/Vitruvyan_Bus_Invariants.md)
+Defines the non-negotiable technical constraints on the Cognitive Bus. The bus is a **substrate for correlation and memory**, never for interpretation or action.
+
+Key principles:
+- Bus primitives: publish, subscribe, get_history, snapshot, restore
+- Hard invariants: no payload inspection, no event synthesis, no orchestration
+- Amendment protocol for any changes to these constraints
+
+### [Epistemic Charter](docs/foundational/Vitruvyan_Epistemic_Charter.md)
+Defines the philosophical and epistemic principles. Vitruvyan is a **digital twin**, not an oracle.
+
+Key principles:
+- "Non so" is a valid and complete response
+- Never simulate certainty where there is uncertainty
+- Respect expert authority in their domains
+- Probabilistic reasoning everywhere
+
+### [Vertical Specification](docs/foundational/Vitruvyan_Vertical_Specification.md)
+Defines how to build domain-specific applications on the core.
+
+Key sections:
+- Three-layer architecture (Core, Adaptation, Vertical)
+- VerticalInterface contract
+- Domain ontology definition
+- Uncertainty model implementation
+
+---
+
+## 🗂️ Technical Debt
+
+See [Technical Debt Audit](docs/TECHNICAL_DEBT_AUDIT.md) for current abstraction status.
+
+The core contains ~134 files with financial-specific terminology that needs abstraction. This is documented for incremental cleanup.
+
