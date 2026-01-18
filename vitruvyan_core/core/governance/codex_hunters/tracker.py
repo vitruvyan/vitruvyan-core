@@ -1,12 +1,10 @@
-# core/agents/codex_hunters/tracker.py
 """
 🗺️ THE TRACKER - Codex Discovery Agent
 ========================================
 Tracks lost codices across multiple archives and data sources.
 
 Like Poggio Bracciolini discovering Lucretius in forgotten monasteries,
-The Tracker searches yfinance, Reddit, Google News, and FRED archives
-for lost financial manuscripts.
+The Tracker searches configurable data sources for lost knowledge.
 
 Publishes CodexEvent(type="codex.discovered") for downstream restoration.
 """
@@ -67,33 +65,31 @@ class Tracker(BaseHunter):
     """
     Multi-source data fetcher with intelligent rate limiting.
     
-    Supported sources:
-    - yfinance: Entity prices, fundamentals, historical data
-    - reddit: Social sentiment from financial subreddits
-    - google_news: News articles and headlines
-    - fred: Macro economic indicators
+    Supports configurable data sources for any domain.
     """
     
-    def __init__(self):
+    def __init__(self, sources_config: Dict[str, Any] = None):
         super().__init__("Tracker")
+        
+        # Default sources config (domain-agnostic placeholders)
+        if sources_config is None:
+            sources_config = {
+                "default_api": {"rate_limit_per_minute": 100, "description": "Default data source"},
+                "secondary_api": {"rate_limit_per_minute": 30, "description": "Secondary data source"},
+                "news_feed": {"rate_limit_per_minute": 60, "description": "News feed source"},
+                "macro_data": {"rate_limit_per_minute": 50, "description": "Macro data source"}
+            }
         
         # Rate limiters per source
         self.rate_limiters = {
-            "yfinance": RateLimiter(calls_per_minute=100),  # yfinance is generous
-            "reddit": RateLimiter(calls_per_minute=30),      # PRAW rate limits
-            "google_news": RateLimiter(calls_per_minute=60), # RSS is fast
-            "fred": RateLimiter(calls_per_minute=50),        # FRED API limit
+            source_name: RateLimiter(calls_per_minute=config["rate_limit_per_minute"])
+            for source_name, config in sources_config.items()
         }
-        
-        # Reddit client (lazy init)
-        self._reddit_client: Optional[praw.Reddit] = None
         
         # Track fetch statistics
         self.fetch_stats = {
-            "yfinance": {"success": 0, "failed": 0, "total_records": 0},
-            "reddit": {"success": 0, "failed": 0, "total_records": 0},
-            "google_news": {"success": 0, "failed": 0, "total_records": 0},
-            "fred": {"success": 0, "failed": 0, "total_records": 0},
+            source_name: {"success": 0, "failed": 0, "total_records": 0}
+            for source_name in sources_config.keys()
         }
     
     @property
@@ -107,47 +103,34 @@ class Tracker(BaseHunter):
             )
         return self._reddit_client
     
-    def fetch_yfinance_data(self, entity_id: str, period: str = "1mo") -> Dict[str, Any]:
+    def fetch_entity_data(self, entity_id: str, source: str, period: str = "1mo") -> Dict[str, Any]:
         """
-        Fetch entity data from yfinance.
+        Fetch entity data from a specific source.
         
+        This is a generic method. Verticals should implement source-specific fetchers
+        by extending this class or providing source configurations.
+        
+        Args:
+            entity_id: Entity identifier
+            source: Data source name (must be configured in rate_limiters)
+            period: Time period for data
+            
         Returns:
-            {
-                "entity_id": str,
-                "info": dict,           # Company fundamentals
-                "history": list[dict],  # Price history
-                "source": "yfinance",
-                "timestamp": str
-            }
+            Dict with entity data from the source
         """
-        self.rate_limiters["yfinance"].wait_if_needed()
+        if source not in self.rate_limiters:
+            raise ValueError(f"Unknown source: {source}")
         
-        try:
-            entity = yf.EntityId(entity_id)
-            info = entity.info
-            history = entity.history(period=period)
-            
-            # Convert DataFrame to list of dicts
-            history_data = []
-            for date, row in history.iterrows():
-                history_data.append({
-                    "date": date.strftime("%Y-%m-%d"),
-                    "open": float(row["Open"]),
-                    "high": float(row["High"]),
-                    "low": float(row["Low"]),
-                    "close": float(row["Close"]),
-                    "volume": int(row["Volume"]),
-                })
-            
-            result = {
-                "entity_id": entity_id,
-                "info": {
-                    "name": info.get("longName", entity_id),
-                    "sector": info.get("sector"),
-                    "industry": info.get("industry"),
-                    "market_cap": info.get("marketCap"),
-                    "pe_ratio": info.get("trailingPE"),
-                    "dividend_yield": info.get("dividendYield"),
+        self.rate_limiters[source].wait_if_needed()
+        
+        # Placeholder implementation - verticals should override
+        return {
+            "entity_id": entity_id,
+            "source": source,
+            "data": {},  # Placeholder
+            "timestamp": datetime.now().isoformat(),
+            "status": "not_implemented"
+        }
                 },
                 "history": history_data,
                 "source": "yfinance",

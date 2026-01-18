@@ -111,7 +111,7 @@ class EventHunter(BaseHunter):
             # Initialize Hunter team
             self._initialize_hunter_team()
             
-            # Subscribe to Conclave events
+            # Subscribe to Conclave events (configurable event names)
             self.redis_bus.subscribe("codex.data.refresh.requested", self._handle_data_refresh_event)
             self.redis_bus.subscribe("codex.data.discovery.requested", self._handle_discovery_event)
             
@@ -192,10 +192,10 @@ class EventHunter(BaseHunter):
                 self._publish_failure_response(event, "Invalid request payload")
                 return
             
-            # Extract expedition parameters
+            # Extract expedition parameters (domain-agnostic)
             entity_id = event.payload.get("entity_id")
             entity_ids = event.payload.get("entity_ids", [])
-            sources = event.payload.get("sources", ["yfinance", "reddit"])
+            sources = event.payload.get("sources", ["default_source"])  # Configurable sources
             priority = event.payload.get("priority", "medium")
             
             target_entities = [entity_id] if entity_id else entity_ids

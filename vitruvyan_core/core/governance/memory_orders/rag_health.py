@@ -30,7 +30,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def check_postgresql() -> Dict[str, Any]:
+def check_postgresql(
+    pg_table: str = "entities",
+    pg_embedded_column: str = "embedded",
+    conversations_table: str = "conversations"
+) -> Dict[str, Any]:
     """Check PostgreSQL health and key metrics."""
     try:
         pg = PostgresAgent()
@@ -40,17 +44,17 @@ def check_postgresql() -> Dict[str, Any]:
         if not result or result[0][0] != 1:
             return {"status": "unhealthy", "error": "Query returned unexpected result"}
         
-        # Get phrase counts
-        phrases_total = pg.fetch_all("SELECT COUNT(*) FROM phrases;")[0][0]
-        phrases_embedded = pg.fetch_all("SELECT COUNT(*) FROM phrases WHERE embedded = true;")[0][0]
+        # Get entity counts
+        entities_total = pg.fetch_all(f"SELECT COUNT(*) FROM {pg_table};")[0][0]
+        entities_embedded = pg.fetch_all(f"SELECT COUNT(*) FROM {pg_table} WHERE {pg_embedded_column} = true;")[0][0]
         
         # Get conversation count
-        conversations = pg.fetch_all("SELECT COUNT(*) FROM conversations;")[0][0]
+        conversations = pg.fetch_all(f"SELECT COUNT(*) FROM {conversations_table};")[0][0]
         
         return {
             "status": "healthy",
-            "phrases_total": phrases_total,
-            "phrases_embedded": phrases_embedded,
+            "entities_total": entities_total,
+            "entities_embedded": entities_embedded,
             "conversations": conversations,
             "response_time_ms": "<10"
         }
@@ -58,8 +62,11 @@ def check_postgresql() -> Dict[str, Any]:
         logger.error(f"PostgreSQL health check failed: {e}")
         return {"status": "unhealthy", "error": str(e)}
 
-def check_qdrant() -> Dict[str, Any]:
+def check_qdrant(collections_to_check: List[str] = None) -> Dict[str, Any]:
     """Check Qdrant health and collection metrics."""
+    if collections_to_check is None:
+        collections_to_check = ["entities_embeddings", "conversations_embeddings"]
+    
     try:
         # Health endpoint
         response = httpx.get("http://172.17.0.1:6333/", timeout=5.0)
@@ -67,8 +74,7 @@ def check_qdrant() -> Dict[str, Any]:
         
         # Get collection counts
         collections = {}
-        for col in ["phrases_embeddings", "conversations_embeddings", "momentum_vectors", 
-                    "trend_vectors", "volatility_vectors", "sentiment_embeddings"]:
+        for col in collections_to_check:
             try:
                 col_response = httpx.get(f"http://172.17.0.1:6333/collections/{col}", timeout=5.0)
                 col_response.raise_for_status()
@@ -140,12 +146,23 @@ def check_babel_gardens() -> Dict[str, Any]:
         logger.error(f"Babel Gardens health check failed: {e}")
         return {"status": "unhealthy", "error": str(e)}
 
-def check_memory_orders() -> Dict[str, Any]:
+def check_memory_orders(
+    pg_table: str = "entities",
+    pg_embedded_column: str = "embedded",
+    qdrant_collection: str = "entities_embeddings"
+) -> Dict[str, Any]:
     """Check Memory Orders sync and coherence status."""
     try:
-        # Coherence check
-        coherence = coherence_check()
-        sync_lag = get_sync_lag()
+        # Coherence check with parameters
+        coherence = coherence_check(
+            pg_table=pg_table,
+            qdrant_collection=qdrant_collection,
+            pg_embedded_column=pg_embedded_column
+        )
+        sync_lag = get_sync_lag(
+            pg_table=pg_table,
+            pg_embedded_column=pg_embedded_column
+        )
         
         # Determine overall status
         if coherence["status"] == "healthy" and sync_lag < 100:
@@ -166,21 +183,35 @@ def check_memory_orders() -> Dict[str, Any]:
         logger.error(f"Memory Orders health check failed: {e}")
         return {"status": "unhealthy", "error": str(e)}
 
-def get_rag_health() -> Dict[str, Any]:
+def get_rag_health(
+    pg_table: str = "entities",
+    pg_embedded_column: str = "embedded",
+    conversations_table: str = "conversations",
+    qdrant_collections: List[str] = None,
+    qdrant_main_collection: str = "entities_embeddings"
+) -> Dict[str, Any]:
     """
     Aggregate RAG system health check.
     
-    Returns comprehensive health report including:
-    - Overall system status
-    - Individual component health
-    - Key metrics and recommendations
+    Args:
+        pg_table: Main PostgreSQL table to check
+        pg_embedded_column: Embedded status column
+        conversations_table: Conversations table name
+        qdrant_collections: List of Qdrant collections to check
+        qdrant_main_collection: Main collection for coherence check
+    
+    Returns:
+        Comprehensive health report
     """
+    if qdrant_collections is None:
+        qdrant_collections = ["entities_embeddings", "conversations_embeddings"]
+    
     # Check all components
-    postgresql = check_postgresql()
-    qdrant = check_qdrant()
+    postgresql = check_postgresql(pg_table, pg_embedded_column, conversations_table)
+    qdrant = check_qdrant(qdrant_collections)
     embedding_api = check_embedding_api()
     babel_gardens = check_babel_gardens()
-    memory_orders = check_memory_orders()
+    memory_orders = check_memory_orders(pg_table, pg_embedded_column, qdrant_main_collection)
     
     # Determine overall status
     statuses = [
@@ -211,7 +242,7 @@ def get_rag_health() -> Dict[str, Any]:
             "memory_orders": memory_orders
         },
         "summary": {
-            "total_collections": 6,
+            "total_collections": len(qdrant_collections),
             "total_points": qdrant.get("total_points", 0),
             "coherence_status": memory_orders.get("coherence_status", "unknown"),
             "sync_lag": memory_orders.get("sync_lag", -1)
@@ -226,7 +257,7 @@ if __name__ == "__main__":
     print("RAG SYSTEM HEALTH CHECK")
     print("="*70 + "\n")
     
-    health = get_rag_health()
+    health = get_rag_health()  # Uses defaults
     
     print(f"Overall Status: {health['status'].upper()}")
     print(f"Timestamp: {health['timestamp']}\n")

@@ -362,6 +362,98 @@ class ConclaveHerald:
             logger.info("📯 Removed routing rule", event_key=event_key)
 
 
+
+    # ========================================================================
+    # REDIS STREAMS INTEGRATION (Level 1 Durable Transport)
+    # Added: 2026-01-18
+    # ========================================================================
+    
+    def enable_streams(self, host: str = 'localhost', port: int = 6379):
+        """Enable Redis Streams for durable event routing."""
+        from .streams import StreamBus
+        
+        self.stream_bus = StreamBus(host=host, port=port)
+        self.streams_enabled = True
+        
+        logger.info(
+            "📯 Herald Streams enabled",
+            host=host,
+            port=port,
+            orders=len(self.orders)
+        )
+    
+    async def broadcast_via_streams(
+        self,
+        domain: str,
+        intent: str,
+        payload: Dict[str, Any],
+        emitter: str = "herald"
+    ) -> Dict[str, Any]:
+        """Broadcast event via Redis Streams (durable)."""
+        if not hasattr(self, 'stream_bus') or not self.streams_enabled:
+            raise RuntimeError("Streams not enabled. Call enable_streams() first.")
+        
+        event_key = f"{domain}.{intent}"
+        target_orders = self.routing_rules.get(event_key, set())
+        
+        if not target_orders:
+            return {"routed": False, "reason": "no_routing_rules", "results": {}}
+        
+        results = {}
+        for order_name in target_orders:
+            try:
+                stream_channel = f"order:{order_name}:events"
+                
+                event_id = self.stream_bus.emit(
+                    channel=stream_channel,
+                    payload={
+                        "domain": domain,
+                        "intent": intent,
+                        "data": payload,
+                        "event_key": event_key
+                    },
+                    emitter=emitter,
+                    correlation_id=f"{domain}:{intent}"
+                )
+                
+                results[order_name] = {
+                    "success": True,
+                    "stream_id": event_id,
+                    "stream": stream_channel
+                }
+                
+            except Exception as e:
+                results[order_name] = {"success": False, "error": str(e)}
+        
+        successful = sum(1 for r in results.values() if r.get("success"))
+        
+        return {
+            "routed": successful > 0,
+            "broadcast_mode": "streams",
+            "target_orders": list(target_orders),
+            "successful": successful,
+            "total": len(target_orders),
+            "results": results
+        }
+    
+    async def hybrid_broadcast(
+        self,
+        domain: str,
+        intent: str,
+        payload: Dict[str, Any],
+        prefer_streams: bool = True
+    ) -> Dict[str, Any]:
+        """Hybrid broadcast — try Streams first, fallback to HTTP."""
+        if prefer_streams and hasattr(self, 'stream_bus') and self.streams_enabled:
+            try:
+                result = await self.broadcast_via_streams(domain, intent, payload)
+                if result.get("routed"):
+                    return result
+            except Exception as e:
+                logger.warning("📯 Streams failed, falling back to HTTP", error=str(e))
+        
+        return await self.route_event(domain, intent, payload)
+
 # Global Herald instance
 _herald: Optional[ConclaveHerald] = None
 
@@ -373,3 +465,157 @@ async def get_herald() -> ConclaveHerald:
     if _herald is None:
         _herald = ConclaveHerald()
     return _herald
+    # ========================================================================
+    # REDIS STREAMS INTEGRATION (Level 1 Durable Transport)
+    # Added: 2026-01-18
+    # ========================================================================
+    
+    def enable_streams(self, host: str = 'localhost', port: int = 6379):
+        """
+        Enable Redis Streams for durable event routing.
+        
+        This adds persistence to Herald's broadcasting — events survive
+        Order downtime and can be replayed.
+        
+        Usage:
+            herald = await get_herald()
+            herald.enable_streams()  # Now broadcasts use Streams
+        """
+        from .streams import StreamBus
+        
+        self.stream_bus = StreamBus(host=host, port=port)
+        self.streams_enabled = True
+        
+        logger.info(
+            "📯 Herald Streams enabled",
+            host=host,
+            port=port,
+            orders=len(self.orders)
+        )
+    
+    async def broadcast_via_streams(
+        self,
+        domain: str,
+        intent: str,
+        payload: Dict[str, Any],
+        emitter: str = "herald"
+    ) -> Dict[str, Any]:
+        """
+        Broadcast event via Redis Streams (durable).
+        
+        Unlike route_event (HTTP push), this uses Streams (pull model).
+        Orders must consume from their streams.
+        
+        Returns:
+            Dict with stream_ids for each target order
+        """
+        if not hasattr(self, 'stream_bus') or not self.streams_enabled:
+            raise RuntimeError("Streams not enabled. Call enable_streams() first.")
+        
+        event_key = f"{domain}.{intent}"
+        target_orders = self.routing_rules.get(event_key, set())
+        
+        if not target_orders:
+            logger.warning(
+                "📯 No routing rules for event (streams)",
+                event_key=event_key
+            )
+            return {
+                "routed": False,
+                "reason": "no_routing_rules",
+                "results": {}
+            }
+        
+        # Emit to each order's dedicated stream
+        results = {}
+        for order_name in target_orders:
+            try:
+                # Stream naming: "vitruvyan:order:{order_name}:events"
+                stream_channel = f"order:{order_name}:events"
+                
+                event_id = self.stream_bus.emit(
+                    channel=stream_channel,
+                    payload={
+                        "domain": domain,
+                        "intent": intent,
+                        "data": payload,
+                        "event_key": event_key
+                    },
+                    emitter=emitter,
+                    correlation_id=f"{domain}:{intent}"
+                )
+                
+                results[order_name] = {
+                    "success": True,
+                    "stream_id": event_id,
+                    "stream": stream_channel
+                }
+                
+                logger.debug(
+                    "📯 Broadcasted to stream",
+                    order=order_name,
+                    event_id=event_id,
+                    domain=domain,
+                    intent=intent
+                )
+                
+            except Exception as e:
+                results[order_name] = {
+                    "success": False,
+                    "error": str(e)
+                }
+                logger.error(
+                    "📯 Stream broadcast failed",
+                    order=order_name,
+                    error=str(e)
+                )
+        
+        successful = sum(1 for r in results.values() if r.get("success"))
+        
+        return {
+            "routed": successful > 0,
+            "broadcast_mode": "streams",
+            "target_orders": list(target_orders),
+            "successful": successful,
+            "total": len(target_orders),
+            "results": results
+        }
+    
+    async def hybrid_broadcast(
+        self,
+        domain: str,
+        intent: str,
+        payload: Dict[str, Any],
+        prefer_streams: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Hybrid broadcast — try Streams first, fallback to HTTP.
+        
+        Best of both worlds:
+        - Streams: Durable, replayable
+        - HTTP: Real-time, immediate feedback
+        
+        Args:
+            domain: Event domain
+            intent: Event intent
+            payload: Event data
+            prefer_streams: If True, try Streams first. If False, HTTP first.
+        
+        Returns:
+            Routing results with mode used
+        """
+        if prefer_streams and hasattr(self, 'stream_bus') and self.streams_enabled:
+            # Try Streams first
+            try:
+                result = await self.broadcast_via_streams(domain, intent, payload)
+                if result.get("routed"):
+                    return result
+            except Exception as e:
+                logger.warning(
+                    "📯 Streams failed, falling back to HTTP",
+                    error=str(e)
+                )
+        
+        # Fallback to HTTP
+        return await self.route_event(domain, intent, payload)
+

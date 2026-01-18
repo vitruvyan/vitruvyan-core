@@ -177,7 +177,39 @@ class PatternWeaverEngine:
         similarity_threshold: float = 0.4  # 🟣 LOWERED from 0.6 to 0.4 (Dec 10, 2025) - Financials matches at 0.41
     ) -> Dict[str, Any]:
         """
-        Main weaving function: extract concepts, sectors, regions from query.
+    def weave_patterns(
+        self,
+        query_text: str,
+        taxonomy: Dict[str, List[str]] = None,
+        collection_name: str = "weave_embeddings"
+    ) -> Dict[str, Any]:
+        """
+        Extract semantic context from query using configurable taxonomy.
+        
+        Args:
+            query_text: Text to analyze
+            taxonomy: Domain-specific categories (e.g., {"sectors": ["Tech", "Healthcare"]})
+            collection_name: Qdrant collection name
+            
+        Returns:
+            Dict with concepts, sectors, regions, risk profiles
+        """
+        if taxonomy is None:
+            # Generic defaults - verticals should provide their own
+            taxonomy = {
+                "concepts": [],
+                "sectors": [],
+                "regions": []
+            }
+        
+        # Use configured taxonomy instead of hardcoded financial concepts
+        # Implementation would search Qdrant with domain-specific embeddings
+        return {
+            "concepts": [],  # Would be populated from vector search
+            "sectors": taxonomy.get("sectors", []),
+            "regions": taxonomy.get("regions", []),
+            "risk_profiles": {}
+        }
         
         Args:
             query_text: User query text

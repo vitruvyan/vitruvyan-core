@@ -116,18 +116,19 @@ CURRENT MARKET ENVIRONMENT:
     def _get_entity_specific_context(self, entity_ids: List[str]) -> str:
         """Get specific context for mentioned entity_ids"""
         
-        # Sector mapping for context
-        tech_entities = ["EXAMPLE_ENTITY_1", "EXAMPLE_ENTITY_4", "EXAMPLE_ENTITY_5", "AMZN", "EXAMPLE_ENTITY_3", "EXAMPLE_ENTITY_2"]
-        finance_entities = ["JPM", "BAC", "WFC", "GS"]
+        # Generic entity classifications (verticals should configure their own)
+        # These are examples - in production, load from configuration
+        example_tech_entities = ["EXAMPLE_ENTITY_1", "EXAMPLE_ENTITY_4", "EXAMPLE_ENTITY_5"]
+        example_finance_entities = ["EXAMPLE_ENTITY_2", "EXAMPLE_ENTITY_3"]
         
         context_parts = []
         
         for entity_id in entity_ids:
-            if entity_id in tech_entities:
-                context_parts.append(f"{entity_id}: Part of AI/tech revolution theme")
-            elif entity_id in finance_entities:
-                context_parts.append(f"{entity_id}: Sensitive to interest rate environment")
-            # Add more sector classifications as needed
+            if entity_id in example_tech_entities:
+                context_parts.append(f"{entity_id}: Example technology entity")
+            elif entity_id in example_finance_entities:
+                context_parts.append(f"{entity_id}: Example finance entity")
+            # Verticals should implement their own classification logic
         
         return "ENTITY_ID-SPECIFIC CONTEXT:\n" + "\n".join(f"- {part}" for part in context_parts) if context_parts else ""
 

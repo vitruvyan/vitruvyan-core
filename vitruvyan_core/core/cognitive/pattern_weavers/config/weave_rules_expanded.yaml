@@ -1,8 +1,8 @@
 # core/pattern_weavers/config/weave_rules_expanded.yaml
-# Vitruvyan Pattern Weavers Manifest — 100+ Concepts
-# Author: Vitruvyan Sacred Orders Team (Nov 2025)
-# Purpose: Seed Qdrant collection "weave_embeddings" (production-ready)
-# Status: ✅ READY FOR DEPLOYMENT (Nov 9, 2025)
+# EXAMPLE: Financial Domain Taxonomy (DEPRECATED)
+# This is an example of financial taxonomy for reference.
+# Verticals should create their own taxonomy files with domain-specific concepts.
+# Status: EXAMPLE ONLY - DO NOT USE IN PRODUCTION
 
 concepts:
   # --- Financial Sectors ---

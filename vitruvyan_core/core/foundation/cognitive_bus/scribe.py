@@ -288,6 +288,118 @@ class ConclaveScribe:
         }
 
 
+
+    # ========================================================================
+    # REDIS STREAMS INTEGRATION (Level 1 Durable Audit Trail)
+    # Added: 2026-01-18
+    # ========================================================================
+    
+    def enable_streams(self, host: str = 'localhost', port: int = 6379):
+        """Enable Redis Streams for durable audit logging."""
+        from .streams import StreamBus
+        
+        self.stream_bus = StreamBus(host=host, port=port)
+        self.streams_enabled = True
+        
+        logger.info("Chronicle Streams enabled for audit trail", host=host, port=port)
+    
+    async def chronicle_to_stream(
+        self,
+        domain: str,
+        intent: str,
+        payload: Dict[str, Any],
+        timestamp: str,
+        source: str
+    ) -> Optional[str]:
+        """Chronicle event to Redis Streams (durable audit trail)."""
+        if not hasattr(self, 'stream_bus') or not self.streams_enabled:
+            return None
+        
+        try:
+            event_id = self.stream_bus.emit(
+                channel="audit:chronicles",
+                payload={
+                    "domain": domain,
+                    "intent": intent,
+                    "data": payload,
+                    "timestamp": timestamp,
+                    "source": source,
+                    "event_key": f"{domain}.{intent}"
+                },
+                emitter="scribe",
+                correlation_id=f"{domain}:{intent}"
+            )
+            
+            return event_id
+            
+        except Exception as e:
+            logger.error("Chronicle Failed to stream event", error=str(e))
+            return None
+    
+    async def chronicle_event_dual(
+        self,
+        domain: str,
+        intent: str,
+        payload: Dict[str, Any],
+        timestamp: str,
+        source: str
+    ) -> Dict[str, Any]:
+        """Chronicle event to BOTH file and stream (dual persistence)."""
+        results = {"file_success": False, "stream_id": None}
+        
+        try:
+            await self.chronicle_event(domain, intent, payload, timestamp, source)
+            results["file_success"] = True
+        except Exception:
+            pass
+        
+        if hasattr(self, 'stream_bus') and self.streams_enabled:
+            stream_id = await self.chronicle_to_stream(domain, intent, payload, timestamp, source)
+            results["stream_id"] = stream_id
+        
+        return results
+    
+    def get_audit_stream_info(self) -> Optional[Dict[str, Any]]:
+        """Get audit stream statistics."""
+        if not hasattr(self, 'stream_bus') or not self.streams_enabled:
+            return None
+        
+        try:
+            return self.stream_bus.stream_info("audit:chronicles")
+        except Exception:
+            return None
+    
+    async def replay_audit_trail(
+        self,
+        start_id: str = "0",
+        count: int = 100
+    ) -> List[Dict[str, Any]]:
+        """Replay events from audit stream."""
+        if not hasattr(self, 'stream_bus') or not self.streams_enabled:
+            return []
+        
+        try:
+            events = self.stream_bus.replay(
+                channel="audit:chronicles",
+                start_id=start_id,
+                count=count
+            )
+            
+            return [
+                {
+                    "stream_id": e.event_id,
+                    "timestamp": e.timestamp,
+                    "domain": e.payload.get("domain"),
+                    "intent": e.payload.get("intent"),
+                    "source": e.payload.get("source"),
+                    "data": e.payload.get("data")
+                }
+                for e in events
+            ]
+            
+        except Exception:
+            return []
+
 # Global Scribe instance
 _scribe: Optional[ConclaveScribe] = None
 
@@ -299,3 +411,195 @@ async def get_scribe() -> ConclaveScribe:
     if _scribe is None:
         _scribe = ConclaveScribe()
     return _scribe
+    # ========================================================================
+    # REDIS STREAMS INTEGRATION (Level 1 Durable Audit Trail)
+    # Added: 2026-01-18
+    # ========================================================================
+    
+    def enable_streams(self, host: str = 'localhost', port: int = 6379):
+        """
+        Enable Redis Streams for durable audit logging.
+        
+        This adds persistence layer to Scribe's chronicles — events
+        are stored in Redis Streams for real-time consumption and replay.
+        
+        Usage:
+            scribe = await get_scribe()
+            scribe.enable_streams()  # Dual logging: files + streams
+        """
+        from .streams import StreamBus
+        
+        self.stream_bus = StreamBus(host=host, port=port)
+        self.streams_enabled = True
+        
+        logger.info(
+            "Chronicle Streams enabled for audit trail",
+            host=host,
+            port=port
+        )
+    
+    async def chronicle_to_stream(
+        self,
+        domain: str,
+        intent: str,
+        payload: Dict[str, Any],
+        timestamp: str,
+        source: str
+    ) -> Optional[str]:
+        """
+        Chronicle event to Redis Streams (durable audit trail).
+        
+        This provides:
+        - Real-time audit log consumption
+        - Replayable history
+        - External system integration
+        
+        Returns:
+            Stream event ID if successful, None if disabled
+        """
+        if not hasattr(self, 'stream_bus') or not self.streams_enabled:
+            return None
+        
+        try:
+            event_id = self.stream_bus.emit(
+                channel="audit:chronicles",
+                payload={
+                    "domain": domain,
+                    "intent": intent,
+                    "data": payload,
+                    "timestamp": timestamp,
+                    "source": source,
+                    "event_key": f"{domain}.{intent}"
+                },
+                emitter="scribe",
+                correlation_id=f"{domain}:{intent}"
+            )
+            
+            logger.debug(
+                "Chronicle Event streamed to audit trail",
+                domain=domain,
+                intent=intent,
+                stream_id=event_id
+            )
+            
+            return event_id
+            
+        except Exception as e:
+            logger.error(
+                "Chronicle Failed to stream event to audit trail",
+                domain=domain,
+                intent=intent,
+                error=str(e)
+            )
+            return None
+    
+    async def chronicle_event_dual(
+        self,
+        domain: str,
+        intent: str,
+        payload: Dict[str, Any],
+        timestamp: str,
+        source: str
+    ) -> Dict[str, Any]:
+        """
+        Chronicle event to BOTH file and stream (dual persistence).
+        
+        This is the recommended method — provides:
+        - File: Long-term archival, grep-able
+        - Stream: Real-time, replayable, consumable
+        
+        Returns:
+            Dict with file_success and stream_id
+        """
+        results = {
+            "file_success": False,
+            "stream_id": None
+        }
+        
+        # Chronicle to file (existing method)
+        try:
+            await self.chronicle_event(domain, intent, payload, timestamp, source)
+            results["file_success"] = True
+        except Exception as e:
+            logger.error(
+                "Chronicle File chronicle failed",
+                error=str(e)
+            )
+        
+        # Chronicle to stream (if enabled)
+        if hasattr(self, 'stream_bus') and self.streams_enabled:
+            stream_id = await self.chronicle_to_stream(domain, intent, payload, timestamp, source)
+            results["stream_id"] = stream_id
+        
+        return results
+    
+    def get_audit_stream_info(self) -> Optional[Dict[str, Any]]:
+        """
+        Get audit stream statistics.
+        
+        Returns:
+            Stream info dict or None if streams disabled
+        """
+        if not hasattr(self, 'stream_bus') or not self.streams_enabled:
+            return None
+        
+        try:
+            return self.stream_bus.stream_info("audit:chronicles")
+        except Exception as e:
+            logger.error(
+                "Chronicle Failed to get audit stream info",
+                error=str(e)
+            )
+            return None
+    
+    async def replay_audit_trail(
+        self,
+        start_id: str = "0",
+        count: int = 100
+    ) -> List[Dict[str, Any]]:
+        """
+        Replay events from audit stream.
+        
+        Useful for:
+        - Debugging
+        - Compliance audits
+        - Event replay
+        - System recovery
+        
+        Args:
+            start_id: Stream ID to start from ("0" = beginning)
+            count: Max events to return
+        
+        Returns:
+            List of audit events
+        """
+        if not hasattr(self, 'stream_bus') or not self.streams_enabled:
+            logger.warning("Chronicle Streams not enabled, cannot replay")
+            return []
+        
+        try:
+            events = self.stream_bus.replay(
+                channel="audit:chronicles",
+                start_id=start_id,
+                count=count
+            )
+            
+            return [
+                {
+                    "stream_id": e.event_id,
+                    "timestamp": e.timestamp,
+                    "domain": e.payload.get("domain"),
+                    "intent": e.payload.get("intent"),
+                    "source": e.payload.get("source"),
+                    "data": e.payload.get("data")
+                }
+                for e in events
+            ]
+            
+        except Exception as e:
+            logger.error(
+                "Chronicle Failed to replay audit trail",
+                error=str(e)
+            )
+            return []
+

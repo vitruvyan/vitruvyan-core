@@ -83,3 +83,27 @@ __all__.extend([
     "subscribe_to_domain",
     "start_system_pulse",
 ])
+
+# ============================================================================
+# REDIS STREAMS — Durable Transport (Level 1)
+# ============================================================================
+# Added: 2026-01-18
+# Purpose: Persistent, replayable event transport with consumer groups
+# Invariant: The bus NEVER interprets payload content (Level 1 only)
+
+from .streams import (
+    StreamBus,
+    StreamEvent,
+    get_stream_bus,
+    emit,
+    consume,
+)
+
+__all__.extend([
+    # Streams (Durable Transport)
+    "StreamBus",
+    "StreamEvent",
+    "get_stream_bus",
+    "emit",
+    "consume",
+])

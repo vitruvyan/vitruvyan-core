@@ -402,19 +402,12 @@ class VEEEngine:
         }
 
 
-# Compatibility function with original interface
+# Compatibility function with original interface (DEPRECATED - use parameterized version)
 def explain_entity(entity_id: str, kpi: Dict[str, Any], 
                   profile: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
     """
-    Funzione di compatibilità con l'interfaccia VEE originale
-    
-    Args:
-        entity_id: Symbol del entity_id
-        kpi: KPI e metriche da analizzare
-        profile: Profilo utente opzionale
-        
-    Returns:
-        Dict con summary, technical, detailed (formato originale)
+    DEPRECATED: Use VEEEngine.explain_entity() with ExplainabilityProvider instead.
+    This function assumes financial KPIs and FinanceExplainabilityProvider.
     """
     from vitruvyan_core.domains.finance_explainability_provider import FinanceExplainabilityProvider
     
@@ -450,7 +443,7 @@ def vee_explainability_node(state: Dict[str, Any]) -> Dict[str, Any]:
         print("⚠️ Nessuna entità nello stato → skip VEE")
         return state
     
-    # Default to finance provider if not specified
+    # Default to finance provider if not specified (DEPRECATED - should be explicit)
     if explainability_provider is None:
         from vitruvyan_core.domains.finance_explainability_provider import FinanceExplainabilityProvider
         explainability_provider = FinanceExplainabilityProvider()

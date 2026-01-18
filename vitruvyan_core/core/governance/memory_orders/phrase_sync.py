@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
 """
-PHASE A3.3: Memory Orders - Phrase Sync Module
+PHASE A3.3: Memory Orders - Entity Sync Module
 Sacred Order: Memory (PostgreSQL ↔ Qdrant Coherence)
 
-Synchronizes unembedded phrases from PostgreSQL to Qdrant.
+Synchronizes unembedded entities from PostgreSQL to Qdrant.
 Ensures dual-memory coherence via scheduled sync jobs.
 
 Architecture:
-- Reads phrases with embedded=false from PostgreSQL
+- Reads entities with embedded=false from PostgreSQL (configurable)
 - Generates embeddings via vitruvyan_api_embedding:8010
-- Writes to Qdrant phrases_embeddings collection
-- Marks phrases as embedded=true in PostgreSQL
+- Writes to Qdrant entities_embeddings collection (configurable)
+- Marks entities as embedded=true in PostgreSQL
 - Logs sync metrics to PostgreSQL
 - Exposes Prometheus metrics
 
 Usage:
-    from core.agents.memory_orders.phrase_sync import sync_phrases_to_qdrant
+    from core.agents.memory_orders.phrase_sync import sync_entities_to_qdrant
     
-    # Sync next 1000 unembedded phrases
-    result = sync_phrases_to_qdrant(limit=1000)
-    print(f"Synced {result['synced']} phrases in {result['duration']:.2f}s")
+    # Sync next 1000 unembedded entities
+    result = sync_entities_to_qdrant(limit=1000)
+    print(f"Synced {result['synced']} entities in {result['duration']:.2f}s")
 """
 import httpx
 import uuid
@@ -33,15 +33,31 @@ import time
 logger = logging.getLogger(__name__)
 
 EMBEDDING_API_URL = "http://localhost:8010"
-COLLECTION_NAME = "phrases_embeddings"
+DEFAULT_COLLECTION_NAME = "entities_embeddings"
 VECTOR_SIZE = 384
 
-def sync_phrases_to_qdrant(limit: int = 1000) -> Dict[str, Any]:
+def sync_entities_to_qdrant(
+    pg_table: str = "entities",
+    pg_id_column: str = "id",
+    pg_text_column: str = "text",
+    pg_metadata_columns: List[str] = None,
+    pg_embedded_column: str = "embedded",
+    qdrant_collection: str = DEFAULT_COLLECTION_NAME,
+    embedding_api_url: str = EMBEDDING_API_URL,
+    limit: int = 1000
+) -> Dict[str, Any]:
     """
-    Sync unembedded phrases from PostgreSQL to Qdrant.
+    Sync unembedded entities from PostgreSQL to Qdrant.
     
     Args:
-        limit: Maximum number of phrases to sync in one run
+        pg_table: PostgreSQL table name (default: "entities")
+        pg_id_column: ID column name (default: "id")
+        pg_text_column: Text column to embed (default: "text")
+        pg_metadata_columns: Additional columns to include in payload (default: None)
+        pg_embedded_column: Embedded status column (default: "embedded")
+        qdrant_collection: Qdrant collection name (default: "entities_embeddings")
+        embedding_api_url: Embedding API URL (default: "http://localhost:8010")
+        limit: Maximum number of entities to sync in one run
         
     Returns:
         Dict with sync results: {
@@ -49,7 +65,7 @@ def sync_phrases_to_qdrant(limit: int = 1000) -> Dict[str, Any]:
             "synced": int,
             "failed": int,
             "duration": float,
-            "lag": int,  # Total unembedded phrases remaining
+            "lag": int,  # Total unembedded entities remaining
             "timestamp": str
         }
     """
@@ -57,21 +73,27 @@ def sync_phrases_to_qdrant(limit: int = 1000) -> Dict[str, Any]:
     pg = PostgresAgent()
     qdrant = QdrantAgent()
     
-    logger.info(f"🔄 Starting phrase sync (limit={limit})...")
+    logger.info(f"🔄 Starting entity sync (table={pg_table}, limit={limit})...")
     
     try:
-        # Fetch unembedded phrases
-        query = """
-            SELECT id, phrase_text, context_type, language, source, sentiment
-            FROM phrases 
-            WHERE embedded = false 
+        # Build column list for SELECT
+        select_columns = [pg_id_column, pg_text_column]
+        if pg_metadata_columns:
+            select_columns.extend(pg_metadata_columns)
+        
+        # Fetch unembedded entities
+        columns_str = ", ".join(select_columns)
+        query = f"""
+            SELECT {columns_str}
+            FROM {pg_table} 
+            WHERE {pg_embedded_column} = false 
             ORDER BY created_at ASC
             LIMIT %s;
         """
-        phrases = pg.fetch_all(query, (limit,))
+        entities = pg.fetch_all(query, (limit,))
         
-        if not phrases:
-            logger.info("✅ No unembedded phrases found. System coherent.")
+        if not entities:
+            logger.info("✅ No unembedded entities found. System coherent.")
             return {
                 "status": "success",
                 "synced": 0,
@@ -81,11 +103,11 @@ def sync_phrases_to_qdrant(limit: int = 1000) -> Dict[str, Any]:
                 "timestamp": datetime.now().isoformat()
             }
         
-        logger.info(f"📊 Found {len(phrases)} unembedded phrases")
+        logger.info(f"📊 Found {len(entities)} unembedded entities")
         
-        # Batch embed phrases (API limit: 100 per batch)
-        texts = [p[1] for p in phrases]  # phrase_text
-        phrase_ids = [p[0] for p in phrases]
+        # Batch embed entities (API limit: 100 per batch)
+        texts = [e[1] for e in entities]  # pg_text_column is index 1
+        entity_ids = [e[0] for e in entities]  # pg_id_column is index 0
         
         logger.info(f"🧠 Generating {len(texts)} embeddings...")
         
@@ -99,7 +121,7 @@ def sync_phrases_to_qdrant(limit: int = 1000) -> Dict[str, Any]:
                 logger.info(f"   Processing batch {i//BATCH_SIZE + 1}/{(len(texts)-1)//BATCH_SIZE + 1} ({len(batch_texts)} texts)")
                 
                 response = httpx.post(
-                    f"{EMBEDDING_API_URL}/v1/embeddings/batch",
+                    f"{embedding_api_url}/v1/embeddings/batch",
                     json={"texts": batch_texts},
                     timeout=120.0
                 )
@@ -116,36 +138,40 @@ def sync_phrases_to_qdrant(limit: int = 1000) -> Dict[str, Any]:
             return {
                 "status": "error",
                 "synced": 0,
-                "failed": len(phrases),
+                "failed": len(entities),
                 "duration": time.time() - start_time,
-                "lag": _count_unembedded(pg),
+                "lag": _count_unembedded(pg, pg_table, pg_embedded_column),
                 "timestamp": datetime.now().isoformat(),
                 "error": str(e)
             }
         
         # Prepare Qdrant points
         points = []
-        for phrase, embedding in zip(phrases, embeddings):
-            phrase_id, phrase_text, context_type, language, source, sentiment = phrase
+        for entity, embedding in zip(entities, embeddings):
+            entity_id = entity[0]  # pg_id_column
+            
+            # Build payload dynamically
+            payload = {
+                pg_text_column: entity[1],  # pg_text_column
+                "synced_at": datetime.now().isoformat()
+            }
+            
+            # Add metadata columns if specified
+            if pg_metadata_columns:
+                for i, col in enumerate(pg_metadata_columns):
+                    payload[col] = entity[i + 2]  # After id and text
             
             point = {
-                "id": phrase_id,  # Use PostgreSQL ID as integer (Qdrant accepts int or UUID)
+                "id": entity_id,  # Use PostgreSQL ID as integer (Qdrant accepts int or UUID)
                 "vector": embedding,
-                "payload": {
-                    "phrase_text": phrase_text,
-                    "context_type": context_type,
-                    "language": language or "en",
-                    "source": source,
-                    "sentiment": sentiment,
-                    "synced_at": datetime.now().isoformat()
-                }
+                "payload": payload
             }
             points.append(point)
         
         # Upsert to Qdrant
-        logger.info(f"💾 Upserting {len(points)} points to Qdrant...")
+        logger.info(f"💾 Upserting {len(points)} points to {qdrant_collection}...")
         try:
-            qdrant.upsert(COLLECTION_NAME, points)
+            qdrant.upsert(qdrant_collection, points)
         except Exception as e:
             logger.error(f"❌ Qdrant upsert error: {e}")
             return {
@@ -159,40 +185,40 @@ def sync_phrases_to_qdrant(limit: int = 1000) -> Dict[str, Any]:
             }
         
         # Mark as embedded in PostgreSQL
-        logger.info(f"✏️  Marking {len(phrase_ids)} phrases as embedded...")
+        logger.info(f"✏️  Marking {len(entity_ids)} entities as embedded...")
         try:
             with pg.connection.cursor() as cur:
-                update_query = """
-                    UPDATE phrases 
-                    SET embedded = true
-                    WHERE id = ANY(%s);
+                update_query = f"""
+                    UPDATE {pg_table} 
+                    SET {pg_embedded_column} = true
+                    WHERE {pg_id_column} = ANY(%s);
                 """
-                cur.execute(update_query, (phrase_ids,))
+                cur.execute(update_query, (entity_ids,))
                 pg.connection.commit()
         except Exception as e:
             logger.error(f"❌ PostgreSQL update error: {e}")
             # Embeddings are in Qdrant but not marked in PG - will retry next sync
             return {
                 "status": "partial",
-                "synced": len(phrases),
+                "synced": len(entities),
                 "failed": 0,
                 "duration": time.time() - start_time,
-                "lag": _count_unembedded(pg),
+                "lag": _count_unembedded(pg, pg_table, pg_embedded_column),
                 "timestamp": datetime.now().isoformat(),
                 "warning": "Embeddings created but PostgreSQL update failed"
             }
         
         # Log sync event
-        _log_sync_event(pg, len(phrases), time.time() - start_time)
+        _log_sync_event(pg, len(entities), time.time() - start_time)
         
         elapsed = time.time() - start_time
-        remaining = _count_unembedded(pg)
+        remaining = _count_unembedded(pg, pg_table, pg_embedded_column)
         
-        logger.info(f"✅ Sync complete: {len(phrases)} phrases in {elapsed:.2f}s ({remaining} remaining)")
+        logger.info(f"✅ Sync complete: {len(entities)} entities in {elapsed:.2f}s ({remaining} remaining)")
         
         return {
             "status": "success",
-            "synced": len(phrases),
+            "synced": len(entities),
             "failed": 0,
             "duration": elapsed,
             "lag": remaining,
@@ -206,15 +232,15 @@ def sync_phrases_to_qdrant(limit: int = 1000) -> Dict[str, Any]:
             "synced": 0,
             "failed": 0,
             "duration": time.time() - start_time,
-            "lag": _count_unembedded(pg),
+            "lag": _count_unembedded(pg, pg_table, pg_embedded_column),
             "timestamp": datetime.now().isoformat(),
             "error": str(e)
         }
 
-def _count_unembedded(pg: PostgresAgent) -> int:
-    """Count remaining unembedded phrases."""
+def _count_unembedded(pg: PostgresAgent, pg_table: str, pg_embedded_column: str) -> int:
+    """Count remaining unembedded entities."""
     try:
-        result = pg.fetch_all("SELECT COUNT(*) FROM phrases WHERE embedded = false;")
+        result = pg.fetch_all(f"SELECT COUNT(*) FROM {pg_table} WHERE {pg_embedded_column} = false;")
         return result[0][0] if result else 0
     except:
         return -1
@@ -224,7 +250,7 @@ def _log_sync_event(pg: PostgresAgent, count: int, duration: float):
     try:
         query = """
             INSERT INTO memory_sync_logs (sync_type, items_synced, duration_seconds, timestamp)
-            VALUES ('phrases', %s, %s, NOW())
+            VALUES ('entities', %s, %s, NOW())
             ON CONFLICT DO NOTHING;
         """
         pg.execute_query(query, (count, duration))
@@ -235,7 +261,7 @@ def _log_sync_event(pg: PostgresAgent, count: int, duration: float):
 if __name__ == "__main__":
     # Test sync
     logging.basicConfig(level=logging.INFO)
-    result = sync_phrases_to_qdrant(limit=10)
+    result = sync_entities_to_qdrant(limit=10)
     print(f"\n{'='*60}")
     print(f"SYNC TEST RESULT")
     print(f"{'='*60}")

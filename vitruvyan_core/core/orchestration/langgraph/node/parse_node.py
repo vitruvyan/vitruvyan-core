@@ -27,7 +27,7 @@ def _is_valid_entity(entity_id: str) -> bool:
 def _detect_vague_query(text: str) -> bool:
     """
     Detects vague queries where entity_id extraction failed but user intent is clear.
-    Examples: 'E NVDA?', 'What about Tesla?', 'anche TSLA', 'AAPL?'
+    Examples: 'E ENTITY_1?', 'What about ENTITY_2?', 'anche ENTITY_3', 'EXAMPLE_ENTITY_1?'
     """
     if not text:
         return False
