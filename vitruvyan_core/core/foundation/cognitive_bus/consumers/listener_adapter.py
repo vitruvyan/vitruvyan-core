@@ -1,5 +1,5 @@
 """
-    🔌 Listener Adapter — Migration Bridge
+🔌 Listener Adapter — Migration Bridge
 Enables existing pub/sub listeners to use Redis Streams
 
 This adapter allows gradual migration from pub/sub to Streams
@@ -7,7 +7,9 @@ without rewriting entire listener classes.
 """
 
 import asyncio
+import json
 import logging
+import os
 from typing import Dict, Any, List, Optional, Callable, Awaitable
 from datetime import datetime
 import structlog
@@ -46,9 +48,13 @@ class ListenerAdapter(BaseConsumer):
         sacred_channels: List[str],
         handler_method: str = "handle_sacred_message",
         consumer_type: ConsumerType = ConsumerType.ADVISORY,
-        stream_host: str = "localhost",
-        stream_port: int = 6379
+        stream_host: str = None,
+        stream_port: int = None
     ):
+        # Read from environment if not provided
+        stream_host = stream_host or os.getenv('REDIS_HOST', 'localhost')
+        stream_port = stream_port or int(os.getenv('REDIS_PORT', '6379'))
+        
         # Create config for BaseConsumer
         config = ConsumerConfig(
             name=name,
@@ -61,7 +67,8 @@ class ListenerAdapter(BaseConsumer):
         self.sacred_channels = sacred_channels
         self.handler_method = handler_method
         
-        # Initialize StreamBus
+        # Initialize StreamBus with environment-aware connection
+        logger.info(f"🔌 Connecting to Redis Streams", host=stream_host, port=stream_port)
         self.stream_bus = StreamBus(host=stream_host, port=stream_port)
         
         # Map channel names to stream names
@@ -103,21 +110,25 @@ class ListenerAdapter(BaseConsumer):
         """
         consumer_name = f"{self.name}:worker"
         
+        # Extract channel from stream_name (remove "stream:" prefix)
+        channel = stream_name.replace("stream:", "")
+        
         logger.info(f"👂 Consuming stream", stream=stream_name, consumer=consumer_name)
         
         while True:
             try:
-                # Consume batch (block=1000ms, count=10)
+                # Consume batch using correct StreamBus.consume() signature
+                # StreamBus.consume(channel, group, consumer, count, block_ms)
                 events = self.stream_bus.consume(
-                    stream_name=stream_name,
-                    group_name=self.consumer_group,
-                    consumer_name=consumer_name,
-                    block=1000,
-                    count=10
+                    channel=channel,
+                    group=self.consumer_group,
+                    consumer=consumer_name,
+                    count=10,
+                    block_ms=1000
                 )
                 
-                for event_id, event_data in events:
-                    await self._handle_event(stream_name, event_id, event_data)
+                for event in events:
+                    await self._handle_event(event)
                     
             except Exception as e:
                 logger.error(
@@ -128,46 +139,51 @@ class ListenerAdapter(BaseConsumer):
                 )
                 await asyncio.sleep(5)  # Back off on error
     
-    async def _handle_event(self, stream_name: str, event_id: str, event_data: Dict[str, Any]):
+    async def _handle_event(self, event):
         """
         Handle a single event by delegating to original listener.
+        
+        Args:
+            event: StreamEvent object
         """
         try:
             # Extract channel name from stream name
-            # "stream:vault.archive.requested" → "vault.archive.requested"
-            channel = stream_name.replace("stream:", "")
+            # "vitruvyan:vault.archive.requested" → "vault.archive.requested"
+            channel = event.stream.replace("vitruvyan:", "")
             
             # Build message compatible with old pub/sub format
             # Old: {"type": "message", "channel": "...", "data": b"..."}
-            # New: {"type": "message", "channel": "...", "data": event_data}
+            # New: Convert payload back to bytes if needed
+            payload_bytes = event.payload if isinstance(event.payload, bytes) else json.dumps(event.payload).encode()
+            
             message = {
                 "type": "message",
                 "channel": channel.encode(),
-                "data": event_data.get("payload", b"{}"),
-                "event_id": event_id,
-                "emitter": event_data.get("emitter", "unknown"),
-                "timestamp": event_data.get("timestamp", "")
+                "data": payload_bytes,
+                "event_id": event.event_id,
+                "emitter": event.emitter,
+                "timestamp": event.timestamp
             }
             
             # Call original handler
             handler = getattr(self.listener_instance, self.handler_method)
             await handler(message)
             
-            # Acknowledge event
-            self.stream_bus.ack(stream_name, self.consumer_group, event_id)
+            # Acknowledge event using StreamEvent object
+            self.stream_bus.ack(event, self.consumer_group)
             
             logger.debug(
                 f"✅ Event handled",
-                stream=stream_name,
-                event_id=event_id,
+                stream=event.stream,
+                event_id=event.event_id,
                 channel=channel
             )
             
         except Exception as e:
             logger.error(
                 f"❌ Error handling event",
-                stream=stream_name,
-                event_id=event_id,
+                stream=event.stream,
+                event_id=event.event_id,
                 error=str(e),
                 exc_info=True
             )
