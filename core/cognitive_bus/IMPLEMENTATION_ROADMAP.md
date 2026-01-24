@@ -1,41 +1,165 @@
 # Vitruvyan Cognitive Bus — Implementation Roadmap
 ## From Humble Bus to Socratic System
 
-**Version**: 1.0  
-**Date**: January 18, 2026  
-**Status**: Ready for Implementation  
-**Architecture**: Octopus-Mycelium Hybrid (see `Vitruvyan_Octopus_Mycelium_Architecture.md`)
+**Version**: 2.0  
+**Date**: January 24, 2026  
+**Status**: Hardening Complete / Phase 5 In Progress  
+**Architecture**: Redis Streams Canonical (Pub/Sub archived)
 
 ---
 
 ## Executive Summary
 
-This roadmap defines the implementation path from the current state (Redis Streams transport layer) to a complete Socratic cognitive system. The architecture follows the "Octopus with Mycelial Consciousness" model: autonomous consumers (tentacles) with minimal governance (brain) over a humble transport layer (mycelium).
+This roadmap defines the implementation path from the initial Pub/Sub+Streams hybrid to a production-ready Socratic cognitive system. As of **January 24, 2026**, the bus has been **fully hardened** (Phase 0) with Redis Streams as the canonical transport, establishing a solid foundation for specialized consumer development.
 
 **Total Duration**: 14 weeks  
-**Phases**: 7  
+**Phases**: 8 (Phase 0 added Jan 24, 2026)  
 **Core Deliverable**: A system that can explicitly declare "I don't know"
 
 ---
 
-## Current State (Completed)
+## Current State (Jan 24, 2026)
 
 | Component | Status | Location |
 |-----------|--------|----------|
-| Redis Streams (durable transport) | ✅ Complete | `streams.py` |
-| Herald (broadcast + streams) | ✅ Complete | `herald.py` (line 371: enable_streams) |
-| Scribe (audit + streams) | ✅ Complete | `scribe.py` |
-| Bus Invariants (formal constraints) | ✅ Complete | `Vitruvyan_Bus_Invariants.md` |
-| Epistemic Charter (philosophical foundation) | ✅ Complete | `Vitruvyan_Epistemic_Charter.md` |
-| Architecture Paper (theoretical basis) | ✅ Complete | `Vitruvyan_Octopus_Mycelium_Architecture.md` |
-| **BaseConsumer Pattern** | ✅ Complete | `consumers/base_consumer.py` (496 lines) |
-| **ListenerAdapter** | ✅ Complete | `consumers/listener_adapter.py` (330 lines) |
-| **ConsumerRegistry** | ✅ Complete | `consumers/registry.py` |
-| **WorkingMemory** | ✅ Complete | `consumers/working_memory.py` |
-| **Migration Guide** | ✅ Complete | `consumers/MIGRATION_GUIDE.md` (300 lines) |
-| **Test Suite** | ✅ 5/6 passed | `tests/test_listener_adapter.py` (170 lines) |
+| **Phase 0: Bus Hardening** | ✅ Complete | Multiple files (4 hours, Jan 24) |
+| Redis Streams (canonical transport) | ✅ Complete | `streams.py` (522 lines) |
+| TransportEvent (immutable) | ✅ Complete | `event_envelope.py` (lines 32-89) |
+| CognitiveEvent (causal chain) | ✅ Complete | `event_envelope.py` (lines 95-172) |
+| EventAdapter (layer conversion) | ✅ Complete | `event_envelope.py` (lines 180-269) |
+| StreamBus async wrappers | ✅ Complete | `streams.py` (connect, read_async) |
+| BaseConsumer integration | ✅ Complete | `base_consumer.py` (_consume_loop rewrite) |
+| Bus invariants enforcement | ✅ Complete | Code comments + `Vitruvyan_Bus_Invariants.md` |
+| E2E integration tests | ✅ 7/7 passing | `tests/test_bus_integration_e2e.py` |
+| Pub/Sub modules | ✅ Archived | `/archive/pub_sub_legacy/` (7 files) |
+| **Phase 2: BaseConsumer** | ✅ Complete | `consumers/base_consumer.py` (496 lines) |
+| **Phase 3: Orthodoxy Socratic** | ✅ Complete | Socratic pattern implemented |
+| **Phase 4: Working Memory** | ✅ Complete | `consumers/working_memory.py` |
+| **Phase 5: Specialized Consumers** | 🚧 75% | RiskGuardian ✅, NarrativeEngine partial |
 
-**The bus is humble. Phase 2 is 80% complete. Now we migrate listeners and build Orthodoxy.**
+**The bus is humble AND hardened. Pub/Sub is gone. Redis Streams is canonical. Phase 5 in progress.**
+
+---
+
+## 🆕 Phase 0: Bus Hardening (COMPLETE ✅)
+**Duration**: 4 hours (Jan 24, 2026)  
+**Objective**: Consolidate to single event backbone with enforced invariants
+
+### Why Phase 0?
+
+Before Phase 5 specialized consumers, we discovered **5 critical architectural issues**:
+1. **BaseConsumer broken**: _consume_loop() called non-existent bus.connect(), bus.read()
+2. **4 incompatible event models**: StreamEvent (streams.py), StreamEvent (base_consumer.py), SemanticEvent (heart.py), CognitiveEvent (redis_client.py)
+3. **Pub/Sub actively running**: herald.py, heart.py, redis_client.py in production
+4. **No E2E tests**: All tests used mocks, never touched real Redis
+5. **Bus invariants violated**: herald.py did semantic routing (INVARIANT 3 violation)
+
+**Decision**: Fix architecture BEFORE continuing Phase 5. User-approved full hardening.
+
+### Deliverables (All Complete)
+
+#### 0.1 Pub/Sub Archive ✅
+**Action**: Moved 7 Pub/Sub files to `/archive/pub_sub_legacy/`
+- heart.py: ConclaveHeart (async Pub/Sub publishing)
+- herald.py: ConclaveHerald (semantic routing — **VIOLATED INVARIANT 3**)
+- redis_client.py: RedisBusClient wrapper
+- scribe.py: Event persistence (depended on Pub/Sub)
+- pulse.py: System heartbeat monitor
+- orthodoxy_adaptation_listener.py: Pub/Sub listener
+- README.md: Migration guide
+
+**Impact**: Pub/Sub completely removed from runtime, safe recovery path via archive.
+
+#### 0.2 Canonical Event Envelope ✅
+**File**: `core/cognitive_bus/event_envelope.py` (330 lines)
+
+**2-Layer Model**:
+- **TransportEvent** (bus level, immutable):
+  ```python
+  @dataclass(frozen=True)
+  class TransportEvent:
+      stream, event_id, emitter, payload, timestamp, correlation_id
+  ```
+- **CognitiveEvent** (consumer level, causal chain):
+  ```python
+  @dataclass
+  class CognitiveEvent:
+      id, type, correlation_id, causation_id, trace_id, ...
+      def child() → CognitiveEvent  # Preserve causal chain
+  ```
+
+**EventAdapter**: Bidirectional conversion (transport ↔ cognitive)
+
+**Impact**: 4 incompatible models → 2 canonical models with explicit layer separation.
+
+#### 0.3 StreamBus Async Integration ✅
+**File**: `core/cognitive_bus/streams.py` (lines 449-518)
+
+**Added Methods**:
+- `async connect() → bool`: Async Redis connection via asyncio.to_thread
+- `async read_async(...) → List[TransportEvent]`: Async wrapper for consume()
+
+**Impact**: BaseConsumer can now call real async bus methods.
+
+#### 0.4 BaseConsumer._consume_loop() Rewrite ✅
+**File**: `core/cognitive_bus/consumers/base_consumer.py` (lines 330-406)
+
+**Before** (broken):
+```python
+await bus.connect()  # Method didn't exist
+await bus.read()     # Method didn't exist
+```
+
+**After** (functional):
+```python
+await bus.connect()  # Real async method
+transport_events = await bus.read_async(...)  # Real async wrapper
+cognitive_event = EventAdapter.transport_to_cognitive(te)
+result = await self.process(cognitive_event)
+await asyncio.to_thread(bus.ack, te, group)
+```
+
+**Impact**: BaseConsumer NOW RUNNABLE on real Redis Streams.
+
+#### 0.5 Bus Invariants Enforcement ✅
+**Files**: 
+- `streams.py` (lines 86-117): 4 invariants as code comments
+- `streams.py` (lines 521-543): _validate_invariants() method
+- `Vitruvyan_Bus_Invariants.md`: Version 2.0 update
+
+**4 Invariants**:
+1. Bus NEVER inspects payload content
+2. Bus NEVER correlates events
+3. Bus NEVER does semantic routing
+4. Bus NEVER synthesizes events
+
+**Impact**: Herald violations structurally prevented, invariants checkable at runtime.
+
+#### 0.6 E2E Integration Test Suite ✅
+**File**: `tests/test_bus_integration_e2e.py` (302 lines)
+
+**7 Tests** (all passing):
+1. test_bus_connection: StreamBus connects to Redis
+2. test_async_connection: Async wrapper functional
+3. test_emit_and_consume: emit → consume → ACK flow
+4. test_replay: Historical event retrieval
+5. test_baseconsumer_integration: BaseConsumer uses real bus
+6. test_consumer_group_load_balancing: Events distributed
+7. test_event_adapter_bidirectional: EventAdapter converts correctly
+
+**Impact**: First tests to touch real Redis, validates entire refactor.
+
+### Success Metrics (Phase 0)
+- ✅ Pub/Sub removal: 100% (7 files archived, 0 imports remain)
+- ✅ Event envelope: 100% (2 canonical models, all consumers updated)
+- ✅ BaseConsumer functional: 100% (_consume_loop() uses real methods)
+- ✅ Bus invariants: 100% (code documented, markdown updated, validation method)
+- ✅ E2E tests: 100% (7/7 passing, real Redis integration)
+- ✅ Overall hardening: 100% (4 hours actual, 6 phases complete)
+
+**Git Commit** (pending): "feat: Phase 0 - Bus Hardening (Redis Streams canonical)"
+
+**Status**: ✅ PRODUCTION READY
 
 ---
 
@@ -933,7 +1057,7 @@ await consumer_a.emit(StreamEvent(
 | VaultKeeper | Critical | Versioned archival, audit trail | 7 |
 | PatternWeaver | Advisory | Semantic contextualization | 8 |
 | NarrativeEngine | Advisory | Explanation generation | 9 |
-| SentinelGuardian | Critical | Continuous risk monitoring | 10 |
+| RiskGuardian | Critical | Continuous risk monitoring | 10 |
 
 ### 5.1 VaultKeeper (Hippocampus)
 ```python
@@ -968,11 +1092,11 @@ class NarrativeEngine(BaseConsumer):
     # Generates human-readable explanations
 ```
 
-### 5.4 SentinelGuardian (Amygdala)
+### 5.4 RiskGuardian (Amygdala)
 ```python
-class SentinelGuardian(BaseConsumer):
+class RiskGuardian(BaseConsumer):
     """
-    Threat detection - continuous monitoring.
+    Risk monitoring - continuous threat detection.
     Like amygdala: fast, parallel, can interrupt.
     """
     subscriptions = ["*"]  # Monitors everything
@@ -986,7 +1110,7 @@ class SentinelGuardian(BaseConsumer):
 - [ ] VaultKeeper archives 100% of events
 - [ ] PatternWeaver enriches queries with context
 - [ ] NarrativeEngine produces readable explanations
-- [ ] SentinelGuardian can interrupt on risk detection
+- [ ] RiskGuardian can interrupt on risk detection
 - [ ] Consumers coordinate via events, not direct calls
 - [ ] Integration test: full flow from query to response
 
