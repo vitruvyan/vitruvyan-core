@@ -13,7 +13,10 @@ Date: January 24, 2026
 
 import asyncio
 import logging
+import time
 from typing import List, Any, Dict
+
+from core.cognitive_bus.plasticity import metrics as plasticity_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +118,7 @@ class PlasticityLearningLoop:
             Dict with adaptation summary
         """
         logger.info("🧠 Learning cycle starting...")
+        start_time = time.time()  # Start timing
         
         results = {
             "cycle": self.cycles_run,
@@ -224,6 +228,15 @@ class PlasticityLearningLoop:
         logger.info(
             f"🔄 Learning cycle complete: "
             f"{results['adjustments_applied']}/{results['adjustments_proposed']} applied"
+        )
+        
+        # Record learning cycle metrics
+        duration = time.time() - start_time
+        plasticity_metrics.record_learning_cycle(
+            duration_seconds=duration,
+            adjustments_proposed=results['adjustments_proposed'],
+            adjustments_applied=results['adjustments_applied'],
+            adjustments_rejected=results['adjustments_rejected']
         )
         
         return results

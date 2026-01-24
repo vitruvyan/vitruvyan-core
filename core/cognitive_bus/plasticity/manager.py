@@ -27,6 +27,7 @@ from typing import Dict, List, Optional, Set, Tuple, Any
 from core.cognitive_bus.event_envelope import CognitiveEvent
 from core.cognitive_bus.consumers.base_consumer import ProcessResult
 from core.cognitive_bus.plasticity.outcome_tracker import OutcomeTracker
+from core.cognitive_bus.plasticity import metrics as plasticity_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -170,6 +171,9 @@ class PlasticityManager:
             f"PlasticityManager initialized for {consumer.__class__.__name__} "
             f"({len(bounds)} adjustable parameters, approval={require_approval})"
         )
+        
+        # Initialize metrics
+        self._update_consumer_metrics()
     
     async def propose_adjustment(
         self, 
@@ -200,10 +204,24 @@ class PlasticityManager:
             logger.warning(
                 f"⚠️ Unknown parameter: {parameter} (available: {list(self.bounds.keys())})"
             )
+            plasticity_metrics.record_adjustment(
+                consumer=self.consumer.__class__.__name__,
+                parameter=parameter,
+                delta=delta,
+                reason="unknown_parameter",
+                applied=False
+            )
             return ProcessResult.silence()
         
         if parameter in self.disabled_parameters:
             logger.info(f"🚫 Plasticity disabled for {parameter}")
+            plasticity_metrics.record_adjustment(
+                consumer=self.consumer.__class__.__name__,
+                parameter=parameter,
+                delta=delta,
+                reason="disabled",
+                applied=False
+            )
             return ProcessResult.silence()
         
         # 2. Calculate new value
@@ -229,6 +247,13 @@ class PlasticityManager:
                 f"{current:.3f} → {new_value:.3f} out of bounds "
                 f"[{bound.min_value}, {bound.max_value}]"
             )
+            plasticity_metrics.record_adjustment(
+                consumer=self.consumer.__class__.__name__,
+                parameter=parameter,
+                delta=delta,
+                reason="out_of_bounds",
+                applied=False
+            )
             return ProcessResult.silence()
         
         # 4. Record adjustment
@@ -245,6 +270,23 @@ class PlasticityManager:
         
         # 5. Apply adjustment
         setattr(self.consumer, parameter, new_value)
+        
+        # 5a. Record metrics
+        plasticity_metrics.record_adjustment(
+            consumer=self.consumer.__class__.__name__,
+            parameter=parameter,
+            delta=delta,
+            reason=reason,
+            applied=True
+        )
+        plasticity_metrics.update_parameter_state(
+            consumer=self.consumer.__class__.__name__,
+            parameter=parameter,
+            value=new_value,
+            min_value=bound.min_value,
+            max_value=bound.max_value,
+            disabled=False
+        )
         
         # 6. Emit adjustment event
         event = CognitiveEvent(
@@ -320,6 +362,25 @@ class PlasticityManager:
             adj = self.history.pop()
             setattr(self.consumer, adj.parameter, adj.old_value)
             
+            # Record rollback metrics
+            plasticity_metrics.record_rollback(
+                consumer=self.consumer.__class__.__name__,
+                parameter=adj.parameter,
+                steps=1
+            )
+            
+            # Update parameter state
+            bound = self.bounds.get(adj.parameter)
+            if bound:
+                plasticity_metrics.update_parameter_state(
+                    consumer=self.consumer.__class__.__name__,
+                    parameter=adj.parameter,
+                    value=adj.old_value,
+                    min_value=bound.min_value,
+                    max_value=bound.max_value,
+                    disabled=(adj.parameter in self.disabled_parameters)
+                )
+            
             event = CognitiveEvent(
                 id=str(uuid.uuid4()),
                 type="plasticity.rollback",
@@ -363,6 +424,7 @@ class PlasticityManager:
             f"🚫 Plasticity disabled for "
             f"{self.consumer.__class__.__name__}.{parameter}"
         )
+        self._update_consumer_metrics()
     
     def enable_plasticity(self, parameter: str) -> None:
         """
@@ -376,6 +438,7 @@ class PlasticityManager:
             f"✅ Plasticity enabled for "
             f"{self.consumer.__class__.__name__}.{parameter}"
         )
+        self._update_consumer_metrics()
     
     def get_current_value(self, parameter: str) -> Optional[float]:
         """Get current value of parameter."""
@@ -430,3 +493,14 @@ class PlasticityManager:
             }
         
         return stats
+    
+    def _update_consumer_metrics(self) -> None:
+        """
+        Update consumer-level metrics (adjustable/disabled counts).
+        Called after __init__, disable_plasticity, enable_plasticity.
+        """
+        plasticity_metrics.update_consumer_parameters(
+            consumer=self.consumer.__class__.__name__,
+            adjustable_count=len(self.bounds) - len(self.disabled_parameters),
+            disabled_count=len(self.disabled_parameters)
+        )

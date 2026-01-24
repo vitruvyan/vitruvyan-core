@@ -19,6 +19,7 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 
 from core.leo.postgres_agent import PostgresAgent
+from core.cognitive_bus.plasticity import metrics as plasticity_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -133,6 +134,15 @@ class OutcomeTracker:
                 f"✅ Outcome recorded: {outcome.consumer_name}.{outcome.parameter_name} "
                 f"outcome={outcome.outcome_value:.2f} ({outcome.outcome_type})"
             )
+            
+            # Record metrics
+            if outcome.parameter_name:
+                plasticity_metrics.record_outcome(
+                    consumer=outcome.consumer_name,
+                    parameter=outcome.parameter_name,
+                    outcome_type=outcome.outcome_type,
+                    outcome_value=outcome.outcome_value
+                )
         except Exception as e:
             logger.error(f"Failed to record outcome: {e}")
             raise RuntimeError(f"Outcome recording failed: {e}") from e
@@ -242,6 +252,13 @@ class OutcomeTracker:
         logger.info(
             f"📊 Success rate for {consumer_name}.{parameter_name}: "
             f"{success_rate:.2%} (n={len(outcomes)})"
+        )
+        
+        # Update metrics
+        plasticity_metrics.update_success_rate(
+            consumer=consumer_name,
+            parameter=parameter_name,
+            success_rate=success_rate
         )
         
         return success_rate
