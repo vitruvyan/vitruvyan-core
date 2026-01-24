@@ -9,6 +9,7 @@ Modules:
 - outcome_tracker: Links decisions to outcomes for learning feedback
 - manager: Governs parameter adjustments with bounds enforcement
 - learning_loop: Periodic analysis and adaptation
+- metrics: Prometheus metrics for observability
 
 Philosophy:
 -----------
@@ -33,13 +34,17 @@ from core.cognitive_bus.plasticity.learning_loop import (
     PlasticityLearningLoop
 )
 
+# Metrics module (for optional Prometheus integration)
+from core.cognitive_bus.plasticity import metrics
+
 __all__ = [
     "Outcome",
     "OutcomeTracker",
     "ParameterBounds",
     "Adjustment",
     "PlasticityManager",
-    "PlasticityLearningLoop"
+    "PlasticityLearningLoop",
+    "metrics"
 ]
 
 __version__ = "1.0.0"
