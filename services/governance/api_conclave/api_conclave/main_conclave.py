@@ -21,7 +21,7 @@ import structlog
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 # Import cognitive bus components
-from core.cognitive_bus import (
+from vitruvyan_core.core.foundation.cognitive_bus import (
     get_heart, get_herald, get_pulse, get_scribe, get_lexicon,
     publish_event, subscribe_to_domain, start_system_pulse
 )
