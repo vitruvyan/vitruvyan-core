@@ -1,0 +1,105 @@
+name: Vitruvyan Docs Synapse — Cognitive Corpus Auto-Generation
+
+on:
+  # 🧭 Manual invocation only — autonomous runs disabled for cost & control
+  workflow_dispatch:
+    inputs:
+      component:
+        description: 'Componente o Ordine da rigenerare (default: all)'
+        required: false
+        type: choice
+        options:
+        - 'all'
+        - 'langgraph'
+        - 'crewai'
+        - 'neural_engine'
+        - 'sentiment'
+        - 'appendices'
+        default: 'all'
+      force_regenerate:
+        description: 'Forza rigenerazione completa del Corpus'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  regenerate-corpus:
+    runs-on: ubuntu-latest
+    name: 🧠 Recompose Vitruvyan Corpus
+    steps:
+      - name: 🏛 Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: 🧬 Setup Python Environment
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: 📦 Install Core Dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install openai requests markdownlint-cli
+
+      - name: 🧩 Detect Modified Components
+        id: changes
+        run: |
+          echo "🔎 Detecting cognitive deltas..."
+          for path in "core/langgraph/" "core/crewai/" "core/logic/neural_engine/" "core/sentiment/" ".github/"; do
+            if git diff --name-only HEAD~1 | grep -q "$path"; then
+              echo "${path}_changed=true" >> $GITHUB_OUTPUT
+              echo "⚡ Change detected in $path"
+            fi
+          done
+
+      - name: 🧠 Generate Documentation (Vitruvyan Docs Synapse)
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DB_IT: ${{ secrets.NOTION_DB_IT }}
+          NOTION_DB_EN: ${{ secrets.NOTION_DB_EN }}
+          COMPONENT_FILTER: ${{ github.event.inputs.component || 'all' }}
+          FORCE_REGENERATE: ${{ github.event.inputs.force_regenerate || 'false' }}
+        run: |
+          cd core/vitruvyan_docs_synapse
+          echo "🧠 Synchronizing the Orders of Knowledge..."
+          if [ "$COMPONENT_FILTER" != "all" ]; then
+            echo "📚 Selective regeneration → $COMPONENT_FILTER"
+            python3 curator_agent.py --component $COMPONENT_FILTER
+          else
+            echo "📜 Full corpus regeneration initiated"
+            python3 curator_agent.py
+          fi
+
+      - name: 🧾 Validate Appendix Integrity
+        run: |
+          echo "🔍 Validating epistemic structure of the Corpus..."
+          declare -a ORDERS=("A_Neural_engine" "B_Proprietary_Algorithms" "C_Epistemic_Roadmap_2026" "D_Truth_and_Integrity_Layer" "E_RAG_System" "F_Conversational_Layer")
+          
+          for order in "${ORDERS[@]}"; do
+            file=".github/Vitruvyan_Appendix_${order}.md"
+            if [ -f "$file" ]; then
+              echo "🕯 Validating Order ${order}..."
+              markdownlint "$file" || echo "⚠️ Minor deviations in $file"
+            else
+              echo "⚠️ Missing Appendix ${order} — check Archivarium consistency."
+            fi
+          done
+          
+          echo "✅ All available Appendices validated."
+          echo "📚 Corpus complete:"
+          ls -1 .github/Vitruvyan_Appendix_*.md
+
+      - name: 🧱 Commit Archivarium Update
+        run: |
+          git config --local user.email "docs@vitruvyan.com"
+          git config --local user.name "Vitruvyan Docs Synapse"
+          git add docs_new/generated/
+          git add .github/Vitruvyan_Appendix_*.md
+          git commit -m "📜 Auto-update: Synaptic regeneration of Vitruvyan Corpus" || echo "No changes detected."
+          git push
+
+      - name: 🌿 Final Acknowledgment
+        run: |
+          echo "✨ Vitruvyan Corpus regeneration complete."
+          echo "📖 Appendix F — Conversational Reasoning Layer integrated."
+          echo "🧠 The Mind of Vitruvyan expands."

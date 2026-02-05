@@ -1,0 +1,49 @@
+#!/bin/bash
+# Vitruvyan Pre-Commit Hook
+# Prevents committing tests with hardcoded FAANG tickers
+
+echo "🧪 Vitruvyan Pre-Commit: Checking test diversity..."
+
+# Check for hardcoded FAANG in test files (excluding test_data_generator.py)
+FAANG_PATTERN="['\"]AAPL['\"]|['\"]NVDA['\"]|['\"]TSLA['\"]|['\"]MSFT['\"]|['\"]GOOGL['\"]|['\"]AMZN['\"]|['\"]META['\"]"
+
+FILES_TO_CHECK=$(git diff --cached --name-only --diff-filter=ACM | grep "^tests/.*\.py$" | grep -v "test_data_generator.py")
+
+if [ -z "$FILES_TO_CHECK" ]; then
+    echo "✅ No test files to check"
+    exit 0
+fi
+
+echo "Checking files:"
+echo "$FILES_TO_CHECK" | sed 's/^/  - /'
+
+# Check each file
+FOUND_VIOLATIONS=0
+for FILE in $FILES_TO_CHECK; do
+    if grep -qE "$FAANG_PATTERN" "$FILE"; then
+        echo "❌ Found hardcoded FAANG ticker in: $FILE"
+        grep -nE "$FAANG_PATTERN" "$FILE" | head -5
+        FOUND_VIOLATIONS=1
+    fi
+done
+
+if [ $FOUND_VIOLATIONS -eq 1 ]; then
+    echo ""
+    echo "⚠️  COMMIT BLOCKED: Hardcoded FAANG tickers detected in tests"
+    echo ""
+    echo "Why: Current conversational memory has 970 biased test conversations"
+    echo "     Repeating AAPL/NVDA/TSLA/MSFT/GOOGL inflates similarity scores"
+    echo ""
+    echo "Solution: Use test_data_generator.py for diverse queries"
+    echo ""
+    echo "Example:"
+    echo "  from tests.test_data_generator import generate_query"
+    echo "  query = generate_query('momentum')  # Auto-generates SHOP, PLTR, etc."
+    echo ""
+    echo "See: tests/TESTING_GUIDELINES.md"
+    echo ""
+    exit 1
+fi
+
+echo "✅ No hardcoded FAANG tickers found - commit allowed"
+exit 0
