@@ -5,7 +5,7 @@ Redis Streams — Durable Event Transport (Level 1)
 This module provides persistent, replayable event transport using Redis Streams.
 It is LEVEL 1 ONLY — pure transport, no interpretation, no correlation.
 
-Key differences from Pub/Sub:
+Key differences from Pub/Sub (DEPRECATED - archived Jan 24, 2026):
 - Persistence: Events survive subscriber downtime
 - Consumer Groups: Multiple consumers can process events cooperatively
 - Acknowledgment: At-least-once delivery guarantee
@@ -18,7 +18,8 @@ Architecture:
     Example: "vitruvyan:codex:entity_updated"
 
 Usage:
-    from core.foundation.cognitive_bus.streams import StreamBus
+    from .streams import StreamBus
+    from .event_envelope import TransportEvent
     
     bus = StreamBus()
     
@@ -28,7 +29,7 @@ Usage:
     # Consume (dedicated worker)
     for event in bus.consume("codex:entity_updated", group="indexer", consumer="worker-1"):
         process(event)
-        bus.ack(event)
+        bus.ack(event, group="indexer")
 
 Invariants (from Vitruvyan_Bus_Invariants.md):
     1. The bus NEVER interprets payload content
@@ -38,60 +39,45 @@ Invariants (from Vitruvyan_Bus_Invariants.md):
 
 Author: Vitruvyan Core Team
 Created: 2026-01-18
+Hardened: 2026-01-24
 """
 
 import os
 import json
 import logging
 import time
+import asyncio
+import itertools
+from typing import Dict, Any, Optional, List, Generator
+from datetime import datetime
+from dataclasses import dataclass
+import redis
+import structlog
+
+# Import Prometheus metrics
+from .metrics import (
+    record_scribe_write,
+    update_stream_health,
+    stream_last_event_timestamp
+)
 from datetime import datetime
 from typing import Any, Dict, Generator, List, Optional, Tuple
-from dataclasses import dataclass, asdict, field
 import redis
 from redis.exceptions import ConnectionError, ResponseError
+
+# Import canonical event envelope
+from .event_envelope import TransportEvent
 
 logger = logging.getLogger(__name__)
 
 
 # ============================================================================
-# DATA STRUCTURES
+# DATA STRUCTURES (Imported from event_envelope.py)
 # ============================================================================
 
-@dataclass
-class StreamEvent:
-    """
-    Immutable event structure for Redis Streams.
-    
-    The bus does NOT interpret these fields — they are opaque containers.
-    Meaning is assigned by the vertical, not the core.
-    """
-    stream: str                    # Stream name (e.g., "vitruvyan:codex:entity_updated")
-    event_id: str                  # Redis-assigned ID (e.g., "1705123456789-0")
-    emitter: str                   # Source service identifier
-    payload: Dict[str, Any]        # Opaque data — bus doesn't look inside
-    timestamp: str                 # ISO 8601 timestamp
-    correlation_id: Optional[str] = None  # Optional chain tracking
-    
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
-    
-    @classmethod
-    def from_redis(cls, stream: str, event_id: str, data: Dict[bytes, bytes]) -> 'StreamEvent':
-        """Reconstruct event from Redis XREAD response."""
-        # Decode bytes to strings
-        decoded = {k.decode(): v.decode() for k, v in data.items()}
-        
-        # Parse JSON payload
-        payload = json.loads(decoded.get('payload', '{}'))
-        
-        return cls(
-            stream=stream,
-            event_id=event_id,
-            emitter=decoded.get('emitter', 'unknown'),
-            payload=payload,
-            timestamp=decoded.get('timestamp', ''),
-            correlation_id=decoded.get('correlation_id')
-        )
+# StreamEvent is now defined in event_envelope.py as TransportEvent
+# Kept here as alias for backward compatibility during migration
+StreamEvent = TransportEvent
 
 
 # ============================================================================
@@ -111,6 +97,36 @@ class StreamBus:
     # Stream retention: 7 days or 100K messages (whichever first)
     DEFAULT_MAX_LEN = 100_000
     DEFAULT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000  # 7 days in ms
+    
+    # ========================================================================
+    # BUS INVARIANTS (Enforced structurally - Phase 4, Jan 24, 2026)
+    # ========================================================================
+    # These are ARCHITECTURAL LAWS. Violations are programming errors.
+    #
+    # INVARIANT 1: Bus NEVER inspects payload content
+    #   - payload is Dict[str, Any] — OPAQUE to bus
+    #   - Bus only serializes/deserializes JSON
+    #   - NO conditional logic based on payload keys/values
+    #
+    # INVARIANT 2: Bus NEVER correlates events
+    #   - Bus doesn't understand causal chains
+    #   - correlation_id, trace_id are just strings to bus
+    #   - Correlation logic lives in consumers (Layer 2)
+    #
+    # INVARIANT 3: Bus NEVER does semantic routing
+    #   - Stream names are just namespaces
+    #   - Bus doesn't route based on event type
+    #   - Consumers subscribe to streams they care about
+    #
+    # INVARIANT 4: Bus NEVER synthesizes events
+    #   - Bus only transports what it receives
+    #   - NO automatic event generation
+    #   - NO event transformation
+    #
+    # ENFORCEMENT: Code review + architectural review required for ANY
+    #              changes to StreamBus that involve payload access beyond
+    #              JSON serialization.
+    # ========================================================================
     
     def __init__(
         self,
@@ -148,7 +164,7 @@ class StreamBus:
                 db=self.db,
                 password=self.password,
                 decode_responses=False,  # We handle decoding manually
-                socket_timeout=5.0,
+                socket_timeout=10.0,  # Must be > block_ms in consume (5000ms)
                 socket_connect_timeout=5.0,
                 retry_on_timeout=True
             )
@@ -200,27 +216,40 @@ class StreamBus:
             Event ID assigned by Redis (e.g., "1705123456789-0")
         """
         stream = self._stream_name(channel)
+        start_time = time.time()
         
-        # Prepare fields (Redis Streams store field-value pairs)
-        fields = {
-            'emitter': emitter,
-            'payload': json.dumps(payload),
-            'timestamp': datetime.utcnow().isoformat() + 'Z',
-        }
-        if correlation_id:
-            fields['correlation_id'] = correlation_id
-        
-        # XADD with approximate trimming
-        max_len = max_len or self.DEFAULT_MAX_LEN
-        event_id = self.client.xadd(
-            stream,
-            fields,
-            maxlen=max_len,
-            approximate=True  # ~ flag for efficient trimming
-        )
-        
-        logger.debug(f"📤 Emitted to {stream}: {event_id}")
-        return event_id.decode() if isinstance(event_id, bytes) else event_id
+        try:
+            # Prepare fields (Redis Streams store field-value pairs)
+            fields = {
+                'emitter': emitter,
+                'payload': json.dumps(payload),
+                'timestamp': datetime.utcnow().isoformat() + 'Z',
+            }
+            if correlation_id:
+                fields['correlation_id'] = correlation_id
+            
+            # XADD with approximate trimming
+            max_len = max_len or self.DEFAULT_MAX_LEN
+            event_id = self.client.xadd(
+                stream,
+                fields,
+                maxlen=max_len,
+                approximate=True  # ~ flag for efficient trimming
+            )
+            
+            # Record metrics
+            duration = time.time() - start_time
+            record_scribe_write(stream, status="success", duration=duration)
+            stream_last_event_timestamp.labels(stream=stream).set(time.time())
+            
+            logger.debug(f"📤 Emitted to {stream}: {event_id}")
+            return event_id.decode() if isinstance(event_id, bytes) else event_id
+            
+        except Exception as e:
+            duration = time.time() - start_time
+            record_scribe_write(stream, status="failed", duration=duration)
+            logger.error(f"❌ Failed to emit to {stream}: {e}")
+            raise
     
     # ========================================================================
     # CONSUME (Read from Stream)
@@ -248,12 +277,21 @@ class StreamBus:
         """
         stream = self._stream_name(channel)
         try:
-            self.client.xgroup_create(stream, group, id=start_id, mkstream=True)
+            # DON'T use mkstream=True - streams must be created by publishers, not consumers
+            # This prevents ReadOnlyError when connecting to replicas
+            self.client.xgroup_create(stream, group, id=start_id, mkstream=False)
             logger.info(f"✅ Created consumer group '{group}' on {stream}")
             return True
         except ResponseError as e:
-            if "BUSYGROUP" in str(e):
+            error_msg = str(e)
+            # DEBUG: Log full error details
+            logger.debug(f"🐛 xgroup_create error: {error_msg!r} (type: {type(e).__name__})")
+            
+            if "BUSYGROUP" in error_msg:
                 logger.debug(f"Consumer group '{group}' already exists on {stream}")
+                return True  # ✅ FIX: Group exists = SUCCESS (not failure!)
+            elif "no such key" in error_msg.lower():
+                logger.warning(f"⚠️ Stream {stream} doesn't exist yet, skipping consumer group creation")
                 return False
             raise
     
@@ -288,8 +326,22 @@ class StreamBus:
         """
         stream = self._stream_name(channel)
         
-        # Ensure group exists
-        self.create_consumer_group(channel, group)
+        # Retry loop: wait for stream to be created (max 60 attempts = 60s)
+        for attempt in range(60):
+            group_created = self.create_consumer_group(channel, group)
+            if group_created:
+                break
+            
+            if attempt == 0:
+                logger.warning(f"⚠️ Stream {stream} not ready yet, waiting for creation...")
+            
+            time.sleep(1)  # Wait 1s before retry
+            
+            if attempt == 59:
+                logger.error(f"❌ Stream {stream} never created after 60s, aborting consume()")
+                return  # Exit generator, don't loop forever on non-existent stream
+        
+        logger.info(f"✅ Consumer {consumer} connected to {stream} (group: {group})")
         
         while True:
             try:
@@ -310,7 +362,7 @@ class StreamBus:
                     stream_str = stream_name.decode() if isinstance(stream_name, bytes) else stream_name
                     for event_id, data in events:
                         event_id_str = event_id.decode() if isinstance(event_id, bytes) else event_id
-                        yield StreamEvent.from_redis(stream_str, event_id_str, data)
+                        yield TransportEvent.from_redis(stream_str, event_id_str, data)
                         
             except ConnectionError as e:
                 logger.warning(f"Connection lost, reconnecting: {e}")
@@ -372,7 +424,7 @@ class StreamBus:
         events = []
         for event_id, data in response:
             event_id_str = event_id.decode() if isinstance(event_id, bytes) else event_id
-            events.append(StreamEvent.from_redis(stream, event_id_str, data))
+            events.append(TransportEvent.from_redis(stream, event_id_str, data))
         
         return events
     
@@ -462,6 +514,93 @@ class StreamBus:
                 'error': str(e),
                 'timestamp': datetime.utcnow().isoformat() + 'Z'
             }
+    
+    # ========================================================================
+    # ASYNC WRAPPERS (Phase 3 - Jan 24, 2026)
+    # ========================================================================
+    
+    async def connect(self) -> bool:
+        """
+        Async connection wrapper for BaseConsumer compatibility.
+        
+        Wraps synchronous _connect() in a thread to avoid blocking async event loop.
+        
+        Returns:
+            True if connected successfully
+        """
+        try:
+            await asyncio.to_thread(self._connect)
+            return True
+        except ConnectionError as e:
+            logger.error(f"Async connection failed: {e}")
+            return False
+    
+    async def read_async(
+        self,
+        stream_name: str,
+        group: str,
+        consumer: str,
+        count: int = 10,
+        block_ms: int = 1000
+    ) -> List[TransportEvent]:
+        """
+        Async wrapper for consume() generator.
+        
+        Reads up to `count` events from stream using consumer group.
+        Non-blocking async pattern for BaseConsumer integration.
+        
+        Args:
+            stream_name: Stream channel (e.g., "codex:entity_updated")
+            group: Consumer group name
+            consumer: Consumer identifier
+            count: Max events to read
+            block_ms: Block timeout in milliseconds
+        
+        Returns:
+            List of TransportEvent objects
+        """
+        def _read_sync():
+            """Synchronous read wrapped in thread"""
+            events = []
+            try:
+                gen = self.consume(stream_name, group, consumer, count=count, block_ms=block_ms)
+                for event in itertools.islice(gen, count):
+                    events.append(event)
+                    if len(events) >= count:
+                        break
+            except StopIteration:
+                pass
+            return events
+        
+        return await asyncio.to_thread(_read_sync)
+    
+    def _validate_invariants(self, method_name: str, **kwargs) -> None:
+        """
+        Validate bus invariants are not violated.
+        
+        This is a defensive check — should NEVER trigger in correct code.
+        If it does, it's a programming error that violates architectural laws.
+        
+        Args:
+            method_name: Name of method being validated
+            **kwargs: Method arguments to inspect
+        
+        Raises:
+            RuntimeError: If invariant violation detected
+        """
+        # Check for payload inspection (INVARIANT 1)
+        if 'payload' in kwargs:
+            payload = kwargs['payload']
+            if not isinstance(payload, dict):
+                raise RuntimeError(
+                    f"INVARIANT VIOLATION in {method_name}: "
+                    f"Payload must be dict, got {type(payload)}"
+                )
+            # Payload is dict — OK, bus can serialize/deserialize
+            # Any OTHER use of payload content is a violation
+        
+        # Log method call for auditability
+        logger.debug(f"StreamBus.{method_name} - invariants validated")
 
 
 # ============================================================================

@@ -1,511 +1,228 @@
 #!/usr/bin/env python3
 """
-    Vitruvyan Redis Bus Client
-==========================
+Redis Client - Compatibility Shim (TEMPORARY - Jan 25, 2026)
 
-Redis Pub/Sub client for the Cognitive Bus system. Handles event publishing
-and subscription for inter-service communication following the standard
-domain:intent:payload schema.
+This is a TEMPORARY compatibility layer that wraps StreamBus to provide
+the legacy Herald API. This allows the codebase to continue using Herald-style
+calls while we migrate to Streams.
 
-This client ensures proper event routing between Codex Hunters, LangGraph,
-Audit Engine, and other system components.
+Status: TEMPORARY SHIM (remove after full migration)
+Migration Target: Q1 2026
+Legacy Dependencies: orthodoxy_node.py, autopilot_node.py
 
-Author: Vitruvyan Development Team
-Created: 2025-01-14
-"""
+Architecture Decision (Jan 25, 2026):
+    LangGraph codebase still has Herald dependencies in orthodoxy_node.py.
+    Rather than blocking all development, we create this shim to provide
+    backward compatibility. This allows:
+    1. Listeners to migrate to Streams (DONE: LangGraph listener)
+    2. Main codebase to continue functioning (via shim)
+    3. Gradual migration without breaking production
     
-import os
-import json
-import logging
-from datetime import datetime
-from typing import Dict, Any, Optional, List, Callable
-from dataclasses import dataclass, asdict
-import redis
-from redis.exceptions import ConnectionError, TimeoutError
-import asyncio
-import threading
+    Once all Herald usage is removed, delete this file.
 
+TODO (Phase 8 - Full Migration):
+    - Migrate orthodoxy_node.py from get_redis_bus() to StreamBus
+    - Migrate autopilot_node.py from Herald.publish() to StreamBus.emit()
+    - Delete this file
+    - Update all imports to use StreamBus directly
+"""
+
+import os
+import logging
+from typing import Any, Dict, Optional
+from dataclasses import dataclass, field
+from datetime import datetime
+
+from .streams import StreamBus, TransportEvent
+
+logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# LEGACY DATA STRUCTURES (Herald compatibility)
+# ============================================================================
 
 @dataclass
 class CognitiveEvent:
-    """Standard event structure for Cognitive Bus"""
-    event_type: str      # domain.intent (e.g., "codex.audit.alert")
-    emitter: str         # Source agent/service
-    target: str          # Target agent/service (or "broadcast")
-    payload: Dict[str, Any]  # Event data
-    timestamp: str       # ISO timestamp
-    correlation_id: Optional[str] = None  # For tracking event chains
+    """
+    Legacy event structure for Herald compatibility.
     
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for JSON serialization"""
-        return asdict(self)
+    This mimics the old Herald event format. New code should use
+    TransportEvent from streams.py instead.
+    """
+    event_id: str
+    stream: str
+    payload: Dict[str, Any]
+    emitter: str = "unknown"
+    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat() + 'Z')
+    correlation_id: Optional[str] = None
     
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'CognitiveEvent':
-        """Create event from dictionary"""
-        return cls(**data)
+    def from_transport_event(cls, event: TransportEvent) -> 'CognitiveEvent':
+        """Convert new TransportEvent to legacy CognitiveEvent"""
+        return cls(
+            event_id=event.event_id,
+            stream=event.stream,
+            payload=event.payload,
+            emitter=event.emitter,
+            timestamp=event.timestamp,
+            correlation_id=event.correlation_id
+        )
 
 
-class RedisBusClient:
+# ============================================================================
+# LEGACY API SHIM (Herald compatibility)
+# ============================================================================
+
+class RedisClientShim:
     """
-    Redis client for Cognitive Bus communication
+    Shim that provides Herald-like API using StreamBus underneath.
     
-    Handles event publishing, subscription, and proper Redis connection management
-    with retry logic and error handling.
+    This is a TEMPORARY compatibility layer. DO NOT EXTEND.
     """
     
-    def __init__(self, 
-                 host: str = None,
-                 port: int = None,
-                 db: int = 0,
-                 password: str = None,
-                 connection_timeout: int = 5,
-                 retry_attempts: int = 3):
-        """
-        Initialize Redis Bus Client
+    def __init__(self):
+        self.bus = StreamBus(
+            host=os.getenv('REDIS_HOST', 'localhost'),
+            port=int(os.getenv('REDIS_PORT', '6379')),
+            password=os.getenv('REDIS_PASSWORD')
+        )
+        logger.warning("⚠️ Using RedisClientShim (Herald compatibility). Migrate to StreamBus!")
         
-        Args:
-            host: Redis host (defaults to env REDIS_HOST or localhost)
-            port: Redis port (defaults to env REDIS_PORT or 6379)
-            db: Redis database number
-            password: Redis password (if required)
-            connection_timeout: Connection timeout in seconds
-            retry_attempts: Number of retry attempts for operations
-        """
-        self.host = host or os.getenv('REDIS_HOST', 'localhost')
-        self.port = port or int(os.getenv('REDIS_PORT', 6379))
-        self.db = db
-        self.password = password
-        self.connection_timeout = connection_timeout
-        self.retry_attempts = retry_attempts
-        
-        self.logger = logging.getLogger(__name__)
-        
-        # Redis connection pools
-        self.redis_client: Optional[redis.Redis] = None
-        self.pubsub_client: Optional[redis.client.PubSub] = None
-        
-        # Subscription management
-        self.subscriptions: Dict[str, List[Callable]] = {}
-        self.listening_thread: Optional[threading.Thread] = None
-        self.is_listening = False
-        
-        # Statistics
-        self.stats = {
-            "events_published": 0,
-            "events_received": 0,
-            "connection_errors": 0,
-            "last_error": None,
-            "connected_since": None
-        }
+        # Herald compatibility attributes (mock)
+        self.is_beating = True  # Always "beating" since StreamBus is always connected
+        self._pulse_status = {"active": True, "interval": 30}
     
     def connect(self) -> bool:
-        """
-        Establish connection to Redis
-        
-        Returns:
-            bool: Success status
-        """
+        """Herald compatibility: check connection (StreamBus always connected)"""
         try:
-            self.redis_client = redis.Redis(
-                host=self.host,
-                port=self.port,
-                db=self.db,
-                password=self.password,
-                socket_timeout=self.connection_timeout,
-                socket_connect_timeout=self.connection_timeout,
-                retry_on_timeout=True,
-                decode_responses=True
-            )
-            
-            # Test connection
-            self.redis_client.ping()
-            
-            self.stats["connected_since"] = datetime.utcnow().isoformat()
-            self.logger.info(f"✅ Redis Bus connected to {self.host}:{self.port}")
-            
+            # StreamBus connection is lazy, test with PING
+            self.bus.client.ping()
             return True
-            
         except Exception as e:
-            self.stats["connection_errors"] += 1
-            self.stats["last_error"] = str(e)
-            self.logger.error(f"❌ Redis Bus connection failed: {e}")
+            logger.error(f"❌ Redis connection failed: {e}")
             return False
-    
-    def disconnect(self) -> None:
-        """Disconnect from Redis and cleanup"""
-        try:
-            self.stop_listening()
-            
-            if self.pubsub_client:
-                self.pubsub_client.close()
-                self.pubsub_client = None
-            
-            if self.redis_client:
-                self.redis_client.close()
-                self.redis_client = None
-            
-            self.logger.info("🔌 Redis Bus disconnected")
-            
-        except Exception as e:
-            self.logger.error(f"❌ Redis Bus disconnect error: {e}")
-    
-    def publish(self, channel: str, event_data: str) -> bool:
-        """
-        Publish raw event data to Redis channel
-        
-        This is a low-level publish method that accepts pre-serialized event data.
-        Use this when you already have the event data as a JSON string.
-        
-        Args:
-            channel: Redis channel name (e.g., "crew.strategy.generated")
-            event_data: Pre-serialized JSON event data
-            
-        Returns:
-            bool: Success status
-        """
-        if not self.redis_client:
-            if not self.connect():
-                return False
-        
-        try:
-            # Publish with retry logic
-            for attempt in range(self.retry_attempts):
-                try:
-                    result = self.redis_client.publish(channel, event_data)
-                    
-                    if result >= 0:  # Redis returns number of subscribers
-                        self.stats["events_published"] += 1
-                        self.logger.debug(f"📡 Published to {channel} → {result} subscribers")
-                        return True
-                    
-                except (ConnectionError, TimeoutError) as e:
-                    if attempt < self.retry_attempts - 1:
-                        self.logger.warning(f"⚠️ Publish attempt {attempt + 1} failed, retrying: {e}")
-                        if not self.connect():
-                            continue
-                    else:
-                        raise e
-            
-            return False
-            
-        except Exception as e:
-            self.stats["connection_errors"] += 1
-            self.stats["last_error"] = str(e)
-            self.logger.error(f"❌ Failed to publish to {channel}: {e}")
-            return False
-    
-    def publish_event(self, event: CognitiveEvent) -> bool:
-        """
-        Publish event to Redis channel
-        
-        Args:
-            event: CognitiveEvent to publish
-            
-        Returns:
-            bool: Success status
-        """
-        if not self.redis_client:
-            if not self.connect():
-                return False
-        
-        try:
-            # Use event_type as channel name (e.g., "codex.audit.alert")
-            channel = event.event_type
-            
-            # Serialize event
-            event_data = json.dumps(event.to_dict(), default=str)
-            
-            # Publish with retry logic
-            for attempt in range(self.retry_attempts):
-                try:
-                    result = self.redis_client.publish(channel, event_data)
-                    
-                    if result >= 0:  # Redis returns number of subscribers
-                        self.stats["events_published"] += 1
-                        self.logger.debug(f"📡 Published event {event.event_type} to {result} subscribers")
-                        return True
-                    
-                except (ConnectionError, TimeoutError) as e:
-                    if attempt < self.retry_attempts - 1:
-                        self.logger.warning(f"WARNING Publish attempt {attempt + 1} failed, retrying: {e}")
-                        if not self.connect():
-                            continue
-                    else:
-                        raise e
-            
-            return False
-            
-        except Exception as e:
-            self.stats["connection_errors"] += 1
-            self.stats["last_error"] = str(e)
-            self.logger.error(f"❌ Failed to publish event {event.event_type}: {e}")
-            return False
-    
-    def publish_codex_event(self, 
-                           domain: str,
-                           intent: str,
-                           emitter: str,
-                           target: str,
-                           payload: Dict[str, Any],
-                           correlation_id: str = None) -> bool:
-        """
-        Convenience method for publishing Codex Hunter events
-        
-        Args:
-            domain: Event domain (e.g., "codex", "langgraph", "audit")
-            intent: Event intent (e.g., "discovered", "alert", "ready")
-            emitter: Source agent/service
-            target: Target agent/service
-            payload: Event data
-            correlation_id: Optional correlation ID
-            
-        Returns:
-            bool: Success status
-        """
-        event = CognitiveEvent(
-            event_type=f"{domain}.{intent}",
-            emitter=emitter,
-            target=target,
-            payload=payload,
-            timestamp=datetime.utcnow().isoformat(),
-            correlation_id=correlation_id
-        )
-        
-        return self.publish_event(event)
-    
-    def subscribe(self, channel_pattern: str, callback: Callable[[CognitiveEvent], None]) -> bool:
-        """
-        Subscribe to Redis channel with callback
-        
-        Args:
-            channel_pattern: Channel pattern to subscribe to (supports wildcards)
-            callback: Function to call when event received
-            
-        Returns:
-            bool: Success status
-        """
-        try:
-            if channel_pattern not in self.subscriptions:
-                self.subscriptions[channel_pattern] = []
-            
-            self.subscriptions[channel_pattern].append(callback)
-            
-            self.logger.info(f"📥 Subscribed to channel pattern: {channel_pattern}")
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"❌ Failed to subscribe to {channel_pattern}: {e}")
-            return False
-    
-    def start_listening(self) -> bool:
-        """
-        Start listening for subscribed events in background thread
-        
-        Returns:
-            bool: Success status
-        """
-        if self.is_listening:
-            self.logger.warning("WARNING Already listening for events")
-            return True
-        
-        try:
-            if not self.redis_client:
-                if not self.connect():
-                    return False
-            
-            self.pubsub_client = self.redis_client.pubsub()
-            
-            # Subscribe to all registered patterns
-            for pattern in self.subscriptions.keys():
-                self.pubsub_client.psubscribe(pattern)
-            
-            # Start listening thread
-            self.is_listening = True
-            self.listening_thread = threading.Thread(target=self._listen_worker, daemon=True)
-            self.listening_thread.start()
-            
-            self.logger.info(f"👂 Started listening on {len(self.subscriptions)} channel patterns")
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"❌ Failed to start listening: {e}")
-            return False
-    
-    def stop_listening(self) -> None:
-        """Stop listening for events"""
-        self.is_listening = False
-        
-        if self.listening_thread and self.listening_thread.is_alive():
-            self.listening_thread.join(timeout=2.0)
-        
-        if self.pubsub_client:
-            try:
-                self.pubsub_client.unsubscribe()
-                self.pubsub_client.punsubscribe()
-            except Exception as e:
-                self.logger.error(f"❌ Error unsubscribing: {e}")
-        
-        self.logger.info("🔇 Stopped listening for events")
-    
-    def _listen_worker(self) -> None:
-        """Background worker for listening to events"""
-        try:
-            while self.is_listening and self.pubsub_client:
-                try:
-                    message = self.pubsub_client.get_message(timeout=1.0)
-                    
-                    if message and message['type'] == 'pmessage':
-                        self._handle_message(message)
-                
-                except Exception as e:
-                    if self.is_listening:  # Only log if we're supposed to be listening
-                        self.logger.error(f"❌ Error in listen worker: {e}")
-                        self.stats["connection_errors"] += 1
-                        break
-                
-        except Exception as e:
-            self.logger.error(f"❌ Listen worker crashed: {e}")
-        
-        finally:
-            self.is_listening = False
-    
-    def _handle_message(self, message: Dict[str, Any]) -> None:
-        """Handle received Redis message"""
-        try:
-            # Extract data
-            pattern = message['pattern'].decode() if isinstance(message['pattern'], bytes) else message['pattern']
-            channel = message['channel'].decode() if isinstance(message['channel'], bytes) else message['channel']
-            data = message['data'].decode() if isinstance(message['data'], bytes) else message['data']
-            
-            # Parse event
-            event_data = json.loads(data)
-            event = CognitiveEvent.from_dict(event_data)
-            
-            # Find matching callbacks
-            if pattern in self.subscriptions:
-                for callback in self.subscriptions[pattern]:
-                    try:
-                        # Handle both sync and async callbacks
-                        if asyncio.iscoroutinefunction(callback):
-                            # For async callbacks, we need to schedule them properly
-                            # Since we're in a sync context, we'll create a task
-                            try:
-                                loop = asyncio.get_event_loop()
-                                if loop.is_running():
-                                    loop.create_task(callback(event))
-                                else:
-                                    asyncio.run(callback(event))
-                            except RuntimeError:
-                                # No event loop running, run in thread
-                                threading.Thread(target=lambda: asyncio.run(callback(event)), daemon=True).start()
-                        else:
-                            # Sync callback
-                            callback(event)
-                            
-                        self.stats["events_received"] += 1
-                    except Exception as e:
-                        self.logger.error(f"❌ Callback error for {channel}: {e}")
-            
-        except Exception as e:
-            self.logger.error(f"❌ Error handling message: {e}")
     
     def is_connected(self) -> bool:
-        """Check if Redis connection is active"""
+        """Herald compatibility: check if Redis is connected"""
         try:
-            if not self.redis_client:
-                return False
-            
-            self.redis_client.ping()
+            self.bus.client.ping()
             return True
-            
         except Exception:
             return False
     
-    def get_stats(self) -> Dict[str, Any]:
-        """Get client statistics"""
+    async def stop_beating(self):
+        """Herald compatibility: no-op"""
+        self.is_beating = False
+    
+    async def start_beating(self, interval: int = 30):
+        """Herald compatibility: no-op"""
+        self.is_beating = True
+        self._pulse_status["interval"] = interval
+    
+    async def get_pulse_status(self):
+        """Herald compatibility: return mock status"""
         return {
-            **self.stats,
-            "connected": self.is_connected(),
-            "listening": self.is_listening,
-            "subscriptions": len(self.subscriptions),
-            "connection_info": {
-                "host": self.host,
-                "port": self.port,
-                "db": self.db
-            }
+            "is_beating": self.is_beating,
+            "active": True,
+            "interval": self._pulse_status.get("interval", 30)
         }
     
-    def health_check(self) -> Dict[str, Any]:
-        """Perform health check"""
-        try:
-            connected = self.is_connected()
-            
-            return {
-                "status": "healthy" if connected else "unhealthy",
-                "connected": connected,
-                "listening": self.is_listening,
-                "events_published": self.stats["events_published"],
-                "events_received": self.stats["events_received"],
-                "connection_errors": self.stats["connection_errors"],
-                "last_error": self.stats["last_error"]
-            }
-            
-        except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "connected": False
-            }
+    async def get_vitals(self):
+        """Herald compatibility: return mock vitals"""
+        return {
+            "status": "healthy",
+            "is_beating": self.is_beating,
+            "redis_connected": True,  # StreamBus is always connected
+            "pulse_interval": self._pulse_status.get("interval", 30),
+            "connections": 1,
+            "uptime_seconds": 0,
+            "message": "RedisClientShim compatibility layer (migrate to StreamBus)"
+        }
     
-    def __enter__(self):
-        """Context manager entry"""
-        self.connect()
-        return self
+    def publish(self, channel: str, payload: Dict[str, Any], emitter: str = "unknown") -> str:
+        """
+        Legacy publish() method (Herald-style).
+        
+        Wraps StreamBus.emit() for backward compatibility.
+        """
+        event_id = self.bus.emit(
+            channel=channel,
+            payload=payload,
+            emitter=emitter
+        )
+        logger.debug(f"📤 [SHIM] Published to {channel}: {event_id}")
+        return event_id
     
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit"""
-        self.disconnect()
-        return False
+    def subscribe(self, channel: str, group: str, consumer: str):
+        """
+        Legacy subscribe() method (Herald-style).
+        
+        Wraps StreamBus.consume() generator.
+        """
+        logger.warning(f"⚠️ [SHIM] subscribe() called - this is blocking! Use listeners instead.")
+        for transport_event in self.bus.consume(channel, group, consumer):
+            yield CognitiveEvent.from_transport_event(transport_event)
+    
+    def ack(self, event: CognitiveEvent, group: str) -> bool:
+        """Legacy ACK method"""
+        # Convert back to TransportEvent for ACK
+        transport_event = TransportEvent(
+            event_id=event.event_id,
+            stream=event.stream,
+            payload=event.payload,
+            emitter=event.emitter,
+            timestamp=event.timestamp,
+            correlation_id=event.correlation_id
+        )
+        return self.bus.ack(transport_event, group=group)
+    
+    def health(self) -> Dict[str, Any]:
+        """Health check pass-through"""
+        return self.bus.health()
 
 
-# Singleton instance for global use
-_redis_bus_instance: Optional[RedisBusClient] = None
+# ============================================================================
+# GLOBAL INSTANCE (Herald pattern compatibility)
+# ============================================================================
+
+_global_bus_shim: Optional[RedisClientShim] = None
 
 
-def get_redis_bus() -> RedisBusClient:
+def get_redis_bus() -> RedisClientShim:
     """
-    Get global Redis Bus Client instance
+    Get global RedisClientShim instance (singleton pattern).
     
-    Returns:
-        RedisBusClient: Singleton instance
+    This mimics the old get_redis_bus() function from Herald.
+    
+    DEPRECATED: Use StreamBus() directly in new code.
     """
-    global _redis_bus_instance
-    
-    if _redis_bus_instance is None:
-        _redis_bus_instance = RedisBusClient()
-    
-    return _redis_bus_instance
+    global _global_bus_shim
+    if _global_bus_shim is None:
+        _global_bus_shim = RedisClientShim()
+        logger.info("✅ RedisClientShim initialized (Herald compatibility mode)")
+    return _global_bus_shim
 
 
-def reset_redis_bus() -> None:
-    """Reset global Redis Bus Client (for testing)"""
-    global _redis_bus_instance
-    
-    if _redis_bus_instance:
-        _redis_bus_instance.disconnect()
-        _redis_bus_instance = None
+# Alias for compatibility with different import patterns
+RedisBusClient = RedisClientShim
 
 
-# Convenience functions
-def publish_codex_event(domain: str, intent: str, emitter: str, target: str, 
-                       payload: Dict[str, Any], correlation_id: str = None) -> bool:
-    """Global convenience function for publishing events"""
-    bus = get_redis_bus()
-    return bus.publish_codex_event(domain, intent, emitter, target, payload, correlation_id)
+# ============================================================================
+# MIGRATION HELPERS
+# ============================================================================
+
+def is_using_shim() -> bool:
+    """Check if codebase is still using compatibility shim"""
+    return _global_bus_shim is not None
 
 
-def subscribe_to_events(channel_pattern: str, callback: Callable[[CognitiveEvent], None]) -> bool:
-    """Global convenience function for subscribing to events"""
-    bus = get_redis_bus()
-    return bus.subscribe(channel_pattern, callback)
+def log_migration_status():
+    """Log migration status for monitoring"""
+    if is_using_shim():
+        logger.warning(
+            "⚠️ MIGRATION STATUS: Still using Herald compatibility shim. "
+            "Migrate to StreamBus to remove this warning."
+        )
+    else:
+        logger.info("✅ MIGRATION STATUS: Not using Herald shim (good!)")

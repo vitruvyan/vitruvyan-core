@@ -33,6 +33,9 @@ import uuid
 import asyncio
 import logging
 
+# Import canonical event envelope
+from ..event_envelope import CognitiveEvent, TransportEvent, EventAdapter
+
 logger = logging.getLogger(__name__)
 
 
@@ -89,16 +92,16 @@ class ProcessResult:
     - silence: No output (valid for AMBIENT, error for CRITICAL)
     """
     action: str  # "emit", "escalate", "silence"
-    events: List['StreamEvent'] = field(default_factory=list)
+    events: List['CognitiveEvent'] = field(default_factory=list)
     confidence: float = 1.0
     reasoning: Optional[str] = None
     
     @classmethod
-    def emit(cls, event: 'StreamEvent', confidence: float = 1.0) -> 'ProcessResult':
+    def emit(cls, event: 'CognitiveEvent', confidence: float = 1.0) -> 'ProcessResult':
         return cls(action="emit", events=[event], confidence=confidence)
     
     @classmethod
-    def emit_many(cls, events: List['StreamEvent'], confidence: float = 1.0) -> 'ProcessResult':
+    def emit_many(cls, events: List['CognitiveEvent'], confidence: float = 1.0) -> 'ProcessResult':
         return cls(action="emit", events=events, confidence=confidence)
     
     @classmethod
@@ -110,46 +113,17 @@ class ProcessResult:
         return cls(action="silence")
 
 
-@dataclass
-class StreamEvent:
-    """
-    Event envelope for the cognitive bus.
-    
-    The bus validates envelope structure but NEVER inspects payload.
-    This is architectural law (I1: Bus Humility).
-    """
-    # Identity
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    type: str = ""  # e.g., "analysis.complete", "escalation.request"
-    
-    # Causal chain (for temporal coherence & auditability)
-    correlation_id: str = ""      # Groups related events (e.g., user session)
-    causation_id: Optional[str] = None  # Immediate parent event
-    trace_id: str = ""            # Root of entire causal tree
-    
-    # Temporal
-    timestamp: datetime = field(default_factory=datetime.utcnow)
-    
-    # Routing (declared by producer, not inferred by bus!)
-    source: str = ""              # Which consumer emitted this
-    targets: List[str] = field(default_factory=list)  # Suggested targets (hints only)
-    
-    # Payload (OPAQUE to bus — this is the actual content)
-    payload: Dict[str, Any] = field(default_factory=dict)
-    
-    # Metadata (for observability, not routing)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    
-    def child(self, event_type: str, payload: Dict[str, Any], source: str) -> 'StreamEvent':
-        """Create a child event in the causal chain."""
-        return StreamEvent(
-            type=event_type,
-            correlation_id=self.correlation_id,
-            causation_id=self.id,  # This event is the cause
-            trace_id=self.trace_id or self.id,  # Preserve root
-            source=source,
-            payload=payload
-        )
+# ============================================================================
+# BACKWARD COMPATIBILITY (Removed - Use CognitiveEvent)
+# ============================================================================
+# StreamEvent class definition removed (Jan 24, 2026)
+# Use CognitiveEvent from event_envelope.py instead
+#
+# Old StreamEvent is now split into:
+# - TransportEvent (bus level) in event_envelope.py
+# - CognitiveEvent (consumer level) in event_envelope.py
+#
+# This eliminates the ambiguity of having two incompatible StreamEvent classes.
 
 
 class BaseConsumer(ABC):
@@ -174,6 +148,10 @@ class BaseConsumer(ABC):
         self._working_memory = None
         self._stream_bus = None
         
+        # Phase 6: Plasticity System (Jan 24, 2026)
+        self.plasticity: Optional[Any] = None  # PlasticityManager (avoid circular import)
+        self.outcome_tracker: Optional[Any] = None  # OutcomeTracker
+        
         logger.info(
             f"Consumer initialized: {config.name} "
             f"[{config.consumer_type.value}] "
@@ -193,7 +171,7 @@ class BaseConsumer(ABC):
     # ─────────────────────────────────────────────────────────────
     
     @abstractmethod
-    async def process(self, event: StreamEvent) -> ProcessResult:
+    async def process(self, event: CognitiveEvent) -> ProcessResult:
         """
         Process an incoming event.
         
@@ -268,7 +246,7 @@ class BaseConsumer(ABC):
     # Communication methods
     # ─────────────────────────────────────────────────────────────
     
-    async def emit(self, event: StreamEvent) -> None:
+    async def emit(self, event: CognitiveEvent) -> None:
         """
         Emit an event to the cognitive bus.
         
@@ -277,28 +255,24 @@ class BaseConsumer(ABC):
         - causation_id (if derived from another event)
         
         The bus handles:
-        - Routing to subscribers
-        - Persistence (via Scribe)
-        - Delivery guarantees
+        - Routing to subscribers (via Redis Streams)
+        - Persistence (built-in to Redis Streams)
+        - Delivery guarantees (at-least-once via consumer groups)
+        
+        NOTE: Herald deprecated (Jan 24, 2026) - moved to /archive/pub_sub_legacy/
         """
         event.source = self.name
         
         if self._stream_bus:
-            await self._stream_bus.publish(event)
+            # TODO: Implement async publish in Phase 3
+            # await self._stream_bus.publish(event)
+            logger.warning(f"Consumer {self.name}: emit() not yet wired to StreamBus (Phase 3)")
         else:
-            # Fallback: use Herald directly
-            from ..herald import Herald
-            herald = Herald()
-            await herald.announce(
-                event_type=event.type,
-                payload=event.payload,
-                correlation_id=event.correlation_id,
-                metadata=event.metadata
-            )
+            logger.error(f"Consumer {self.name}: No bus connection - cannot emit event")
         
         logger.debug(f"Consumer {self.name} emitted: {event.type}")
     
-    async def escalate(self, event: StreamEvent, reason: str, confidence: float = 0.0) -> StreamEvent:
+    async def escalate(self, event: CognitiveEvent, reason: str, confidence: float = 0.0) -> ProcessResult:
         """
         Escalate to governance (Orthodoxy Wardens).
         
@@ -308,9 +282,9 @@ class BaseConsumer(ABC):
         - Ambiguity in input
         - Potential policy violation detected
         
-        Returns an escalation event that will be sent to Orthodoxy.
+        Returns a ProcessResult with escalation action.
         """
-        escalation = StreamEvent(
+        escalation = CognitiveEvent(
             type="escalation.request",
             correlation_id=event.correlation_id,
             causation_id=event.id,
@@ -332,7 +306,7 @@ class BaseConsumer(ABC):
         await self.emit(escalation)
         logger.info(f"Consumer {self.name} escalated: {reason} (confidence={confidence})")
         
-        return escalation
+        return ProcessResult.escalate(reason=reason, confidence=confidence)
     
     # ─────────────────────────────────────────────────────────────
     # Working memory access
@@ -359,21 +333,43 @@ class BaseConsumer(ABC):
     # ─────────────────────────────────────────────────────────────
     
     async def _consume_loop(self) -> None:
-        """Main consumption loop — reads from subscribed streams."""
+        """
+        Main consumption loop — reads from subscribed streams.
+        
+        PHASE 3 UPDATE (Jan 24, 2026):
+        - Now uses real StreamBus.connect() and read_async()
+        - Converts TransportEvent → CognitiveEvent via EventAdapter
+        - Implements proper consumer group pattern
+        """
         from ..streams import StreamBus
+        from ..event_envelope import EventAdapter
         
         bus = StreamBus()
-        await bus.connect()
+        connected = await bus.connect()
+        if not connected:
+            logger.error(f"Consumer {self.name}: Failed to connect to bus")
+            return
+        
         self._stream_bus = bus
         
         # Create consumer group if specified
         group = self.config.consumer_group or f"cg_{self.name}"
         
+        # Create consumer groups for all subscriptions
+        for subscription in self.config.subscriptions:
+            try:
+                await asyncio.to_thread(bus.create_consumer_group, subscription, group)
+            except Exception as e:
+                logger.debug(f"Consumer group {group} already exists for {subscription}: {e}")
+        
+        logger.info(f"Consumer {self.name} starting consume loop (group={group})")
+        
         while self._running:
             try:
                 # Read events from all subscribed streams
                 for subscription in self.config.subscriptions:
-                    events = await bus.read(
+                    # Get TransportEvents from bus
+                    transport_events = await bus.read_async(
                         stream_name=subscription,
                         group=group,
                         consumer=self.name,
@@ -381,29 +377,31 @@ class BaseConsumer(ABC):
                         block_ms=1000
                     )
                     
-                    for event_data in events:
-                        await self._handle_event(event_data)
+                    # Convert to CognitiveEvents and process
+                    for transport_event in transport_events:
+                        cognitive_event = EventAdapter.transport_to_cognitive(transport_event)
+                        await self._handle_event(cognitive_event)
+                        
+                        # ACK after successful handling
+                        try:
+                            await asyncio.to_thread(bus.ack, transport_event, group)
+                        except Exception as e:
+                            logger.warning(f"ACK failed for {transport_event.event_id}: {e}")
                         
             except asyncio.CancelledError:
+                logger.info(f"Consumer {self.name} consume loop cancelled")
                 break
             except Exception as e:
-                logger.error(f"Consumer {self.name} error: {e}")
+                logger.error(f"Consumer {self.name} error: {e}", exc_info=True)
                 await asyncio.sleep(1)  # Backoff on error
     
-    async def _handle_event(self, event_data: Dict[str, Any]) -> None:
-        """Handle a single event with timeout and result routing."""
-        # Parse event
-        event = StreamEvent(
-            id=event_data.get("id", str(uuid.uuid4())),
-            type=event_data.get("type", "unknown"),
-            correlation_id=event_data.get("correlation_id", ""),
-            causation_id=event_data.get("causation_id"),
-            trace_id=event_data.get("trace_id", ""),
-            source=event_data.get("source", "unknown"),
-            payload=event_data.get("payload", {}),
-            metadata=event_data.get("metadata", {})
-        )
+    async def _handle_event(self, event: CognitiveEvent) -> None:
+        """
+        Handle a single event with timeout and result routing.
         
+        Args:
+            event: CognitiveEvent (already converted from TransportEvent)
+        """
         try:
             # Process with timeout
             result = await asyncio.wait_for(
@@ -419,7 +417,7 @@ class BaseConsumer(ABC):
         except Exception as e:
             await self._handle_error(event, e)
     
-    async def _route_result(self, event: StreamEvent, result: ProcessResult) -> None:
+    async def _route_result(self, event: CognitiveEvent, result: ProcessResult) -> None:
         """Route the processing result appropriately."""
         if result.action == "emit":
             for output_event in result.events:
@@ -441,7 +439,7 @@ class BaseConsumer(ABC):
                 logger.debug(f"ADVISORY consumer {self.name} silent on {event.type}")
             # AMBIENT silence is normal — no logging needed
     
-    async def _handle_timeout(self, event: StreamEvent) -> None:
+    async def _handle_timeout(self, event: CognitiveEvent) -> None:
         """Handle processing timeout based on consumer type."""
         if self.consumer_type == ConsumerType.CRITICAL:
             # CRITICAL timeout is a system alert
@@ -451,16 +449,16 @@ class BaseConsumer(ABC):
             logger.warning(f"ADVISORY consumer {self.name} timeout on {event.type}")
         # AMBIENT timeout is normal
     
-    async def _handle_error(self, event: StreamEvent, error: Exception) -> None:
+    async def _handle_error(self, event: CognitiveEvent, error: Exception) -> None:
         """Handle processing error."""
         logger.error(f"Consumer {self.name} error on {event.type}: {error}")
         
         if self.consumer_type == ConsumerType.CRITICAL:
             await self._emit_alert(event, "error", str(error))
     
-    async def _emit_alert(self, event: StreamEvent, alert_type: str, message: str) -> None:
+    async def _emit_alert(self, event: CognitiveEvent, alert_type: str, message: str) -> None:
         """Emit system alert for critical failures."""
-        alert = StreamEvent(
+        alert = CognitiveEvent(
             type="system.alert",
             correlation_id=event.correlation_id,
             causation_id=event.id,
@@ -482,7 +480,7 @@ class BaseConsumer(ABC):
     
     def status(self) -> Dict[str, Any]:
         """Return current status of this consumer."""
-        return {
+        status_dict = {
             "name": self.name,
             "type": self.consumer_type.value,
             "running": self._running,
@@ -490,6 +488,97 @@ class BaseConsumer(ABC):
             "confidence_threshold": self.config.confidence_threshold,
             "timeout_ms": self.config.timeout_ms
         }
+        
+        # Add plasticity status if enabled
+        if self.plasticity:
+            status_dict["plasticity"] = self.plasticity.get_statistics()
+        
+        return status_dict
+    
+    # ─────────────────────────────────────────────────────────────
+    # Phase 6: Plasticity System (Jan 24, 2026)
+    # ─────────────────────────────────────────────────────────────
+    
+    def enable_plasticity(
+        self,
+        bounds: Dict[str, Any],  # Dict[str, ParameterBounds] - avoid import
+        outcome_tracker: Any,  # OutcomeTracker - avoid circular import
+        require_approval: bool = False
+    ) -> None:
+        """
+        Enable plasticity with defined parameter bounds.
+        
+        Allows this consumer to adapt parameters based on outcomes.
+        All adjustments are bounded, logged, and reversible.
+        
+        Args:
+            bounds: Dict of parameter_name → ParameterBounds
+            outcome_tracker: OutcomeTracker for learning feedback
+            require_approval: If True, adjustments require governance approval
+                             (recommended for CRITICAL consumers)
+        
+        Example:
+            from core.cognitive_bus.plasticity import ParameterBounds, OutcomeTracker
+            
+            bounds = {
+                "confidence_threshold": ParameterBounds(
+                    name="confidence_threshold",
+                    min_value=0.4,
+                    max_value=0.9,
+                    step_size=0.05,
+                    default_value=0.6,
+                    description="Minimum confidence for non-escalation"
+                )
+            }
+            
+            tracker = OutcomeTracker(postgres_agent)
+            consumer.enable_plasticity(bounds, tracker, require_approval=False)
+        """
+        from ..plasticity.manager import PlasticityManager
+        
+        self.plasticity = PlasticityManager(
+            consumer=self,
+            bounds=bounds,
+            outcome_tracker=outcome_tracker,
+            require_approval=require_approval
+        )
+        self.outcome_tracker = outcome_tracker
+        
+        logger.info(
+            f"✅ Plasticity enabled for {self.__class__.__name__} "
+            f"({len(bounds)} adjustable parameters, approval={require_approval})"
+        )
+    
+    async def record_outcome(self, outcome: Any) -> None:
+        """
+        Record outcome for learning (if tracker enabled).
+        
+        Links a decision (event) to its outcome for adaptive learning.
+        
+        Args:
+            outcome: Outcome dataclass with decision details
+        
+        Example:
+            from core.cognitive_bus.plasticity import Outcome
+            
+            outcome = Outcome(
+                decision_event_id=event.id,
+                outcome_type="escalation_resolved",
+                outcome_value=1.0,  # 0.0-1.0 (success)
+                consumer_name=self.name,
+                parameter_name="confidence_threshold",
+                parameter_value=self.confidence_threshold
+            )
+            
+            await self.record_outcome(outcome)
+        """
+        if self.outcome_tracker:
+            await self.outcome_tracker.record_outcome(outcome)
+        else:
+            logger.debug(
+                f"No outcome tracker for {self.name}, outcome not recorded"
+            )
+
     
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}({self.name}, {self.consumer_type.value})>"

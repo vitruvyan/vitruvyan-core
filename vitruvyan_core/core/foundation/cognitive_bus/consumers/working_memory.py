@@ -260,17 +260,112 @@ class WorkingMemory:
         self._ensure_connected()
         return await self._client.ttl(self._key(key))
     
+    async def search_semantic(self, prefix: str) -> Dict[str, Any]:
+        """
+        Search for memories with semantic prefix patterns.
+        
+        Examples:
+            - "context:user123:*" → All memories for user123
+            - "analysis:*" → All analysis-related memories
+            - "risk:portfolio:*" → All portfolio risk memories
+        
+        Returns:
+            Dict mapping key → value for all matches
+        """
+        self._ensure_connected()
+        
+        keys = await self.keys(prefix)
+        if not keys:
+            return {}
+        
+        values = await self.recall_many(keys)
+        return values
+    
+    async def share_memory(self, key: str, target_consumer: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Prepare memory for sharing via events (mycelial pattern).
+        
+        This does NOT directly write to another consumer's memory.
+        Instead, it returns an event payload that can be emitted.
+        The target consumer CHOOSES whether to accept.
+        
+        Args:
+            key: Memory key to share
+            target_consumer: Optional specific consumer (None = broadcast)
+        
+        Returns:
+            Event payload ready for emission
+        """
+        value = await self.recall(key)
+        if value is None:
+            raise ValueError(f"Cannot share non-existent memory: {key}")
+        
+        ttl = await self.ttl_remaining(key)
+        
+        return {
+            "type": "memory.share",
+            "source_consumer": self.namespace.replace("wm:", ""),
+            "target_consumer": target_consumer,
+            "memory_key": key,
+            "memory_value": value,
+            "ttl": max(ttl, 60)  # Min 60s for shared memories
+        }
+    
+    async def accept_shared_memory(self, payload: Dict[str, Any], trust_source: bool = True) -> bool:
+        """
+        Accept a shared memory from another consumer.
+        
+        This is the mycelial pattern: memories flow through the network,
+        but each consumer CHOOSES what to remember.
+        
+        Args:
+            payload: Event payload from share_memory()
+            trust_source: Whether to trust source without validation
+        
+        Returns:
+            True if memory was accepted, False if rejected
+        """
+        if not trust_source:
+            # Optional: Add validation logic here
+            # For now, we trust all sources in same system
+            pass
+        
+        key = payload["memory_key"]
+        value = payload["memory_value"]
+        ttl = payload.get("ttl", self.ttl)
+        
+        await self.remember(key, value, ttl=ttl)
+        
+        logger.info(
+            f"Accepted shared memory: {key} from {payload['source_consumer']}"
+        )
+        return True
+    
     async def memory_stats(self) -> Dict[str, Any]:
         """Get statistics about this consumer's working memory."""
         self._ensure_connected()
         
         all_keys = await self.keys()
         
+        # Get TTL distribution
+        ttl_buckets = {"expired": 0, "short": 0, "medium": 0, "long": 0}
+        for key in all_keys:
+            ttl = await self.ttl_remaining(key)
+            if ttl < 0:
+                ttl_buckets["expired"] += 1
+            elif ttl < 300:  # < 5 min
+                ttl_buckets["short"] += 1
+            elif ttl < 1800:  # < 30 min
+                ttl_buckets["medium"] += 1
+            else:
+                ttl_buckets["long"] += 1
+        
         return {
             "namespace": self.namespace,
             "default_ttl": self.ttl,
             "key_count": len(all_keys),
-            "connected": self._connected
+            "connected": self._connected,
+            "ttl_distribution": ttl_buckets
         }
     
     # ─────────────────────────────────────────────────────────────

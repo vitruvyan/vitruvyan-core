@@ -10,12 +10,20 @@ import asyncio
 import json
 import logging
 import os
+import time
 from typing import Dict, Any, List, Optional, Callable, Awaitable
 from datetime import datetime
 import structlog
 
 from ..streams import StreamBus
 from .base_consumer import BaseConsumer, ConsumerType, ConsumerConfig
+
+# Import Prometheus metrics
+from ..metrics import (
+    record_listener_consumption,
+    update_listener_count,
+    update_stream_health
+)
 
 logger = structlog.get_logger("cognitive_bus.listener_adapter")
 
@@ -110,25 +118,33 @@ class ListenerAdapter(BaseConsumer):
         """
         consumer_name = f"{self.name}:worker"
         
-        # Extract channel from stream_name (remove "stream:" prefix)
-        channel = stream_name.replace("stream:", "")
+        # Use full stream_name (WITH "stream:" prefix) for consume()
+        # StreamBus.consume() will handle prefix normalization
+        channel = stream_name  # DON'T remove prefix!
         
         logger.info(f"👂 Consuming stream", stream=stream_name, consumer=consumer_name)
         
+        # Create generator (sync operation, doesn't start consuming yet)
+        event_generator = self.stream_bus.consume(
+            channel=channel,
+            group=self.consumer_group,
+            consumer=consumer_name,
+            count=10,
+            block_ms=1000
+        )
+        
         while True:
             try:
-                # Consume batch using correct StreamBus.consume() signature
-                # StreamBus.consume(channel, group, consumer, count, block_ms)
-                events = self.stream_bus.consume(
-                    channel=channel,
-                    group=self.consumer_group,
-                    consumer=consumer_name,
-                    count=10,
-                    block_ms=1000
-                )
+                # Run sync generator iteration in thread pool to avoid blocking async event loop
+                # CRITICAL: consume() does blocking XREADGROUP which would block asyncio
+                event = await asyncio.to_thread(next, event_generator, None)
                 
-                for event in events:
-                    await self._handle_event(event)
+                if event is None:
+                    # Generator exhausted (shouldn't happen with infinite while loop in consume())
+                    logger.warning(f"❌ Event generator exhausted for {stream_name}, reconnecting...")
+                    break
+                
+                await self._handle_event(event)
                     
             except Exception as e:
                 logger.error(
@@ -146,10 +162,15 @@ class ListenerAdapter(BaseConsumer):
         Args:
             event: StreamEvent object
         """
+        consumption_start = time.time()
+        handler_start = None
+        status = "success"
+        
         try:
             # Extract channel name from stream name
-            # "vitruvyan:vault.archive.requested" → "vault.archive.requested"
-            channel = event.stream.replace("vitruvyan:", "")
+            # "vitruvyan:stream:vault.archive.requested" → "vault.archive.requested"
+            # Remove both "vitruvyan:" and "stream:" prefixes
+            channel = event.stream.replace("vitruvyan:", "").replace("stream:", "")
             
             # Build message compatible with old pub/sub format
             # Old: {"type": "message", "channel": "...", "data": b"..."}
@@ -166,20 +187,46 @@ class ListenerAdapter(BaseConsumer):
             }
             
             # Call original handler
+            handler_start = time.time()
             handler = getattr(self.listener_instance, self.handler_method)
             await handler(message)
+            handler_duration = time.time() - handler_start
             
             # Acknowledge event using StreamEvent object
             self.stream_bus.ack(event, self.consumer_group)
+            consumption_duration = time.time() - consumption_start
+            
+            # Record metrics
+            record_listener_consumption(
+                stream=event.stream,
+                consumer=self.name,
+                status="success",
+                consumption_duration=consumption_duration,
+                handler_duration=handler_duration
+            )
             
             logger.debug(
                 f"✅ Event handled",
                 stream=event.stream,
                 event_id=event.event_id,
-                channel=channel
+                channel=channel,
+                handler_duration_ms=int(handler_duration * 1000)
             )
             
         except Exception as e:
+            status = "failed"
+            consumption_duration = time.time() - consumption_start
+            handler_duration = time.time() - handler_start if handler_start else None
+            
+            # Record failure metrics
+            record_listener_consumption(
+                stream=event.stream,
+                consumer=self.name,
+                status="failed",
+                consumption_duration=consumption_duration,
+                handler_duration=handler_duration
+            )
+            
             logger.error(
                 f"❌ Error handling event",
                 stream=event.stream,
