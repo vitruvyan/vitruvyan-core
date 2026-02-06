@@ -731,6 +731,38 @@ def test_explicit_portfolio_accepted():
 ✅ **NO PILLS CLICKED = CONVERSATIONAL** - If validated_tickers=[] → backend uses CAN node (conversational response), semantic_engine does NOT extract tickers
 ✅ **HOOKS FOR BUSINESS LOGIC** (Feb 4, 2026) - Trading, API calls, state management MUST live in custom hooks (`hooks/`), NOT in components. Components orchestrate, hooks execute.
 
+### Cognitive Bus Rules (Feb 5, 2026) 🧠
+✅ **Always use StreamBus** - Redis Streams is canonical transport (NOT Pub/Sub, deprecated Jan 24, 2026)  
+✅ **Consumer autonomy (mkstream=True)** - Consumers create streams when needed, don't wait for publishers (ADR-003, Feb 5, 2026)  
+✅ **Always acknowledge events** - Call `bus.acknowledge()` after processing to avoid redelivery  
+✅ **Respect Sacred Invariants** - Bus NEVER inspects payload, correlates events, does semantic routing, or synthesizes events  
+✅ **Use dot notation for channels** - Format: `<service>.<domain>.<action>` (e.g., `codex.discovery.mapped`)  
+✅ **Event structure** - Always include: event_id, event_type, causation_id (optional), timestamp, data, metadata  
+✅ **Generator pattern** - Use `for event in bus.consume(...)` (NOT `list(bus.consume())`) to avoid memory leaks  
+✅ **Graceful shutdown** - Handle SIGTERM/SIGINT in listeners for clean container shutdown  
+✅ **Read documentation** - See [COGNITIVE_BUS_GUIDE.md](core/cognitive_bus/docs/COGNITIVE_BUS_GUIDE.md) for complete implementation guide  
+
+**Quick Reference**:
+```python
+# ✅ CORRECT: Modern autonomous consumer
+from core.cognitive_bus.streams import StreamBus
+
+bus = StreamBus(redis_url="redis://vitruvyan_redis_master:6379")
+bus.create_consumer_group("codex.discovery.mapped", "vault_keepers")  # mkstream=True by default
+
+for event in bus.consume("codex.discovery.mapped", "vault_keepers", "vault_1"):
+    process(event)
+    bus.acknowledge(event.stream, "vault_keepers", event.event_id)
+```
+
+**Key Files**:
+- `core/cognitive_bus/streams.py` - StreamBus implementation (production interface)
+- `core/cognitive_bus/herald.py` - Convenience wrapper for publishing
+- `core/cognitive_bus/scribe.py` - Logger with bus integration (PostgreSQL + Qdrant + Bus)
+- `core/cognitive_bus/docs/COGNITIVE_BUS_GUIDE.md` - Complete implementation guide (988 lines)
+- `core/cognitive_bus/docs/API_REFERENCE.md` - API quick reference (600 lines)
+- `core/cognitive_bus/docs/ARCHITECTURAL_DECISIONS.md` - Decision log (ADR-001/002/003)
+
 ### UI/Frontend Rules (Feb 4, 2026)
 ✅ **Custom hooks for business logic** - Trading execution, API calls, complex state management → `hooks/useTradingOrder.js`  
 ✅ **Components for orchestration** - Event handling, UI state, prop passing → `Chat.jsx`  
@@ -765,6 +797,14 @@ def test_explicit_portfolio_accepted():
 ❌ **Creating code without verifying existing architecture** - ALWAYS check existing patterns first (Jan 18, 2026)  
 ❌ **Duplicating Docker services in consumers/** - Docker services are standalone, don't create consumers/ versions (Jan 18, 2026)  
 ❌ **Rewriting instead of extending** - Prefer adapter patterns for gradual migration (Jan 18, 2026)
+❌ **Using Pub/Sub** - Pub/Sub is DEPRECATED (Jan 24, 2026), use Redis Streams only (Feb 5, 2026)  
+❌ **mkstream=False** - Consumer autonomy requires mkstream=True (ADR-003, Feb 5, 2026)  
+❌ **Not acknowledging events** - Must call bus.acknowledge() after processing to avoid redelivery  
+❌ **Violating Sacred Invariants** - Bus never inspects payload, correlates, routes semantically, or synthesizes events  
+❌ **Loading all events in memory** - Use generator pattern: `for event in bus.consume()`, NOT `list(bus.consume())`  
+❌ **Underscore channel names** - Use dot notation: `codex.discovery.mapped`, NOT `codex_discovery_mapped`  
+❌ **Missing graceful shutdown** - Listeners must handle SIGTERM/SIGINT for clean container shutdown  
+❌ **Connecting to replicas for writes** - Consumer group creation requires master connection
 
 ### Lessons Learned (Jan 18, 2026 - Listener Migration)
 

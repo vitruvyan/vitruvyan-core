@@ -1,0 +1,58 @@
+#!/usr/bin/expect -f
+# Deploy vitruvyan-core su VPS usando expect per autenticazione SSH
+
+set timeout 30
+set vps_host "144.91.127.225"
+set vps_user "vitruvyan"
+set vps_pass "Vitruvyan1971"
+set repo_url "https://github.com/dbaldoni/vitruvyan-core.git"
+set deploy_dir "/opt/vitruvyan-core"
+
+puts "🚀 Deployment vitruvyan-core su VPS"
+puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+puts "📍 Target: $vps_user@$vps_host\n"
+
+# 1. Test connessione
+puts "1️⃣ Test connessione SSH..."
+spawn ssh -o StrictHostKeyChecking=no $vps_user@$vps_host "echo 'Connesso!' && hostname"
+expect {
+    "password:" {
+        send "$vps_pass\r"
+        expect {
+            "Connesso!" {
+                puts "✅ Connessione SSH riuscita"
+            }
+            timeout {
+                puts "❌ Timeout durante connessione"
+                exit 1
+            }
+        }
+    }
+    timeout {
+        puts "❌ Errore connessione SSH"
+        exit 1
+    }
+}
+expect eof
+
+# 2. Clone repository
+puts "\n3️⃣ Clone repository..."
+spawn ssh -o StrictHostKeyChecking=no $vps_user@$vps_host
+expect "password:"
+send "$vps_pass\r"
+expect "$ " {
+    send "if \[ -d $deploy_dir \]; then echo 'Directory esiste, eseguo pull'; cd $deploy_dir && git pull origin main; else echo 'Clono repository'; git clone $repo_url $deploy_dir; fi\r"
+}
+expect "$ " {
+    send "cd $deploy_dir && pwd && ls -la | head -10\r"
+}
+expect "$ " {
+    send "cd $deploy_dir && git log -1 --oneline\r"
+}
+expect "$ " {
+    send "exit\r"
+}
+expect eof
+
+puts "\n✅ Deployment completato!"
+puts "📍 Repository clonato in: $deploy_dir"
