@@ -28,18 +28,11 @@ RUN mkdir -p /app/domains/trade /app/core/cognitive
 # Switch to vitruvyan user
 USER vitruvyan
 
-# Copy CrewAI service and MINIMAL dependencies
+# Copy service code
 COPY --chown=vitruvyan:vitruvyan services/core/api_crewai /app/api_crewai
-COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/__init__.py /app/core/__init__.py
-COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/foundation/__init__.py /app/core/foundation/__init__.py
-COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/foundation/persistence /app/core/foundation/persistence
-COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/foundation/cognitive_bus /app/core/foundation/cognitive_bus
-# DOMAIN-NEUTRAL: Copy CrewAI orchestration templates (NO domain-specific code)
-COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/orchestration/__init__.py /app/core/orchestration/__init__.py
-COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/orchestration/crewai /app/core/orchestration/crewai
-# NOTE: Domain-specific implementations (e.g., domains/trade) should be
-# copied ONLY if the service needs to execute domain-specific crews.
-# For pure domain-neutral operation, no domain modules are required.
+
+# Copy ALL core modules (includes foundation, orchestration, cognitive, etc.)
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/ /app/core/
 
 USER vitruvyan
 EXPOSE 8005

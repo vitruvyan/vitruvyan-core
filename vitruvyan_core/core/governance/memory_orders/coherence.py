@@ -30,8 +30,8 @@ Usage:
 """
 from typing import Dict, Any
 from datetime import datetime
-from core.foundation.persistence.postgres_agent import PostgresAgent
-from core.foundation.persistence.qdrant_agent import QdrantAgent
+from core.agents.postgres_agent import PostgresAgent
+from core.agents.qdrant_agent import QdrantAgent
 import logging
 
 logger = logging.getLogger(__name__)
@@ -71,7 +71,6 @@ def coherence_check(
             "timestamp": str,
             "recommendation": str
         }
-    """
     """
     pg = PostgresAgent()
     qdrant = QdrantAgent()

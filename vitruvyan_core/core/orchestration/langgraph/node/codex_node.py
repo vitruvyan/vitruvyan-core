@@ -28,8 +28,8 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime
 import time
 
-from core.foundation.cognitive_bus.redis_client import get_redis_bus, publish_codex_event
-from core.foundation.cognitive_bus.event_schema import (
+from core.synaptic_conclave.redis_client import get_redis_bus, publish_codex_event
+from core.synaptic_conclave.event_schema import (
     create_codex_discovery_event, 
     CodexIntent, 
     EventSchemaValidator

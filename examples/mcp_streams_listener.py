@@ -22,7 +22,7 @@ import logging
 
 # MCP has flat structure, PYTHONPATH=/app in docker-compose
 from mcp_listener import MCPListener
-from vitruvyan_core.core.foundation.cognitive_bus.consumers.listener_adapter import wrap_legacy_listener
+from vitruvyan_core.core.synaptic_conclave.consumers.listener_adapter import wrap_legacy_listener
 
 logging.basicConfig(
     level=logging.INFO,

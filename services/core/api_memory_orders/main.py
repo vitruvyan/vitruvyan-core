@@ -15,46 +15,51 @@ from fastapi.responses import JSONResponse, Response
 from prometheus_client import Counter, Histogram, Gauge, Enum, generate_latest, CONTENT_TYPE_LATEST
 import asyncio
 import json
-import logging # New: Ensure logging is correctly imported at the top
-import redis.asyncio as redis
+import logging
 
-from core.foundation.persistence.postgres_agent import PostgresAgent
-from core.foundation.persistence.qdrant_agent import QdrantAgent
-from core.foundation.persistence.alchemist_agent import AlchemistAgent # New import for AlchemistAgent
+from core.agents.postgres_agent import PostgresAgent
+from core.agents.qdrant_agent import QdrantAgent
+from core.agents.alchemist_agent import AlchemistAgent
 from core.governance.memory_orders.rag_health import get_rag_health
-# TODO: Create redis_listener for Cognitive Bus integration
+from core.synaptic_conclave.transport.streams import StreamBus
+# TODO: Create redis_listener for Synaptic Conclave integration
 # from core.governance.memory_orders.redis_listener import MemoryOrdersCognitiveBusListener
 
 # Configure logger for this module
-logger = logging.getLogger(__name__) # Use existing logger setup
+logger = logging.getLogger(__name__)
 
-# Simple Async Redis Cognitive Bus client for AlchemistAgent
-class SimpleRedisCognitiveBus:
-    def __init__(self, redis_url: str):
-        self._redis_url = redis_url
-        self._redis_client: redis.Redis = None # Type hint for async redis client
+# Cognitive Bus wrapper for AlchemistAgent (migrated to Redis Streams)
+class CognitiveBusAdapter:
+    """Adapter to make StreamBus work with AlchemistAgent's async interface."""
+    def __init__(self, redis_url: str = None):
+        # Extract Redis connection params from URL
+        host = os.getenv('REDIS_HOST', 'omni_redis')
+        port = int(os.getenv('REDIS_PORT', '6379'))
+        self._bus = StreamBus(host=host, port=port)
+        logger.info(f"[CognitiveBusAdapter] StreamBus initialized: {host}:{port}")
 
     async def connect(self):
-        if self._redis_client is None:
-            self._redis_client = await redis.from_url(self._redis_url, decode_responses=True)
-            logger.info("[AlchemistAgent] Cognitive Bus connected to Redis.")
+        # StreamBus connects automatically in __init__
+        logger.info("[CognitiveBusAdapter] StreamBus ready (auto-connected)")
 
     async def disconnect(self):
-        if self._redis_client:
-            await self._redis_client.close()
-            self._redis_client = None
-            logger.info("[AlchemistAgent] Cognitive Bus disconnected from Redis.")
+        # StreamBus uses synchronous Redis client, no explicit disconnect needed
+        logger.info("[CognitiveBusAdapter] StreamBus will be cleaned up on shutdown")
 
     async def publish(self, channel: str, data: Dict[str, Any]):
-        if self._redis_client is None:
-            await self.connect() # Ensure connection if not already
-
+        """Emit event to Redis Stream (sync operation wrapped in async)."""
         try:
-            message = json.dumps(data)
-            await self._redis_client.publish(channel, message)
-            logger.info(f"[AlchemistAgent] Published event to '{channel}': {data}")
+            # StreamBus.emit() is synchronous, but we're in async context
+            # Run in thread pool to avoid blocking event loop
+            event_id = await asyncio.to_thread(
+                self._bus.emit,
+                channel=channel,
+                payload=data,
+                emitter="memory_orders"
+            )
+            logger.info(f"[CognitiveBusAdapter] Emitted to stream '{channel}': {event_id}")
         except Exception as e:
-            logger.error(f"[AlchemistAgent] Failed to publish event to '{channel}': {e}", exc_info=True)
+            logger.error(f"[CognitiveBusAdapter] Failed to emit to '{channel}': {e}", exc_info=True)
 
 
 app = FastAPI(
@@ -77,8 +82,7 @@ async def startup_events():
     
     # AlchemistAgent schema check
     logger.info("[MemoryOrdersApp] Running AlchemistAgent schema check during startup...")
-    redis_url = os.getenv("REDIS_URL", "redis://vitruvyan_redis:6379/0")
-    cognitive_bus_client = SimpleRedisCognitiveBus(redis_url)
+    cognitive_bus_client = CognitiveBusAdapter()
     await cognitive_bus_client.connect()
 
     alchemist_agent = AlchemistAgent(cognitive_bus=cognitive_bus_client)

@@ -17,14 +17,14 @@ import logging
 import json
 import asyncio
 
-from core.foundation.cognitive_bus.event_schema import (
+from core.synaptic_conclave.event_schema import (
     EventDomain, 
     SentinelIntent,
     create_sentinel_risk_event,
     create_sentinel_emergency_event
 )
 # Import Synaptic Conclave integration
-from core.foundation.cognitive_bus.redis_client import RedisBusClient
+from core.synaptic_conclave.redis_client import RedisBusClient
 
 logger = logging.getLogger(__name__)
 

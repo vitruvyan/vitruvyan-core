@@ -31,14 +31,13 @@ from core.governance.orthodoxy_wardens.chronicler_agent import SystemMonitor  # 
 from core.governance.orthodoxy_wardens.inquisitor_agent import ComplianceValidator  # Inquisitor
 from core.governance.orthodoxy_wardens.penitent_agent import AutoCorrector  # Penitent
 # LLM interface for sacred reasoning
-from core.foundation.llm.llm_interface import LLMInterface
+from core.llm.llm_interface import LLMInterface
 # Standard Vitruvyan agents
-from core.foundation.persistence.postgres_agent import PostgresAgent
+from core.agents.postgres_agent import PostgresAgent
 
-# 🕯️ SYNAPTIC CONCLAVE INTEGRATION - Sacred Cognitive Bus
-from core.foundation.cognitive_bus.redis_client import get_redis_bus, CognitiveEvent
-from core.foundation.cognitive_bus.heart import get_heart
-from core.foundation.cognitive_bus.herald import get_herald
+# 🕯️ SYNAPTIC CONCLAVE INTEGRATION - Redis Streams Cognitive Bus (Refactored Feb 2026)
+from core.synaptic_conclave.transport.streams import StreamBus
+from core.synaptic_conclave.events.event_envelope import CognitiveEvent
 import threading
 import asyncio
 
@@ -63,11 +62,50 @@ class SacredRole:
     def __init__(self, role_name: str):
         self.role_name = role_name
         self.logger = logging.getLogger(f"ORTHODOXY.{role_name.upper()}")
-        self.redis_bus = get_redis_bus()
+        # Redis Streams Cognitive Bus
+        host = os.getenv('REDIS_HOST', 'omni_redis')
+        port = int(os.getenv('REDIS_PORT', '6379'))
+        self.redis_bus = StreamBus(host=host, port=port)
         
     def sacred_log(self, message: str, level: str = "INFO"):
         """Sacred logging format: [ORTHODOXY][ROLE] message"""
         getattr(self.logger, level.lower())(f"[ORTHODOXY][{self.role_name.upper()}] {message}")
+    
+    def publish_event(self, event_dict: Dict[str, Any]):
+        """
+        Compatibility wrapper for legacy publish_event() calls.
+        Adapts old CognitiveEvent format to Redis Streams emit().
+        
+        Args:
+            event_dict: Dict with keys: event_type, emitter, target, payload, timestamp
+        """
+        try:
+            # Extract channel from event_type (e.g., "orthodoxy.heresy.detected" → "orthodoxy")
+            event_type = event_dict.get("event_type", "orthodoxy.event")
+            channel = event_type.split(".")[0]  # First segment becomes channel name
+            
+            # Construct payload with full event metadata
+            payload = {
+                "event_type": event_type,
+                "emitter": event_dict.get("emitter", self.role_name.lower()),
+                "target": event_dict.get("target", "system"),
+                "payload": event_dict.get("payload", {}),
+                "timestamp": event_dict.get("timestamp", datetime.utcnow().isoformat())
+            }
+            
+            # Emit to Redis Stream (synchronous call, safe in FastAPI worker threads)
+            event_id = self.redis_bus.emit(
+                channel=channel,
+                payload=payload,
+                emitter=f"orthodoxy_{self.role_name.lower()}"
+            )
+            
+            self.logger.info(f"[{self.role_name}] Event emitted to stream '{channel}': {event_id}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"[{self.role_name}] Failed to emit event: {e}", exc_info=True)
+            return False
 
 class OrthodoxConfessor(SacredRole):
     """The Confessor - Hears system sins and validates compliance confessions"""
@@ -394,23 +432,16 @@ async def handle_system_events(event: CognitiveEvent):
 
 def setup_synaptic_conclave_listeners():
     """Setup Redis event listeners for Orthodoxy Wardens"""
-    try:
-        redis_bus = get_redis_bus()
-        
-        # Subscribe to key events
-        redis_bus.subscribe("system.audit.requested", handle_audit_request)
-        redis_bus.subscribe("orthodoxy.heresy.detected", handle_heresy_detection) 
-        redis_bus.subscribe("system.*", handle_system_events)  # Monitor all system events
-        redis_bus.subscribe("data.write.completed", handle_system_events)
-        redis_bus.subscribe("data.vector.inserted", handle_system_events)
-        
-        # Start listening in background
-        redis_bus.start_listening()
-        
-        logger.info("[ORTHODOXY][CONCLAVE] Synaptic Conclave event listeners established")
-        
-    except Exception as e:
-        logger.error(f"[ORTHODOXY][CONCLAVE] Failed to setup event listeners: {e}")
+    # TODO: Migrate to Redis Streams (Jan 24, 2026 migration)
+    # Legacy Pub/Sub pattern - needs refactoring to StreamBus.consume()
+    logger.warning("[ORTHODOXY] Synaptic Conclave listeners temporarily disabled (Streams migration pending)")
+    pass
+    # try:
+    #     redis_bus = StreamBus(...)
+    #     # OLD METHOD: redis_bus.subscribe(...)
+    #     # NEW METHOD: for event in bus.consume(channel, group, consumer): ...
+    # except Exception as e:
+    #     logger.error(f"Error setting up listeners: {e}")
 
 # Sacred extension components
 orthodoxy_db_manager = None
@@ -638,7 +669,7 @@ async def trigger_synaptic_audit(request: Dict[str, Any]):
     
     try:
         # Emit audit request event to Synaptic Conclave
-        redis_bus = get_redis_bus()
+        redis_bus = StreamBus()
         
         event = CognitiveEvent(
             event_type="system.audit.requested",
@@ -669,7 +700,7 @@ async def trigger_synaptic_audit(request: Dict[str, Any]):
 async def get_conclave_status():
     """🕯️ Get Synaptic Conclave integration status"""
     try:
-        redis_bus = get_redis_bus()
+        redis_bus = StreamBus()
         bus_stats = redis_bus.get_stats()
         health = redis_bus.health_check()
         

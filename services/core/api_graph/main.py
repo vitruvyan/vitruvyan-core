@@ -412,7 +412,7 @@ async def get_semantic_clusters():
     Get semantic clusters from documentation.
     Returns clustered knowledge organization from docs_archive.
     """
-    from core.foundation.persistence.postgres_agent import PostgresAgent
+    from core.agents.postgres_agent import PostgresAgent
     
     pg = PostgresAgent()
     try:
@@ -482,7 +482,7 @@ async def search_entities(q: str = ""):
         /api/entity_ids/search?q=citi → Returns Citigroup (C)
         /api/entity_ids/search?q=micro → Returns Microsoft (MSFT), MicroStrategy (MSTR)
     """
-    from core.foundation.persistence.postgres_agent import PostgresAgent
+    from core.agents.postgres_agent import PostgresAgent
     
     start_time = time.time()
     

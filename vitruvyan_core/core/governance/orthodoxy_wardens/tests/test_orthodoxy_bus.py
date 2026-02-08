@@ -14,8 +14,8 @@ import json
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from core.foundation.cognitive_bus.redis_client import get_redis_bus, CognitiveEvent
-from core.foundation.cognitive_bus.event_schema import EventSchemaValidator
+from core.synaptic_conclave.redis_client import get_redis_bus, CognitiveEvent
+from core.synaptic_conclave.event_schema import EventSchemaValidator
 
 
 class OrthodoxyCycleValidator:

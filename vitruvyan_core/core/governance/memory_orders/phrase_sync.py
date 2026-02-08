@@ -25,8 +25,8 @@ import httpx
 import uuid
 from datetime import datetime
 from typing import Dict, List, Any
-from core.foundation.persistence.postgres_agent import PostgresAgent
-from core.foundation.persistence.qdrant_agent import QdrantAgent
+from core.agents.postgres_agent import PostgresAgent
+from core.agents.qdrant_agent import QdrantAgent
 import logging
 import time
 

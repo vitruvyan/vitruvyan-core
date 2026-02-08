@@ -17,7 +17,7 @@ import logging
 from typing import Dict, Any
 from datetime import datetime
 
-from core.foundation.cognitive_bus.redis_client import get_redis_bus, CognitiveEvent
+from core.synaptic_conclave.redis_client import get_redis_bus, CognitiveEvent
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

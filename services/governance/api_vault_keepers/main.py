@@ -24,9 +24,10 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from prometheus_fastapi_instrumentator import Instrumentator
 
-from core.foundation.cognitive_bus.redis_client import get_redis_bus, CognitiveEvent
-from core.foundation.persistence.postgres_agent import PostgresAgent
-from core.foundation.persistence.qdrant_agent import QdrantAgent
+from core.synaptic_conclave.transport.streams import StreamBus
+from core.synaptic_conclave.events.event_envelope import CognitiveEvent
+from core.agents.postgres_agent import PostgresAgent
+from core.agents.qdrant_agent import QdrantAgent
 
 # Configure sacred logging
 logging.basicConfig(
@@ -79,7 +80,7 @@ class VaultGuardian:
     
     def __init__(self):
         self.role = "VaultGuardian"
-        self.redis_bus = get_redis_bus()
+        self.redis_bus = StreamBus()
         self.pg_agent = PostgresAgent()
         self.qdrant_agent = QdrantAgent()
         self.active_sessions = {}
@@ -161,7 +162,7 @@ class IntegrityWarden:
     
     def __init__(self):
         self.role = "IntegrityWarden"
-        self.redis_bus = get_redis_bus()
+        self.redis_bus = StreamBus()
         self.pg_agent = PostgresAgent()
         self.qdrant_agent = QdrantAgent()
         
@@ -305,7 +306,7 @@ class ArchiveKeeper:
     
     def __init__(self):
         self.role = "ArchiveKeeper"
-        self.redis_bus = get_redis_bus()
+        self.redis_bus = StreamBus()
         self.pg_agent = PostgresAgent()
         self.qdrant_agent = QdrantAgent()
         
@@ -470,7 +471,7 @@ class RecoverySpecialist:
     
     def __init__(self):
         self.role = "RecoverySpecialist"
-        self.redis_bus = get_redis_bus()
+        self.redis_bus = StreamBus()
         self.pg_agent = PostgresAgent()
         self.qdrant_agent = QdrantAgent()
         
@@ -568,7 +569,7 @@ class AuditTracker:
     
     def __init__(self):
         self.role = "AuditTracker"
-        self.redis_bus = get_redis_bus()
+        self.redis_bus = StreamBus()
         self.pg_agent = PostgresAgent()
         self.qdrant_agent = QdrantAgent()
         
@@ -677,7 +678,7 @@ class VaultKeepersConclave:
     """
     
     def __init__(self):
-        self.redis_bus = get_redis_bus()
+        self.redis_bus = StreamBus()
         self.pg_agent = PostgresAgent()
         self.qdrant_agent = QdrantAgent()
         

@@ -1,0 +1,32 @@
+site_name: Vitruvyan Core
+site_description: Domain-agnostic agentic AI framework documentation
+
+nav:
+  - Home: index.md
+  - Overview: VITRUVYAN_OVERVIEW.md
+  - Walkthrough: VITRUVYAN_PIPELINE_WALKTHROUGH.md
+  - Foundational:
+      - Bus Invariants: foundational/Vitruvyan_Bus_Invariants.md
+      - Epistemic Charter: foundational/Vitruvyan_Epistemic_Charter.md
+      - Vertical Specification: foundational/Vitruvyan_Vertical_Specification.md
+  - Services:
+      - MCP Gateway: services/mcp.md
+      - Codex Hunters: services/codex_hunters.md
+  - Engineering:
+      - Neural Engine Patterns: NEURAL_ENGINE_PATTERNS.md
+      - Neural Engine Contracts: NEURAL_ENGINE_CONTRACTS.md
+      - Technical Debt Audit: TECHNICAL_DEBT_AUDIT.md
+
+theme:
+  name: readthedocs
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - fenced_code
+  - tables
+  - toc:
+      permalink: true

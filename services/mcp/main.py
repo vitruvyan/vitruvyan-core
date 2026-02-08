@@ -31,7 +31,7 @@ from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_
 from fastapi.responses import Response
 
 # Vitruvyan-OS imports (adjusted paths)
-from vitruvyan_core.core.foundation.persistence.postgres_agent import PostgresAgent
+from core.agents.postgres_agent import PostgresAgent
 
 # ============================================================================
 # MCP Error Classes (opaque to LLM, transparent for logging/audit)
@@ -302,14 +302,14 @@ async def sacred_orders_middleware(
     # 1. Synaptic Conclave orchestration
     if redis_client:
         try:
-            redis_client.publish("cognitive_bus:mcp_request", json.dumps({
+            redis_client.publish("conclave.mcp.request", json.dumps({
                 "conclave_id": conclave_id,
                 "tool": tool_name,
                 "args": args,
                 "user_id": user_id,
                 "timestamp": datetime.utcnow().isoformat()
             }))
-            logger.info(f"✅ Synaptic Conclave notified: cognitive_bus:mcp_request")
+            logger.info(f"✅ Synaptic Conclave notified: conclave.mcp.request")
         except Exception as e:
             logger.error(f"⚠️ Redis publish failed: {e}")
     
@@ -368,7 +368,7 @@ async def sacred_orders_middleware(
         print("[DEBUG] Vault: Entering try block")
         # Import dynamically to handle missing core/
         sys.path.insert(0, '/app')
-        from vitruvyan_core.core.foundation.persistence.postgres_agent import PostgresAgent
+        from core.agents.postgres_agent import PostgresAgent
         
         print("[DEBUG] Vault: PostgresAgent imported")
         logger.debug("🔍 PostgresAgent imported successfully")

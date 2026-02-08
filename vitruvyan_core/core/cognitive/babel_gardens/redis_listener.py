@@ -14,8 +14,8 @@ import redis.asyncio as redis
 from datetime import datetime
 
 from .linguistic_synthesis import cultivate_linguistic_unity
-from core.foundation.persistence import PostgresAgent
-from core.foundation.persistence import QdrantAgent
+from core.agents.postgres_agent import PostgresAgent
+from core.agents.qdrant_agent import QdrantAgent
 
 logger = logging.getLogger("BabelGardensListener")
 

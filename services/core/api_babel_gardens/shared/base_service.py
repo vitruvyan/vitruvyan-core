@@ -9,8 +9,8 @@ from typing import Optional, Dict, Any, List
 from contextlib import asynccontextmanager
 
 # Import standard Vitruvyan agents as required
-from core.foundation.persistence import PostgresAgent
-from core.foundation.persistence import QdrantAgent
+from core.agents import PostgresAgent
+from core.agents import QdrantAgent
 
 # Configure logger
 logger = logging.getLogger(__name__)

@@ -33,7 +33,7 @@ Key Nodes:
 
 Dependencies:
 -------------
-- Foundation Tier 0: persistence, cognitive_bus, llm, cache
+- Foundation Tier 0: persistence, synaptic_conclave, llm, cache
 - Cognitive Tier 1: babel_gardens, semantic_engine
 
 Version: 2.0.0

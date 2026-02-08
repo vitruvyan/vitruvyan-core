@@ -20,8 +20,8 @@ import time
 from typing import Dict, Any
 import os
 
-from vitruvyan_core.core.cognitive.pattern_weavers.weaver_engine import PatternWeaverEngine
-from vitruvyan_core.core.foundation.persistence.postgres_agent import PostgresAgent
+from core.cognitive.pattern_weavers.weaver_engine import PatternWeaverEngine
+from core.foundation.persistence.postgres_agent import PostgresAgent
 
 
 class PatternWeaversListener:
@@ -33,7 +33,7 @@ class PatternWeaversListener:
     
     Publishes to:
     - pattern_weavers:weave_response
-    - cognitive_bus:events (Sacred Orders events)
+    - synaptic.conclave.events (Sacred Orders events)
     """
     
     def __init__(
@@ -71,7 +71,7 @@ class PatternWeaversListener:
         # Channels
         self.request_channel = "pattern_weavers:weave_request"
         self.response_channel = "pattern_weavers:weave_response"
-        self.events_channel = "cognitive_bus:events"
+        self.events_channel = "synaptic.conclave.events"
         
         print(f"🕸️ Pattern Weavers Listener initialized")
         print(f"   Redis: {self.redis_host}:{self.redis_port}")
@@ -80,7 +80,7 @@ class PatternWeaversListener:
     
     def _publish_event(self, event_type: str, payload: Dict[str, Any]):
         """
-        Publish event to cognitive_bus:events channel.
+        Publish event to synaptic.conclave.events channel.
         
         Args:
             event_type: Type of event (e.g., "weaving_completed")

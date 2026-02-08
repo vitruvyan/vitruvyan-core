@@ -27,8 +27,8 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 # Switch to non-root user
 USER vitruvyan
 
-# Copy the entire vitruvyan_core package (our core library)
-COPY --chown=vitruvyan:vitruvyan vitruvyan_core /app/vitruvyan_core
+# Copy ONLY core modules (NOT entire vitruvyan_core) - matches babel_gardens pattern
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/ /app/core/
 
 # Copy the API service specific code
 COPY --chown=vitruvyan:vitruvyan services/governance/api_conclave /app/api_conclave
@@ -38,7 +38,7 @@ EXPOSE 8012
 
 # Health check
 HEALTHCHECK --interval=120s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8012/health/conclave || exit 1
+    CMD curl -f http://localhost:8012/health || exit 1
 
 # Start the Synaptic Conclave
 CMD ["uvicorn", "api_conclave.main:app", "--host", "0.0.0.0", "--port", "8012", "--workers", "1", "--log-level", "info"]

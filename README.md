@@ -269,6 +269,17 @@ See individual component READMEs:
 - [Orchestration](vitruvyan_core/core/orchestration/README.md)
 - [Domain Contract](vitruvyan_core/domains/README.md)
 
+### Build the docs site (MkDocs)
+
+```bash
+# Prereqs: Python 3 + pip
+# Debian/Ubuntu: sudo apt-get install -y python3-venv python3-pip
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.docs.txt
+mkdocs serve
+```
+
 ---
 
 ## 📊 Project Status
@@ -326,4 +337,3 @@ Key sections:
 See [Technical Debt Audit](docs/TECHNICAL_DEBT_AUDIT.md) for current abstraction status.
 
 The core contains ~134 files with financial-specific terminology that needs abstraction. This is documented for incremental cleanup.
-

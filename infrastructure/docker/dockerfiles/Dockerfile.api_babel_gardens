@@ -57,9 +57,10 @@ FROM dependencies as final
 # Set working directory
 WORKDIR /app
 
-# Copy application code
+# Copy service code
 COPY services/core/api_babel_gardens/ /app/api_babel_gardens/
-# Copy core modules required for PostgresAgent and QdrantAgent
+
+# Copy ALL core modules (includes foundation, governance, cognitive, etc.)
 COPY vitruvyan_core/core/ /app/core/
 
 # Copy configuration files (optional)

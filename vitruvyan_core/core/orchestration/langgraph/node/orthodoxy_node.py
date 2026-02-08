@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 
 # Synaptic Conclave Integration
-from core.foundation.cognitive_bus.redis_client import get_redis_bus, CognitiveEvent
+from core.synaptic_conclave.redis_client import get_redis_bus, CognitiveEvent
 
 logger = logging.getLogger(__name__)
 

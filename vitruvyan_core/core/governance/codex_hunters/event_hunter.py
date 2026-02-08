@@ -38,8 +38,8 @@ from .tracker import Tracker
 from .restorer import Restorer
 from .binder import Binder
 from .inspector import Inspector
-from core.foundation.cognitive_bus.redis_client import get_redis_bus, CognitiveEvent
-from core.foundation.cognitive_bus.event_schema import (
+from core.synaptic_conclave.redis_client import get_redis_bus, CognitiveEvent
+from core.synaptic_conclave.event_schema import (
     create_codex_discovery_event, 
     CodexIntent, 
     EventSchemaValidator

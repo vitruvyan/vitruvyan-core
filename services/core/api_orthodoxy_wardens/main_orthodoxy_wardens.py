@@ -31,14 +31,14 @@ from core.governance.orthodoxy_wardens.chronicler_agent import SystemMonitor  # 
 from core.governance.orthodoxy_wardens.inquisitor_agent import ComplianceValidator  # Inquisitor foundation
 from core.governance.orthodoxy_wardens.penitent_agent import AutoCorrector  # Penitent foundation
 # For now, use audit agent as Abbot base - will create proper theological hierarchy later
-from core.foundation.llm.llm_interface import LLMInterface
+from core.llm.llm_interface import LLMInterface
 # Use standard Vitruvyan agents as required
-from core.foundation.persistence.postgres_agent import PostgresAgent
+from core.agents.postgres_agent import PostgresAgent
 
-# 🕯️ SYNAPTIC CONCLAVE INTEGRATION - Sacred Cognitive Bus
-from core.foundation.cognitive_bus.redis_client import get_redis_bus, CognitiveEvent
-from core.foundation.cognitive_bus.heart import get_heart
-from core.foundation.cognitive_bus.herald import get_herald
+# 🕯️ SYNAPTIC CONCLAVE INTEGRATION - Sacred Cognitive Bus (Refactored Feb 2026)
+from core.synaptic_conclave.transport.streams import StreamBus
+from core.synaptic_conclave.events.event_envelope import CognitiveEvent
+# NOTE: heart and herald deprecated (Jan 24, 2026) - use StreamBus.emit() directly
 import threading
 import asyncio
 
@@ -91,7 +91,7 @@ class SacredRole:
 
         self.logger = logging.getLogger(f"ORTHODOXY.{role_name.upper()}")
 
-        self.redis_bus = get_redis_bus()
+        self.redis_bus = StreamBus()
 
         
 
@@ -607,7 +607,7 @@ def setup_synaptic_conclave_listeners():
 
     try:
 
-        redis_bus = get_redis_bus()
+        redis_bus = StreamBus()
 
         
 
@@ -1189,7 +1189,7 @@ async def trigger_synaptic_audit(request: Dict[str, Any]):
 
         # Emit audit request event to Synaptic Conclave
 
-        redis_bus = get_redis_bus()
+        redis_bus = StreamBus()
 
         
 
@@ -1251,7 +1251,7 @@ async def get_conclave_status():
 
     try:
 
-        redis_bus = get_redis_bus()
+        redis_bus = StreamBus()
 
         bus_stats = redis_bus.get_stats()
 

@@ -32,7 +32,7 @@ import os
 
 # LangGraph imports
 from core.orchestration.langgraph.node.base_node import BaseNode
-from core.foundation.cognitive_bus.redis_client import get_redis_bus
+from core.synaptic_conclave.redis_client import get_redis_bus
 
 logger = logging.getLogger(__name__)
 

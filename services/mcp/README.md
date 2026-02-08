@@ -1,54 +1,56 @@
-# 🏛️ MCP Server - Model Context Protocol Bridge
+# 🏛️ MCP Server — Model Context Protocol Gateway
 
-## Overview
-MCP Server espone tool OpenAI-compatible che comunicano con i Sacred Orders di Vitruvyan attraverso il Cognitive Bus.
+MCP è un **gateway stateless** che espone tool in formato “function-calling” e applica una pipeline di governance/audit (Sacred Orders) a ogni esecuzione.
 
-**Architettura**:
+Documentazione canonica (vitruvyan-core): `docs/services/mcp.md`
+
+## Architettura (alto livello)
+
 ```
-LLM (Claude/GPT) → MCP Server (8020) → Sacred Orders Pipeline
-                                        ↓
-                        Synaptic Conclave → Orthodoxy Wardens → Vault Keepers → Sentinel
+LLM → MCP (8020) → tool executor (vertical-specific)
+              ↓
+ Redis bus (event) → Orthodoxy (validate) → Postgres (audit)
 ```
 
-## Status Verificato ✅
+## Endpoints
 
-### File Corretti
-- ✅ **Dockerfile** - Aggiornato da `vitruvyan_os` → `vitruvyan_core`
-- ✅ **main.py** - 1040 righe, import corretti `vitruvyan_core`
-- ✅ **requirements.txt** - Dipendenze complete (14 pacchetti)
+- `GET /tools` — discovery tool schemas
+- `POST /execute` — execute tool + governance/audit
+- `GET /health` — healthcheck
+- `GET /metrics` — Prometheus metrics
 
-### Dipendenze API
-Il servizio MCP chiama:
-- ❌ **Neural Engine** (`omni_neural_engine:8003`) - ✅ PRESENTE
-- ❌ **VEE/Graph API** (`omni_api_graph:8004`) - ✅ PRESENTE  
-- ❌ **Pattern Weavers** (`omni_pattern_weavers:8017`) - ❌ MANCANTE nel docker-compose
+## Configurazione (env)
 
-### Dipendenze Infrastrutturali
-- ✅ **Redis** (`omni_redis:6379`) - Cognitive Bus
-- ✅ **PostgreSQL** (`omni_postgres:5432`) - Vault Keepers audit trail
+Infrastruttura:
 
-## Configurazione Docker-Compose Richiesta
+- `REDIS_HOST`, `REDIS_PORT`
+- `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`
+
+Dipendenze esterne (se usate dagli executor attivi):
+
+- `LANGGRAPH_URL` / `LANGGRAPH_API`
+- `NEURAL_ENGINE_API`, `VEE_ENGINE_API`, `PATTERN_WEAVERS_API`
+
+## Nota sulla neutralità di dominio
+
+Il catalogo tool e i relativi executor **devono essere definiti dal vertical**. Se vedi tool con terminologia legata a un dominio specifico, considerali **placeholder/migrazione**.
+
+## Esempio docker-compose (minimo)
 
 ```yaml
 vitruvyan_mcp:
   build:
     context: ../..
     dockerfile: services/mcp/Dockerfile
-  container_name: omni_mcp
   environment:
     PYTHONPATH: /app
-    # API Dependencies
-    NEURAL_ENGINE_API: http://omni_api_neural:8003
-    VEE_ENGINE_API: http://omni_api_graph:8004
-    PATTERN_WEAVERS_API: http://omni_pattern_weavers:8017  # NOT YET IN COMPOSE
-    # Infrastructure
     REDIS_HOST: omni_redis
     REDIS_PORT: 6379
     POSTGRES_HOST: omni_postgres
     POSTGRES_PORT: 5432
-    POSTGRES_DB: vitruvyan_omni
-    POSTGRES_USER: vitruvyan_omni_user
-    POSTGRES_PASSWORD: "@Caravaggio971_omni"
+    POSTGRES_DB: vitruvyan
+    POSTGRES_USER: vitruvyan
+    POSTGRES_PASSWORD: vitruvyan
   ports:
     - "9020:8020"
   restart: unless-stopped
@@ -57,9 +59,6 @@ vitruvyan_mcp:
   depends_on:
     - vitruvyan_postgres
     - vitruvyan_redis
-    - vitruvyan_api_neural
-    - vitruvyan_api_graph
-    # - vitruvyan_pattern_weavers  # TODO: Add when service exists
   healthcheck:
     test: ["CMD", "curl", "-f", "http://localhost:8020/health"]
     interval: 30s
@@ -93,23 +92,6 @@ CREATE INDEX idx_mcp_created_at ON mcp_tool_calls(created_at DESC);
 - **POST /tools/execute** - Esegue tool con Sacred Orders pipeline
 - **GET /health** - Health check
 - **GET /metrics** - Prometheus metrics
-
-## Tools Disponibili (14 total)
-
-1. **screen_ticker** - Neural Engine screening
-2. **generate_vee** - VEE Generation Engine  
-3. **get_sentiment** - Sentiment analysis
-4. **analyze_trend** - Trend analysis
-5. **analyze_momentum** - Momentum analysis
-6. **analyze_volatility** - Volatility analysis
-7. **analyze_risk** - Risk assessment
-8. **backtest_strategy** - Strategy backtesting
-9. **get_portfolio** - Collection status
-10. **execute_trade** - Trade execution
-11. **get_market_data** - Market data retrieval
-12. **analyze_fundamentals** - Fundamental analysis
-13. **get_news** - Financial news
-14. **create_alert** - Alert creation
 
 ## Testing
 

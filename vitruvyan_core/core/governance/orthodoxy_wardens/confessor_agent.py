@@ -11,7 +11,7 @@ import json
 from langgraph.graph import StateGraph, END
 
 # Import your existing LLM interface
-from core.foundation.llm.llm_interface import LLMInterface
+from core.llm.llm_interface import LLMInterface
 
 # Import monitoring tools (NEW GOVERNANCE STRUCTURE)
 from core.governance.orthodoxy_wardens.code_analyzer import CodeAnalyzer

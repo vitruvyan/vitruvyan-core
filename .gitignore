@@ -25,6 +25,7 @@ venv/
 ENV/
 env/
 .venv
+.venv*/
 
 # IDE
 .vscode/
@@ -84,6 +85,7 @@ Thumbs.db
 /tmp/
 *.log.*
 build_logs/
+site/
 
 # Node modules (if any frontend)
 node_modules/

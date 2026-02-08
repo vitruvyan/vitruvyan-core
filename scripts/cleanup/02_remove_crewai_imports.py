@@ -11,10 +11,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).parent.parent.parent
 
 # Files that had CrewAI imports (from audit)
+# NOTE: Paths updated Feb 6, 2026 - cognitive_bus renamed to synaptic_conclave
 FILES_WITH_CREWAI_IMPORTS = [
-    "vitruvyan_core/core/foundation/cognitive_bus/herald.py",
-    "vitruvyan_core/core/foundation/cognitive_bus/event_schema.py",
-    "vitruvyan_core/core/foundation/cognitive_bus/lexicon.py",
+    "vitruvyan_core/core/synaptic_conclave/herald.py",
+    "vitruvyan_core/core/synaptic_conclave/event_schema.py",
+    "vitruvyan_core/core/synaptic_conclave/lexicon.py",
     "vitruvyan_core/core/orchestration/langgraph/node/quality_check_node.py",
     "vitruvyan_core/core/orchestration/langgraph/node/compose_node.py",
     "vitruvyan_core/core/orchestration/langgraph/node/llm_soft_node.py",

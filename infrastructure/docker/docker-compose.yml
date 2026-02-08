@@ -73,79 +73,35 @@ services:
     networks:
       - omni-net
 
-  embedding:
+  # Embedding Service - MiniLM-L6-v2 API (port 8010)
+  vitruvyan_api_embedding:
     build:
       context: ../..
-      dockerfile: scripts/Dockerfile.embedding
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_embedding
     container_name: omni_api_embedding
     networks:
       - omni-net
     depends_on:
+      - redis
+      - postgres
       - qdrant
     ports:
       - "9010:8010"
     restart: unless-stopped
-    command: python3 scripts/api_embedding_server.py
     environment:
       - PYTHONPATH=/app
       - POSTGRES_HOST=${POSTGRES_HOST:-omni_postgres}
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}
       - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_omni}
-      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_user}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_omni_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971}
       - QDRANT_URL=${QDRANT_URL_OMNI:-http://omni_qdrant:6333}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_URL=${REDIS_URL:-redis://omni_redis:6379}
 
-  # PHASE 1: DEPRECATED - Replaced by Babel Gardens (8009)
-  # vitruvyan_api_sentiment:
-  #   container_name: omni_sentiment_enhanced
-  #   build:
-  #     context: ../..
-  #     dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_sentiment
-  #   ports:
-  #     - "8001:8001"
-  #   environment:
-  #     # Babel Gardens Integration
-  #     - BABEL_GARDENS_EMBEDDING_ENDPOINT=http://vitruvyan_babel_gardens:8009
-  #     - BABEL_GARDENS_FUSION_ENABLED=true
-  #     - BABEL_GARDENS_FUSION_MODE=enhanced
-  #     
-  #     # Database connections (aligned with PHASE 2 standardization)
-  #     - POSTGRES_HOST=${POSTGRES_HOST_OMNI:-omni_postgres}
-  #     - POSTGRES_PORT=5432
-  #     - POSTGRES_DB=${POSTGRES_DB}
-  #     - POSTGRES_USER=${POSTGRES_USER}
-  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-  #   volumes:
-  #     - ./core/sentiment:/app/core/sentiment
-  #     - ./api_sentiment:/app/api_sentiment
-  #     - ./core/logger:/app/core/logger   
-  #     - ./core/leo:/app/core/leo
-  #     - ./scripts:/app/scripts
-  #   depends_on:
-  #     - vitruvyan_babel_gardens  # New dependency for sacred linguistic capabilities
-  #   restart: unless-stopped
-  #   networks:
-  #     - omni-net   
-
-  vitruvyan_api_semantic:
-    container_name: omni_api_semantic
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_semantic
-    ports:
-      - "9002:8002"
-    volumes:
-      - ./core/logic/semantic_engine.py:/app/core/logic/semantic_engine.py
-      - ./core/logic/semantic_modules:/app/core/logic/semantic_modules
-    depends_on:
-      - qdrant
-    networks:
-      - omni-net
+  # DEPRECATED SERVICES (Removed from Core)
+  # - vitruvyan_api_sentiment: Replaced by Babel Gardens
+  # - vitruvyan_api_semantic: Deprecated and removed
+  # - notion: Not core (integration-specific)
 
   vitruvyan_api_graph:
     build:
@@ -188,58 +144,31 @@ services:
     networks:
       - omni-net
 
-  vitruvyan_api_neural:
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_neural
-    container_name: omni_api_neural
-    ports:
-      - "9003:8003"
-    environment:
-      PYTHONPATH: /app
-      POSTGRES_HOST: omni_postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: vitruvyan_omni
-      POSTGRES_USER: vitruvyan_omni_user
-      POSTGRES_PASSWORD: "@Caravaggio971_omni"
-    restart: unless-stopped
-    depends_on:
-      - postgres
-    networks:
-      - omni-net
-
-  vitruvyan_api_crewai:
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_crewai
-    container_name: omni_api_crewai
-    environment:
-      PYTHONPATH: /app
-      # PostgreSQL configuration
-      POSTGRES_HOST: omni_postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: vitruvyan_omni
-      POSTGRES_USER: vitruvyan_omni_user
-      POSTGRES_PASSWORD: "@Caravaggio971_omni"
-      # Redis Cognitive Bus configuration (PHASE 4.6)
-      REDIS_HOST: omni_redis
-      REDIS_PORT: 6379
-      # Qdrant configuration (PHASE 4.6)
-      QDRANT_HOST: ${QDRANT_HOST_OMNI:-omni_qdrant}
-      QDRANT_PORT: ${QDRANT_PORT_OMNI:-6333}
-      # OpenAI configuration
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-    volumes:
-      # Mount only necessary paths for hot-reload
-      - ../../services/core/api_crewai:/app/api_crewai:ro
-    ports:
-      - "9005:8005"
-    restart: unless-stopped
-    networks:
-      - omni-net
-    depends_on:
-      - redis
-      - qdrant 
+  # DEPRECATED SERVICES (Financial vertical - removed from Core)
+  # - vitruvyan_api_sentiment: Replaced by Babel Gardens
+  # - vitruvyan_api_semantic: Deprecated and removed
+  # - vitruvyan_api_neural: Financial-specific Neural Engine (not in core agnostic version)
+  # - vitruvyan_portfolio_guardian: Financial-specific portfolio monitoring  
+  
+  # vitruvyan_api_neural:
+  #   build:
+  #     context: ../..
+  #     dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_neural
+  #   container_name: omni_api_neural
+  #   ports:
+  #     - "9003:8003"
+  #   environment:
+  #     PYTHONPATH: /app
+  #     POSTGRES_HOST: omni_postgres
+  #     POSTGRES_PORT: 5432
+  #     POSTGRES_DB: vitruvyan_omni
+  #     POSTGRES_USER: vitruvyan_omni_user
+  #     POSTGRES_PASSWORD: "@Caravaggio971_omni"
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - omni-net
 
   # 🏛️ ORTHODOXY WARDENS - Sacred Compliance & Divine Order
   vitruvyan_api_orthodoxy_wardens:
@@ -277,7 +206,6 @@ services:
       - redis
       - qdrant
       - vitruvyan_api_graph
-      - vitruvyan_api_crewai
     networks:
       - omni-net
     healthcheck:
@@ -289,7 +217,8 @@ services:
 
 
 
-  # 🛡️ COLLECTION GUARDIAN: DISABLED - Legacy financial component, kept as template
+  # 🛡️ PORTFOLIO GUARDIAN: DISABLED - Legacy financial component from vertical
+  # Kept as template for future domain-specific implementations
   # vitruvyan_portfolio_guardian:
   #   build:
   #     context: ../..
@@ -313,7 +242,6 @@ services:
   #     - GUARDIAN_UPDATE_INTERVAL=300
   #     - GUARDIAN_ALERT_CHANNELS=log,redis
   #     - AUDIT_ENGINE_URL=http://omni_api_orthodoxy_wardens:8006
-  #     - CREWAI_AGENTS_URL=http://omni_api_crewai:8005
   #   networks:
   #     - omni-net
   #   depends_on:
@@ -352,7 +280,6 @@ services:
       # Service URLs for sacred bridge module
       - SEMANTIC_ENGINE_URL=http://omni_api_semantic:8002
       - NEURAL_ENGINE_URL=http://omni_api_neural:8003
-      - CREWAI_URL=http://omni_api_crewai:8005
       
       # Sacred Model configuration
       - HUGGINGFACE_HUB_CACHE=/app/models
@@ -419,7 +346,6 @@ services:
       # PHASE 1: Migrated to Babel Gardens unified API
       - SENTIMENT_ENGINE_URL=http://vitruvyan_babel_gardens:8009
       - SENTIMENT_API_URL=http://vitruvyan_babel_gardens:8009
-      - CREWAI_URL=http://vitruvyan_api_crewai:8005
       - GRAPH_ORCHESTRATOR_URL=http://vitruvyan_api_graph:8004
       
       # Conclave configuration
@@ -442,7 +368,7 @@ services:
       - redis
       - vitruvyan_babel_gardens
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8012/health/conclave"]
+      test: ["CMD", "curl", "-f", "http://localhost:8012/health"]
       interval: 30s
       timeout: 20s
       retries: 5
@@ -502,7 +428,7 @@ services:
     depends_on:
       - redis
       - qdrant
-      - embedding
+      - vitruvyan_api_embedding
       - vitruvyan_babel_gardens
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8016/health/memory"]
@@ -761,6 +687,24 @@ services:
     networks:
       - omni-net
 
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: omni_portainer
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9443:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data_omni:/data
+    networks:
+      - omni-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9000/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 volumes:
   redis_data_omni:
   postgres_data_omni:
@@ -770,6 +714,7 @@ volumes:
   vault_keeper_data:
   prometheus_data:
   grafana_data:
+  portainer_data_omni:
 
 networks:
   omni-net:

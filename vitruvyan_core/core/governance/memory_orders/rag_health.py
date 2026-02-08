@@ -23,8 +23,8 @@ Usage:
 """
 import httpx
 from datetime import datetime
-from typing import Dict, Any
-from core.foundation.persistence.postgres_agent import PostgresAgent
+from typing import Dict, Any, List
+from core.agents.postgres_agent import PostgresAgent
 from .coherence import coherence_check, get_sync_lag
 import logging
 

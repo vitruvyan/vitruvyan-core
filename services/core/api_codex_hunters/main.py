@@ -54,11 +54,11 @@ except ImportError as e:
     CODEX_AGENTS_AVAILABLE = False
 
 try:
-    from core.foundation.cognitive_bus.redis_client import get_redis_bus
+    from core.synaptic_conclave.transport.streams import StreamBus
     REDIS_AVAILABLE = True
 except ImportError as e:
-    logger.warning(f"⚠️ Redis client not available: {e}")
-    get_redis_bus = lambda: None
+    logger.warning(f"⚠️ Synaptic Conclave not available: {e}")
+    StreamBus = None
     REDIS_AVAILABLE = False
 
 
@@ -385,7 +385,7 @@ async def run_expedition_background(expedition_id: str, expedition_type: str,
 async def publish_expedition_event(event_type: str, expedition_id: str, data: Dict[str, Any]) -> None:
     """Publish expedition event to Cognitive Bus"""
     try:
-        redis_bus = get_redis_bus()
+        redis_bus = StreamBus()
         
         success = redis_bus.publish_codex_event(
             domain="codex",
@@ -413,7 +413,7 @@ async def health_check():
     """System health check"""
     try:
         # Check Redis connection
-        redis_bus = get_redis_bus()
+        redis_bus = StreamBus()
         redis_connected = redis_bus.is_connected()
         
         # Check database connections (simplified)
@@ -588,7 +588,7 @@ async def get_system_stats():
         
         # Redis stats
         try:
-            redis_bus = get_redis_bus()
+            redis_bus = StreamBus()
             stats["redis_stats"] = redis_bus.get_stats()
         except:
             stats["redis_stats"] = {"error": "Redis not available"}
@@ -640,7 +640,7 @@ async def metrics():
         
         # System health metric (based on last health check)
         try:
-            redis_bus = get_redis_bus()
+            redis_bus = StreamBus()
             redis_ok = redis_bus.is_connected()
             health_value = 1.0 if redis_ok else 0.5
         except:
@@ -670,7 +670,7 @@ async def redis_event_listener():
     """
     logger.info("🎧 Starting Redis Event Listener...")
     
-    redis_bus = get_redis_bus()
+    redis_bus = StreamBus()
     
     # Subscribe to codex events
     channels = [
@@ -925,7 +925,7 @@ async def startup_event():
     
     # Initialize Redis connection
     try:
-        redis_bus = get_redis_bus()
+        redis_bus = StreamBus()
         if redis_bus.connect():
             logger.info("✅ Redis Cognitive Bus connected")
             
@@ -956,7 +956,7 @@ async def shutdown_event():
             logger.info("🔇 Redis Event Listener stopped")
     
     try:
-        redis_bus = get_redis_bus()
+        redis_bus = StreamBus()
         redis_bus.disconnect()
     except:
         pass

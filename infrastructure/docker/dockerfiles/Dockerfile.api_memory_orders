@@ -24,13 +24,8 @@ WORKDIR /app
 # Copy service code
 COPY services/core/api_memory_orders/ /app/api_memory_orders/
 
-# Copy core dependencies
-COPY vitruvyan_core/core/foundation/persistence/ /app/core/foundation/persistence/
-COPY vitruvyan_core/core/governance/memory_orders/ /app/core/governance/memory_orders/
-COPY vitruvyan_core/core/foundation/cognitive_bus/ /app/core/foundation/cognitive_bus/
-COPY vitruvyan_core/core/__init__.py /app/core/__init__.py
-COPY vitruvyan_core/core/foundation/__init__.py /app/core/foundation/__init__.py
-COPY vitruvyan_core/core/governance/__init__.py /app/core/governance/__init__.py
+# Copy ALL core modules (includes foundation, governance, cognitive, etc.)
+COPY vitruvyan_core/core/ /app/core/
 
 # Create logs directory and setup user
 RUN useradd --create-home --shell /bin/bash memory && \

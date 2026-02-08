@@ -27,7 +27,7 @@ import logging
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
-from core.foundation.cognitive_bus import get_scribe
+from core.synaptic_conclave import get_scribe
 
 logger = logging.getLogger(__name__)
 

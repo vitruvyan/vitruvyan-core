@@ -22,8 +22,8 @@ from fastapi.responses import PlainTextResponse
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 
 # Import Pattern Weaver engine and schemas
-from vitruvyan_core.core.cognitive.pattern_weavers.weaver_engine import PatternWeaverEngine
-from vitruvyan_core.core.cognitive.pattern_weavers.schemas import WeaveRequest, WeaveResponse
+from core.cognition.pattern_weavers.weaver_engine import PatternWeaverEngine
+from core.cognition.pattern_weavers.schemas import WeaveRequest, WeaveResponse
 
 # Initialize FastAPI app
 app = FastAPI(

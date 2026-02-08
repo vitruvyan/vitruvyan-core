@@ -44,7 +44,7 @@ class BaseHunter(ABC):
         
         # Redis connection for event publishing
         try:
-            from core.foundation.cognitive_bus.redis_client import get_redis_bus
+            from core.synaptic_conclave.redis_client import get_redis_bus
             self.redis_bus = get_redis_bus()
         except ImportError:
             logger.warning(f"⚠️ Redis not available for {self.name}")

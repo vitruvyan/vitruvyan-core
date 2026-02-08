@@ -15,7 +15,7 @@ import os
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from vitruvyan_core.core.foundation.cognitive_bus.plasticity import metrics as plasticity_metrics
+from vitruvyan_core.core.synaptic_conclave.plasticity import metrics as plasticity_metrics
 
 def test_metrics_import():
     """Test that metrics module imports correctly."""

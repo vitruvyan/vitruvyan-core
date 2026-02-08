@@ -21,8 +21,8 @@ load_dotenv()
 
 # Import existing components
 from sentence_transformers import SentenceTransformer
-from core.leo import PostgresAgent
-from core.leo import QdrantAgent
+from core.agents import PostgresAgent
+from core.agents import QdrantAgent
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

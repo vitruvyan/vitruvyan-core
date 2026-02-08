@@ -3,10 +3,10 @@
 
 from .rag_health import get_rag_health
 from .coherence import coherence_check
-from .phrase_sync import sync_phrases_to_qdrant
+from .phrase_sync import sync_entities_to_qdrant
 
 __all__ = [
     "get_rag_health",
     "coherence_check", 
-    "sync_phrases_to_qdrant",
+    "sync_entities_to_qdrant",
 ]

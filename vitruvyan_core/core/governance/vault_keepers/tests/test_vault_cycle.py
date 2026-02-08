@@ -7,7 +7,7 @@ import pytest
 import time
 import uuid
 from unittest.mock import AsyncMock, patch
-from core.foundation.cognitive_bus.event_schema import VaultIntent
+from core.synaptic_conclave.event_schema import VaultIntent
 from api_vault_keepers.main_vault_keepers import (
     VaultKeepersConclave,
     VaultGuardian,

@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 
 # Import standard Vitruvyan agents as required
-from core.foundation.persistence import PostgresAgent
+from core.agents import PostgresAgent
 
 logger = logging.getLogger(__name__)
 

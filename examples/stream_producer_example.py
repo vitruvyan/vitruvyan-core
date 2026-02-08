@@ -33,7 +33,7 @@ from datetime import datetime
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from vitruvyan_core.core.foundation.cognitive_bus import StreamBus
+from vitruvyan_core.core.synaptic_conclave import StreamBus
 
 logging.basicConfig(
     level=logging.INFO,

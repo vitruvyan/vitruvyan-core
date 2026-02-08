@@ -28,8 +28,8 @@ from typing import Dict, Any
 
 # Import Memory Orders components
 from core.memory_orders.redis_listener import MemoryOrdersCognitiveBusListener
-from core.foundation.cognitive_bus import get_heart, get_scribe, publish_event
-from core.foundation.cognitive_bus.event_schema import (
+from core.synaptic_conclave import get_heart, get_scribe, publish_event
+from core.synaptic_conclave.event_schema import (
     MemoryIntent,
     EventSchemaValidator
 )
