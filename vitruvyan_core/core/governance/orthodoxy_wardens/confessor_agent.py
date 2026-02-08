@@ -37,15 +37,59 @@ class AuditState(TypedDict):
 
 class AutonomousAuditAgent:
     """
-    Autonomous Audit Agent using pure LangGraph
+    Orchestrates comprehensive system audits using LangGraph workflow.
     
-    Features:
-    - Code change analysis
-    - System health monitoring
-    - Financial compliance validation
-    - Autonomous corrections
-    - System healing
-    - Learning from patterns
+    **What it does**: 
+    Coordinates all governance agents (SystemMonitor, ComplianceValidator, AutoCorrector) 
+    to execute full audits of code changes, system health, and compliance violations. 
+    Decides autonomously whether issues can be auto-corrected or require manual review.
+    
+    **How it works**:
+    9-step LangGraph pipeline:
+    1. trigger_analysis() - Determines audit scope (code_commit, scheduled, manual)
+    2. analyze_code() - Static analysis of recent code changes via CodeAnalyzer
+    3. monitor_system_health() - Collects metrics via SystemMonitor (CPU/memory/disk)
+    4. validate_compliance() - Scans outputs via ComplianceValidator (regex + LLM)
+    5. decide_action() - Decision engine: auto-correct vs escalate vs approve
+    6. execute_auto_corrections() - Applies fixes via AutoCorrector (if approved)
+    7. heal_system() - Restarts unhealthy containers, clears disk space
+    8. send_notifications() - Alerts via Slack/PostgreSQL logs
+    9. learn_from_audit() - Updates historical patterns for future audits
+    
+    **When to use**:
+    - After Git commits (trigger_type='code_commit')
+    - Scheduled health checks (every 10 minutes, trigger_type='scheduled')
+    - Manual audit requests via API (trigger_type='manual')
+    - After Neural Engine/VEE operations (trigger_type='output_validation')
+    
+    **Example**:
+    ```python
+    agent = AutonomousAuditAgent(config={
+        "llm_interface": llm,
+        "db_manager": db,
+        "docker_manager": docker,
+        "git_monitor": git
+    })
+    
+    result = await agent.audit_workflow.ainvoke({
+        "audit_id": "audit-123",
+        "trigger_type": "code_commit",
+        "repository": "vitruvyan-core",
+        "commit_sha": "abc123"
+    })
+    
+    # result contains:
+    # - compliance_score: float (0-1)
+    # - violations: List[Dict]
+    # - auto_corrections: List[Dict]
+    # - healing_actions: List[str]
+    # - learning_insights: Dict
+    ```
+    
+    **Dependencies**: Requires SystemMonitor, ComplianceValidator, AutoCorrector, 
+    CodeAnalyzer, DockerManager, GitMonitor instances.
+    
+    **Output**: AuditState dataclass with full audit report and recommended actions.
     """
     
     def __init__(self, config: Dict):

@@ -12,8 +12,59 @@ import os
 
 class SystemMonitor:
     """
-    System monitoring without external heavy dependencies
-    Monitors: CPU, Memory, Disk, Network, Processes
+    Real-time OS-level health metrics collection and anomaly detection.
+    
+    **What it does**:
+    Monitors CPU usage, memory consumption, disk space, network I/O, and process counts 
+    using the `psutil` library. Compares current metrics against historical baselines 
+    to detect performance degradations and resource exhaustion.
+    
+    **How it works**:
+    1. Collects metrics every 60 seconds via psutil (non-blocking async)
+    2. Compares against 7-day rolling baseline (mean + 2σ thresholds)
+    3. Flags anomalies:
+       - Warning: >80% resource usage OR >2σ above baseline
+       - Critical: >95% resource usage OR >3σ above baseline
+    4. Stores metrics in PostgreSQL (system_health table) for trend analysis
+    
+    **When to use**:
+    - Continuous background monitoring (runs in main service startup)
+    - On-demand health checks via API: `GET /divine-health`
+    - Before risky operations (database migrations, deployments)
+    - After detecting high error rates (correlate with resource exhaustion)
+    
+    **Example**:
+    ```python
+    monitor = SystemMonitor(
+        db_manager=db,
+        check_interval=60  # seconds
+    )
+    
+    metrics = await monitor.get_health_metrics()
+    
+    # metrics contains:
+    # {
+    #   "cpu_percent": 45.2,
+    #   "memory_percent": 68.3,
+    #   "disk_percent": 72.1,
+    #   "network_bytes_sent": 1024000,
+    #   "network_bytes_recv": 2048000,
+    #   "process_count": 156,
+    #   "anomalies": ["memory_high_usage"],
+    #   "baseline_deviation": {"cpu": 1.2, "memory": 2.7}
+    # }
+    ```
+    
+    **Integration**: 
+    Called by AutonomousAuditAgent's `monitor_system_health()` node during full audits.
+    Also exposed via `/divine-health` API endpoint for external monitoring systems.
+    
+    **Thresholds** (configurable via environment):
+    - `HEALTH_WARNING_THRESHOLD=80` (percent)
+    - `HEALTH_CRITICAL_THRESHOLD=95` (percent)
+    - `ANOMALY_SIGMA_THRESHOLD=2` (standard deviations)
+    
+    **Output**: Dict with metrics, anomaly flags, and deviation from baseline.
     """
     
     def __init__(self):

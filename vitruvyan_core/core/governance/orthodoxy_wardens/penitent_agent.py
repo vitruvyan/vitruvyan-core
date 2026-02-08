@@ -13,12 +13,98 @@ import json
 
 class AutoCorrector:
     """
-    Autonomous correction system for audit findings
-    Applies fixes for:
-    - System issues (restart services, clear disk space)
-    - Code issues (compliance corrections)
-    - Configuration issues (update configs)
-    - Performance issues (optimize resources)
+    Autonomous system correction with rollback support and audit logging.
+    
+    **What it does**:
+    Applies automated fixes for detected issues without human intervention. Handles 
+    container restarts, disk cleanup, compliance text rewrites, configuration updates, 
+    and performance optimizations. All corrections are logged with before/after snapshots 
+    for potential rollback.
+    
+    **How it works**:
+    1. **Decision Logic**:
+       - `auto_execute=True`: Apply immediately (container restarts, disk cleanup, compliance rewrites)
+       - `auto_execute=False`: Log for manual review (database schema changes, major config updates)
+    
+    2. **Correction Strategies** (4 categories):
+       - **immediate_fix** (priority: critical, auto: yes): Restart unhealthy containers, clear temp files
+       - **container_restart** (priority: high, auto: yes): Docker service recovery
+       - **schedule_fix** (priority: medium, auto: no): Database optimizations, schema migrations
+       - **performance_optimization** (priority: medium, auto: yes): Memory limits, cache tuning
+    
+    3. **Rollback Support**:
+       - All corrections logged to PostgreSQL (`auto_corrections` table)
+       - Before/after snapshots stored for state restoration
+       - Rollback available via API: `POST /conclave/rollback/<correction_id>`
+    
+    4. **Safety Checks**:
+       - Pre-execution validation (e.g., disk space > 20% before cleanup)
+       - Rate limiting (max 5 auto-corrections per 10 minutes)
+       - Notification on failure (Slack webhook + PostgreSQL error log)
+    
+    **When to use**:
+    - After AutonomousAuditAgent detects fixable issues (auto-triggered)
+    - When SystemMonitor flags critical alerts (disk >90%, memory leak)
+    - After ComplianceValidator finds rewritable violations (text rewrites)
+    - Manual correction requests via API: `POST /confess` with `auto_correction=true`
+    
+    **Example**:
+    ```python
+    corrector = AutoCorrector(
+        docker_manager=docker,
+        db_manager=db,
+        config_manager=config
+    )
+    
+    report = await corrector.execute_corrections(
+        findings=[
+            {
+                "issue_type": "container_unhealthy",
+                "severity": "critical",
+                "details": {"container_name": "vitruvyan_api_neural", "status": "restarting"}
+            },
+            {
+                "issue_type": "compliance_violation",
+                "severity": "high",
+                "details": {"text": "Buy AAPL now!", "correction": "AAPL shows buy signal"}
+            }
+        ]
+    )
+    
+    # report contains:
+    # {
+    #   "corrections_applied": [
+    #       {"issue": "container_unhealthy", "action": "restart", "success": True},
+    #       {"issue": "compliance_violation", "action": "text_rewrite", "success": True}
+    #   ],
+    #   "rollback_available": True,
+    #   "rollback_ids": ["corr-001", "corr-002"],
+    #   "failed_corrections": []
+    # }
+    ```
+    
+    **Correction Types**:
+    - **System**: Container restarts, disk cleanup, log rotation, process kill
+    - **Code**: Compliance text rewrites, format corrections (no logic changes)
+    - **Configuration**: Environment variable updates, feature flag toggles
+    - **Performance**: Memory limit adjustments, cache size tuning, query optimization
+    
+    **Integration**:
+    Called by AutonomousAuditAgent's `execute_auto_corrections()` and `heal_system()` nodes.
+    Also exposed via API for manual correction triggers.
+    
+    **Configuration**:
+    - `AUTO_CORRECTION_ENABLED=true/false` - Master switch
+    - `AUTO_CORRECTION_RATE_LIMIT=5` - Max corrections per 10 minutes
+    - `DOCKER_SOCKET_PATH=/var/run/docker.sock` - Required for container management
+    
+    **Safety Features**:
+    - Requires Docker socket mount: `-v /var/run/docker.sock:/var/run/docker.sock`
+    - All corrections logged to PostgreSQL with timestamps
+    - Slack notifications on failures (webhook URL in env)
+    - Rollback window: 24 hours (after that snapshots purged)
+    
+    **Output**: CorrectionReport with applied_fixes, rollback_ids, and failure details.
     """
     
     def __init__(self):
