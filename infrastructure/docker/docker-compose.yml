@@ -411,7 +411,7 @@ services:
       - omni-net
     depends_on:
       - redis
-      - vitruvyan_orthodoxy_wardens
+      - vitruvyan_api_orthodoxy_wardens
     command: ["python3", "/app/api_orthodoxy_wardens/streams_listener.py"]
 
   # 🏛️ Vault Keepers Listener - Archival Truth Monitor
