@@ -128,6 +128,36 @@ curl http://localhost:8003/health
 
 ---
 
+## 🧪 Developer Examples
+
+**New to Neural Engine?** Start with practical examples in [`examples/`](./examples/)!
+
+We provide **5 ready-to-run scripts** that teach you how to consume the API:
+
+| Script | Purpose | Tech |
+|--------|---------|------|
+| [`01_health_check.sh`](./examples/01_health_check.sh) | Test service health and dependencies | bash + curl |
+| [`02_screen_basic.sh`](./examples/02_screen_basic.sh) | Basic multi-factor screening | bash + curl |
+| [`03_screen_filters.sh`](./examples/03_screen_filters.sh) | Screening with filters and stratification | bash + curl |
+| [`04_rank_by_feature.sh`](./examples/04_rank_by_feature.sh) | Single-feature ranking (momentum) | bash + curl |
+| [`05_compare_profiles.py`](./examples/05_compare_profiles.py) | Compare balanced vs aggressive profiles | Python |
+
+**Quick Test**:
+```bash
+# Make scripts executable
+chmod +x examples/*.sh
+
+# Test health
+./examples/01_health_check.sh
+
+# Run basic screening
+./examples/02_screen_basic.sh
+```
+
+**Full guide**: See [`examples/README.md`](./examples/README.md)
+
+---
+
 ## 📖 API Usage
 
 ### 1. Multi-Factor Screening (Primary Endpoint)
