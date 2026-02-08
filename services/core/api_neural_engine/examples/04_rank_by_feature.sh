@@ -1,50 +1,24 @@
 #!/bin/bash
-# Single Feature Ranking Example
-# Rank entities by momentum feature (z-score)
+# 04_rank_by_feature.sh
+# Test single-feature ranking (no profile weighting)
+#
+# Usage: ./04_rank_by_feature.sh
+# Expected: Entities ranked by momentum feature only
 
-set -e
+echo "🧠 Neural Engine Single-Feature Ranking (Momentum)"
+echo "===================================================="
 
-BASE_URL="${BASE_URL:-http://localhost:8003}"
-
-echo "📊 Testing Single Feature Ranking..."
-echo "Feature: momentum"
-echo "Top K: 5"
-echo "Higher is better: true"
-echo ""
-
-response=$(curl -s -w "\n%{http_code}" -X POST "${BASE_URL}/rank" \
+curl -s -X POST http://localhost:9003/rank \
   -H "Content-Type: application/json" \
   -d '{
     "feature_name": "momentum",
     "top_k": 5,
     "higher_is_better": true
-  }')
+  }' | jq '.ranked_entities[] | {rank, entity_id, raw_value, z_score}'
 
-http_code=$(echo "$response" | tail -n1)
-body=$(echo "$response" | head -n-1)
+# Alternative: Rank by different feature
+# "feature_name": "trend"
+# "feature_name": "volatility"
 
-if [ "$http_code" -eq 200 ]; then
-    echo "✅ Ranking completed (HTTP $http_code)"
-    echo ""
-    
-    # Extract summary
-    feature=$(echo "$body" | jq -r '.feature_name')
-    total=$(echo "$body" | jq -r '.total_entities_ranked')
-    processing_time=$(echo "$body" | jq -r '.processing_time_ms')
-    
-    echo "📊 Summary:"
-    echo "   - Feature: $feature"
-    echo "   - Total entities ranked: $total"
-    echo "   - Processing time: ${processing_time}ms"
-    echo ""
-    echo "🏆 Top 5 by Momentum Z-Score:"
-    echo "$body" | jq '.ranked_entities[] | "   \(.rank). \(.entity_id) (z-score: \(.z_scores.momentum | tonumber | . * 100 | round / 100), percentile: \(.percentile | tonumber | . * 100 | round / 100)%)"' -r
-    
-    echo ""
-    echo "📈 Full Response:"
-    echo "$body" | jq '.'
-else
-    echo "❌ Ranking failed (HTTP $http_code)"
-    echo "$body" | jq '.' 2>/dev/null || echo "$body"
-    exit 1
-fi
+# Alternative: Lower is better (for risk metrics)
+# "higher_is_better": false

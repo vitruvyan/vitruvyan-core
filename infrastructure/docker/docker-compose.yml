@@ -147,28 +147,23 @@ services:
   # DEPRECATED SERVICES (Financial vertical - removed from Core)
   # - vitruvyan_api_sentiment: Replaced by Babel Gardens
   # - vitruvyan_api_semantic: Deprecated and removed
-  # - vitruvyan_api_neural: Financial-specific Neural Engine (not in core agnostic version)
   # - vitruvyan_portfolio_guardian: Financial-specific portfolio monitoring  
   
-  # vitruvyan_api_neural:
-  #   build:
-  #     context: ../..
-  #     dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_neural
-  #   container_name: omni_api_neural
-  #   ports:
-  #     - "9003:8003"
-  #   environment:
-  #     PYTHONPATH: /app
-  #     POSTGRES_HOST: omni_postgres
-  #     POSTGRES_PORT: 5432
-  #     POSTGRES_DB: vitruvyan_omni
-  #     POSTGRES_USER: vitruvyan_omni_user
-  #     POSTGRES_PASSWORD: "@Caravaggio971_omni"
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - postgres
-  #   networks:
-  #     - omni-net
+  # 🧠 NEURAL ENGINE - Domain-Agnostic Ranking Service
+  vitruvyan_api_neural:
+    build:
+      context: ../..
+      dockerfile: services/core/api_neural_engine/Dockerfile
+    container_name: omni_api_neural
+    ports:
+      - "9003:8003"
+    environment:
+      PYTHONPATH: /app
+      LOG_LEVEL: info
+      DOMAIN: mock
+    restart: unless-stopped
+    networks:
+      - omni-net
 
   # 🏛️ ORTHODOXY WARDENS - Sacred Compliance & Divine Order
   vitruvyan_api_orthodoxy_wardens:

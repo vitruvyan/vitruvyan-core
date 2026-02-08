@@ -124,7 +124,6 @@ class EngineOrchestrator:
                 profile=profile,
                 filters=filters,
                 top_k=top_k,
-                stratification_mode=stratification_mode,
                 risk_tolerance=risk_tolerance
             )
             

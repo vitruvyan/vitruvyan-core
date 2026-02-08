@@ -1,303 +1,245 @@
-# Neural Engine API Examples
+# 🧠 Neural Engine API Examples
 
-Developer-friendly scripts demonstrating how to consume the Neural Engine REST API.
-
-## 📚 Purpose
-
-These examples teach you **how to USE the Neural Engine API** (consumption). For guides on **how to IMPLEMENT custom providers/strategies** (extension), see [`vitruvyan_core/core/neural_engine/domain_examples/`](../../../vitruvyan_core/core/neural_engine/domain_examples/).
-
-**Separation of Concerns**:
-- **This folder** (`examples/`) → API consumption (frontend devs, service orchestration)
-- **`domain_examples/`** → Core implementation (creating new domains: Finance, Healthcare, Logistics)
+**Purpose**: Practical scripts demonstrating how to consume the Neural Engine REST API.
 
 ---
 
-## 🚀 Prerequisites
+## 🚀 Quick Start
 
-### 1. Docker Container Running
-```bash
-# Start Neural Engine service
-docker compose up neural_engine
+### Prerequisites
 
-# Verify it's running
-docker ps | grep neural_engine
-# Expected: Container on port 8003
-```
+**For Bash Scripts** (`.sh`):
+- Docker container running: `docker compose up neural_engine`
+- `curl` installed: `sudo apt install curl`
+- `jq` installed: `sudo apt install jq`
 
-### 2. Required Tools
-```bash
-# Install jq for JSON parsing (bash scripts)
-sudo apt install jq -y
-
-# Install python requests (Python script)
-pip install requests
-```
-
-### 3. Test Service Health
-```bash
-curl http://localhost:8003/health
-# Expected: {"status": "healthy", ...}
-```
+**For Python Scripts** (`.py`):
+- `requests` library: `pip install requests`
 
 ---
 
-## 📋 Available Examples
+## 📁 Available Examples
 
-### 01. Health Check (`01_health_check.sh`)
-**Purpose**: Verify service health and dependency status
+### Bash Scripts (Single API Calls)
 
+#### 1. **01_health_check.sh** - Health Check
 ```bash
 ./01_health_check.sh
 ```
-
-**What it tests**:
-- Service reachability
-- Orchestrator health
-- Data Provider health
-- Scoring Strategy health
-
-**Expected output**:
-```
-✅ Service is healthy (HTTP 200)
-
-📊 Service Status: healthy
-   - Orchestrator: healthy
-   - Data Provider: healthy
-   - Scoring Strategy: healthy
-```
+**Tests**: Service health, dependencies status, version info  
+**Use case**: Verify Neural Engine is running before making requests
 
 ---
 
-### 02. Basic Screening (`02_screen_basic.sh`)
-**Purpose**: Multi-factor screening with balanced profile
-
+#### 2. **02_screen_basic.sh** - Basic Screening
 ```bash
 ./02_screen_basic.sh
 ```
-
-**What it tests**:
-- POST `/screen` endpoint
-- Top K filtering (5 entities)
-- Composite score computation
-- Percentile bucketing
-
-**Expected output**:
-```
-✅ Screening completed (HTTP 200)
-
-📊 Summary:
-   - Total entities evaluated: 10
-   - Processing time: 45ms
-
-🏆 Top 5 Ranked Entities:
-   1. E004 (composite: 1.23, percentile: 95.5%)
-   2. E007 (composite: 0.85, percentile: 87.2%)
-   ...
-```
+**Tests**: POST `/screen` with balanced profile, top-k=5  
+**Use case**: Simple multi-factor screening with default settings
 
 ---
 
-### 03. Screening with Filters (`03_screen_filters.sh`)
-**Purpose**: Filter entities by group and use stratification
-
+#### 3. **03_screen_filters.sh** - Screening with Filters
 ```bash
 ./03_screen_filters.sh
 ```
-
-**What it tests**:
-- Filter by group (GroupA)
-- Stratification mode (`by_group`)
-- Bucket assignment (top/middle/bottom)
-
-**Expected output**:
-```
-✅ Screening with filters completed (HTTP 200)
-
-📊 Summary:
-   - Total entities evaluated: 5
-   - Filter applied: group=GroupA
-
-🏆 Top 5 Ranked Entities (GroupA only):
-   1. E001 (bucket: top, score: 1.45)
-   2. E004 (bucket: top, score: 1.23)
-   ...
-```
+**Tests**: POST `/screen` with group filters (stratification)  
+**Use case**: Filter entities by group/sector before ranking
 
 ---
 
-### 04. Rank by Feature (`04_rank_by_feature.sh`)
-**Purpose**: Single-feature ranking by momentum z-score
-
+#### 4. **04_rank_by_feature.sh** - Single-Feature Ranking
 ```bash
 ./04_rank_by_feature.sh
 ```
-
-**What it tests**:
-- POST `/rank` endpoint
-- Single feature ranking
-- Z-score extraction
-- Higher-is-better sorting
-
-**Expected output**:
-```
-✅ Ranking completed (HTTP 200)
-
-📊 Summary:
-   - Feature: momentum
-   - Total entities ranked: 10
-
-🏆 Top 5 by Momentum Z-Score:
-   1. E009 (z-score: 1.67, percentile: 93.2%)
-   2. E004 (z-score: 1.23, percentile: 87.8%)
-   ...
-```
+**Tests**: POST `/rank` by momentum feature  
+**Use case**: Rank entities by single metric (no profile weighting)
 
 ---
 
-### 05. Compare Profiles (`05_compare_profiles.py`)
-**Purpose**: Python script comparing balanced vs aggressive profiles
+### Python Scripts (Multi-Step Workflows)
 
+#### 5. **05_compare_profiles.py** - Profile Comparison
 ```bash
 python3 05_compare_profiles.py
+```
+**Tests**: Compare balanced vs aggressive scoring profiles  
+**Use case**: Understand how profile weights affect ranking
 
-# Or with custom URL
-BASE_URL=http://production-ip:8003 python3 05_compare_profiles.py
+---
+
+#### 6. **06_prometheus_metrics.sh** - Metrics Exposition
+```bash
+./06_prometheus_metrics.sh
+```
+**Tests**: GET `/metrics` endpoint (Prometheus format)  
+**Use case**: Monitor Neural Engine performance (requests, latency, errors)
+
+---
+
+## 🎯 When to Use What?
+
+| Task | Tool | Reason |
+|------|------|--------|
+| **Single API call** | Bash (`.sh`) | Zero setup, immediate results |
+| **Documentation** | Bash (`.sh`) | Shows exact curl command to copy |
+| **Multi-step logic** | Python (`.py`) | JSON parsing, comparisons, assertions |
+| **Comparisons** | Python (`.py`) | Side-by-side analysis with formatting |
+| **Stress testing** | Python (`.py`) | Loop 100+ requests, measure latency |
+
+---
+
+## 📖 Usage Patterns
+
+### Pattern 1: Quick Validation (Bash)
+```bash
+# Make scripts executable
+chmod +x *.sh
+
+# Run all bash tests in sequence
+./01_health_check.sh && \
+./02_screen_basic.sh && \
+./03_screen_filters.sh && \
+./04_rank_by_feature.sh
 ```
 
-**What it tests**:
-- Profile weight differences
-- Ranking order changes
-- Processing time comparison
-- Python `requests` library usage
+### Pattern 2: Detailed Analysis (Python)
+```bash
+# Compare different profiles
+python3 05_compare_profiles.py
 
-**Expected output**:
-```
-🔬 Neural Engine Profile Comparison
-Endpoint: http://localhost:8003
-======================================================================
-✅ Service health check passed
-
-======================================================================
-  BALANCED PROFILE
-======================================================================
-Rank   Entity       Composite    Percentile   Bucket    
-----------------------------------------------------------------------
-1      E004         1.234        95.5         top       
-2      E007         0.856        87.2         middle    
-...
-
-======================================================================
-  RANKING COMPARISON
-======================================================================
-Entity       Balanced Rank   Aggressive Rank  Δ Rank    
-----------------------------------------------------------------------
-E001         5               3                +2        
-E004         1               1                0         
-...
+# Expected output:
+# === Balanced Profile ===
+# 1. E004: 1.23 (risk-adjusted composite)
+# 2. E007: 0.98
+# 3. E002: 0.76
+#
+# === Aggressive Profile ===
+# 1. E010: 1.87 (high momentum weight)
+# 2. E004: 1.45
+# 3. E003: 1.12
 ```
 
 ---
 
-## 🎯 Usage Patterns
+## 🔍 Common Use Cases
 
-### Running All Scripts Sequentially
+### Use Case 1: Onboarding New Developer
+**Goal**: Understand Neural Engine API in 5 minutes
+
 ```bash
-# Make all scripts executable
-chmod +x examples/*.sh
+# Step 1: Verify service is running
+./01_health_check.sh
 
-# Run all tests
-for script in examples/*.sh; do
-    echo "Running $script..."
-    ./$script
-    echo ""
+# Step 2: See basic screening
+./02_screen_basic.sh
+
+# Step 3: Read curl commands in scripts (self-documenting)
+cat 02_screen_basic.sh
+```
+
+---
+
+### Use Case 2: Integration Testing
+**Goal**: Verify API before deploying to production
+
+```bash
+# Test all endpoints
+for script in *.sh; do
+    echo "Testing $script..."
+    ./"$script" || exit 1
 done
+echo "✅ All tests passed"
 ```
 
-### Custom Base URL (Production)
+---
+
+### Use Case 3: Performance Profiling
+**Goal**: Compare profile performance
+
 ```bash
-# Set environment variable
-export BASE_URL=http://production-ip:8003
+# Run comparison test
+python3 05_compare_profiles.py > profile_comparison.txt
 
-# Run any script
-./examples/02_screen_basic.sh
+# Analyze results
+cat profile_comparison.txt
 ```
-
-### Integration with CI/CD
-```yaml
-# .github/workflows/test-neural-engine.yml
-- name: Test Neural Engine API
-  run: |
-    docker compose up -d neural_engine
-    sleep 5
-    ./services/core/api_neural_engine/examples/01_health_check.sh
-    ./services/core/api_neural_engine/examples/02_screen_basic.sh
-```
-
----
-
-## 🧪 Testing Checklist
-
-Use these examples to validate:
-
-- [ ] **Health endpoint**: `01_health_check.sh` returns healthy status
-- [ ] **Basic screening**: `02_screen_basic.sh` returns 5 ranked entities
-- [ ] **Filtered screening**: `03_screen_filters.sh` respects GroupA filter
-- [ ] **Single feature**: `04_rank_by_feature.sh` ranks by momentum correctly
-- [ ] **Profile comparison**: `05_compare_profiles.py` shows weight differences
-
----
-
-## 🔗 Related Documentation
-
-| Document | Purpose |
-|----------|---------|
-| [`vitruvyan_core/core/neural_engine/domain_examples/`](../../../vitruvyan_core/core/neural_engine/domain_examples/) | How to implement custom IDataProvider/IScoringStrategy |
-| [`services/core/api_neural_engine/README.md`](../README.md) | API documentation, deployment guide |
-| [`vitruvyan_core/contracts/README.md`](../../../vitruvyan_core/contracts/README.md) | Contract architecture rationale |
-| [`docs/NEURAL_ENGINE_ARCHITECTURE.md`](../../../docs/NEURAL_ENGINE_ARCHITECTURE.md) | Complete architecture overview |
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Issue: "curl: (7) Failed to connect"
-**Solution**: Make sure container is running
+### Error: "Connection refused"
+**Cause**: Neural Engine container not running
+
+**Solution**:
 ```bash
 docker compose up -d neural_engine
-docker logs neural_engine
+# Wait 5 seconds for startup
+sleep 5
+./01_health_check.sh
 ```
 
-### Issue: "jq: command not found"
-**Solution**: Install jq
+---
+
+### Error: "jq: command not found"
+**Cause**: `jq` not installed
+
+**Solution**:
 ```bash
-sudo apt install jq -y
+sudo apt update && sudo apt install -y jq
 ```
 
-### Issue: "HTTP 503 Service Unavailable"
-**Solution**: Check dependency health
-```bash
-curl http://localhost:8003/health | jq '.dependencies'
-```
+---
 
-### Issue: Python script "ModuleNotFoundError: No module named 'requests'"
-**Solution**: Install requests
+### Error: "Module 'requests' not found"
+**Cause**: Python `requests` library missing
+
+**Solution**:
 ```bash
 pip install requests
+# Or: pip3 install requests
 ```
 
 ---
 
-## 📝 Next Steps
+## 🔗 Related Documentation
 
-After running these examples:
+**For API Reference** (detailed endpoint specs):
+- See: `services/core/api_neural_engine/README.md`
 
-1. **Modify scripts**: Change `profile`, `top_k`, `filters` to test different scenarios
-2. **Create custom domain**: Follow [`domain_examples/README.md`](../../../vitruvyan_core/core/neural_engine/domain_examples/README.md) to implement Finance/Healthcare/Logistics providers
-3. **Production deployment**: See [`README.md`](../README.md) section "Deployment to Production VPS"
-4. **Add pytest tests**: Create `tests/test_api_integration.py` for automated validation
+**For Implementation Guide** (extending Neural Engine with new domains):
+- See: `vitruvyan_core/core/neural_engine/domain_examples/README.md`
+
+**For Architecture Overview** (design philosophy, contracts):
+- See: `docs/NEURAL_ENGINE_ARCHITECTURE.md`
 
 ---
 
-**Examples Created**: February 8, 2026  
-**Target Audience**: Frontend developers, service orchestration developers, DevOps  
-**Scope**: API consumption only (not implementation)
+## 📝 Script Maintenance
+
+**Adding New Examples**:
+1. Follow naming convention: `XX_description.sh` or `XX_description.py`
+2. Add shebang line: `#!/bin/bash` or `#!/usr/bin/env python3`
+3. Make executable: `chmod +x XX_description.sh`
+4. Update this README with description and use case
+
+**Testing Before Commit**:
+```bash
+# Verify all bash scripts run without errors
+for script in *.sh; do
+    bash -n "$script" || echo "Syntax error in $script"
+done
+
+# Verify all Python scripts have valid syntax
+for script in *.py; do
+    python3 -m py_compile "$script" || echo "Syntax error in $script"
+done
+```
+
+---
+
+**Last Updated**: February 8, 2026  
+**Maintainer**: Vitruvyan Core Team  
+**Neural Engine Version**: 2.0.0 (Domain-Agnostic)
