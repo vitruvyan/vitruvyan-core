@@ -374,6 +374,116 @@ services:
       retries: 5
       start_period: 30s
 
+  # 🕯 Synaptic Conclave Listener - Epistemic Observatory
+  api_conclave_listener:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_conclave
+    container_name: omni_api_conclave_listener
+    restart: unless-stopped
+    environment:
+      - REDIS_HOST=omni_redis
+      - REDIS_PORT=6379
+      - CONCLAVE_LISTENER_ENABLED=1
+    volumes:
+      - ./logs/conclave_listener:/app/logs
+    networks:
+      - omni-net
+    depends_on:
+      - redis
+      - api_conclave
+    command: ["python3", "/app/api_conclave/streams_listener.py"]
+
+  # ⚖️ Orthodoxy Wardens Listener - Epistemic Integrity Auditor
+  api_orthodoxy_wardens_listener:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.orthodoxy_wardens
+    container_name: omni_orthodoxy_wardens_listener
+    restart: unless-stopped
+    environment:
+      - REDIS_HOST=omni_redis
+      - REDIS_PORT=6379
+      - ORTHODOXY_LISTENER_ENABLED=1
+    volumes:
+      - ./logs/orthodoxy_listener:/app/logs
+    networks:
+      - omni-net
+    depends_on:
+      - redis
+      - vitruvyan_orthodoxy_wardens
+    command: ["python3", "/app/api_orthodoxy_wardens/streams_listener.py"]
+
+  # 🏛️ Vault Keepers Listener - Archival Truth Monitor
+  api_vault_keepers_listener:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_conclave  # Reuse generic Dockerfile
+    container_name: omni_vault_keepers_listener
+    restart: unless-stopped
+    environment:
+      - REDIS_HOST=omni_redis
+      - REDIS_PORT=6379
+      - VAULT_LISTENER_ENABLED=1
+      - POSTGRES_HOST=161.97.140.157
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=vitruvyan
+      - POSTGRES_USER=vitruvyan_user
+      - POSTGRES_PASSWORD=@Caravaggio971
+    volumes:
+      - ./logs/vault_listener:/app/logs
+    networks:
+      - omni-net
+    depends_on:
+      - redis
+      - vitruvyan_vault_keepers
+    command: ["python3", "/app/api_vault_keepers/streams_listener.py"]
+
+  # 🗣️ Babel Gardens Listener - Linguistic Synthesis Observer
+  api_babel_gardens_listener:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_babel_gardens
+    container_name: omni_babel_gardens_listener
+    restart: unless-stopped
+    environment:
+      - REDIS_HOST=omni_redis
+      - REDIS_PORT=6379
+      - BABEL_LISTENER_ENABLED=1
+    volumes:
+      - ./logs/babel_listener:/app/logs
+    networks:
+      - omni-net
+    depends_on:
+      - redis
+      - vitruvyan_babel_gardens
+    command: ["python3", "/app/api_babel_gardens/streams_listener.py"]
+
+  # 📚 Codex Hunters Listener - Data Collection Monitor
+  api_codex_hunters_listener:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_conclave  # Reuse generic Dockerfile
+    container_name: omni_codex_hunters_listener
+    restart: unless-stopped
+    environment:
+      - REDIS_HOST=omni_redis
+      - REDIS_PORT=6379
+      - CODEX_LISTENER_ENABLED=1
+      - POSTGRES_HOST=161.97.140.157
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=vitruvyan
+      - POSTGRES_USER=vitruvyan_user
+      - POSTGRES_PASSWORD=@Caravaggio971
+    volumes:
+      - ./logs/codex_listener:/app/logs
+    networks:
+      - omni-net
+    depends_on:
+      - redis
+      - vitruvyan_codex_hunters
+    command: ["python3", "/app/api_codex_hunters/streams_listener.py"]
+
   # 🧠 Memory Orders - Dual-Memory System (Archivarium + Mnemosyne) EPOCH II
   vitruvyan_memory_orders:
     build:
