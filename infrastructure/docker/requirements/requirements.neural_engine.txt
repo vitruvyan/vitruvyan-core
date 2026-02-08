@@ -1,0 +1,36 @@
+# Neural Engine API Requirements
+# Domain-agnostic quantitative ranking service
+
+# --- Core API ---
+fastapi==0.115.14
+uvicorn==0.35.0
+gunicorn==23.0.0
+
+# --- Pydantic & Config ---
+pydantic==2.11.7
+pydantic-settings==2.10.1
+
+# --- Data Processing ---
+pandas==2.3.0
+numpy==1.26.4
+scikit-learn==1.7.1
+
+# --- Prometheus Metrics ---
+prometheus-client==0.21.1
+
+# --- Utility ---
+requests==2.32.3
+python-dateutil==2.9.0
+
+# --- Database (optional, for domain providers) ---
+# Commented out by default - uncomment if using PostgreSQL domain provider
+# psycopg2-binary==2.9.10
+
+# --- Redis (optional, for caching) ---
+# Commented out by default - uncomment if using Redis cache
+# redis==5.0.1
+
+# --- Testing ---
+pytest==8.3.3
+pytest-asyncio==0.24.0
+httpx==0.28.1
