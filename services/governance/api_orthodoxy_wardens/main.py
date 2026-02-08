@@ -431,17 +431,73 @@ async def handle_system_events(event: CognitiveEvent):
         logger.error(f"[ORTHODOXY][CONCLAVE] Error handling system event: {e}")
 
 def setup_synaptic_conclave_listeners():
-    """Setup Redis event listeners for Orthodoxy Wardens"""
-    # TODO: Migrate to Redis Streams (Jan 24, 2026 migration)
-    # Legacy Pub/Sub pattern - needs refactoring to StreamBus.consume()
-    logger.warning("[ORTHODOXY] Synaptic Conclave listeners temporarily disabled (Streams migration pending)")
-    pass
-    # try:
-    #     redis_bus = StreamBus(...)
-    #     # OLD METHOD: redis_bus.subscribe(...)
-    #     # NEW METHOD: for event in bus.consume(channel, group, consumer): ...
-    # except Exception as e:
-    #     logger.error(f"Error setting up listeners: {e}")
+    """🕯️ Setup Redis Streams listeners for Orthodoxy Wardens (Feb 8, 2026 - FASE 1 COMPLETE)"""
+    try:
+        redis_host = os.getenv('REDIS_HOST', 'omni_redis')
+        redis_port = int(os.getenv('REDIS_PORT', '6379'))
+        bus = StreamBus(host=redis_host, port=redis_port)
+        
+        # Sacred channels configuration - maps streams to handlers
+        sacred_channels = {
+            "orthodoxy.audit.requested": handle_audit_request,
+            "orthodoxy.validation.requested": handle_audit_request,  # Reuse audit handler
+            "neural_engine.screening.completed": handle_system_events,
+            "babel.sentiment.completed": handle_system_events,
+            "memory.write.completed": handle_system_events,
+            "vee.explanation.completed": handle_system_events,
+            "langgraph.response.completed": handle_system_events
+        }
+        
+        # Create consumer group for Orthodoxy Wardens
+        group_name = "group:orthodoxy_main"
+        consumer_id = "orthodoxy_main:worker_1"
+        
+        for channel, handler in sacred_channels.items():
+            try:
+                bus.create_consumer_group(channel, group_name)
+                logger.info(f"⚖️ Created consumer group '{group_name}' on {channel}")
+            except Exception as e:
+                # Consumer group may already exist (idempotent operation)
+                logger.debug(f"Consumer group '{group_name}' on {channel}: {e}")
+            
+            # Launch background consumption task
+            asyncio.create_task(_consume_channel(bus, channel, group_name, consumer_id, handler))
+        
+        logger.info(f"🕯️ Synaptic Conclave listeners activated for {len(sacred_channels)} sacred channels")
+        
+    except Exception as e:
+        logger.error(f"⚖️ Error setting up Synaptic Conclave listeners: {e}")
+
+async def _consume_channel(bus: StreamBus, channel: str, group: str, consumer: str, handler):
+    """Background task to consume events from a sacred channel"""
+    logger.info(f"👂 Starting consumption: {channel} (group: {group}, consumer: {consumer})")
+    
+    try:
+        for event in bus.consume(channel, group, consumer, block_ms=5000):
+            try:
+                # Convert TransportEvent to CognitiveEvent for backward compatibility
+                cognitive_event = CognitiveEvent(
+                    event_id=event.event_id,
+                    event_type=event.data.get("event_type", "system.event"),
+                    payload=event.data,
+                    correlation_id=event.data.get("correlation_id"),
+                    timestamp=event.timestamp
+                )
+                
+                # Call handler
+                await handler(cognitive_event)
+                
+                # Acknowledge event
+                bus.acknowledge(event.stream, group, event.event_id)
+                logger.debug(f"✅ Processed and acknowledged event {event.event_id} from {channel}")
+                
+            except Exception as e:
+                logger.error(f"❌ Error processing event from {channel}: {e}")
+                # Don't acknowledge on error - event will be retried
+                
+    except Exception as e:
+        logger.error(f"💀 Fatal error in consumption loop for {channel}: {e}")
+        # TODO: Implement reconnection logic
 
 # Sacred extension components
 orthodoxy_db_manager = None

@@ -205,7 +205,8 @@ services:
     depends_on:
       - redis
       - qdrant
-      - vitruvyan_api_graph
+      # TEMPORARY: Commented for P1 FASE 1 testing (Feb 8, 2026)
+      # - vitruvyan_api_graph
     networks:
       - omni-net
     healthcheck:
