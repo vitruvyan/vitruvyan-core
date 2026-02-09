@@ -30,7 +30,7 @@ RUN pip install --no-cache-dir --user -r requirements-codex.txt
 USER root
 
 # Copy service code and core modules (babel_gardens pattern)
-COPY --chown=vitruvyan:vitruvyan services/core/api_codex_hunters/ /app/api_codex_hunters/
+COPY --chown=vitruvyan:vitruvyan services/api_codex_hunters/ /app/api_codex_hunters/
 COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/ /app/core/
 
 # Set Python path

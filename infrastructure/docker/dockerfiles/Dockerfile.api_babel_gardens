@@ -58,7 +58,7 @@ FROM dependencies as final
 WORKDIR /app
 
 # Copy service code
-COPY services/core/api_babel_gardens/ /app/api_babel_gardens/
+COPY services/api_babel_gardens/ /app/api_babel_gardens/
 
 # Copy ALL core modules (includes foundation, governance, cognitive, etc.)
 COPY vitruvyan_core/core/ /app/core/

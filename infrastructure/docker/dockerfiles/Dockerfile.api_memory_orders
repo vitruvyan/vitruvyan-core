@@ -22,7 +22,7 @@ FROM base as final
 WORKDIR /app
 
 # Copy service code
-COPY services/core/api_memory_orders/ /app/api_memory_orders/
+COPY services/api_memory_orders/ /app/api_memory_orders/
 
 # Copy ALL core modules (includes foundation, governance, cognitive, etc.)
 COPY vitruvyan_core/core/ /app/core/

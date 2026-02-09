@@ -16,7 +16,7 @@ COPY infrastructure/docker/requirements/requirements-embedding.txt /app/requirem
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Copy service code
-COPY services/core/api_embedding /app/api_embedding
+COPY services/api_embedding /app/api_embedding
 
 # Copy ALL core modules
 COPY vitruvyan_core/core/ /app/core/

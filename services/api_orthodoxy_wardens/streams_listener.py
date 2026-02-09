@@ -30,11 +30,13 @@ import sys
 import os
 
 # Add parent directories to path for imports
-sys.path.insert(0, '/app')
+# CRITICAL: /app MUST be first so global core/ (symlink → vitruvyan_core/core)
+# takes priority over the local api_orthodoxy_wardens/core/ package.
 sys.path.insert(0, '/app/api_orthodoxy_wardens')
+sys.path.insert(0, '/app')
 
 from redis_listener import OrthodoxyWardensCognitiveBusListener
-from core.synaptic_conclave.consumers import wrap_legacy_listener
+from vitruvyan_core.core.synaptic_conclave.consumers import wrap_legacy_listener
 
 logging.basicConfig(
     level=logging.INFO,

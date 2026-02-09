@@ -33,7 +33,7 @@ FROM base as final
 WORKDIR /app
 
 # Copy service code
-COPY services/core/api_neural_engine/ /app/api_neural_engine/
+COPY services/api_neural_engine/ /app/api_neural_engine/
 
 # Copy core structure (order matters: parent directories first)
 COPY vitruvyan_core/core/__init__.py /app/core/__init__.py

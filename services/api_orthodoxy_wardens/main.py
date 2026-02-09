@@ -95,20 +95,21 @@ async def startup():
     # Sacred Roles → event handler injection + module globals for routes.py
     global sacred_confessor, sacred_penitent, sacred_chronicler
     global sacred_inquisitor, sacred_abbot
-    sacred_confessor = OrthodoxConfessor()
-    sacred_penitent = OrthodoxPenitent()
-    sacred_chronicler = OrthodoxChronicler()
-    sacred_inquisitor = OrthodoxInquisitor()
-    sacred_abbot = OrthodoxAbbot()
-    event_handlers.inject_sacred_roles(
-        confessor=sacred_confessor, penitent=sacred_penitent,
-        chronicler=sacred_chronicler, inquisitor=sacred_inquisitor,
-        abbot=sacred_abbot,
-    )
-
-    # Synaptic Conclave listeners
     if not test_mode:
+        sacred_confessor = OrthodoxConfessor()
+        sacred_penitent = OrthodoxPenitent()
+        sacred_chronicler = OrthodoxChronicler()
+        sacred_inquisitor = OrthodoxInquisitor()
+        sacred_abbot = OrthodoxAbbot()
+        event_handlers.inject_sacred_roles(
+            confessor=sacred_confessor, penitent=sacred_penitent,
+            chronicler=sacred_chronicler, inquisitor=sacred_inquisitor,
+            abbot=sacred_abbot,
+        )
+        # Synaptic Conclave listeners
         await setup_synaptic_conclave_listeners()
+    else:
+        logger.info("TEST_MODE: Skipping Sacred Roles + Conclave (no Redis)")
 
     logger.info("Orthodoxy Wardens ready (bus_adapter=%s)", bus_adapter is not None)
 

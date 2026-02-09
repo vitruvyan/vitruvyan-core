@@ -153,7 +153,7 @@ services:
   vitruvyan_api_neural:
     build:
       context: ../..
-      dockerfile: services/core/api_neural_engine/Dockerfile
+      dockerfile: services/api_neural_engine/Dockerfile
     container_name: omni_api_neural
     ports:
       - "9003:8003"
@@ -190,8 +190,8 @@ services:
       SACRED_COMPLIANCE_THRESHOLD: 0.8
       CONFESSION_AUTO_ABSOLUTION: "false"
     volumes:
-      # Mount only API code for hot-reload (NOT entire /app)
-      - ../../services/governance/api_orthodoxy_wardens:/app/api_orthodoxy_wardens:ro
+      # Mount only API code for hot-reload (FASE 4: flat services/ layout)
+      - ../../services/api_orthodoxy_wardens:/app/api_orthodoxy_wardens:ro
       - ../../vitruvyan_core/core:/app/core:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro  # For sacred Docker operations
     ports:
@@ -523,7 +523,7 @@ services:
       - DUAL_MEMORY_COHERENCE_CHECK=true
       
     volumes:
-      - ../../services/core/api_memory_orders:/app/api_memory_orders:ro
+      - ../../services/api_memory_orders:/app/api_memory_orders:ro
       - ../../vitruvyan_core/core/foundation/semantic_sync:/app/core/foundation/semantic_sync:ro
       - ../../vitruvyan_core/core/foundation/persistence:/app/core/foundation/persistence:ro
       - ../../vitruvyan_core/core/foundation/cognitive_bus:/app/core/foundation/cognitive_bus:ro
@@ -586,7 +586,7 @@ services:
       - GDRIVE_KEEP_COUNT=30
     volumes:
       # Mount only API code for hot-reload (NOT entire /app)
-      - ../../services/governance/api_vault_keepers:/app/api_vault_keepers:ro
+      - ../../services/api_vault_keepers:/app/api_vault_keepers:ro
       - ../../vitruvyan_core/core:/app/core:ro
       # CRITICAL: Persistent backup storage
       - vault_keeper_data:/var/vitruvyan/vaults

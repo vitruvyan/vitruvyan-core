@@ -16,22 +16,57 @@ Metrics Exposed:
 Integration: Phase 2 Metrics Layer Implementation (Jan 26, 2026)
 """
 
-from prometheus_client import Counter, Histogram, Gauge
+from prometheus_client import Counter, Histogram, Gauge, REGISTRY
 import structlog
 
 logger = structlog.get_logger(__name__)
+
+
+def _safe_counter(name, desc, labels):
+    """Register a Counter only if not already registered (idempotent)."""
+    try:
+        return Counter(name, desc, labels)
+    except ValueError:
+        # Already registered (dual-path: vitruvyan_core.core.* vs core.*)
+        for c in REGISTRY._names_to_collectors.values():
+            if hasattr(c, '_name') and (c._name == name or c._name + '_total' == name):
+                return c
+        raise
+
+
+def _safe_histogram(name, desc, labels, buckets=None):
+    """Register a Histogram only if not already registered (idempotent)."""
+    kw = {"buckets": buckets} if buckets else {}
+    try:
+        return Histogram(name, desc, labels, **kw)
+    except ValueError:
+        for c in REGISTRY._names_to_collectors.values():
+            if hasattr(c, '_name') and c._name == name:
+                return c
+        raise
+
+
+def _safe_gauge(name, desc, labels):
+    """Register a Gauge only if not already registered (idempotent)."""
+    try:
+        return Gauge(name, desc, labels)
+    except ValueError:
+        for c in REGISTRY._names_to_collectors.values():
+            if hasattr(c, '_name') and c._name == name:
+                return c
+        raise
 
 # ============================================================================
 # EVENT METRICS
 # ============================================================================
 
-cognitive_bus_events_total = Counter(
+cognitive_bus_events_total = _safe_counter(
     'cognitive_bus_events_total',
     'Total Cognitive Bus events processed',
-    ['channel', 'status', 'event_type']  # status: success|failed|rejected
+    ['channel', 'status', 'event_type']
 )
 
-cognitive_bus_event_duration = Histogram(
+cognitive_bus_event_duration = _safe_histogram(
     'cognitive_bus_event_duration_seconds',
     'Cognitive Bus event processing latency',
     ['channel', 'status'],
@@ -42,13 +77,13 @@ cognitive_bus_event_duration = Histogram(
 # HERALD METRICS (Event Broadcasting)
 # ============================================================================
 
-herald_broadcast_total = Counter(
+herald_broadcast_total = _safe_counter(
     'herald_broadcast_total',
     'Total Herald broadcasts (pub/sub)',
-    ['channel', 'status']  # status: success|failed
+    ['channel', 'status']
 )
 
-herald_broadcast_duration = Histogram(
+herald_broadcast_duration = _safe_histogram(
     'herald_broadcast_duration_seconds',
     'Herald broadcast latency',
     ['channel'],
@@ -59,13 +94,13 @@ herald_broadcast_duration = Histogram(
 # SCRIBE METRICS (Stream Writing)
 # ============================================================================
 
-scribe_write_total = Counter(
+scribe_write_total = _safe_counter(
     'scribe_write_total',
     'Total Scribe stream writes',
-    ['stream', 'status']  # status: success|failed
+    ['stream', 'status']
 )
 
-scribe_write_duration = Histogram(
+scribe_write_duration = _safe_histogram(
     'scribe_write_duration_seconds',
     'Scribe stream write latency',
     ['stream'],
@@ -76,20 +111,20 @@ scribe_write_duration = Histogram(
 # LISTENER METRICS (Event Consumption)
 # ============================================================================
 
-listener_consumed_total = Counter(
+listener_consumed_total = _safe_counter(
     'listener_consumed_total',
     'Total events consumed by listeners',
-    ['stream', 'consumer', 'status']  # status: success|failed|ack_failed
+    ['stream', 'consumer', 'status']
 )
 
-listener_consumption_duration = Histogram(
+listener_consumption_duration = _safe_histogram(
     'listener_consumption_duration_seconds',
     'Listener event consumption latency',
     ['stream', 'consumer'],
     buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0)
 )
 
-listener_handler_duration = Histogram(
+listener_handler_duration = _safe_histogram(
     'listener_handler_duration_seconds',
     'Listener legacy handler execution latency',
     ['consumer', 'status'],
@@ -100,19 +135,19 @@ listener_handler_duration = Histogram(
 # STREAM HEALTH METRICS
 # ============================================================================
 
-stream_consumer_lag = Gauge(
+stream_consumer_lag = _safe_gauge(
     'stream_consumer_lag',
     'Consumer group lag (pending messages)',
     ['stream', 'group', 'consumer']
 )
 
-stream_pending_messages = Gauge(
+stream_pending_messages = _safe_gauge(
     'stream_pending_messages',
     'Pending messages per stream',
     ['stream', 'group']
 )
 
-stream_last_event_timestamp = Gauge(
+stream_last_event_timestamp = _safe_gauge(
     'stream_last_event_timestamp',
     'Unix timestamp of last event in stream',
     ['stream']
@@ -122,32 +157,32 @@ stream_last_event_timestamp = Gauge(
 # BUS HEALTH METRICS
 # ============================================================================
 
-bus_connected_listeners = Gauge(
+bus_connected_listeners = _safe_gauge(
     'bus_connected_listeners',
     'Number of active listeners connected to bus',
-    ['listener_type']  # type: native|adapter
+    ['listener_type']
 )
 
-bus_health_score = Gauge(
+bus_health_score = _safe_gauge(
     'bus_health_score',
     'Composite bus health score (0-100)',
-    ['component']  # component: herald|scribe|streams|listeners|overall
+    ['component']
 )
 
 # ============================================================================
 # WORKING MEMORY METRICS (Plasticity System)
 # ============================================================================
 
-working_memory_size = Gauge(
+working_memory_size = _safe_gauge(
     'working_memory_size_bytes',
     'Working memory size per consumer',
     ['consumer']
 )
 
-working_memory_updates = Counter(
+working_memory_updates = _safe_counter(
     'working_memory_updates_total',
     'Working memory update operations',
-    ['consumer', 'operation']  # operation: write|read|merge|prune
+    ['consumer', 'operation']
 )
 
 # ============================================================================

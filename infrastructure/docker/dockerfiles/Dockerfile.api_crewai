@@ -29,7 +29,7 @@ RUN mkdir -p /app/domains/trade /app/core/cognitive
 USER vitruvyan
 
 # Copy service code
-COPY --chown=vitruvyan:vitruvyan services/core/api_crewai /app/api_crewai
+COPY --chown=vitruvyan:vitruvyan services/api_crewai /app/api_crewai
 
 # Copy ALL core modules (includes foundation, orchestration, cognitive, etc.)
 COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/ /app/core/

@@ -27,7 +27,7 @@ COPY --chown=vitruvyan:vitruvyan infrastructure/docker/requirements/requirements
 RUN pip install --user --no-cache-dir -r requirements.txt
 
 # Copy application code (babel_gardens pattern)
-COPY --chown=vitruvyan:vitruvyan services/core/api_portfolio_guardian/ /app/api_portfolio_guardian/
+COPY --chown=vitruvyan:vitruvyan services/api_portfolio_guardian/ /app/api_portfolio_guardian/
 
 # Copy ALL core modules
 COPY --chown=vitruvyan:vitruvyan vitruvyan_core/ /app/vitruvyan_core/

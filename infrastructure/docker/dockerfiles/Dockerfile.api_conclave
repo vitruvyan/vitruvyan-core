@@ -31,7 +31,7 @@ USER vitruvyan
 COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/ /app/core/
 
 # Copy the API service specific code
-COPY --chown=vitruvyan:vitruvyan services/governance/api_conclave /app/api_conclave
+COPY --chown=vitruvyan:vitruvyan services/api_conclave /app/api_conclave
 
 # Expose Conclave port
 EXPOSE 8012

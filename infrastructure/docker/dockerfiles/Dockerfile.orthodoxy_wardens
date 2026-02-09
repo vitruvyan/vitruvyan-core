@@ -6,9 +6,10 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create user
+# Create user and set /app ownership
 RUN groupadd -g 1000 vitruvyan && \
-    useradd -u 1000 -g vitruvyan -m -s /bin/bash vitruvyan
+    useradd -u 1000 -g vitruvyan -m -s /bin/bash vitruvyan && \
+    mkdir -p /app && chown vitruvyan:vitruvyan /app
 
 WORKDIR /app
 USER vitruvyan
@@ -17,11 +18,13 @@ USER vitruvyan
 COPY --chown=vitruvyan:vitruvyan infrastructure/docker/requirements/requirements.orthodoxy_wardens.txt ./requirements.txt
 RUN pip install --user --no-cache-dir -r requirements.txt
 
-# Copy service code
-COPY --chown=vitruvyan:vitruvyan services/governance/api_orthodoxy_wardens/ /app/api_orthodoxy_wardens/
+# Copy service code (FASE 4: flat services/ layout)
+COPY --chown=vitruvyan:vitruvyan services/api_orthodoxy_wardens/ /app/api_orthodoxy_wardens/
 
-# Copy ALL core modules (includes governance, foundation, etc.)
-COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/ /app/core/
+# Copy core modules preserving package namespace (vitruvyan_core.core.*)
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/ /app/vitruvyan_core/
+# Backward compat: legacy imports use `core.` (routes.py, workflows.py)
+RUN ln -s /app/vitruvyan_core/core /app/core
 
 ENV PYTHONPATH=/app
 ENV PATH="/home/vitruvyan/.local/bin:$PATH"

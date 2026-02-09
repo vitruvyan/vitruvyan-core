@@ -7,6 +7,7 @@ without rewriting entire listener classes.
 """
 
 import asyncio
+import concurrent.futures
 import json
 import logging
 import os
@@ -67,7 +68,7 @@ class ListenerAdapter(BaseConsumer):
         config = ConsumerConfig(
             name=name,
             consumer_type=consumer_type,
-            subscriptions=[f"stream:{ch}" for ch in sacred_channels]
+            subscriptions=list(sacred_channels)
         )
         super().__init__(config=config)
         
@@ -80,8 +81,8 @@ class ListenerAdapter(BaseConsumer):
         self.stream_bus = StreamBus(host=stream_host, port=stream_port)
         
         # Map channel names to stream names
-        # "vault.archive.requested" → "stream:vault.archive.requested"
-        self.stream_names = [f"stream:{ch}" for ch in sacred_channels]
+        # "vault.archive.requested" → passed directly to StreamBus (adds "vitruvyan:" prefix)
+        self.stream_names = list(sacred_channels)
         
         # Consumer group name (unique per listener type)
         self.consumer_group = f"group:{name}"
@@ -107,6 +108,17 @@ class ListenerAdapter(BaseConsumer):
             except Exception as e:
                 # Group may already exist
                 logger.debug(f"Consumer group exists or error", stream=stream_name, error=str(e))
+        
+        # Create a thread pool big enough for ALL streams
+        # Default Python pool = min(32, cpu+4) which may be < stream count
+        pool_size = max(len(self.stream_names) + 4, 16)
+        self._executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=pool_size,
+            thread_name_prefix=f"{self.name}_stream"
+        )
+        loop = asyncio.get_running_loop()
+        loop.set_default_executor(self._executor)
+        logger.info(f"🔧 Thread pool sized to {pool_size} workers for {len(self.stream_names)} streams")
         
         # Start consuming
         tasks = [self._consume_stream(stream_name) for stream_name in self.stream_names]
@@ -168,9 +180,9 @@ class ListenerAdapter(BaseConsumer):
         
         try:
             # Extract channel name from stream name
-            # "vitruvyan:stream:vault.archive.requested" → "vault.archive.requested"
-            # Remove both "vitruvyan:" and "stream:" prefixes
-            channel = event.stream.replace("vitruvyan:", "").replace("stream:", "")
+            # "vitruvyan:vault.archive.requested" → "vault.archive.requested"
+            # Remove "vitruvyan:" prefix to get original channel name
+            channel = event.stream.replace("vitruvyan:", "")
             
             # Build message compatible with old pub/sub format
             # Old: {"type": "message", "channel": "...", "data": b"..."}
@@ -281,8 +293,8 @@ class StreamsEnabledListener:
         # Initialize StreamBus
         self.stream_bus = StreamBus(host=stream_host, port=stream_port)
         
-        # Map channels to streams
-        self.stream_names = [f"stream:{ch}" for ch in sacred_channels]
+        # Map channels to streams (StreamBus adds "vitruvyan:" prefix)
+        self.stream_names = list(sacred_channels)
         self.consumer_group = f"group:{name}"
         
         logger.info(
@@ -337,7 +349,7 @@ class StreamsEnabledListener:
         Handle event by calling subclass implementation.
         """
         try:
-            channel = stream_name.replace("stream:", "")
+            channel = stream_name
             
             # Call subclass handler
             await self.handle_event(channel, event_data)

@@ -27,7 +27,7 @@ WORKDIR /app
 
 # Copy requirements and install Python dependencies
 # Use a specific requirements file for this service
-COPY services/core/api_pattern_weavers/requirements.txt /app/requirements.txt
+COPY services/api_pattern_weavers/requirements.txt /app/requirements.txt
 RUN pip install --upgrade pip && pip install -r /app/requirements.txt
 
 # Switch to non-root user
@@ -41,7 +41,7 @@ COPY --chown=vitruvyan:vitruvyan vitruvyan_core /app/vitruvyan_core
 COPY --chown=vitruvyan:vitruvyan config /app/config
 
 # Copy the API service specific code
-COPY --chown=vitruvyan:vitruvyan services/core/api_pattern_weavers /app/api_pattern_weavers
+COPY --chown=vitruvyan:vitruvyan services/api_pattern_weavers /app/api_pattern_weavers
 
 # Expose the port
 EXPOSE 8011

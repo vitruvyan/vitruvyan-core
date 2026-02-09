@@ -24,7 +24,7 @@ RUN pip install --upgrade pip && pip install -r /app/requirements-graph.txt
 USER vitruvyan
 
 # Copy service code
-COPY --chown=vitruvyan:vitruvyan services/core/api_graph /app/api_graph
+COPY --chown=vitruvyan:vitruvyan services/api_graph /app/api_graph
 
 # Copy ALL core modules
 COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/ /app/core/
