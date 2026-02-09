@@ -27,7 +27,8 @@ sys.path.append('/app')
 
 # Sacred Theological Agents (NEW GOVERNANCE STRUCTURE)
 from core.governance.orthodoxy_wardens.confessor_agent import AutonomousAuditAgent  # Sacred Confessor foundation
-from core.governance.orthodoxy_wardens.chronicler_agent import SystemMonitor  # Chronicler foundation  
+# LEGACY: chronicler_agent moved to _legacy/ during FASE 0 refactoring (Feb 9, 2026)
+from core.governance.orthodoxy_wardens._legacy.chronicler_agent import SystemMonitor  # Chronicler foundation  
 from core.governance.orthodoxy_wardens.inquisitor_agent import ComplianceValidator  # Inquisitor foundation
 from core.governance.orthodoxy_wardens.penitent_agent import AutoCorrector  # Penitent foundation
 # For now, use audit agent as Abbot base - will create proper theological hierarchy later

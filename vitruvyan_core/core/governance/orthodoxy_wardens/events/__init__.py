@@ -1,0 +1,59 @@
+"""
+Orthodoxy Wardens — Event Definitions
+
+Type constants and event envelope for Cognitive Bus communication.
+"""
+
+from .orthodoxy_events import (
+    OrthodoxyEvent,
+    # Confession lifecycle
+    CONFESSION_RECEIVED,
+    CONFESSION_ACCEPTED,
+    CONFESSION_REJECTED,
+    # Examination
+    EXAMINATION_STARTED,
+    EXAMINATION_COMPLETED,
+    # Findings
+    FINDING_RECORDED,
+    HERESY_DETECTED,
+    ANOMALY_DETECTED,
+    # Verdicts
+    VERDICT_RENDERED,
+    VERDICT_BLESSED,
+    VERDICT_HERETICAL,
+    VERDICT_NON_LIQUET,
+    # Purification
+    PURIFICATION_REQUESTED,
+    PURIFICATION_REPORTED,
+    # Surveillance
+    SURVEILLANCE_CYCLE_STARTED,
+    SURVEILLANCE_CYCLE_COMPLETED,
+    # Archival
+    ARCHIVE_REQUESTED,
+    # Channel groups
+    PUBLISH_CHANNELS,
+    CONSUME_CHANNELS,
+)
+
+__all__ = [
+    "OrthodoxyEvent",
+    "CONFESSION_RECEIVED",
+    "CONFESSION_ACCEPTED",
+    "CONFESSION_REJECTED",
+    "EXAMINATION_STARTED",
+    "EXAMINATION_COMPLETED",
+    "FINDING_RECORDED",
+    "HERESY_DETECTED",
+    "ANOMALY_DETECTED",
+    "VERDICT_RENDERED",
+    "VERDICT_BLESSED",
+    "VERDICT_HERETICAL",
+    "VERDICT_NON_LIQUET",
+    "PURIFICATION_REQUESTED",
+    "PURIFICATION_REPORTED",
+    "SURVEILLANCE_CYCLE_STARTED",
+    "SURVEILLANCE_CYCLE_COMPLETED",
+    "ARCHIVE_REQUESTED",
+    "PUBLISH_CHANNELS",
+    "CONSUME_CHANNELS",
+]

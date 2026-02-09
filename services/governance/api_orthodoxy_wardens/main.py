@@ -27,7 +27,8 @@ sys.path.append('/app')
 
 # Sacred Theological Agents (refactored to governance/orthodoxy_wardens)
 from core.governance.orthodoxy_wardens.confessor_agent import AutonomousAuditAgent  # Sacred Confessor
-from core.governance.orthodoxy_wardens.chronicler_agent import SystemMonitor  # Chronicler
+# LEGACY: chronicler_agent moved to _legacy/ during FASE 0 refactoring (Feb 9, 2026)
+from core.governance.orthodoxy_wardens._legacy.chronicler_agent import SystemMonitor  # Chronicler
 from core.governance.orthodoxy_wardens.inquisitor_agent import ComplianceValidator  # Inquisitor
 from core.governance.orthodoxy_wardens.penitent_agent import AutoCorrector  # Penitent
 # LLM interface for sacred reasoning

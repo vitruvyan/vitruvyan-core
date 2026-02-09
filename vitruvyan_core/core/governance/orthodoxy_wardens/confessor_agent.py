@@ -15,9 +15,11 @@ from core.llm.llm_interface import LLMInterface
 
 # Import monitoring tools (NEW GOVERNANCE STRUCTURE)
 from core.governance.orthodoxy_wardens.code_analyzer import CodeAnalyzer
-from core.governance.orthodoxy_wardens.chronicler_agent import SystemMonitor
-from core.governance.orthodoxy_wardens.docker_manager import DockerManager
-from core.governance.orthodoxy_wardens.git_monitor import GitMonitor
+# LEGACY: These 3 files moved to _legacy/ during FASE 0 refactoring (Feb 9, 2026)
+# They will be eliminated entirely when confessor is rewritten as pure consumer (FASE 3)
+from core.governance.orthodoxy_wardens._legacy.chronicler_agent import SystemMonitor
+from core.governance.orthodoxy_wardens._legacy.docker_manager import DockerManager
+from core.governance.orthodoxy_wardens._legacy.git_monitor import GitMonitor
 from core.governance.orthodoxy_wardens.inquisitor_agent import ComplianceValidator
 from core.governance.orthodoxy_wardens.penitent_agent import AutoCorrector
 # TODO: disaster_prevention moved to different location - to be implemented
