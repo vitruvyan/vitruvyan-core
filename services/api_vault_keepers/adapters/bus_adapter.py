@@ -1,32 +1,29 @@
 """
-Vault Keepers — Bus Adapter
+Vault Keepers — Bus Adapter (LIVELLO 2)
 
-Bridges infrastructure events (StreamBus, HTTP) to vault operations.
+Bridges HTTP/Streams to vault operations.
+This is the ONLY file that touches the StreamBus.
 
-This adapter orchestrates vault operations (backup, restore, integrity checks)
-by delegating to the persistence adapter and emitting result events.
+Architecture:
+  - Receives events from bus or HTTP
+  - Delegates to pure domain consumers (LIVELLO 1)
+  - Calls PersistenceAdapter for I/O
+  - Emits result events back to bus
 
 "Il Conclave non pensa; trasmette. L'intelligenza è nei consumer."
 
 Sacred Order: Truth (Memory & Archival)
 Layer: Service (LIVELLO 2)
 """
+
 import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
 
 from core.synaptic_conclave.transport.streams import StreamBus
-from core.synaptic_conclave.events.event_envelope import CognitiveEvent
-
+from core.governance.vault_keepers.consumers import Guardian, Sentinel, Archivist, Chamberlain
 from api_vault_keepers.config import settings
 from api_vault_keepers.adapters.persistence import PersistenceAdapter
-from core.governance.vault_keepers.events.vault_events import (
-    CHANNEL_ARCHIVE_COMPLETED,
-    CHANNEL_RESTORE_COMPLETED,
-    CHANNEL_SNAPSHOT_CREATED,
-    CHANNEL_INTEGRITY_VALIDATED,
-    CHANNEL_BACKUP_COMPLETED,
-)
 
 logger = logging.getLogger("VaultKeepers.BusAdapter")
 
@@ -39,256 +36,443 @@ class VaultBusAdapter:
     
     Usage:
         adapter = VaultBusAdapter()
-        result = adapter.handle_integrity_check(event_dict)
+        result = adapter.handle_integrity_check(scope="full")
     """
     
     def __init__(self):
+        """Initialize bus connection, persistence adapter, and LIVELLO 1 consumers."""
         self.bus = StreamBus(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
         self.persistence = PersistenceAdapter()
-        logger.info("Vault Bus Adapter initialized")
+        
+        # LIVELLO 1 consumers (pure logic, no I/O)
+        self.guardian = Guardian()
+        self.sentinel = Sentinel()
+        self.archivist = Archivist()
+        self.chamberlain = Chamberlain()
+        
+        logger.info("Vault Bus Adapter initialized with all consumers")
     
     # ═══════════════════════════════════════════════════════════════════════
-    # Event Handlers (called by routes or streams_listener)
+    # INTEGRITY VALIDATION
     # ═══════════════════════════════════════════════════════════════════════
     
-    def handle_integrity_check(self, event: Dict[str, Any]) -> Dict[str, Any]:
+    def handle_integrity_check(self, scope: str = "full", correlation_id: Optional[str] = None) -> Dict[str, Any]:
         """
-        Handle integrity check request.
+        Handle integrity validation request.
+        
+        Workflow:
+          1. Gather health data from persistence (I/O boundary)
+          2. Delegate judgment to Sentinel consumer (pure logic)
+          3. Create audit record via Chamberlain
+          4. Emit result event
         
         Args:
-            event: Event dict with correlation_id, priority, etc.
+            scope: Validation scope ("full", "postgresql", "qdrant")
+            correlation_id: Optional correlation ID
             
         Returns:
-            Dict with integrity validation results
+            Integrity report dict
         """
-        correlation_id = event.get('correlation_id', f"integrity_{int(datetime.utcnow().timestamp())}")
-        logger.info(f"Integrity check requested", extra={"correlation_id": correlation_id})
+        correlation_id = correlation_id or f"integrity_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
         
-        # Validate PostgreSQL
-        pg_result = self.persistence.validate_postgresql_integrity()
+        logger.info(f"[{correlation_id}] Processing integrity check: scope={scope}")
         
-        # Validate Qdrant
-        qdrant_result = self.persistence.validate_qdrant_integrity()
+        # Step 1: Gather health data from persistence layer (I/O boundary)
+        pg_status = self.persistence.validate_postgresql_integrity()
+        qdrant_status = self.persistence.validate_qdrant_integrity()
+        coherence = self.persistence.validate_coherence()
         
-        # Validate coherence
-        coherence_result = self.persistence.validate_coherence()
-        
-        # Determine overall status
-        overall_status = self._determine_integrity_status(pg_result, qdrant_result, coherence_result)
-        
-        result = {
-            "integrity_status": overall_status,
-            "postgresql": pg_result,
-            "qdrant": qdrant_result,
-            "coherence": coherence_result,
-            "warden_blessing": "integrity_verified" if overall_status == "sacred" else "integrity_concern",
-            "sacred_timestamp": datetime.utcnow().isoformat(),
+        # Step 2: Delegate to LIVELLO 1 Sentinel (pure logic)
+        sentinel_input = {
+            "postgresql": pg_status,
+            "qdrant": qdrant_status,
+            "coherence": coherence,
+            "correlation_id": correlation_id
         }
         
-        # Emit result event
-        self._emit_event(CHANNEL_INTEGRITY_VALIDATED, result, correlation_id)
+        integrity_report = self.sentinel.process(sentinel_input)
         
-        logger.info(f"Integrity check completed", extra={
+        # Step 3: Create audit record via Chamberlain
+        audit_input = {
+            "operation": "integrity_check",
+            "performed_by": "system",
+            "resource_type": "vault",
+            "resource_id": "global",
+            "action": "integrity_validated",
+            "status": "completed",
             "correlation_id": correlation_id,
-            "status": overall_status
-        })
+            "metadata": {
+                "overall_status": integrity_report.overall_status,
+                "scope": scope
+            }
+        }
+        audit_record = self.chamberlain.process(audit_input)
         
-        return result
-    
-    def handle_backup(self, event: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Handle backup creation request.
+        # Step 4: Persist audit record
+        self.persistence.store_audit_record(audit_record)
         
-        Args:
-            event: Event dict with mode, priority, include_vectors, etc.
-            
-        Returns:
-            Dict with backup operation results
-        """
-        correlation_id = event.get('correlation_id', f"backup_{int(datetime.utcnow().timestamp())}")
-        include_vectors = event.get('include_vectors', True)
-        
-        logger.info(f"Backup requested", extra={
+        # Step 5: Convert to dict for API response
+        report = {
             "correlation_id": correlation_id,
-            "include_vectors": include_vectors
-        })
-        
-        # Backup PostgreSQL
-        pg_backup_result = self.persistence.backup_postgresql()
-        
-        # Backup Qdrant (if requested)
-        qdrant_backup_result = None
-        if include_vectors:
-            qdrant_backup_result = self.persistence.backup_qdrant()
-        
-        snapshot_id = f"snapshot_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
-        
-        result = {
-            "success": pg_backup_result.get("status") == "success",
-            "snapshot_id": snapshot_id,
-            "postgresql_backup": pg_backup_result,
-            "qdrant_backup": qdrant_backup_result,
-            "sacred_timestamp": datetime.utcnow().isoformat(),
+            "timestamp": integrity_report.timestamp,
+            "postgresql": integrity_report.postgresql_status,
+            "qdrant": integrity_report.qdrant_status,
+            "coherence": integrity_report.coherence_status,
+            "overall_status": integrity_report.overall_status,
+            "findings": list(integrity_report.findings),
+            "warden_blessing": integrity_report.warden_blessing
         }
         
-        # Emit result event
-        self._emit_event(CHANNEL_BACKUP_COMPLETED, result, correlation_id)
+        # Step 6: Emit result event
+        self._emit_event(
+            channel=settings.CHANNEL_INTEGRITY_VALIDATED,
+            data=report,
+            correlation_id=correlation_id
+        )
         
-        logger.info(f"Backup completed", extra={
-            "correlation_id": correlation_id,
-            "snapshot_id": snapshot_id,
-            "success": result["success"]
-        })
-        
-        return result
+        logger.info(f"[{correlation_id}] Integrity check completed: status={integrity_report.overall_status}")
+        return report
     
-    def handle_restore(self, event: Dict[str, Any]) -> Dict[str, Any]:
+    # ═══════════════════════════════════════════════════════════════════════
+    # BACKUP OPERATIONS
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    def handle_backup(self, mode: str = "full", include_vectors: bool = True, 
+                     correlation_id: Optional[str] = None) -> Dict[str, Any]:
         """
-        Handle data restoration request.
+        Handle backup request.
+        
+        Workflow:
+          1. Get orchestration plan from Guardian
+          2. Optionally check integrity first (if Guardian requires)
+          3. Create backup plan via Archivist
+          4. Execute backup via persistence
+          5. Create audit record
+          6. Emit result event
         
         Args:
-            event: Event dict with snapshot_id, target, dry_run, etc.
+            mode: Backup mode ("full" or "incremental")
+            include_vectors: Whether to include Qdrant vectors
+            correlation_id: Optional correlation ID
             
         Returns:
-            Dict with restoration operation results
+            Backup result dict
         """
-        correlation_id = event.get('correlation_id', f"restore_{int(datetime.utcnow().timestamp())}")
-        snapshot_id = event.get('snapshot_id', 'unknown')
-        dry_run = event.get('dry_run', True)
+        correlation_id = correlation_id or f"backup_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
         
-        logger.info(f"Restore requested", extra={
+        logger.info(f"[{correlation_id}] Processing backup: mode={mode}, vectors={include_vectors}")
+        
+        # Step 1: Get orchestration plan from Guardian
+        guardian_input = {
+            "operation": "backup",
+            "mode": mode,
+            "include_vectors": include_vectors,
+            "priority": "normal",
+            "correlation_id": correlation_id
+        }
+        orchestration = self.guardian.process(guardian_input)
+        
+        # Step 2: Check if integrity validation needed first
+        if "sentinel" in orchestration["roles_to_invoke"]:
+            logger.info(f"[{correlation_id}] Guardian requires integrity check before backup")
+            pg_status = self.persistence.validate_postgresql_integrity()
+            qdrant_status = self.persistence.validate_qdrant_integrity()
+            
+            sentinel_input = {
+                "postgresql": pg_status,
+                "qdrant": qdrant_status,
+                "coherence": {"status": "coherent"},
+                "correlation_id": correlation_id
+            }
+            integrity = self.sentinel.process(sentinel_input)
+            
+            if integrity.overall_status == "corruption_detected":
+                logger.warning(f"[{correlation_id}] Backup aborted: corruption detected")
+                return {
+                    "correlation_id": correlation_id,
+                    "status": "aborted",
+                    "reason": "integrity_check_failed",
+                    "findings": list(integrity.findings)
+                }
+        
+        # Step 3: Create backup plan via Archivist
+        archivist_input = {
+            "operation": "backup",
+            "mode": mode,
+            "include_vectors": include_vectors,
+            "correlation_id": correlation_id
+        }
+        snapshot_plan = self.archivist.process(archivist_input)
+        
+        # Step 4: Execute backup via persistence layer
+        backup_result = self.persistence.execute_backup(
+            mode=mode,
+            include_vectors=include_vectors,
+            snapshot_id=snapshot_plan.snapshot_id
+        )
+        
+        # Step 5: Create audit record
+        audit_input = {
+            "operation": "backup",
+            "performed_by": "system",
+            "resource_type": "vault",
+            "resource_id": snapshot_plan.snapshot_id,
+            "action": "backup_completed",
+            "status": backup_result["status"],
             "correlation_id": correlation_id,
-            "snapshot_id": snapshot_id,
-            "dry_run": dry_run
-        })
+            "metadata": {
+                "mode": mode,
+                "scope": snapshot_plan.scope,
+                "size_bytes": backup_result.get("size_bytes", 0)
+            }
+        }
+        audit_record = self.chamberlain.process(audit_input)
+        self.persistence.store_audit_record(audit_record)
         
-        # Placeholder: Real restore logic would be implemented here
-        # This would integrate with existing keeper.py or sentinel.py if available
-        
+        # Step 6: Build response
         result = {
-            "success": False,
-            "message": "Restore operation not yet implemented (placeholder)",
+            "correlation_id": correlation_id,
+            "timestamp": snapshot_plan.timestamp,
+            "snapshot_id": snapshot_plan.snapshot_id,
+            "mode": mode,
+            "scope": snapshot_plan.scope,
+            "status": backup_result["status"],
+            "postgresql_path": backup_result.get("postgresql_path"),
+            "qdrant_path": backup_result.get("qdrant_path"),
+            "size_bytes": backup_result.get("size_bytes", 0)
+        }
+        
+        # Step 7: Emit event
+        self._emit_event(
+            channel=settings.CHANNEL_BACKUP_COMPLETED,
+            data=result,
+            correlation_id=correlation_id
+        )
+        
+        logger.info(f"[{correlation_id}] Backup completed: snapshot_id={snapshot_plan.snapshot_id}")
+        return result
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # RESTORE OPERATIONS
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    def handle_restore(self, snapshot_id: str, dry_run: bool = True,
+                      correlation_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Handle restore request.
+        
+        Workflow:
+          1. Get orchestration plan from Guardian
+          2. Validate current integrity via Sentinel
+          3. Validate snapshot exists
+          4. Execute restore (or test if dry_run)
+          5. Create audit record
+          6. Emit result event
+        
+        Args:
+            snapshot_id: ID of snapshot to restore
+            dry_run: If True, validate only without executing
+            correlation_id: Optional correlation ID
+            
+        Returns:
+            Restore result dict
+        """
+        correlation_id = correlation_id or f"restore_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        
+        logger.info(f"[{correlation_id}] Processing restore: snapshot_id={snapshot_id}, dry_run={dry_run}")
+        
+        # Step 1: Get orchestration plan from Guardian
+        guardian_input = {
+            "operation": "restore",
             "snapshot_id": snapshot_id,
             "dry_run": dry_run,
-            "sacred_timestamp": datetime.utcnow().isoformat(),
+            "priority": "critical" if not dry_run else "normal",
+            "correlation_id": correlation_id
+        }
+        orchestration = self.guardian.process(guardian_input)
+        
+        # Step 2: Always validate current integrity first
+        pg_status = self.persistence.validate_postgresql_integrity()
+        qdrant_status = self.persistence.validate_qdrant_integrity()
+        
+        sentinel_input = {
+            "postgresql": pg_status,
+            "qdrant": qdrant_status,
+            "coherence": {"status": "coherent"},
+            "correlation_id": correlation_id
+        }
+        pre_restore_integrity = self.sentinel.process(sentinel_input)
+        
+        # Step 3: Validate snapshot exists
+        snapshot_valid = self.persistence.validate_snapshot_exists(snapshot_id)
+        if not snapshot_valid:
+            logger.error(f"[{correlation_id}] Snapshot not found: {snapshot_id}")
+            return {
+                "correlation_id": correlation_id,
+                "status": "failed",
+                "reason": "snapshot_not_found",
+                "snapshot_id": snapshot_id
+            }
+        
+        # Step 4: Execute restore (or test if dry_run)
+        if dry_run:
+            restore_result = self.persistence.test_restore(snapshot_id)
+            status = "validated"
+        else:
+            if orchestration.get("requires_approval"):
+                logger.warning(f"[{correlation_id}] Real restore requires explicit approval")
+                return {
+                    "correlation_id": correlation_id,
+                    "status": "requires_approval",
+                    "snapshot_id": snapshot_id,
+                    "message": "Critical restore operation requires manual approval"
+                }
+            restore_result = self.persistence.execute_restore(snapshot_id)
+            status = restore_result.get("status", "completed")
+        
+        # Step 5: Create audit record
+        audit_input = {
+            "operation": "restore",
+            "performed_by": "system",
+            "resource_type": "vault",
+            "resource_id": snapshot_id,
+            "action": "restore_tested" if dry_run else "restore_executed",
+            "status": status,
+            "correlation_id": correlation_id,
+            "metadata": {
+                "dry_run": str(dry_run),
+                "pre_restore_integrity": pre_restore_integrity.overall_status
+            }
+        }
+        audit_record = self.chamberlain.process(audit_input)
+        self.persistence.store_audit_record(audit_record)
+        
+        # Step 6: Build response
+        result = {
+            "correlation_id": correlation_id,
+            "timestamp": datetime.utcnow().isoformat(),
+            "snapshot_id": snapshot_id,
+            "dry_run": dry_run,
+            "status": status,
+            "pre_restore_integrity": pre_restore_integrity.overall_status,
+            "details": restore_result
         }
         
-        # Emit result event
-        self._emit_event(CHANNEL_RESTORE_COMPLETED, result, correlation_id)
+        # Step 7: Emit event
+        self._emit_event(
+            channel=settings.CHANNEL_RESTORE_COMPLETED,
+            data=result,
+            correlation_id=correlation_id
+        )
         
-        logger.warning(f"Restore placeholder executed", extra={
-            "correlation_id": correlation_id,
-            "snapshot_id": snapshot_id
-        })
-        
+        logger.info(f"[{correlation_id}] Restore {'tested' if dry_run else 'executed'}: status={status}")
         return result
     
-    def handle_archive(self, event: Dict[str, Any]) -> Dict[str, Any]:
+    # ═══════════════════════════════════════════════════════════════════════
+    # ARCHIVE OPERATIONS
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    def handle_archive(self, content: Dict[str, Any], content_type: str = "generic",
+                      source_order: str = "unknown", correlation_id: Optional[str] = None) -> Dict[str, Any]:
         """
-        Handle archival request (from other orders).
+        Handle archive storage request.
+        
+        Workflow:
+          1. Create archive plan via Archivist
+          2. Store archive via persistence
+          3. Create audit record
+          4. Emit result event
         
         Args:
-            event: Event dict with content_type, source_order, payload, etc.
+            content: Content to archive
+            content_type: Type of content
+            source_order: Which Sacred Order generated this
+            correlation_id: Optional correlation ID
             
         Returns:
-            Dict with archive operation results
+            Archive result dict
         """
-        correlation_id = event.get('correlation_id', f"archive_{int(datetime.utcnow().timestamp())}")
-        content_type = event.get('content_type', 'generic')
-        source_order = event.get('source_order', 'unknown')
+        correlation_id = correlation_id or f"archive_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
         
-        logger.info(f"Archive requested", extra={
-            "correlation_id": correlation_id,
-            "content_type": content_type,
-            "source_order": source_order
-        })
+        logger.info(f"[{correlation_id}] Processing archive: type={content_type}, source={source_order}")
         
-        # Placeholder: Real archive logic would be implemented here
-        # This would integrate with existing archivist.py or chamberlain.py
-        
-        archive_id = f"archive_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
-        
-        result = {
-            "success": True,
-            "archive_id": archive_id,
+        # Step 1: Create archive plan via Archivist
+        archivist_input = {
+            "operation": "archive",
             "content_type": content_type,
             "source_order": source_order,
-            "message": "Archive placeholder (integrate with archivist.py)",
-            "sacred_timestamp": datetime.utcnow().isoformat(),
+            "payload": content,
+            "correlation_id": correlation_id
+        }
+        archive_metadata = self.archivist.process(archivist_input)
+        
+        # Step 2: Store archive via persistence layer
+        storage_result = self.persistence.store_archive(
+            archive_id=archive_metadata.archive_id,
+            content=content,
+            metadata=archive_metadata
+        )
+        
+        # Step 3: Create audit record
+        audit_input = {
+            "operation": "archive",
+            "performed_by": source_order,
+            "resource_type": "archive",
+            "resource_id": archive_metadata.archive_id,
+            "action": "content_archived",
+            "status": storage_result["status"],
+            "correlation_id": correlation_id,
+            "metadata": {
+                "content_type": content_type,
+                "retention_until": archive_metadata.retention_until
+            }
+        }
+        audit_record = self.chamberlain.process(audit_input)
+        self.persistence.store_audit_record(audit_record)
+        
+        # Step 4: Build response
+        result = {
+            "correlation_id": correlation_id,
+            "timestamp": archive_metadata.timestamp,
+            "archive_id": archive_metadata.archive_id,
+            "content_type": content_type,
+            "source_order": source_order,
+            "storage_path": archive_metadata.storage_path,
+            "retention_until": archive_metadata.retention_until,
+            "status": storage_result["status"],
+            "size_bytes": storage_result.get("size_bytes", 0)
         }
         
-        # Emit result event
-        self._emit_event(CHANNEL_ARCHIVE_COMPLETED, result, correlation_id)
+        # Step 5: Emit event
+        self._emit_event(
+            channel=settings.CHANNEL_ARCHIVE_STORED,
+            data=result,
+            correlation_id=correlation_id
+        )
         
-        logger.info(f"Archive placeholder executed", extra={
-            "correlation_id": correlation_id,
-            "archive_id": archive_id
-        })
-        
+        logger.info(f"[{correlation_id}] Archive stored: archive_id={archive_metadata.archive_id}")
         return result
     
-    def get_vault_status(self) -> Dict[str, Any]:
-        """
-        Get comprehensive vault status.
-        
-        Returns:
-            Dict with overall vault health and component statuses
-        """
-        # Quick health check
-        health = self.persistence.health_check()
-        
-        # Get integrity snapshot
-        integrity_result = self.handle_integrity_check({"correlation_id": "status_check"})
-        
-        return {
-            "vault_status": "blessed" if all(health.values()) else "requires_attention",
-            "integrity_status": integrity_result,
-            "sacred_roles": {
-                "vault_guardian": "divine_oversight_active",
-                "integrity_warden": "validation_ready",
-                "archive_keeper": "backup_ready",
-                "recovery_specialist": "recovery_ready",
-                "audit_tracker": "chronicles_maintained",
-            },
-            "synaptic_conclave": "connected" if self.bus else "disconnected",
-            "sacred_timestamp": datetime.utcnow().isoformat(),
-        }
-    
     # ═══════════════════════════════════════════════════════════════════════
-    # Helper Methods
+    # EVENT EMISSION
     # ═══════════════════════════════════════════════════════════════════════
     
-    def _determine_integrity_status(
-        self, pg_result: Dict, qdrant_result: Dict, coherence_result: Dict
-    ) -> str:
-        """Determine overall integrity status from component results"""
-        pg_status = pg_result.get("status")
-        qdrant_status = qdrant_result.get("status")
-        coherence_status = coherence_result.get("status")
+    def _emit_event(self, channel: str, data: Dict[str, Any], correlation_id: str):
+        """
+        Emit event to StreamBus.
         
-        if all(s in ["healthy", "coherent"] for s in [pg_status, qdrant_status, coherence_status]):
-            return "sacred"
-        elif any(s == "error" for s in [pg_status, qdrant_status, coherence_status]):
-            return "corruption_detected"
-        else:
-            return "blessed_with_concerns"
-    
-    def _emit_event(self, channel: str, payload: Dict[str, Any], correlation_id: str) -> None:
-        """Emit event to Synaptic Conclave"""
+        Args:
+            channel: Channel name (without vitruvyan: prefix)
+            data: Event payload
+            correlation_id: Correlation identifier
+        """
         try:
             event_id = self.bus.emit(
                 channel=channel,
-                payload=payload,
-                emitter="vault_keepers.api"
+                payload=data,
+                emitter="vault_keepers.api",
+                correlation_id=correlation_id
             )
-            logger.debug(f"Event emitted", extra={
-                "channel": channel,
-                "event_id": event_id,
-                "correlation_id": correlation_id
-            })
+            logger.debug(f"[{correlation_id}] Event emitted: {channel} -> {event_id}")
         except Exception as e:
-            logger.error(f"Failed to emit event", extra={
-                "channel": channel,
-                "correlation_id": correlation_id,
-                "error": str(e)
-            })
+            logger.error(f"[{correlation_id}] Failed to emit event to {channel}: {e}")

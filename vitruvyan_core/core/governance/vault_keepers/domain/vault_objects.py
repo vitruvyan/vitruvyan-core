@@ -156,24 +156,30 @@ class AuditRecord:
         record_id: Unique identifier
         timestamp: ISO 8601 operation time
         operation: Operation performed ("backup", "restore", "integrity_check", "archive")
-        initiator: Who/what triggered the operation
-        result: Operation result ("success", "partial_success", "failure")
+        performed_by: Who/what triggered the operation
+        resource_type: Type of resource operated on
+        resource_id: Identifier of resource
+        action: Specific action taken
+        status: Operation status ("initiated", "completed", "failed")
         correlation_id: Links to originating event
-        details: Tuple of detail key-value pairs
+        metadata: Tuple of metadata key-value pairs
     """
     record_id: str
     timestamp: str
     operation: str
-    initiator: str
-    result: str
+    performed_by: str
+    resource_type: str
+    resource_id: str
+    action: str
+    status: str
     correlation_id: Optional[str] = None
-    details: tuple = ()
+    metadata: tuple = ()
 
     def __post_init__(self):
         _valid_operations = {"backup", "restore", "integrity_check", "archive", "coherence_check"}
-        _valid_results = {"success", "partial_success", "failure"}
+        _valid_statuses = {"initiated", "completed", "failed", "in_progress"}
         
         if self.operation not in _valid_operations:
             raise ValueError(f"Invalid operation: {self.operation}")
-        if self.result not in _valid_results:
-            raise ValueError(f"Invalid result: {self.result}")
+        if self.status not in _valid_statuses:
+            raise ValueError(f"Invalid status: {self.status}")

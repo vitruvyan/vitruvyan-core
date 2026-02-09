@@ -35,12 +35,14 @@ class RestoreRequest(BaseModel):
 
 class IntegrityStatus(BaseModel):
     """Integrity validation result"""
-    integrity_status: str = Field(..., description="Overall integrity status")
-    postgresql: Dict[str, Any] = Field(..., description="PostgreSQL health")
-    qdrant: Dict[str, Any] = Field(..., description="Qdrant health")
-    coherence: Dict[str, Any] = Field(..., description="Cross-system coherence")
+    correlation_id: str = Field(..., description="Correlation ID")
+    timestamp: str = Field(..., description="Validation timestamp")
+    postgresql: str = Field(..., description="PostgreSQL health status")
+    qdrant: str = Field(..., description="Qdrant health status")
+    coherence: str = Field(..., description="Cross-system coherence status")
+    overall_status: str = Field(..., description="Overall integrity status")
+    findings: List[str] = Field(default_factory=list, description="Specific findings")
     warden_blessing: str = Field(..., description="Warden's judgment")
-    sacred_timestamp: str = Field(..., description="Validation timestamp")
 
 
 class BackupResult(BaseModel):

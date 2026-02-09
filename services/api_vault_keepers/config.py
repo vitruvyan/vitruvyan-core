@@ -62,6 +62,13 @@ class Settings:
     # Google Drive (for archive, if configured)
     GDRIVE_ENABLED = os.getenv("GDRIVE_ENABLED", "false").lower() == "true"
     GDRIVE_FOLDER_ID = os.getenv("GDRIVE_FOLDER_ID", "")
+    
+    # Event channels (emitting, not listening)
+    CHANNEL_INTEGRITY_VALIDATED = "vault.integrity.validated"
+    CHANNEL_BACKUP_COMPLETED = "vault.backup.completed"
+    CHANNEL_RESTORE_COMPLETED = "vault.restore.completed"
+    CHANNEL_ARCHIVE_STORED = "vault.archive.stored"
+    CHANNEL_SNAPSHOT_CREATED = "vault.snapshot.created"
 
 
 settings = Settings()
