@@ -176,7 +176,15 @@ class NeuralEngine:
         
         # STEP 3: Compute z-scores
         # Identify feature columns (exclude metadata columns)
-        metadata_cols = {"entity_id", self.stratification_field, "active", "country"}
+        metadata_cols = {
+            "entity_id", 
+            "entity_name",      # Entity label/name (non-numeric)
+            "metadata",          # Additional entity metadata (dict/object)
+            "group",             # Stratification group field
+            self.stratification_field,  # User-defined stratification
+            "active",            # Entity status flag
+            "country"            # Geographic metadata
+        }
         feature_cols = [c for c in df.columns if c not in metadata_cols and not c.endswith("_z")]
         
         df = self.z_calculator.compute_z_scores(
@@ -228,6 +236,7 @@ class NeuralEngine:
         
         # STEP 8: Prepare results
         statistics = self.ranker.get_bucket_statistics(ranked_df)
+        profile_weights = self.scoring_strategy.get_profile_weights(profile)
         
         result = {
             "ranked_entities": ranked_df,
@@ -237,9 +246,11 @@ class NeuralEngine:
                 "stratification_mode": self.stratification_mode,
                 "time_decay_enabled": self.enable_time_decay,
                 "risk_tolerance": risk_tolerance,
-                "total_entities_scored": valid_scores,
+                "total_entities": len(universe_df),        # Total in universe
+                "total_entities_scored": valid_scores,     # Total with valid scores
                 "top_k": top_k if top_k else len(ranked_df)
             },
+            "profile_weights": profile_weights,
             "statistics": statistics,
             "diagnostics": {
                 "universe_count": len(universe_df),
