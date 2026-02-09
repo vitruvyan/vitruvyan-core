@@ -34,6 +34,7 @@ from core.governance.orthodoxy_wardens.penitent_agent import AutoCorrector  # Pe
 from core.llm.llm_interface import LLMInterface
 # Standard Vitruvyan agents
 from core.agents.postgres_agent import PostgresAgent
+from api_orthodoxy_wardens.core.orthodoxy_db_manager import OrthodoxyDatabaseManager
 
 # 🕯️ SYNAPTIC CONCLAVE INTEGRATION - Redis Streams Cognitive Bus (Refactored Feb 2026)
 from core.synaptic_conclave.transport.streams import StreamBus
@@ -260,11 +261,17 @@ async def sacred_initialization():
             # Initialize Sacred PostgreSQL connection
             postgres_agent = PostgresAgent()
             
-            # Legacy audit_engine extensions (refactored into orthodoxy_wardens agents)
-            # orthodoxy_db_manager = OrthodoxyDatabaseManager()
+            # Initialize Orthodoxy Database Manager (✅ ENABLED 2026-02-09)
+            try:
+                orthodoxy_db_manager = OrthodoxyDatabaseManager()
+                logger.info("✅ Orthodoxy Database Manager initialized")
+            except Exception as e:
+                logger.error(f"💀 Failed to initialize OrthodoxyDatabaseManager: {e}")
+                orthodoxy_db_manager = None
+            
+            # TODO: Future implementations
             # orthodoxy_vector_manager = OrthodoxyVectorManager()
             # orthodoxy_analytics = OrthodoxyAnalytics()
-            orthodoxy_db_manager = None
             orthodoxy_vector_manager = None
             orthodoxy_analytics = None
         # TODO: Create proper theological components later
@@ -382,9 +389,25 @@ async def initiate_confession(request: ConfessionRequest, background_tasks: Back
     if not confessor_agent:
         raise HTTPException(status_code=503, detail="Confessor is absent from sacred duties")
     
+    if not orthodoxy_db_manager:
+        raise HTTPException(status_code=503, detail="Sacred database is corrupted")
+    
     try:
         # Generate sacred confession ID
         confession_id = f"confession_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        # Create confession in PostgreSQL first
+        await orthodoxy_db_manager.create_confession(
+            confession_id=confession_id,
+            service=request.penitent_service or "unknown_service",
+            event_type=request.confession_type,
+            payload={
+                "sacred_scope": request.sacred_scope,
+                "urgency": request.urgency,
+                "initiated_at": datetime.now().isoformat()
+            },
+            assigned_warden="confessor"
+        )
         
         # Create sacred confession state
         confession_state = {
@@ -672,7 +695,7 @@ async def run_confession_workflow(confession_state: Dict):
         await orthodoxy_db_manager.update_confession_status(
             confession_state['confession_id'], 
             "confessing", 
-            {"confession_started_at": datetime.now()}
+            divine_results={"confession_started_at": datetime.now().isoformat()}
         )
         
         # Confessor hears the confession
@@ -694,8 +717,8 @@ async def run_confession_workflow(confession_state: Dict):
         await orthodoxy_db_manager.update_confession_status(
             confession_state['confession_id'],
             "absolution_granted" if confession_results.get("absolved", False) else "penance_required",
-            {
-                "confession_completed_at": datetime.now(),
+            divine_results={
+                "confession_completed_at": datetime.now().isoformat(),
                 "divine_results": confession_results
             }
         )
@@ -709,8 +732,8 @@ async def run_confession_workflow(confession_state: Dict):
         await orthodoxy_db_manager.update_confession_status(
             confession_state['confession_id'],
             "divine_judgment_failed", 
-            {
-                "confession_completed_at": datetime.now(),
+            divine_results={
+                "confession_completed_at": datetime.now().isoformat(),
                 "sacred_error": str(e)
             }
         )

@@ -24,9 +24,10 @@ def initiate_audit(service: str, event_data: Dict) -> str:
     response = requests.post(
         f"{BASE_URL}/confession/initiate",
         json={
-            "service": service,
-            "event_type": "test_audit",
-            "payload": event_data
+            "confession_type": "system_compliance",
+            "sacred_scope": "complete_realm",
+            "urgency": "divine_routine",
+            "penitent_service": service
         }
     )
     response.raise_for_status()
@@ -48,10 +49,11 @@ def poll_status(confession_id: str, timeout: int = 60, interval: int = 2) -> Dic
         response.raise_for_status()
         status = response.json()
         
-        if status["status"] in ["blessed", "heretical", "failed"]:
+        # sacred_status can be: confessing, purifying, blessed, heretical, failed
+        if status["sacred_status"] in ["blessed", "heretical", "failed"]:
             return status
         
-        print(f"⏳ Status: {status['status']}... (elapsed: {elapsed}s)")
+        print(f"⏳ Status: {status['sacred_status']}... (elapsed: {elapsed}s)")
         time.sleep(interval)
         elapsed += interval
     
@@ -84,24 +86,26 @@ def main():
     # Step 2: Poll for completion
     print("\n⏳ Polling audit status...")
     try:
-        final_status = poll_status(confession_id, timeout=60, interval=2)
+        final_status= poll_status(confession_id, timeout=60, interval=2)
         
         # Step 3: Display results
         print("\n📊 Audit Results:")
-        print(f"   Status: {final_status['status']}")
-        print(f"   Orthodoxy Points: {final_status.get('orthodoxy_score', 'N/A')}")
+        print(f"   Status: {final_status['sacred_status']}")
+        print(f"   Penance Progress: {final_status.get('penance_progress', 'N/A')}")
+        print(f"   Assigned Warden: {final_status.get('assigned_warden', 'N/A')}")
         
-        if "findings" in final_status:
-            print("\n🔍 Findings:")
-            for finding in final_status["findings"][:5]:  # Show top 5
-                print(f"   • {finding}")
+        if "divine_results" in final_status and final_status["divine_results"]:
+            print("\n🔍 Divine Results:")
+            results = final_status["divine_results"]
+            for key, value in list(results.items())[:5]:  # Show top 5
+                print(f"   • {key}: {value}")
         
-        if final_status["status"] == "blessed":
+        if final_status["sacred_status"] == "blessed":
             print("\n✅ Audit PASSED - All Sacred Orders compliance maintained")
-        elif final_status["status"] == "heretical":
+        elif final_status["sacred_status"] == "heretical":
             print("\n⚠️  Audit FAILED - Violations detected")
         else:
-            print(f"\n❌ Audit ERROR - Status: {final_status['status']}")
+            print(f"\n❌ Audit ERROR - Status: {final_status['sacred_status']}")
     
     except TimeoutError as e:
         print(f"\n❌ {e}")

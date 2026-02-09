@@ -209,15 +209,13 @@ Each major service runs in a separate Docker container with REST/Redis communica
 
 ### Critical Infrastructure Rules
 **PostgreSQL**:
-- ✅ Runs on **localhost** (host machine at 161.97.140.157:5432)
-- ❌ **NOT** in Docker container
-- ❌ **NOT** on VPS separate instance
-- **MANDATORY**: Always use `PostgresAgent()` from `core/leo/postgres_agent.py`
+- ✅ Runs on docker
+- **MANDATORY**: Always use `PostgresAgent()` from `core/agents/postgres_agent.py`
 - **NEVER**: Use direct `psycopg2.connect()` calls
 
 **Qdrant**:
 - ✅ Runs in Docker container `vitruvyan_qdrant`
-- **MANDATORY**: Always use `QdrantAgent()` from `core/leo/qdrant_agent.py`
+- **MANDATORY**: Always use `QdrantAgent()` from `core/agents/qdrant_agent.py`
 - **NEVER**: Use direct `qdrant_client.QdrantClient()` calls
 
 ### Communication Pattern
@@ -244,8 +242,8 @@ Every agent embeds to Qdrant via `QdrantAgent()`.
 
 ### Epistemic Agent Pattern
 ```python
-from core.leo.postgres_agent import PostgresAgent
-from core.leo.qdrant_agent import QdrantAgent
+from core.agents.postgres_agent import PostgresAgent
+from core.agents.qdrant_agent import QdrantAgent
 
 # CORRECT ✅
 pg = PostgresAgent()
