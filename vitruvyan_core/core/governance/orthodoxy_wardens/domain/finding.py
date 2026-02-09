@@ -57,8 +57,8 @@ class Finding:
         _valid_types = {"violation", "warning", "anomaly", "blessing"}
         _valid_severities = {"critical", "high", "medium", "low"}
         _valid_categories = {
-            "compliance", "data_quality", "architectural",
-            "performance", "hallucination", "epistemic",
+            "compliance", "security", "data_quality", "architectural",
+            "performance", "quality", "hallucination", "epistemic",
         }
 
         if self.finding_type not in _valid_types:
