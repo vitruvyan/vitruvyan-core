@@ -2,20 +2,28 @@
 
 > Decision engines that process events and render judgments.
 
+## Status: ✅ COMPLETE (FASE 3)
+
 ## Contents
-
-| File | Description |
-|------|-------------|
-| `base.py` | `SacredRole` ABC — the contract all consumers implement |
-
-### Planned (FASE 3)
 
 | File | Description | Migrated From |
 |------|-------------|---------------|
-| `confessor.py` | Audit orchestrator — routes confessions to specialists | `confessor_agent.py` |
-| `inquisitor.py` | Classification engine — categorizes findings by rules | `inquisitor_agent.py` |
-| `penitent.py` | Strategy selector — recommends corrections (never executes) | `penitent_agent.py` |
-| `chronicler.py` | LogDecision engine — decides what to remember | `chronicler_agent.py` (reborn) |
+| `base.py` | `SacredRole` ABC — the contract all consumers implement | — |
+| `confessor.py` | Intake officer — raw events → `Confession` | `confessor_agent.py` |
+| `inquisitor.py` | Examiner — Confession + text/code → `InquisitorResult` (Findings) | `inquisitor_agent.py` |
+| `penitent.py` | Correction advisor — Verdict → `CorrectionPlan` (never executes) | `penitent_agent.py` |
+| `chronicler.py` | Log strategist — Verdict → `ChronicleDecision` (never persists) | `chronicler_agent.py` (reborn) |
+
+## Pipeline Flow
+
+```
+Raw Event
+  → Confessor.process(event)         → Confession
+  → Inquisitor.process({confession, text, code})  → InquisitorResult (Findings)
+  → VerdictEngine.render(findings)   → Verdict        [governance/]
+  → Penitent.process(verdict)        → CorrectionPlan
+  → Chronicler.process(verdict)      → ChronicleDecision
+```
 
 ## SacredRole Contract
 
@@ -24,8 +32,17 @@ class SacredRole(ABC):
     role_name: str       # Unique identifier
     description: str     # English description
     can_handle(event)    # Should this role process this event?
-    process(event)       # Pure judgment: event → Verdict/Finding/LogDecision
+    process(event)       # Pure judgment: event → result
 ```
+
+## Result Types
+
+| Consumer | Input | Output |
+|----------|-------|--------|
+| Confessor | `OrthodoxyEvent` / `dict` | `Confession` |
+| Inquisitor | `dict{confession, text, code}` | `InquisitorResult` (tuple[Finding]) |
+| Penitent | `Verdict` | `CorrectionPlan` (tuple[CorrectionRequest]) |
+| Chronicler | `Verdict` | `ChronicleDecision` (LogDecision + ArchiveDirectives) |
 
 ## Constraints
 
