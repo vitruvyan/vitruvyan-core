@@ -28,7 +28,7 @@ Every Sacred Order exists at TWO levels:
 Contains: domain objects, decision logic, event definitions, metric names.  
 Does NOT contain: database connections, bus listeners, API endpoints, Docker.
 
-### Level 2 — Service (`services/governance/api_<order>/`)
+### Level 2 — Service (`services/api_<order>/`)
 **Infrastructure. Bus. Database. API. Docker.**
 
 Contains: FastAPI app, StreamBus adapters, PostgreSQL persistence, health checks.  
