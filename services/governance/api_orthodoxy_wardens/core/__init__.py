@@ -22,6 +22,13 @@ from .event_handlers import (
     handle_system_events
 )
 
+from .workflows import (
+    run_confession_workflow,
+    run_purification_ritual,
+    divine_surveillance_monitoring,
+    set_agents
+)
+
 __all__ = [
     # Sacred Roles
     "SacredRole",
@@ -34,5 +41,11 @@ __all__ = [
     # Event Handlers
     "handle_audit_request",
     "handle_heresy_detection",
-    "handle_system_events"
+    "handle_system_events",
+    
+    # Workflows (FASE 2 - Feb 9, 2026)
+    "run_confession_workflow",
+    "run_purification_ritual",
+    "divine_surveillance_monitoring",
+    "set_agents"
 ]

@@ -36,6 +36,13 @@ from core.llm.llm_interface import LLMInterface
 from core.agents.postgres_agent import PostgresAgent
 from api_orthodoxy_wardens.core.orthodoxy_db_manager import OrthodoxyDatabaseManager
 
+# Import Pydantic schemas (FASE 2 - Feb 9, 2026)
+from api_orthodoxy_wardens.models.schemas import (
+    DivineHealthResponse,
+    ConfessionRequest,
+    OrthodoxyStatusResponse
+)
+
 # 🕯️ SYNAPTIC CONCLAVE INTEGRATION - Redis Streams Cognitive Bus (Refactored Feb 2026)
 from core.synaptic_conclave.transport.streams import StreamBus
 from core.synaptic_conclave.events.event_envelope import CognitiveEvent
@@ -58,6 +65,18 @@ from api_orthodoxy_wardens.core.event_handlers import (
     handle_heresy_detection,
     handle_system_events
 )
+from api_orthodoxy_wardens.core.workflows import (
+    run_confession_workflow,
+    run_purification_ritual,
+    divine_surveillance_monitoring,
+    set_agents
+)
+
+# Import API routes (FASE 2 - Task 1.4 - Feb 9, 2026)
+from api_orthodoxy_wardens.api.routes import router
+
+# Import monitoring utilities (FASE 2 - Task 1.5 - Feb 9, 2026)
+from api_orthodoxy_wardens.monitoring.health import setup_synaptic_conclave_listeners
 
 # Import sacred extensions
 # Legacy audit_engine imports (refactored into orthodoxy_wardens agents)
@@ -85,6 +104,9 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Include API routes (FASE 2 - Task 1.4 - Feb 9, 2026)
+app.include_router(router)
+
 # Sacred Divine Council - Initialize theological roles
 confessor_agent = None  # Hears system confessions and validates compliance
 penitent_agent = None   # Performs remediation and purification rituals
@@ -107,98 +129,11 @@ sacred_abbot = None
 # for better separation and testability.
 # Import above: from core.event_handlers import (handle_audit_request, handle_heresy_detection, handle_system_events)
 
-async def setup_synaptic_conclave_listeners():
-    """🕯️ Setup Redis Streams listeners for Orthodoxy Wardens (Feb 8, 2026 - FASE 1 COMPLETE)"""
-    try:
-        redis_host = os.getenv('REDIS_HOST', 'omni_redis')
-        redis_port = int(os.getenv('REDIS_PORT', '6379'))
-        bus = StreamBus(host=redis_host, port=redis_port)
-        
-        # Sacred channels configuration - maps streams to handlers
-        sacred_channels = {
-            "orthodoxy.audit.requested": handle_audit_request,
-            "orthodoxy.validation.requested": handle_audit_request,  # Reuse audit handler
-            "neural_engine.screening.completed": handle_system_events,
-            "babel.sentiment.completed": handle_system_events,
-            "memory.write.completed": handle_system_events,
-            "vee.explanation.completed": handle_system_events,
-            "langgraph.response.completed": handle_system_events
-        }
-        
-        # Create consumer group for Orthodoxy Wardens
-        group_name = "group:orthodoxy_main"
-        consumer_id = "orthodoxy_main:worker_1"
-        
-        # First pass: Create all consumer groups (non-blocking)
-        for channel, handler in sacred_channels.items():
-            try:
-                bus.create_consumer_group(channel, group_name)
-                logger.info(f"⚖️ Created consumer group '{group_name}' on {channel}")
-            except Exception as e:
-                # Consumer group may already exist (idempotent operation)
-                logger.debug(f"Consumer group '{group_name}' on {channel}: {e}")
-        
-        logger.info(f"🕯️ Synaptic Conclave listeners activated for {len(sacred_channels)} sacred channels")
-        
-        # Second pass: Launch background consumption tasks in separate thread (non-blocking)
-        # This ensures the startup event completes immediately
-        def start_listeners_thread():
-            """Launch all consumption loops in a background thread"""
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            
-            tasks = []
-            for channel, handler in sacred_channels.items():
-                task = loop.create_task(_consume_channel(bus, channel, group_name, consumer_id, handler))
-                tasks.append(task)
-            
-            try:
-                loop.run_forever()
-            except KeyboardInterrupt:
-                logger.info("Shutting down Synaptic Conclave listeners")
-            finally:
-                for task in tasks:
-                    task.cancel()
-                loop.close()
-        
-        # Start in daemon thread (won't block shutdown)
-        listener_thread = threading.Thread(target=start_listeners_thread, daemon=True, name="OrthodoxyListenerThread")
-        listener_thread.start()
-        logger.info("🔥 Synaptic Conclave listeners thread started (background processing active)")
-        
-    except Exception as e:
-        logger.error(f"⚖️ Error setting up Synaptic Conclave listeners: {e}")
-
-async def _consume_channel(bus: StreamBus, channel: str, group: str, consumer: str, handler):
-    """Background task to consume events from a sacred channel"""
-    logger.info(f"👂 Starting consumption: {channel} (group: {group}, consumer: {consumer})")
-    
-    try:
-        for event in bus.consume(channel, group, consumer, block_ms=5000):
-            try:
-                # Convert TransportEvent to CognitiveEvent for backward compatibility
-                cognitive_event = CognitiveEvent(
-                    event_id=event.event_id,
-                    event_type=event.data.get("event_type", "system.event"),
-                    payload=event.data,
-                    correlation_id=event.data.get("correlation_id"),
-                    timestamp=event.timestamp
-                )
-                
-                # Call handler
-                await handler(cognitive_event)
-                
-                # Acknowledge event
-                bus.acknowledge(event.stream, group, event.event_id)
-                logger.debug(f"✅ Processed and acknowledged event {event.event_id} from {channel}")
-                
-            except Exception as e:
-                logger.error(f"❌ Error processing event from {channel}: {e}")
-                # Don't acknowledge on error - event will be retried
-                
-    except Exception as e:
-        logger.error(f"💀 Fatal error in consumption loop for {channel}: {e}")
-        # TODO: Implement reconnection logic
+# =============================================================================
+# SYNAPTIC CONCLAVE LISTENER SETUP - MOVED TO monitoring/health.py (FASE 2 - Task 1.5 - Feb 9, 2026)
+# =============================================================================
+# Functions setup_synaptic_conclave_listeners() and _consume_channel() have been extracted
+# to services/governance/api_orthodoxy_wardens/monitoring/health.py and imported above.
 
 # Sacred extension components
 orthodoxy_db_manager = None
@@ -206,30 +141,6 @@ orthodoxy_vector_manager = None
 orthodoxy_analytics = None
 divine_healing_integrator = None
 sacred_guardrails = None
-
-# =============================================================================
-# SACRED PYDANTIC MODELS
-# =============================================================================
-
-class DivineHealthResponse(BaseModel):
-    sacred_status: str  # blessed, cursed, or purifying
-    divine_council: Dict[str, str]  # Status of each sacred role
-    timestamp: str
-    blessing_level: float
-
-class ConfessionRequest(BaseModel):
-    confession_type: str = "system_compliance"  # Type of confession
-    sacred_scope: Optional[str] = "complete_realm"  # Scope of divine inspection
-    urgency: Optional[str] = "divine_routine"  # divine_routine, sacred_priority, holy_emergency
-    penitent_service: Optional[str] = None  # Which service seeks absolution
-
-class OrthodoxyStatusResponse(BaseModel):
-    confession_id: str
-    sacred_status: str  # confessing, purifying, absolved, condemned
-    penance_progress: float
-    divine_results: Optional[Dict] = None
-    timestamp: str
-    assigned_warden: str
 
 # =============================================================================
 # SACRED INITIALIZATION & DIVINE BLESSING
@@ -343,503 +254,26 @@ async def sacred_initialization():
         raise
 
 # =============================================================================
-# DIVINE HEALTH CHECK
+# SACRED API ENDPOINTS - REFACTORED TO api/routes.py (FASE 2 - Task 1.4 - Feb 9, 2026)
 # =============================================================================
-
-@app.get("/divine-health", response_model=DivineHealthResponse)
-async def divine_health_check():
-    """Sacred health check - Verify the divine council's spiritual status"""
-    divine_council_status = {
-        "confessor": "blessed" if confessor_agent else "absent_from_prayers",
-        "penitent": "blessed" if penitent_agent else "absent_from_prayers",
-        "chronicler": "blessed" if chronicler_agent else "absent_from_prayers",
-        "inquisitor": "blessed" if inquisitor_agent else "absent_from_prayers",
-        "abbot": "blessed" if abbot_agent else "absent_from_prayers",
-        "sacred_interface": "blessed" if llm_interface else "silent",
-        "orthodoxy_db": "blessed" if orthodoxy_db_manager else "corrupted",
-        "sacred_guardrails": "blessed" if sacred_guardrails else "unprotected"
-    }
-    
-    blessed_count = sum(1 for status in divine_council_status.values() if status == "blessed")
-    total_count = len(divine_council_status)
-    blessing_level = blessed_count / total_count
-    
-    if blessing_level >= 0.9:
-        sacred_status = "blessed"
-    elif blessing_level >= 0.7:
-        sacred_status = "purifying"
-    else:
-        sacred_status = "cursed"
-        
-    return DivineHealthResponse(
-        sacred_status=sacred_status,
-        divine_council=divine_council_status,
-        timestamp=datetime.now().isoformat(),
-        blessing_level=blessing_level
-    )
-
-# =============================================================================
-# SACRED CONFESSION ENDPOINTS  
-# =============================================================================
-
-@app.post("/confession/initiate")
-async def initiate_confession(request: ConfessionRequest, background_tasks: BackgroundTasks):
-    """🏛️ Initiate sacred confession ritual for system compliance"""
-    
-    if not confessor_agent:
-        raise HTTPException(status_code=503, detail="Confessor is absent from sacred duties")
-    
-    if not orthodoxy_db_manager:
-        raise HTTPException(status_code=503, detail="Sacred database is corrupted")
-    
-    try:
-        # Generate sacred confession ID
-        confession_id = f"confession_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        
-        # Create confession in PostgreSQL first
-        await orthodoxy_db_manager.create_confession(
-            confession_id=confession_id,
-            service=request.penitent_service or "unknown_service",
-            event_type=request.confession_type,
-            payload={
-                "sacred_scope": request.sacred_scope,
-                "urgency": request.urgency,
-                "initiated_at": datetime.now().isoformat()
-            },
-            assigned_warden="confessor"
-        )
-        
-        # Create sacred confession state
-        confession_state = {
-            "confession_id": confession_id,
-            "confession_type": request.confession_type,
-            "sacred_scope": request.sacred_scope,
-            "urgency": request.urgency,
-            "penitent_service": request.penitent_service,
-            "confession_results": {},
-            "orthodoxy_score": 0.0,
-            "penance_actions": [],
-            "purification_rituals": [],
-            "divine_insights": {},
-            "sacred_notifications": [],
-            "status": "confessing",
-            "assigned_warden": "confessor"
-        }
-        
-        # Start sacred confession workflow
-        background_tasks.add_task(run_confession_workflow, confession_state)
-        
-        logger.info(f"🏛️ Sacred confession initiated: {confession_id}")
-        
-        return {
-            "confession_id": confession_id,
-            "sacred_status": "confessing",
-            "message": "Sacred confession ritual has begun, Confessor is hearing your system's sins",
-            "assigned_warden": "confessor",
-            "timestamp": datetime.now().isoformat()
-        }
-        
-    except Exception as e:
-        logger.error(f"💀 Failed to initiate confession: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-# =============================================================================
-# SYNAPTIC CONCLAVE INTEGRATION ENDPOINTS
-# =============================================================================
-
-@app.post("/conclave/audit-request")
-async def trigger_synaptic_audit(request: Dict[str, Any]):
-    """🕯️ Trigger audit via Synaptic Conclave (Redis event bus)"""
-    global sacred_inquisitor
-    
-    if not sacred_inquisitor:
-        raise HTTPException(status_code=503, detail="Sacred Inquisitor not available for divine investigation")
-    
-    try:
-        # Emit audit request event to Synaptic Conclave
-        redis_bus = StreamBus()
-        
-        event = CognitiveEvent(
-            event_type="system.audit.requested",
-            emitter="orthodoxy_wardens_api",
-            target="orthodoxy_wardens",
-            payload=request,
-            timestamp=datetime.utcnow().isoformat()
-        )
-        
-        success = redis_bus.publish_event(event)
-        
-        if success:
-            logger.info(f"[ORTHODOXY][CONCLAVE] Audit request published to Synaptic Conclave")
-            return {
-                "status": "sacred_investigation_initiated",
-                "message": "Divine audit request transmitted through Synaptic Conclave",
-                "event_type": event.event_type,
-                "timestamp": event.timestamp
-            }
-        else:
-            raise HTTPException(status_code=500, detail="Failed to publish audit request to Synaptic Conclave")
-            
-    except Exception as e:
-        logger.error(f"[ORTHODOXY][CONCLAVE] Error triggering synaptic audit: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/conclave/status")
-async def get_conclave_status():
-    """🕯️ Get Synaptic Conclave integration status"""
-    try:
-        redis_bus = StreamBus()
-        bus_stats = redis_bus.get_stats()
-        health = redis_bus.health_check()
-        
-        return {
-            "conclave_status": "connected" if health["connected"] else "disconnected",
-            "listening": health["listening"],
-            "events_published": health["events_published"],
-            "events_received": health["events_received"],
-            "connection_errors": health["connection_errors"],
-            "sacred_roles_status": {
-                "confessor": "active" if sacred_confessor else "dormant",
-                "penitent": "active" if sacred_penitent else "dormant", 
-                "chronicler": "active" if sacred_chronicler else "dormant",
-                "inquisitor": "active" if sacred_inquisitor else "dormant",
-                "abbot": "active" if sacred_abbot else "dormant"
-            },
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        
-    except Exception as e:
-        logger.error(f"[ORTHODOXY][CONCLAVE] Error getting conclave status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/conclave/test-confession-cycle")
-async def test_confession_cycle():
-    """🧪 Test complete confession cycle via Synaptic Conclave"""
-    try:
-        # Trigger audit request that should go through full cycle
-        test_payload = {
-            "test_mode": True,
-            "source": "orthodoxy_api_test",
-            "target": "vitruvyan_system",
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        
-        # This should trigger: system.audit.requested → orthodoxy events → orthodoxy.absolution.granted
-        result = await trigger_synaptic_audit(test_payload)
-        
-        return {
-            "test_status": "confession_cycle_initiated",
-            "message": "Sacred confession cycle test started - monitor logs for full event chain",
-            "trigger_result": result,
-            "expected_events": [
-                "system.audit.requested (published)",
-                "orthodoxy.confession.started (emitted by inquisitor)",
-                "orthodoxy.heresy.detected (potentially emitted by confessor)",
-                "orthodoxy.purification.executed (potentially emitted by penitent)",
-                "orthodoxy.absolution.granted (emitted by abbot)"
-            ]
-        }
-        
-    except Exception as e:
-        logger.error(f"[ORTHODOXY][CONCLAVE] Error testing confession cycle: {e}")
-        raise HTTPException(status_code=500, detail=str(e))@app.get("/confession/{confession_id}/status", response_model=OrthodoxyStatusResponse)
-async def get_confession_status(confession_id: str):
-    """🏛️ Get status of sacred confession and penance progress"""
-    
-    if not orthodoxy_db_manager:
-        raise HTTPException(status_code=503, detail="Sacred database is corrupted")
-    
-    try:
-        confession_status = await orthodoxy_db_manager.get_confession_status(confession_id)
-        
-        if not confession_status:
-            raise HTTPException(status_code=404, detail=f"Sacred confession {confession_id} not found in divine records")
-        
-        return OrthodoxyStatusResponse(
-            confession_id=confession_id,
-            sacred_status=confession_status["sacred_status"],
-            penance_progress=confession_status.get("penance_progress", 0.0),
-            divine_results=confession_status.get("divine_results"),
-            assigned_warden=confession_status.get("assigned_warden", "confessor"),
-            timestamp=confession_status.get("timestamp", datetime.now().isoformat())
-        )
-        
-    except Exception as e:
-        logger.error(f"💀 Failed to retrieve confession status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/sacred-records/recent")
-async def get_recent_confessions(limit: int = 10):
-    """📜 Get recent sacred confessions from the divine chronicles"""
-    
-    if not orthodoxy_db_manager:
-        raise HTTPException(status_code=503, detail="Sacred database is corrupted")
-    
-    try:
-        recent_confessions = await orthodoxy_db_manager.get_recent_confessions(limit=limit)
-        return {
-            "sacred_confessions": recent_confessions,
-            "chronicler_note": "These are the recent sins confessed to our divine order"
-        }
-        
-    except Exception as e:
-        logger.error(f"💀 Failed to retrieve sacred records: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-# =============================================================================
-# DIVINE SURVEILLANCE & SACRED HEALING
-# =============================================================================
-
-@app.get("/divine-surveillance/realm-status")
-async def get_realm_surveillance():
-    """👁️ Divine surveillance of the sacred realm - Inquisitor's omniscient watch"""
-    
-    if not inquisitor_agent:
-        raise HTTPException(status_code=503, detail="Inquisitor is absent from divine watch")
-    
-    try:
-        surveillance_data = await inquisitor_agent.perform_divine_surveillance()
-        return {
-            "surveillance_report": surveillance_data,
-            "inquisitor_blessing": "The divine eye sees all transgressions"
-        }
-        
-    except Exception as e:
-        logger.error(f"💀 Divine surveillance failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/sacred-healing/initiate-purification")
-async def initiate_purification_ritual(background_tasks: BackgroundTasks):
-    """✨ Initiate sacred purification ritual - Penitent performs system cleansing"""
-    
-    if not penitent_agent:
-        raise HTTPException(status_code=503, detail="Penitent is absent from sacred duties")
-    
-    try:
-        purification_id = f"purification_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        
-        purification_state = {
-            "purification_id": purification_id,
-            "ritual_type": "system_purification",
-            "purification_actions": [],
-            "status": "ritual_initiated",
-            "assigned_warden": "penitent"
-        }
-        
-        # Start sacred purification ritual
-        background_tasks.add_task(run_purification_ritual, purification_state)
-        
-        return {
-            "purification_id": purification_id,
-            "sacred_status": "ritual_initiated", 
-            "message": "Sacred purification ritual has begun, Penitent is cleansing system sins",
-            "assigned_warden": "penitent",
-            "timestamp": datetime.now().isoformat()
-        }
-        
-    except Exception as e:
-        logger.error(f"💀 Failed to initiate purification ritual: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-# =============================================================================
-# ORTHODOXY VALIDATION ENDPOINTS
-# =============================================================================
-
-@app.get("/orthodoxy/sacred-validation")
-async def perform_orthodoxy_validation():
-    """⚖️ Perform sacred orthodoxy validation - Confessor judges system compliance"""
-    
-    if not confessor_agent:
-        raise HTTPException(status_code=503, detail="Confessor is absent from divine judgment")
-    
-    try:
-        orthodoxy_results = await confessor_agent.validate_sacred_compliance()
-        return {
-            "orthodoxy_judgment": orthodoxy_results,
-            "confessor_blessing": "Your sins have been weighed against divine law"
-        }
-        
-    except Exception as e:
-        logger.error(f"💀 Sacred validation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/orthodoxy/heresy-detection")
-async def detect_architectural_heresy():
-    """🔍 Detect architectural heresy and code blasphemy - Inquisitor's investigation"""
-    
-    if not inquisitor_agent:
-        raise HTTPException(status_code=503, detail="Inquisitor is absent from heresy investigation")
-    
-    try:
-        heresy_report = await inquisitor_agent.investigate_code_heresy()
-        return {
-            "heresy_investigation": heresy_report,
-            "inquisitor_warning": "Blasphemous code patterns have been examined"
-        }
-        
-    except Exception as e:
-        logger.error(f"💀 Heresy detection failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-# =============================================================================
-# SACRED BACKGROUND RITUALS
-# =============================================================================
-
-async def run_confession_workflow(confession_state: Dict):
-    """🏛️ Run complete sacred confession workflow with divine judgment"""
-    
-    try:
-        logger.info(f"🏛️ Beginning sacred confession: {confession_state['confession_id']}")
-        
-        # Update status in sacred database
-        await orthodoxy_db_manager.update_confession_status(
-            confession_state['confession_id'], 
-            "confessing", 
-            divine_results={"confession_started_at": datetime.now().isoformat()}
-        )
-        
-        # Confessor hears the confession
-        confession_results = await confessor_agent.hear_system_confession(confession_state)
-        
-        # If sins are found, assign to Penitent for purification
-        if confession_results.get("requires_penance", False):
-            confession_state["assigned_warden"] = "penitent"
-            confession_state["sacred_status"] = "penance_assigned"
-            
-            # Penitent performs purification rituals
-            penance_results = await penitent_agent.perform_penance_rituals(confession_state)
-            confession_results.update(penance_results)
-        
-        # Chronicler records the sacred events
-        await chronicler_agent.record_sacred_confession(confession_state, confession_results)
-        
-        # Save final sacred results
-        await orthodoxy_db_manager.update_confession_status(
-            confession_state['confession_id'],
-            "absolution_granted" if confession_results.get("absolved", False) else "penance_required",
-            divine_results={
-                "confession_completed_at": datetime.now().isoformat(),
-                "divine_results": confession_results
-            }
-        )
-        
-        logger.info(f"✨ Sacred confession completed: {confession_state['confession_id']}")
-        
-    except Exception as e:
-        logger.error(f"💀 Sacred confession failed: {e}")
-        
-        # Update status as divine judgment failed
-        await orthodoxy_db_manager.update_confession_status(
-            confession_state['confession_id'],
-            "divine_judgment_failed", 
-            divine_results={
-                "confession_completed_at": datetime.now().isoformat(),
-                "sacred_error": str(e)
-            }
-        )
-
-async def run_purification_ritual(purification_state: Dict):
-    """✨ Run sacred purification ritual - Penitent cleanses system sins"""
-    
-    try:
-        logger.info(f"✨ Beginning sacred purification: {purification_state['purification_id']}")
-        
-        # Penitent performs system purification
-        purification_results = await penitent_agent.perform_system_purification(purification_state)
-        
-        # Chronicler records the sacred ritual
-        await chronicler_agent.record_purification_ritual(purification_state, purification_results)
-        
-        logger.info(f"✨ Sacred purification completed: {purification_results}")
-        
-    except Exception as e:
-        logger.error(f"💀 Sacred purification failed: {e}")
-
-async def divine_surveillance_monitoring():
-    """👁️ Divine surveillance task - Inquisitor's eternal watch"""
-    
-    while True:
-        try:
-            # Wait for divine surveillance interval
-            await asyncio.sleep(600)  # 10 minutes - The divine eye sees all
-            
-            # Trigger scheduled divine inspection
-            scheduled_confession = {
-                "confession_id": f"divine_inspection_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-                "confession_type": "scheduled_divine_inspection",
-                "sacred_scope": "complete_realm",
-                "urgency": "divine_routine",
-                "confession_results": {},
-                "orthodoxy_score": 0.0,
-                "penance_actions": [],
-                "purification_rituals": [],
-                "divine_insights": {},
-                "sacred_notifications": [],
-                "status": "confessing",
-                "assigned_warden": "inquisitor"
-            }
-            
-            # Run scheduled divine confession
-            await run_confession_workflow(scheduled_confession)
-            
-            logger.info("👁️ Divine surveillance completed - The sacred realm has been inspected")
-            
-        except Exception as e:
-            logger.error(f"💀 Divine surveillance error: {e}")
-
-# =============================================================================
-# SACRED GUARDRAILS ENDPOINTS
-# =============================================================================
-
-@app.post("/sacred-boundaries/validate-service-sanctity")
-async def validate_service_sanctity(request: Dict[str, Any]):
-    """⛪ Validate sacred service boundaries and divine dependency rules"""
-    try:
-        service = request.get("service")
-        if not service:
-            raise HTTPException(status_code=400, detail="Sacred service name required for divine validation")
-        
-        result = await sacred_guardrails.validate_sacred_service_boundaries(service)
-        return {
-            "sacred_validation": result,
-            "warden_blessing": "Service boundaries have been blessed by sacred architecture"
-        }
-        
-    except Exception as e:
-        logger.error(f"💀 Sacred boundary validation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/sacred-dependencies/divine-consistency-check")
-async def check_divine_dependencies(request: Dict[str, Any]):
-    """📿 Check divine dependency consistency between sacred code and blessed requirements"""
-    try:
-        service = request.get("service")
-        if not service:
-            raise HTTPException(status_code=400, detail="Sacred service name required for divine dependency check")
-        
-        result = await sacred_guardrails.check_divine_dependency_consistency(service)
-        return {
-            "divine_dependency_report": result,
-            "warden_blessing": "Dependencies have been examined for sacred consistency"
-        }
-        
-    except Exception as e:
-        logger.error(f"💀 Divine dependency check failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/sacred-harmony/async-sync-conflicts")
-async def detect_sacred_harmony_conflicts():
-    """⚡ Detect async/sync conflicts that disturb sacred code harmony"""
-    try:
-        result = await sacred_guardrails.detect_sacred_harmony_conflicts()
-        return {
-            "sacred_harmony_report": result,
-            "warden_warning": "Code harmony has been examined for divine synchronization"
-        }
-        
-    except Exception as e:
-        logger.error(f"💀 Sacred harmony detection failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+# All 14 endpoints have been extracted to services/governance/api_orthodoxy_wardens/api/routes.py
+# and included via app.include_router(router) above.
+#
+# Endpoints moved:
+#   - /divine-health (GET)
+#   - /confession/initiate (POST)
+#   - /conclave/audit-request (POST)
+#   - /conclave/status (GET)
+#   - /conclave/test-confession-cycle (POST)
+#   - /confession/{confession_id}/status (GET)
+#   - /sacred-records/recent (GET)
+#   - /divine-surveillance/realm-status (GET)
+#   - /sacred-healing/initiate-purification (POST)
+#   - /orthodoxy/sacred-validation (GET)
+#   - /orthodoxy/heresy-detection (GET)
+#   - /sacred-boundaries/validate-service-sanctity (POST)
+#   - /sacred-dependencies/divine-consistency-check (POST)
+#   - /sacred-harmony/async-sync-conflicts (GET)
 
 # =============================================================================
 # SACRED ENTRY POINT - DIVINE PORTAL ACTIVATION
