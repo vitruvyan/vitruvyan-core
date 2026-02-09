@@ -1,6 +1,8 @@
 """
-vitruvyan_os.services.governance.api_vault_keepers
-===================================================
+Vault Keepers — Service Package
+
+Sacred Order: Truth (Memory & Archival)
+Layer: Service (LIVELLO 2)
 
 FastAPI service for Vault Keepers sacred memory operations.
 
@@ -12,31 +14,20 @@ Endpoints:
 - POST /vault/backup: Trigger manual backup
 - POST /vault/restore: Restore from backup
 - GET /vault/status: Vault health and statistics
-- POST /vault/verify: Verify backup integrity
-- GET /vault/history: Backup history
+- POST /vault/integrity_check: Verify integrity
 - GET /health: Health check
 - GET /metrics: Prometheus metrics
 
-The Vault Keepers respond to Cognitive Bus events with divine vigilance,
-ensuring preservation and restoration of sacred knowledge.
-
-Metrics:
---------
-- vault_backups_total (Counter)
-- vault_restore_operations (Counter)
-- vault_integrity_checks (Counter)
-- vault_backup_duration_seconds (Histogram)
-- vault_backup_size_bytes (Histogram)
-
 Dependencies:
 -------------
-- vitruvyan_os.core.governance.vault_keepers: Core guardian logic
-- vitruvyan_os.core.foundation.persistence: PostgresAgent, QdrantAgent
-- vitruvyan_os.core.foundation.cognitive_bus: Event handling
+- vitruvyan_core.core.governance.vault_keepers: Core domain logic (LIVELLO 1)
+- core.agents: PostgresAgent, QdrantAgent
+- core.synaptic_conclave: StreamBus
 
-Version: 4.4.0
+Refactored: Feb 9, 2026 — SERVICE_PATTERN alignment
+Version: 2.0.0
 """
 
-__version__ = '4.4.0'
+__version__ = '2.0.0'
 __port__ = 8007
 __sacred_order__ = 'Truth/Governance (Order V)'
