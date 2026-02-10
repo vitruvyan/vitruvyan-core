@@ -8,6 +8,7 @@ Layer: LIVELLO 2 (Service — orchestration)
 """
 
 import logging
+import json
 from typing import Dict, Any
 from datetime import datetime
 
@@ -47,34 +48,35 @@ class GraphOrchestrationAdapter:
             user_id: User identifier
         
         Returns:
-            Graph execution result with metadata
+            Graph execution result transformed to GraphResponseSchema
         """
+        import json
+        
         context = {"input_text": input_text, "user_id": user_id}
         
         try:
             if self.audit_enabled:
                 # Execute with audit monitoring
                 async with self.monitor.monitor_graph_execution(context):
-                    result = run_graph_once(input_text, user_id=user_id)
-                    result["audit_monitored"] = True
+                    raw_result = run_graph_once(input_text, user_id=user_id)
+                    audit_monitored = True
             else:
                 # Execute without audit
-                result = run_graph_once(input_text, user_id=user_id)
-                result["audit_monitored"] = False
+                raw_result = run_graph_once(input_text, user_id=user_id)
+                audit_monitored = False
             
-            # Add execution metadata
-            result["execution_timestamp"] = datetime.now().isoformat()
-            
-            return result
+            # Transform core domain output → service API schema (GraphResponseSchema)
+            return self._transform_to_api_schema(raw_result, audit_monitored)
             
         except Exception as e:
             logger.error(f"Graph execution failed: {e}", exc_info=True)
-            return {
+            # Return error in API schema format
+            error_result = {
                 "status": "error",
                 "error": str(e),
-                "execution_timestamp": datetime.now().isoformat(),
-                "audit_monitored": self.audit_enabled
+                "narrative": f"Errore durante l'esecuzione del grafo: {str(e)}"
             }
+            return self._transform_to_api_schema(error_result, self.audit_enabled)
     
     def execute_graph_dispatch(self, payload: dict) -> Dict[str, Any]:
         """
@@ -84,24 +86,23 @@ class GraphOrchestrationAdapter:
             payload: Raw dict payload (used by dispatcher)
         
         Returns:
-            Graph execution result
+            Graph execution result transformed to GraphResponseSchema
         """
         try:
-            result = run_graph(payload)
+            raw_result = run_graph(payload)
             
-            # Add metadata
-            result["execution_timestamp"] = datetime.now().isoformat()
-            result["audit_monitored"] = self.audit_enabled
-            
-            return result
+            # Transform to API schema
+            return self._transform_to_api_schema(raw_result, self.audit_enabled)
             
         except Exception as e:
             logger.error(f"Graph dispatch execution failed: {e}", exc_info=True)
-            return {
+            # Return error in API schema format
+            error_result = {
                 "status": "error",
                 "error": str(e),
-                "execution_timestamp": datetime.now().isoformat()
+                "narrative": f"Errore durante l'esecuzione del grafo: {str(e)}"
             }
+            return self._transform_to_api_schema(error_result, self.audit_enabled)
     
     async def execute_graph_with_audit(self, payload: dict) -> Dict[str, Any]:
         """
@@ -112,19 +113,49 @@ class GraphOrchestrationAdapter:
             payload: Graph payload dict
         
         Returns:
-            Result with audit metadata
+            Result with audit metadata (GraphResponseSchema format)
         """
-        import json
-        
         async with self.monitor.monitor_graph_execution(payload):
-            result = run_graph(payload)
+            raw_result = run_graph(payload)
             
-            json_one_line = json.dumps(result, ensure_ascii=False, separators=(",", ":"))
-            human = "Leonardo: grafo eseguito con audit monitoring. Se mancano slot chiave ti chiedo un chiarimento."
-            
-            return {
-                "json": json_one_line,
-                "human": human,
-                "audit_monitored": True,
-                "timestamp": datetime.now().isoformat()
-            }
+            # Transform to API schema with audit enabled
+            return self._transform_to_api_schema(raw_result, audit_monitored=True)
+    
+    def _transform_to_api_schema(self, raw_result: Dict[str, Any], audit_monitored: bool) -> Dict[str, Any]:
+        """
+        Transform core graph output → API service schema (GraphResponseSchema).
+        
+        This is the adapter's responsibility: translate between domain layer (core)
+        and service layer (API contracts).
+        
+        Args:
+            raw_result: Raw graph runner output {narrative, action, intent, ...}
+            audit_monitored: Whether audit monitoring was active
+        
+        Returns:
+            {json, human, audit_monitored, execution_timestamp} (GraphResponseSchema)
+        """
+        # Extract human-readable message (primary field for UI)
+        human_message = raw_result.get("narrative", "")
+        
+        # If no narrative, try alternative fields
+        if not human_message:
+            if "message" in raw_result:
+                human_message = raw_result["message"]
+            elif "error" in raw_result:
+                human_message = f"Errore: {raw_result['error']}"
+            elif "can_response" in raw_result and isinstance(raw_result["can_response"], dict):
+                human_message = raw_result["can_response"].get("narrative", "Risposta non disponibile")
+            else:
+                human_message = "Risposta generata dal sistema"
+        
+        # Serialize full result as one-line JSON (for debugging/logging)
+        json_one_line = json.dumps(raw_result, ensure_ascii=False, separators=(",", ":"))
+        
+        # Construct API-compliant response (GraphResponseSchema)
+        return {
+            "json": json_one_line,
+            "human": human_message,
+            "audit_monitored": audit_monitored,
+            "execution_timestamp": datetime.now().isoformat()
+        }
