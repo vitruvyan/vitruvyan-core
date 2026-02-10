@@ -17,10 +17,10 @@ import os
 # Add vitruvyan_core to path for standalone execution
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 
-from core.governance.orthodoxy_wardens.domain.confession import Confession
-from core.governance.orthodoxy_wardens.domain.finding import Finding
-from core.governance.orthodoxy_wardens.domain.verdict import Verdict
-from core.governance.orthodoxy_wardens.domain.log_decision import LogDecision
+from vitruvyan_core.core.governance.orthodoxy_wardens.domain.confession import Confession
+from vitruvyan_core.core.governance.orthodoxy_wardens.domain.finding import Finding
+from vitruvyan_core.core.governance.orthodoxy_wardens.domain.verdict import Verdict
+from vitruvyan_core.core.governance.orthodoxy_wardens.domain.log_decision import LogDecision
 
 
 def main():

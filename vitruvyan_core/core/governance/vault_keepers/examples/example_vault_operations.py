@@ -18,9 +18,9 @@ import os
 # Add vitruvyan_core to path for standalone execution
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 
-from core.governance.vault_keepers.domain.vault_objects import IntegrityReport, VaultSnapshot
-from core.governance.vault_keepers.consumers.sentinel import Sentinel
-from core.governance.vault_keepers.consumers.archivist import Archivist
+from vitruvyan_core.core.governance.vault_keepers.domain.vault_objects import IntegrityReport, VaultSnapshot
+from vitruvyan_core.core.governance.vault_keepers.consumers.sentinel import Sentinel
+from vitruvyan_core.core.governance.vault_keepers.consumers.archivist import Archivist
 
 
 def main():
@@ -35,18 +35,27 @@ def main():
 
     sentinel = Sentinel()
     integrity_input = {
-        "operation": "integrity_check",
-        "target": "postgresql",
-        "scope": "full",
-        "sample_size": 1000,
-        "corruption_threshold": 0.01
+        "postgresql": {
+            "status": "healthy",
+            "tables": {"count": 1000, "corrupted": 0}
+        },
+        "qdrant": {
+            "status": "healthy", 
+            "collections": {"count": 980, "corrupted": 0}
+        },
+        "coherence": {
+            "status": "coherent",
+            "ratio": 0.98
+        }
     }
 
     integrity_report = sentinel.process(integrity_input)
-    print(f"   Integrity Report: {integrity_report.status}")
-    print(f"   Records checked: {integrity_report.records_checked}")
-    print(f"   Corruption detected: {integrity_report.corruption_detected}")
-    print(f"   Corruption rate: {integrity_report.corruption_rate:.4f}")
+    print(f"   Integrity Report: {integrity_report.overall_status}")
+    print(f"   PostgreSQL: {integrity_report.postgresql_status}")
+    print(f"   Qdrant: {integrity_report.qdrant_status}")
+    print(f"   Coherence: {integrity_report.coherence_status}")
+    print(f"   Findings: {len(integrity_report.findings)}")
+    print(f"   Warden Blessing: {integrity_report.warden_blessing}")
 
     # ─────────────────────────────────────────────────────────────
     # 2. Backup Creation: Archivist creates snapshot metadata
@@ -55,14 +64,10 @@ def main():
 
     archivist = Archivist()
     backup_input = {
-        "operation": "create_backup",
-        "type": "full",
-        "systems": ["postgresql", "qdrant"],
-        "timestamp": "2026-02-10T10:00:00Z",
-        "metadata": [
-            ("initiator", "scheduled_backup"),
-            ("retention_days", "30")
-        ]
+        "operation": "backup",
+        "mode": "full",
+        "include_vectors": True,
+        "correlation_id": "example_backup_001"
     }
 
     snapshot = archivist.process(backup_input)
@@ -80,17 +85,17 @@ def main():
 
     # Simulate post-backup integrity check
     post_backup_input = integrity_input.copy()
-    post_backup_input["timestamp"] = "2026-02-10T10:05:00Z"
-
+    post_backup_input["correlation_id"] = "post_backup_check"
+    
     post_backup_report = sentinel.process(post_backup_input)
-    print(f"   Post-backup integrity: {post_backup_report.status}")
-    print(f"   Corruption rate: {post_backup_report.corruption_rate:.4f}")
+    print(f"   Post-backup integrity: {post_backup_report.overall_status}")
+    print(f"   Corruption rate: N/A (simulated)")
 
     # Check if backup was successful
     backup_successful = (
         snapshot.status == "completed" and
-        post_backup_report.status == "blessed" and
-        not post_backup_report.corruption_detected
+        post_backup_report.overall_status == "blessed" and
+        not any("corrupted" in finding.lower() for finding in post_backup_report.findings)
     )
 
     print(f"   Backup validation: {'✅ SUCCESSFUL' if backup_successful else '❌ FAILED'}")
