@@ -1,77 +1,109 @@
 """
-🗺️ VITRUVYAN CODEX HUNTERS
-============================
-Digital archaeologists tracking lost data across the financial dark ages
+Codex Hunters - Sacred Order #3
+===============================
+
+Domain-agnostic data discovery and preservation system.
 
 "No codex left unfound" - The Hunter's Creed
 
 Architecture:
-- BaseHunter: Foundation class with expedition logic
-- Tracker: Multi-source codex discovery (yfinance, Reddit, Google News, FRED)
-- Restorer: Damaged page restoration and normalization
-- Binder: Permanent archive preservation (PostgreSQL + Qdrant)
-- Inspector: Authenticity verification and integrity checking (TODO)
-- Expedition Planner: Time-based expedition scheduling (TODO)
-- Cartographer: Discovery mapping and reporting (TODO)
-- Expedition Leader: Central coordination and orchestration (TODO)
-- ConclaveIntegration: Event-driven integration with Synaptic Conclave (PHASE 4.5)
-- EventHunter: Synaptic Conclave Bridge - Real-time event processing and expedition orchestration
+- domain/: Configuration and entity dataclasses (CodexConfig, CodexEvent, etc.)
+- consumers/: Pure processing logic (TrackerConsumer, RestorerConsumer, BinderConsumer)
+- events/: Event channel constants
+- monitoring/: Metric name constants
+- governance/: Rules and classifiers (future)
+- philosophy/: Sacred Order charter
+- _legacy/: Pre-refactoring code (frozen archive)
 
 Integration:
-- PostgresAgent: SQL Archive operations
-- QdrantAgent: Vector Vault operations
-- Cognitive Bus: Expedition event communication
-- Audit Engine: Discovery reporting and health monitoring
+- LIVELLO 1 (this module): Pure Python, no I/O
+- LIVELLO 2 (services/api_codex_hunters/): FastAPI, adapters, I/O
 
-Event Protocol:
-- codex.discovered → manuscript found in archives
-- page.restored → damaged pages cleaned and repaired
-- volume.bound → codex bound and stored permanently
-- authenticity.verified → codex authenticity confirmed
-- expedition.scheduled → new expedition planned
-- discovery.mapped → findings cartographed
+Author: Vitruvyan Core Team
+Version: 2.0.0 (February 2026 - Domain-Agnostic Refactoring)
 """
 
-from .hunter import BaseHunter, CodexEvent
-from .tracker import Tracker
-from .restorer import Restorer
-from .binder import Binder
+# Domain layer
+from .domain import (
+    CodexConfig,
+    SourceConfig,
+    CollectionConfig,
+    TableConfig,
+    StreamConfig,
+    get_config,
+    set_config,
+    CodexEvent,
+    DiscoveredEntity,
+    RestoredEntity,
+    BoundEntity,
+    ExpeditionRequest,
+    ExpeditionResult,
+    ExpeditionStatus,
+    EntityStatus,
+    Severity,
+    HealthStatus,
+)
 
-# Import core hunters (Sacred Orders #1-9)
-from .inspector import Inspector
-from .scholastic import Scholastic
-from .scribe import Scribe
-from .fundamentalist import Fundamentalist
-from .cassandra import Cassandra
+# Consumer layer
+from .consumers import (
+    BaseConsumer,
+    ProcessResult,
+    TrackerConsumer,
+    RestorerConsumer,
+    BinderConsumer,
+)
 
-# Import orchestration hunters
-from .expedition_planner import ExpeditionPlanner
-from .cartographer import Cartographer
-from .expedition_leader import ExpeditionLeader
+# Events
+from .events import (
+    Channels,
+    EventEnvelope,
+    create_event_envelope,
+)
 
-# PHASE 4.5 - Synaptic Conclave Integration
-from .conclave_cycle import ConclaveIntegration
-from .event_hunter import EventHunter
+# Monitoring
+from .monitoring import (
+    MetricNames,
+    HealthCheckNames,
+)
+
 
 __all__ = [
-    'BaseHunter',
-    'CodexEvent',
-    'Tracker',
-    'Restorer',
-    'Binder',
-    'Inspector',
-    'Scholastic',
-    'Scribe',
-    'Fundamentalist',
-    'Cassandra',
-    'ExpeditionPlanner',
-    'Cartographer',
-    'ExpeditionLeader',
-    'ConclaveIntegration',
-    'EventHunter',
+    # Config
+    "CodexConfig",
+    "SourceConfig",
+    "CollectionConfig",
+    "TableConfig",
+    "StreamConfig",
+    "get_config",
+    "set_config",
+    # Entities
+    "CodexEvent",
+    "DiscoveredEntity",
+    "RestoredEntity",
+    "BoundEntity",
+    "ExpeditionRequest",
+    "ExpeditionResult",
+    "ExpeditionStatus",
+    "EntityStatus",
+    "Severity",
+    "HealthStatus",
+    # Consumers
+    "BaseConsumer",
+    "ProcessResult",
+    "TrackerConsumer",
+    "RestorerConsumer",
+    "BinderConsumer",
+    # Events
+    "Channels",
+    "EventEnvelope",
+    "create_event_envelope",
+    # Monitoring
+    "MetricNames",
+    "HealthCheckNames",
 ]
 
-__version__ = '1.0.0'
-__author__ = 'Vitruvyan Team'
-__description__ = 'Codex Hunters - Digital Archaeology for Financial Data Preservation'
-__motto__ = 'No codex left unfound'
+
+__version__ = "2.0.0"
+__author__ = "Vitruvyan Core Team"
+__description__ = "Codex Hunters - Domain-Agnostic Data Discovery"
+__motto__ = "No codex left unfound"

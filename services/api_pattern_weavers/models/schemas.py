@@ -1,0 +1,97 @@
+"""
+Pydantic Schemas for Pattern Weavers API
+========================================
+
+Request/response models for HTTP endpoints.
+Domain-agnostic: no hardcoded taxonomy entries.
+"""
+
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field
+
+
+# =============================================================================
+# Request Models
+# =============================================================================
+
+class WeaveRequest(BaseModel):
+    """Request to weave patterns for a query."""
+    
+    query: str = Field(..., description="Query text to analyze")
+    user_id: Optional[str] = Field(None, description="User identifier")
+    context: Optional[Dict[str, Any]] = Field(
+        default_factory=dict,
+        description="Additional context for weaving",
+    )
+    limit: int = Field(10, ge=1, le=100, description="Maximum matches")
+    threshold: float = Field(0.4, ge=0.0, le=1.0, description="Minimum score")
+
+
+class TaxonomyLoadRequest(BaseModel):
+    """Request to load taxonomy from YAML."""
+    
+    yaml_path: str = Field(..., description="Path to taxonomy YAML file")
+
+
+# =============================================================================
+# Response Models
+# =============================================================================
+
+class PatternMatch(BaseModel):
+    """A matched pattern from Qdrant."""
+    
+    name: str = Field(..., description="Pattern name")
+    category: str = Field(..., description="Pattern category")
+    score: float = Field(..., description="Similarity score")
+    match_type: str = Field("semantic", description="Match type")
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class RiskProfile(BaseModel):
+    """Risk profile derived from patterns."""
+    
+    level: str = Field("medium", description="Risk level")
+    factors: List[str] = Field(default_factory=list)
+    score: float = Field(0.5, ge=0.0, le=1.0)
+
+
+class WeaveResult(BaseModel):
+    """Result of pattern weaving."""
+    
+    request_id: str = Field(..., description="Unique request ID")
+    status: str = Field("completed", description="Processing status")
+    matches: List[PatternMatch] = Field(default_factory=list)
+    risk_profile: Optional[RiskProfile] = None
+    processing_time_ms: float = Field(0.0)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class HealthStatus(BaseModel):
+    """Service health status."""
+    
+    status: str = Field("healthy")
+    qdrant: bool = Field(True)
+    postgres: bool = Field(True)
+    redis: bool = Field(True)
+    embedding_service: bool = Field(True)
+
+
+class TaxonomyStats(BaseModel):
+    """Taxonomy statistics."""
+    
+    total_entries: int = Field(0)
+    categories: List[str] = Field(default_factory=list)
+    last_updated: Optional[str] = None
+
+
+# =============================================================================
+# Error Models
+# =============================================================================
+
+class ErrorResponse(BaseModel):
+    """Error response."""
+    
+    error: str
+    detail: Optional[str] = None
+    request_id: Optional[str] = None
