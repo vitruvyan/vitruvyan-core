@@ -5,6 +5,12 @@
 ChatGPT-level conversational intelligence per Vitruvyan AI.
 Trasforma output tecnici (VEE, Neural Engine) in narrativa human-friendly.
 
+⚠️ DOMAIN-AGNOSTIC STATUS:
+This module contains MIXED content:
+- Domain-agnostic: generate_slot_filling_question, generate_comparison_narrative
+- LEGACY Finance-specific: generate_portfolio_reasoning, generate_vee_narrative
+  (These use finance-specific prompts and should be moved to domains/finance/)
+
 Features:
 - 4 generation methods specializzati
 - Prometheus metrics integrate
@@ -528,6 +534,7 @@ Genera una spiegazione conversazionale (NON tecnica) che:
     
     # ============================================================
     # METHOD 3: COLLECTION REASONING (EXPLAIN WHY)
+    # ⚠️ LEGACY FINANCE METHOD - Should migrate to domains/finance/
     # ============================================================
     
     def generate_portfolio_reasoning(
@@ -539,6 +546,9 @@ Genera una spiegazione conversazionale (NON tecnica) che:
     ) -> str:
         """
         Generate persuasive reasoning for collection recommendations.
+        
+        ⚠️ DEPRECATED: This method uses finance-specific prompts and should
+        be moved to vitruvyan_core/domains/finance/llm_extensions.py
         
         Explains PERCHÉ behind rebalancing, buying, selling decisions.
         

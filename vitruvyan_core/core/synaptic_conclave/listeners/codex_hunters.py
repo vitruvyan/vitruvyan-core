@@ -4,6 +4,15 @@
 Divine event subscription for data collection expeditions
 Listens to discovery events in the sacred cognitive realm
 
+⚠️ DOMAIN MIGRATION NOTICE:
+This module contains FINANCE-SPECIFIC logic (ticker data collection, fundamentals)
+and should be migrated to: vitruvyan_core/domains/finance/listeners/codex_hunters.py
+
+Core infrastructure (StreamBus, TransportEvent) remains in core/.
+Only domain-specific listeners should move to domains/<vertical>/.
+
+See: docs/TECH_DEBT_DOMAIN_MIGRATION.md
+
 ARCHITETTURA:
 USA AGENTI INTELLIGENTI, NON SCRIPT.
 EventHunter orchestra Tracker→Restorer→Binder→Scribe per raccolta dati.

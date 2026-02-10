@@ -167,6 +167,26 @@ class BaseDomain(ABC):
         Returns (is_valid, error_message)
         """
         pass
+    
+    def get_graph_plugin(self) -> "GraphPlugin":
+        """
+        Return the LangGraph plugin for this domain.
+        
+        This connects the domain contract to the orchestration layer.
+        Override in concrete domains to provide domain-specific nodes,
+        routes, intents, and state extensions.
+        
+        Default implementation returns None (domain doesn't extend the graph).
+        
+        Returns:
+            GraphPlugin instance or None
+        """
+        return None
+
+
+# Lazy import to avoid circular dependency
+# GraphPlugin is defined in core.orchestration.graph_engine
+GraphPlugin = None  # Will be set by import in get_graph_plugin implementations
 
 
 class GenericDomain(BaseDomain):

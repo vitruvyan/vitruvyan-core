@@ -57,7 +57,7 @@ class NeuralEngine:
         results = engine.run(
             profile="aggressive",
             top_k=10,
-            entity_ids=["AAPL", "MSFT", "GOOGL"],
+            entity_ids=["entity_001", "entity_002", "entity_003"],
             risk_tolerance="medium"
         )
     """

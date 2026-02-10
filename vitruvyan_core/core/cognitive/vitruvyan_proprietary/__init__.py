@@ -2,25 +2,18 @@
 """
 🧠 Vitruvyan Core Algorithms - Linea Proprietaria
 
-Moduli componibili per analisi finanziaria explainable, safe e composable:
+Moduli componibili per analisi explainable, safe e composable:
 
-- VEE: Vitruvyan Explainability Engine (già esistente in core/logic/vee_engine.py)
-- VHSW: Vitruvyan Historical Strength Window
-- VARE: Vitruvyan Adaptive Risk Engine  
-- VMFL: Vitruvyan Multi-Factor Learning
+- VEE: Vitruvyan Explainability Engine (domain-agnostic narrative generation)
 
-Tutti orchestrati tramite LangGraph nodes per massima flessibilità.
+NOTE (Feb 2026): Domain-specific engines (VHSW, VARE, VMFL) have been 
+moved to vitruvyan (finance vertical). Only domain-agnostic VEE remains.
 """
 
-from .vhsw_engine import VHSWEngine
-from .vare_engine import VAREEngine
-from .vmfl_engine import VMFLEngine
+# Domain-agnostic imports only
+# VHSWEngine, VAREEngine, VMFLEngine are finance-specific and live in vitruvyan
 
-__all__ = [
-    'VHSWEngine',
-    'VAREEngine', 
-    'VMFLEngine'
-]
+__all__ = []
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"  # Breaking change: removed finance-specific engines
 __author__ = "Vitruvyan AI Team"

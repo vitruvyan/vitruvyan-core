@@ -80,14 +80,14 @@ class ZScoreCalculator:
             Input:
                 | entity_id | sector     | momentum | trend |
                 |-----------|------------|----------|-------|
-                | AAPL      | Technology | 68.5     | 5.2   |
-                | XOM       | Energy     | 45.0     | -2.1  |
+                | ENT_001   | Category_A | 68.5     | 5.2   |
+                | ENT_002   | Category_B | 45.0     | -2.1  |
             
             Output (global mode):
                 | entity_id | sector     | momentum | momentum_z | trend | trend_z |
-                |-----------|------------|----------|------------|-------|---------|
-                | AAPL      | Technology | 68.5     | 1.23       | 5.2   | 1.45    |
-                | XOM       | Energy     | 45.0     | -0.87      | -2.1  | -0.92   |
+                |-----------|------------|----------|------------|-------|----------|
+                | ENT_001   | Category_A | 68.5     | 1.23       | 5.2   | 1.45    |
+                | ENT_002   | Category_B | 45.0     | -0.87      | -2.1  | -0.92   |
         """
         out = df.copy()
         

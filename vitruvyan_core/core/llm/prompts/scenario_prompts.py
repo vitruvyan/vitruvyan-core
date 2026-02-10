@@ -2,16 +2,24 @@
 """
 🎯 Scenario-Specific Prompts per Vitruvyan AI
 
-Prompt specializzati per diversi tipi di interazioni:
-- detailed_analysis: Analisi approfondita entity_id
-- recommendation: Raccomandazioni operative
-- market_overview: Quadro di mercato
-- portfolio_review: Analisi collection
-- comparison: Confronto multi-entity_id
-- onboarding: Assistenza nuovi utenti
+⚠️ DEPRECATION NOTICE:
+This module contains LEGACY FINANCE-SPECIFIC prompts from the upstream monolith.
+These should be moved to vitruvyan_core/domains/finance/prompts/ in a future refactor.
+
+For domain-agnostic usage, domains should register their own prompts via
+PromptRegistry (to be implemented).
+
+Current scenarios (finance-specific):
+- detailed_analysis: Technical analysis of entities
+- recommendation: Actionable recommendations
+- market_overview: Market sentiment overview
+- portfolio_review: Collection analysis (legacy name: "portfolio")
+- comparison: Multi-entity comparison
+- onboarding: New user onboarding
 
 Version: 1.0
 Last Updated: 2025-10-31
+Legacy Status: Finance domain only
 """
 
 from typing import Dict

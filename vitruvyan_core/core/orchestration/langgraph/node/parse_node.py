@@ -6,7 +6,7 @@ from core.cognitive.semantic_engine import parse_user_input
 # Phase 2 Migration (Nov 5, 2025): COMPLETED
 # Migrated to VSGS semantic_matches from semantic_grounding_node
 # conversation_persistence imports removed
-from core.foundation.persistence.postgres_agent import PostgresAgent
+from core.agents.postgres_agent import PostgresAgent
 
 # Setup logger
 logger = logging.getLogger(__name__)

@@ -3,6 +3,15 @@
 NarrativeEngine — Explanation Generation Consumer (Temporal Cortex)
 ===================================================================
 
+⚠️ DOMAIN MIGRATION NOTICE:
+This module contains FINANCE-SPECIFIC logic (ticker analysis, VEE integration)
+and should be migrated to: vitruvyan_core/domains/finance/consumers/narrative_engine.py
+
+Core infrastructure (BaseConsumer, StreamEvent) remains in core/.
+Only domain-specific consumers should move to domains/<vertical>/.
+
+See: docs/TECH_DEBT_DOMAIN_MIGRATION.md
+
 Epistemic Order: DISCOURSE
 Sacred Order: Narrative Weaver (#6)
 Consumer Type: ADVISORY

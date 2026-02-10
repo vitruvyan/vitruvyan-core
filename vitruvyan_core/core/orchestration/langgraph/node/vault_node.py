@@ -32,15 +32,23 @@ def vault_node(state: Dict[str, Any]) -> Dict[str, Any]:
     their blessing into the conversation state.
     
     Pipeline Position: output_normalizer → orthodoxy → vault → compose → END
+    
+    Domain-Agnostic: Uses domain_keywords from state["_domain_config"]["vault_keywords"]
+    if available, otherwise uses core patterns only.
     """
     
     input_text = state.get("human_input", state.get("input", ""))
     
     logger.info(f"[VAULT][GRAPH] 🏰 Sacred vault protection initiated")
     
+    # Get domain-specific keywords if available (injected by GraphPlugin)
+    domain_keywords = None
+    if "_domain_config" in state and "vault_keywords" in state["_domain_config"]:
+        domain_keywords = state["_domain_config"]["vault_keywords"]
+    
     try:
         # Determine if vault protection is needed
-        protection_required = _assess_protection_requirements(state)
+        protection_required = _assess_protection_requirements(state, domain_keywords)
         
         if protection_required['required']:
             # Request divine protection from Vault Keepers Conclave
@@ -72,22 +80,36 @@ def vault_node(state: Dict[str, Any]) -> Dict[str, Any]:
         return state
 
 
-def _assess_protection_requirements(state: Dict[str, Any]) -> Dict[str, Any]:
-    """Assess if divine vault protection is required"""
+def _assess_protection_requirements(state: Dict[str, Any], domain_keywords: Dict[str, Any] = None) -> Dict[str, Any]:
+    """Assess if divine vault protection is required
+    
+    Args:
+        state: LangGraph state dictionary
+        domain_keywords: Optional domain-specific keywords for protection detection
+                        Format: {"high_value": [...], "intents": [...], "domain_patterns": [...]}
+    """
     
     input_text = state.get("human_input", state.get("input", "")).lower()
     intent = state.get("intent", "")
     
-    # High-value operations that require vault protection
-    high_value_patterns = [
+    # Core patterns (domain-agnostic) that require vault protection
+    core_patterns = [
         "backup", "restore", "recovery", "integrity", "audit",
-        "critical", "emergency", "disaster", "corruption",
-        "collection", "allocation", "investment", "trade"
+        "critical", "emergency", "disaster", "corruption"
     ]
     
+    # Domain-specific patterns (injected by GraphPlugin)
+    domain_patterns = []
+    domain_intents = []
+    if domain_keywords:
+        domain_patterns = domain_keywords.get("high_value", [])
+        domain_intents = domain_keywords.get("intents", [])
+    
+    all_patterns = core_patterns + domain_patterns
+    
     # Check for high-value operation indicators
-    requires_protection = any(pattern in input_text for pattern in high_value_patterns)
-    requires_protection = requires_protection or intent in ["allocate", "collection", "screen"]
+    requires_protection = any(pattern in input_text for pattern in all_patterns)
+    requires_protection = requires_protection or intent in domain_intents
     
     # Determine protection type based on context
     protection_type = "standard"
@@ -95,8 +117,8 @@ def _assess_protection_requirements(state: Dict[str, Any]) -> Dict[str, Any]:
         protection_type = "critical"
     elif any(pattern in input_text for pattern in ["integrity", "audit", "backup"]):
         protection_type = "integrity_check"
-    elif any(pattern in input_text for pattern in ["collection", "allocation", "investment"]):
-        protection_type = "financial_guardian"
+    elif domain_keywords and any(pattern in input_text for pattern in domain_keywords.get("domain_patterns", [])):
+        protection_type = domain_keywords.get("protection_type", "domain_guardian")
     
     return {
         "required": requires_protection,

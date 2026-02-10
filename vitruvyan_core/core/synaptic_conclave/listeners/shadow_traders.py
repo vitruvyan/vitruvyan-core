@@ -2,6 +2,16 @@
 """
 🎯 Shadow Traders - Synaptic Conclave Bus Listener
 ===================================================
+
+⚠️ DOMAIN MIGRATION NOTICE:
+This module contains FINANCE-SPECIFIC logic (trading events, portfolio updates)
+and should be migrated to: vitruvyan_core/domains/finance/listeners/shadow_traders.py
+
+Core infrastructure (StreamBus, TransportEvent) remains in core/.
+Only domain-specific listeners should move to domains/<vertical>/.
+
+See: docs/TECH_DEBT_DOMAIN_MIGRATION.md
+
 Sacred Order: Reason + Perception
 
 Listens to trading events on the Cognitive Bus and publishes

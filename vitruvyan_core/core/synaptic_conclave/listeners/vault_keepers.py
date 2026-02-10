@@ -3,6 +3,15 @@
 🔐 Vault Keepers - Sacred Cognitive Bus Listener
 Divine event subscription for knowledge preservation and versioning
 Listens to archival events in the sacred cognitive realm
+
+⚠️ DOMAIN MIGRATION NOTICE:
+This module contains FINANCE-SPECIFIC logic (screening archives, ticker snapshots)
+and should be migrated to: vitruvyan_core/domains/finance/listeners/vault_keepers.py
+
+Core infrastructure (StreamBus, TransportEvent) remains in core/.
+Only domain-specific listeners should move to domains/<vertical>/.
+
+See: docs/TECH_DEBT_DOMAIN_MIGRATION.md
 """
 
 import asyncio

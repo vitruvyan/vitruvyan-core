@@ -168,15 +168,6 @@ class PatternWeaverEngine:
         unique_string = f"pattern_weavers:{type_}:{name}"
         return str(uuid.uuid5(namespace, unique_string))
     
-    def weave(
-        self,
-        query_text: str,
-        user_id: str,
-        language: str = "auto",
-        top_k: int = 5,
-        similarity_threshold: float = 0.4  # 🟣 LOWERED from 0.6 to 0.4 (Dec 10, 2025) - Financials matches at 0.41
-    ) -> Dict[str, Any]:
-        """
     def weave_patterns(
         self,
         query_text: str,
@@ -210,6 +201,17 @@ class PatternWeaverEngine:
             "regions": taxonomy.get("regions", []),
             "risk_profiles": {}
         }
+    
+    def weave(
+        self,
+        query_text: str,
+        user_id: str,
+        language: str = "auto",
+        top_k: int = 5,
+        similarity_threshold: float = 0.4  # 🟣 LOWERED from 0.6 to 0.4 (Dec 10, 2025) - Financials matches at 0.41
+    ) -> Dict[str, Any]:
+        """
+        Weave semantic patterns from a query text.
         
         Args:
             query_text: User query text

@@ -3,6 +3,15 @@
 RiskGuardian — Continuous Risk Monitoring Consumer (Amygdala)
 ==============================================================
 
+⚠️ DOMAIN MIGRATION NOTICE:
+This module contains FINANCE-SPECIFIC logic (portfolio volatility, concentration risk)
+and should be migrated to: vitruvyan_core/domains/finance/consumers/risk_guardian.py
+
+Core infrastructure (BaseConsumer, StreamEvent) remains in core/.
+Only domain-specific consumers should move to domains/<vertical>/.
+
+See: docs/TECH_DEBT_DOMAIN_MIGRATION.md
+
 Epistemic Order: TRUTH (Risk Surveillance)
 Sacred Order: Sentinel (#7)
 Consumer Type: CRITICAL
