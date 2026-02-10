@@ -384,7 +384,59 @@ This rule generalizes beyond finance. Replace “ticker” with any domain entit
 ### 6) Testing bias guardrail
 - Avoid biased, repetitive fixtures (e.g., the same few “top entities” in every test).
 - Prefer generating diverse test inputs when possible (see `tests/` helpers and guidelines).
+### 7) Slot-Filling Architecture Status (⚠️ CRITICAL - Feb 10, 2026)
 
+**IMPORTANT**: There is an **architectural divergence** between repositories:
+
+#### Upstream Repository (e.g., `vitruvyan` main)
+- ❌ **DEPRECATED** slot-filling as of **Jan 13, 2026** (commit `c7bd99f9`)
+- ✅ **Replaced** with LLM-first architecture (CAN node + OpenAI Function Calling + MCP tools)
+- ✅ **Feature flag**: `DISABLE_SLOT_FILLING=1` (production default)
+- ✅ **Metrics**: -57% latency, -47% cost, +95% context understanding
+- 📅 **Hard removal**: Q2 2026 (code deletion)
+
+#### This Repository (`vitruvyan-core`)
+- ✅ **ACTIVE** slot-filling (as of Feb 10, 2026)
+- 📍 **Implementation**: 
+  - `route_node.py` line 64: `intent == "unknown"` → `route = "slot_filler"`
+  - `core/orchestration/compose/slot_filler.py` (core implementation)
+  - `domains/finance/slot_filler.py` (finance-specific)
+- 🎯 **Behavior**: Multi-turn dialogue for missing parameters (tickers, horizon, etc.)
+- ⚠️ **No DISABLE_SLOT_FILLING flag** currently implemented
+
+**Architectural Decision Context**:
+- **vitruvyan-core** is the **OS-agnostic epistemic kernel** (domain-neutral primitives)
+- Upstream deprecation was **vertical-specific** (finance/trading UX optimization)
+- Slot-filling remains valid **pattern** for OS-level dialogue management
+- Decision: Keep slot-filling as **optional pattern** in core, NOT enforce deprecation
+
+**Guidelines for Copilot**:
+
+1. **When working in vitruvyan-core (this repo)**:
+   - ✅ Slot-filling is a **valid architecture pattern** for missing parameter collection
+   - ✅ `route_node.py` routing to `slot_filler` is **intentional design**
+   - ✅ Use slot-filling when building **generic OS primitives** (domain-neutral)
+   - ⚠️ Document UX trade-offs (latency, multi-turn flow)
+
+2. **When working in verticals/services** (finance, etc.):
+   - Consider if **LLM-first approach** (CAN + MCP) is more appropriate
+   - Evaluate: Does domain benefit from semantic understanding over rigid param collection?
+   - If migrating from upstream: add `DISABLE_SLOT_FILLING` flag to service config
+
+3. **Don't confuse the two contexts**:
+   - ❌ Don't say "slot-filling is deprecated" when in vitruvyan-core
+   - ❌ Don't force slot-filling in verticals if LLM-first is available
+   - ✅ Recognize architectural patterns serve different abstraction levels
+
+**Cross-Repository Alignment** (Future Planning):
+- Monitor upstream evolution (CAN node maturity, MCP stability)
+- Consider adding `DISABLE_SLOT_FILLING` flag to vitruvyan-core for vertical flexibility
+- Evaluate if OS-level slot-filling should evolve to "semantic parameter negotiation"
+
+**Reference**:
+- Upstream deprecation doc: (external repository, not in vitruvyan-core)
+- This repo slot-filling: `route_node.py` L64, `core/orchestration/compose/slot_filler.py`
+- Integration tests: `services/api_graph/examples/test_graph_slots.py`
 ---
 
 ## Golden Rules (must stay true)

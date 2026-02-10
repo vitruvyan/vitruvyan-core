@@ -6,6 +6,32 @@
 
 ---
 
+## ⚠️ CRITICAL DISCOVERY: Slot-Filling Architecture Divergence
+
+**Date**: Feb 10, 2026  
+**Status**: DOCUMENTED - Architectural pattern difference between repositories
+
+### Summary
+- **Upstream (`vitruvyan` main)**: Slot-filling **DEPRECATED** (Jan 13, 2026)
+- **This repo (`vitruvyan-core`)**: Slot-filling **ACTIVE** (intentional design)
+
+### Rationale
+- `vitruvyan-core` = OS-agnostic epistemic kernel (domain-neutral primitives)
+- Upstream deprecation = **vertical-specific** optimization (finance UX)
+- Slot-filling remains **valid OS pattern** for dialogue parameter collection
+
+### Context
+Slot-filling qui è **NOT deprecated** perché:
+1. OS-level abstraction (generic entity/parameter negotiation)
+2. Domain-neutral dialogue management primitive
+3. Verticals decide to use/override (flexibility)
+
+**Decision**: Keep slot-filling as **optional pattern**, not enforce upstream deprecation.
+
+**See**: `.github/copilot-instructions.md` section 7 for full alignment strategy.
+
+---
+
 ## Issue da Debuggare
 
 ### 1. CognitiveEvent.__init__() Error (P1)
