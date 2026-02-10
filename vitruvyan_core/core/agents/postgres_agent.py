@@ -150,6 +150,7 @@ class PostgresAgent:
                 cur.execute(sql, params)
                 return [dict(row) for row in cur.fetchall()]
         except Exception as e:
+            self.connection.rollback()
             logger.error(f"Fetch error: {e}")
             return []
     
@@ -170,6 +171,7 @@ class PostgresAgent:
                 row = cur.fetchone()
                 return dict(row) if row else None
         except Exception as e:
+            self.connection.rollback()
             logger.error(f"Fetch one error: {e}")
             return None
     
@@ -190,6 +192,7 @@ class PostgresAgent:
                 row = cur.fetchone()
                 return row[0] if row else None
         except Exception as e:
+            self.connection.rollback()
             logger.error(f"Fetch scalar error: {e}")
             return None
     
