@@ -176,15 +176,12 @@ class NeuralEngine:
         
         # STEP 3: Compute z-scores
         # Identify feature columns (exclude metadata columns)
-        metadata_cols = {
-            "entity_id", 
-            "entity_name",      # Entity label/name (non-numeric)
-            "metadata",          # Additional entity metadata (dict/object)
-            "group",             # Stratification group field
-            self.stratification_field,  # User-defined stratification
-            "active",            # Entity status flag
-            "country"            # Geographic metadata
-        }
+        # Provider declares which columns are metadata via get_metadata()["metadata_columns"]
+        provider_metadata_cols = set(self.metadata.get("metadata_columns", []))
+        default_metadata_cols = {"entity_id", "entity_name", "metadata", "group"}
+        if self.stratification_field:
+            default_metadata_cols.add(self.stratification_field)
+        metadata_cols = default_metadata_cols | provider_metadata_cols
         feature_cols = [c for c in df.columns if c not in metadata_cols and not c.endswith("_z")]
         
         df = self.z_calculator.compute_z_scores(

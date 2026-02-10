@@ -8,12 +8,14 @@ HOW TO USE THIS AS TEMPLATE:
 1. Copy this file to your domain package (e.g., vitruvyan_core/domains/finance/)
 2. Rename class to match your domain (e.g., FinancialScoringStrategy)
 3. Replace mock profiles with real domain profiles
-4. Implement domain-specific composite score logic
-5. Implement domain-specific risk adjustment
+4. Implement domain-specific risk adjustment (optional)
+
+Note: Composite score computation (weighted z-score average) is handled
+by CompositeScorer in the core engine. The strategy provides WEIGHTS via
+get_profile_weights(), not the scoring algorithm itself.
 
 CURRENT BEHAVIOR:
 - Provides 2 mock profiles (balanced, aggressive)
-- Simple weighted average composite scoring
 - No risk adjustment (returns scores unchanged)
 """
 
@@ -29,10 +31,8 @@ class MockScoringStrategy(IScoringStrategy):
     Provides basic scoring logic for testing without domain complexity.
     Use this as a template for real domain implementations.
     
-    Example domains that would implement this:
-    - Finance: Profiles like short_spec, balanced_mid, trend_follow with feature weights
-    - Healthcare: Profiles like high_risk, moderate_risk, preventive with clinical weights
-    - Logistics: Profiles like urgent, standard, bulk with operational weights
+    The strategy provides profile weights and optional risk adjustment.
+    Composite score computation is handled by CompositeScorer in the core.
     """
     
     def __init__(self):
@@ -128,79 +128,22 @@ class MockScoringStrategy(IScoringStrategy):
         """
         return list(self._profiles.keys())
     
-    def compute_composite_score(
-        self,
-        z_scores: pd.DataFrame,
-        profile: str
-    ) -> pd.Series:
-        """
-        Compute weighted composite score from z-scores.
-        
-        Formula: composite = Σ(z_score_feature × weight_feature) / Σ(weights)
-        
-        Args:
-            z_scores: DataFrame with entity_id and z-score columns
-            profile: Profile name to use for weights
-        
-        Returns:
-            Series with entity_id as index, composite scores as values
-        
-        Raises:
-            ScoringStrategyError: If weights don't match features
-        
-        TODO (for real implementation):
-            Add domain-specific logic:
-            
-            Finance example:
-                - Handle missing fundamentals (earnings not yet reported)
-                - Apply sector-specific weight adjustments
-                - Boost scores if dark pool activity detected
-            
-            Healthcare example:
-                - Weight vitals more heavily for certain diagnoses
-                - Adjust for age-specific risk factors
-                - Apply comorbidity multipliers
-        """
-        weights = self.get_profile_weights(profile)
-        
-        # Find common features between z_scores and weights
-        available_features = [f for f in weights.keys() if f in z_scores.columns]
-        
-        if not available_features:
-            raise ScoringStrategyError(
-                f"No features match between z_scores and profile '{profile}'. "
-                f"Z-score features: {list(z_scores.columns)}, "
-                f"Profile features: {list(weights.keys())}"
-            )
-        
-        # Dynamic weight normalization (for missing features)
-        active_weights = {f: weights[f] for f in available_features}
-        weight_sum = sum(active_weights.values())
-        normalized_weights = {f: w / weight_sum for f, w in active_weights.items()}
-        
-        # Compute weighted average
-        composite = pd.Series(0.0, index=z_scores.index)
-        for feature, weight in normalized_weights.items():
-            composite += z_scores[feature] * weight
-        
-        return composite
-    
     def apply_risk_adjustment(
         self,
-        scores: pd.Series,
-        risk_data: Optional[pd.DataFrame] = None,
-        risk_tolerance: str = 'medium'
-    ) -> pd.Series:
+        df: pd.DataFrame,
+        risk_tolerance: Optional[str] = None,
+        risk_columns: Optional[list] = None
+    ) -> pd.DataFrame:
         """
-        Apply domain-specific risk adjustment to scores.
+        Apply domain-specific risk adjustment to composite scores.
         
         Args:
-            scores: Composite scores to adjust
-            risk_data: Optional risk metrics (volatility, beta, etc.)
-            risk_tolerance: 'low', 'medium', 'high'
+            df: DataFrame with composite_score column
+            risk_tolerance: 'low', 'medium', 'high' (or None for no adjustment)
+            risk_columns: Optional column names containing risk metrics
         
         Returns:
-            Adjusted scores (penalized/boosted based on risk)
+            DataFrame with adjusted composite_score column
         
         TODO (for real implementation):
             Implement domain-specific risk logic:
@@ -209,7 +152,7 @@ class MockScoringStrategy(IScoringStrategy):
                 - Query VARE risk scores
                 - Apply penalty based on risk tolerance:
                     penalty = vare_risk_score / 100 * tolerance_multiplier
-                    adjusted_score = original_score * (1 - penalty)
+                    df['composite_score'] *= (1 - penalty)
                 - Low tolerance: 0.40 multiplier (40% penalty for risk=100)
                 - High tolerance: 0.08 multiplier (8% penalty for risk=100)
             
@@ -217,15 +160,9 @@ class MockScoringStrategy(IScoringStrategy):
                 - Check patient comorbidities
                 - Boost scores for preventive care profiles
                 - Penalize if hospitalization risk > threshold
-            
-            Logistics example:
-                - Check route weather conditions
-                - Penalize if delivery window tight
-                - Boost if alternative routes available
         """
-        # Mock: no risk adjustment, return scores unchanged
-        # Real implementation would query risk data and apply penalties/boosts
-        return scores.copy()
+        # Mock: no risk adjustment, return DataFrame unchanged
+        return df.copy()
     
     def validate_profile(self, profile: str) -> bool:
         """
@@ -268,37 +205,28 @@ STEP 3: Load real profiles from config/database
         with open(config_path) as f:
             self._profiles = yaml.safe_load(f)
 
-STEP 4: Implement domain-specific composite logic
-    def compute_composite_score(self, z_scores, profile):
-        # Finance example: boost if dark pool activity detected
-        composite = base_composite_calculation(z_scores, profile)
-        if 'dark_pool_ratio' in z_scores.columns:
-            boost = z_scores['dark_pool_ratio'] > 0.15
-            composite[boost] *= 1.1
-        return composite
-
-STEP 5: Implement real risk adjustment
-    def apply_risk_adjustment(self, scores, risk_data, risk_tolerance):
+STEP 4: Implement real risk adjustment (optional)
+    def apply_risk_adjustment(self, df, risk_tolerance=None, risk_columns=None):
         # Finance example: integrate VARE risk engine
         from core.logic.vitruvyan_proprietary import VAREEngine
         vare = VAREEngine()
-        risk_scores = vare.assess_risk(scores.index.tolist())
+        risk_scores = vare.assess_risk(df['entity_id'].tolist())
         
         penalties = {
             'low': 0.40,    # Conservative: 40% max penalty
             'medium': 0.20, # Balanced: 20% max penalty
             'high': 0.08    # Aggressive: 8% max penalty
         }
-        penalty = penalties[risk_tolerance]
+        penalty = penalties.get(risk_tolerance, 0.20)
         
-        adjusted = scores * (1 - risk_scores / 100 * penalty)
-        return adjusted
+        df = df.copy()
+        df['composite_score'] *= (1 - risk_scores / 100 * penalty)
+        return df
 
-STEP 6: Test with real data
+STEP 5: Test with real data
     strategy = FinancialScoringStrategy('config/profiles.yaml')
     weights = strategy.get_profile_weights('balanced_mid')
-    composite = strategy.compute_composite_score(z_scores, 'balanced_mid')
-    adjusted = strategy.apply_risk_adjustment(composite, risk_data, 'low')
+    # Composite scoring is handled by CompositeScorer using these weights
 
 DONE! Now your domain is pluggable into Neural Engine.
 """

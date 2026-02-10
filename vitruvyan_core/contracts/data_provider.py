@@ -95,6 +95,9 @@ class IDataProvider(ABC):
               - stratification_field: Field used for stratification (e.g., "sector", "age_group")
               - available_features: List of feature names available
               - feature_descriptions: Dict mapping feature names to descriptions
+              - metadata_columns: List of non-feature column names returned by get_universe()
+                                 (e.g., ["country", "active", "market_cap"])
+                                 These are excluded from z-score computation.
         
         Example (Finance):
             {
@@ -102,6 +105,7 @@ class IDataProvider(ABC):
                 "entity_type": "stock",
                 "stratification_field": "sector",
                 "available_features": ["momentum", "trend", "volatility", "sentiment"],
+                "metadata_columns": ["country", "active", "market_cap"],
                 "feature_descriptions": {
                     "momentum": "RSI-based momentum indicator",
                     "trend": "SMA crossover trend strength",

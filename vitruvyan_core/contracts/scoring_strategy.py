@@ -5,8 +5,11 @@ Scoring Strategy Contract (Interface)
 Defines the contract for domain-specific scoring strategies.
 Scoring strategies define:
 1. How to weight different features (profiles)
-2. How to compute composite scores
-3. Risk adjustment logic (optional)
+2. Risk adjustment logic (optional)
+
+Note: Composite score computation (weighted z-score average) is handled by
+CompositeScorer in the core engine. The strategy provides WEIGHTS, not the
+algorithm. This keeps the math domain-agnostic while profiles are domain-specific.
 
 Author: vitruvyan-core
 Date: February 8, 2026
@@ -23,8 +26,11 @@ class IScoringStrategy(ABC):
     
     Each domain defines:
     - Feature weights for different profiles (e.g., "aggressive", "conservative")
-    - Composite score computation rules
-    - Risk adjustment strategies
+    - Risk adjustment strategies (optional)
+    
+    Note: Composite score computation (weighted average of z-scores with dynamic
+    normalization for missing values) is handled by CompositeScorer in the core.
+    The strategy only provides the weights via get_profile_weights().
     
     Example domains:
     - Finance: profile-based weights (short_spec, balanced_mid, etc.)
@@ -75,32 +81,6 @@ class IScoringStrategy(ABC):
         
         Example (Healthcare):
             ["high_risk", "moderate_risk", "preventive_care"]
-        """
-        pass
-    
-    @abstractmethod
-    def compute_composite_score(
-        self, 
-        df: pd.DataFrame, 
-        profile: str,
-        z_score_columns: List[str]
-    ) -> pd.DataFrame:
-        """
-        Computes composite score using weighted z-scores.
-        
-        Args:
-            df: DataFrame with z-score columns
-            profile: Profile name for weight selection
-            z_score_columns: List of z-score column names to use
-        
-        Returns:
-            DataFrame with additional column:
-              - composite_score: Weighted average of z-scores
-        
-        Algorithm:
-            composite_score = Σ(z_score_i × weight_i) / Σ(weight_i)
-        
-        Note: Handles missing z-scores gracefully (normalize weights dynamically)
         """
         pass
     

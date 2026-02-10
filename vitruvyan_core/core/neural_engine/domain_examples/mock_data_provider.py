@@ -210,10 +210,11 @@ class MockDataProvider(IDataProvider):
             'last_updated': '2026-02-08',
             'entity_count': self.num_entities,
             'features': ['momentum', 'trend', 'volatility'],
+            'metadata_columns': [],  # No extra metadata columns beyond defaults
             'stratification_groups': ['GroupA', 'GroupB']
         }
     
-    def validate_entity_ids(self, entity_ids: List[str]) -> List[str]:
+    def validate_entity_ids(self, entity_ids: List[str]) -> Dict[str, bool]:
         """
         Validate which entity IDs exist in mock universe.
         
@@ -221,7 +222,7 @@ class MockDataProvider(IDataProvider):
             entity_ids: List of entity IDs to validate
         
         Returns:
-            List of valid entity IDs found
+            Dict mapping entity_id -> is_valid (True/False)
         
         TODO (for real implementation):
             Query database to check existence:
@@ -231,8 +232,8 @@ class MockDataProvider(IDataProvider):
                 WHERE ticker IN %(entity_ids)s
                 AND active = true
         """
-        valid_ids = [f"E{i:03d}" for i in range(1, self.num_entities + 1)]
-        return [eid for eid in entity_ids if eid in valid_ids]
+        valid_ids = {f"E{i:03d}" for i in range(1, self.num_entities + 1)}
+        return {eid: eid in valid_ids for eid in entity_ids}
 
 
 # ============================================================================
