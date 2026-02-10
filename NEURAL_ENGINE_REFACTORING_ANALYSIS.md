@@ -170,9 +170,9 @@ vitruvyan_core/core/<order>/
 |:---:|:---:|:---:|:---:|
 | **Main agents** | confessor, inquisitor, penitent, code_analyzer | archivist, keeper, sentinel | engine, scoring, composite, ranking |
 | **_legacy/** | chronicler, docker_manager, git_monitor, schema_validator | archivist, chamberlain, courier, sentinel, gdrive | engine_core.py (2860 lines) |
-| **consumers/** | chronicler, confessor, inquisitor, penitent | archivist, chamberlain, guardian, sentinel | screener, ranker, cache_manager |
+| **consumers/** | chronicler, confessor, inquisitor, penitent | archivist, chamberlain, guardian, sentinel | N/A — request-response |
 | **domain/** | confession, finding, verdict, log_decision | vault_objects | ranking_result, screening_request, entity_score |
-| **events/** | orthodoxy_events | vault_events | neural_events |
+| **events/** | orthodoxy_events | vault_events | N/A — service-level notification only |
 | **governance/** | classifier, rule, verdict_engine, workflow | rules, workflows | quality_rules, freshness_rules |
 | **monitoring/** | metrics | *(empty)* | metrics |
 | **philosophy/** | *(implied)* | charter.md | charter.md |
@@ -180,18 +180,36 @@ vitruvyan_core/core/<order>/
 
 ### 2.3 Key Differences: Governance vs Reason
 
-Neural Engine is NOT a governance order. It doesn't audit, validate, or enforce rules on other services. It **computes**. This changes the internal structure:
+Neural Engine is NOT a governance order. It doesn't audit, validate, or enforce rules on other services. It **computes**. This changes the internal structure fundamentally:
 
 | Aspect | Governance (Orthodoxy/Vault) | Reason (Neural Engine) |
 |--------|------------------------------|----------------------|
 | **Primary action** | Validate, audit, archive | Compute, rank, score |
 | **Input** | Events from other services | Data from IDataProvider |
 | **Output** | Verdicts, findings, archives | Ranked entity lists |
-| **consumers/** role | React to events (confess, archive) | React to screening requests, cache invalidation |
+| **Communication** | Event-driven (async, bus-native) | Request-response (sync, HTTP) |
+| **consumers/** role | ✅ Essential (react to events) | ❌ Not needed (called via REST) |
+| **events/** role | ✅ Core concern (publish verdicts) | ❌ Not core (service can notify bus optionally) |
 | **governance/** role | Classify violations, apply rules | Validate data quality, freshness thresholds |
 | **domain/** role | Findings, confessions, verdicts | Scores, rankings, screening results |
 | **Statefulness** | Event-driven (stateless processing) | Stateless computation (pure functions) |
-| **Bus interaction** | Heavy (publish verdicts, consume events) | Medium (publish results, consume requests) |
+| **Bus interaction** | Heavy (publish + consume) | None in core; optional adapter in service layer |
+
+### 2.4 The Bus Boundary Principle
+
+> **The Cognitive Bus is the nervous system of Sacred Orders (governance/truth/memory). The Neural Engine is called, not summoned.**
+
+Sacred Orders are **reactive**: they listen for events and act autonomously. The Neural Engine is **imperative**: LangGraph calls it via HTTP, it computes, it returns results.
+
+The only bus touchpoint is an **optional service-level adapter** that publishes `screening.completed` events so Sacred Orders can react (Vault Keepers archive results, Orthodoxy Wardens audit rankings). This is NOT a core concern — it's a notification, not a dependency.
+
+```
+# Sacred Orders (bus-native):
+Bus Event → Consumer → Process → Publish Result → Bus Event
+
+# Neural Engine (request-response):
+HTTP Request → Engine.run() → Return Result → (optionally) Notify Bus
+```
 
 ---
 
@@ -204,9 +222,9 @@ Neural Engine is NOT a governance order. It doesn't audit, validate, or enforce 
 | `__init__.py` | ✅ | Clean exports | — |
 | Core agents (engine, scoring, composite, ranking) | ✅ | 4 files, 827 lines | — |
 | `_legacy/` | ❌ | — | Need bridge from monolith |
-| `consumers/` | ❌ | — | Need screener, ranker, cache consumers |
+| `consumers/` | N/A | — | **Not needed** — NE is request-response, not event-driven |
 | `domain/` | ❌ | — | Need RankingResult, ScreeningRequest, EntityScore |
-| `events/` | ❌ | — | Need NeuralEngineEvents (screening.requested, results.published) |
+| `events/` | N/A | — | **Not needed in core** — bus notification is service-level adapter |
 | `governance/` | ❌ | — | Need quality rules (data completeness, freshness) |
 | `monitoring/` | ❌ | — | Need core metric definitions |
 | `philosophy/` | ❌ | — | Need charter.md (identity, boundaries) |
@@ -271,25 +289,11 @@ vitruvyan_core/core/neural_engine/
 │   ├── __init__.py
 │   └── README.md                        — "Monolith was here" + migration notes
 │
-├── consumers/                           — NEW: Cognitive Bus consumers
-│   ├── __init__.py                      — Consumer registry + exports
-│   ├── base.py                          — AbstractNeuralConsumer (base class)
-│   ├── screening_consumer.py            — Listens to screening.requested → runs NeuralEngine
-│   ├── ranking_consumer.py              — Listens to ranking.requested → runs single-feature rank
-│   └── cache_invalidation_consumer.py   — Listens to data.updated → invalidates cached results
-│
 ├── domain/                              — NEW: Domain objects (frozen dataclasses)
 │   ├── __init__.py
 │   ├── screening_request.py             — ScreeningRequest (profile, filters, top_k, ...)
 │   ├── ranking_result.py                — RankingResult (ranked_entities, metadata, stats)
 │   └── entity_score.py                  — EntityScore (entity_id, composite, percentile, bucket)
-│
-├── events/                              — NEW: Event definitions
-│   ├── __init__.py
-│   └── neural_events.py                 — NeuralEngineEvents enum
-│       # screening.requested, screening.completed, screening.failed
-│       # ranking.requested, ranking.completed
-│       # cache.invalidated
 │
 ├── governance/                          — NEW: Self-governance (data quality, not audit)
 │   ├── __init__.py
@@ -402,15 +406,14 @@ core/logic/neural_engine/
 | 1.10 | CREATE | `monitoring/__init__.py` (metric defs) | ~40 | 15 min |
 | **Total** | | | ~450 | **~2.5h** |
 
-### Phase 2: Consumers (vitruvyan-core)
+### ~~Phase 2: Consumers~~ — REMOVED
 
-| # | Action | File | Lines | Effort |
-|---|--------|------|-------|--------|
-| 2.1 | CREATE | `consumers/base.py` | ~80 | 30 min |
-| 2.2 | CREATE | `consumers/screening_consumer.py` | ~100 | 45 min |
-| 2.3 | CREATE | `consumers/ranking_consumer.py` | ~80 | 30 min |
-| 2.4 | CREATE | `consumers/cache_invalidation_consumer.py` | ~60 | 20 min |
-| **Total** | | | ~320 | **~2h** |
+> **Architectural Decision**: Neural Engine is request-response (REST), NOT event-driven.
+> Consumers are a Sacred Orders pattern for governance services that react to bus events.
+> NE doesn't need them — it's called by LangGraph via HTTP.
+>
+> The only bus integration is an **optional adapter** in the service layer (`adapters/bus_adapter.py`)
+> that publishes result notifications so Sacred Orders can react.
 
 ### Phase 3: Service Layer Alignment (vitruvyan-core)
 
@@ -633,24 +636,24 @@ def get_features_batch(
 
 | Phase | Description | Effort | Depends On |
 |-------|------------|--------|------------|
-| **Phase 1** | Core domain enrichment (domain/, events/, governance/, philosophy/) | 2.5h | Nothing |
-| **Phase 2** | Consumers (Cognitive Bus integration) | 2h | Phase 1 |
+| **Phase 1** | Core domain enrichment (domain/, governance/, philosophy/) | 2.5h | Nothing |
+| ~~**Phase 2**~~ | ~~Consumers~~ — REMOVED (NE is request-response, not event-driven) | — | — |
 | **Phase 3** | Service layer alignment (config, adapters, routes) | 4h | Phase 1 |
 | **Phase 4** | Contract extension (IFilterStrategy) | 35 min | Nothing |
-| **Phase 5** | Unit tests | 2.5h | Phase 1-3 |
+| **Phase 5** | Unit tests | 2.5h | Phase 1,3 |
 | **Phase 6** | Finance plugin extraction (vitruvyan repo) | 8h | Phase 4 |
-| **TOTAL** | | **~20h** | |
+| **TOTAL** | | **~18h** | |
 
 ### Recommended Order
 
 ```
 Phase 1 + Phase 4 (parallel, no deps)          → 3h
-Phase 2 + Phase 3 (parallel after Phase 1)     → 4h
-Phase 5 (after Phase 1-3)                      → 2.5h
+Phase 3 (after Phase 1)                        → 4h
+Phase 5 (after Phase 1+3)                      → 2.5h
 Phase 6 (after Phase 4, can be deferred)       → 8h
                                                 ────
-                                         Fast track: ~10h (Phases 1-5, core only)
-                                         Full delivery: ~20h (including finance plugin)
+                                  Fast track: ~8h (Phases 1,3-5, core only)
+                                  Full delivery: ~18h (including finance plugin)
 ```
 
 ---
@@ -708,26 +711,30 @@ Phase 6 (after Phase 4, can be deferred)       → 8h
 
 ### Metrics
 
-- **Average file size**: 5,861/19 = 308 lines → 8,590/45 = **191 lines** (38% smaller per file)
+- **Average file size**: 5,861/19 = 308 lines → ~7,800/~38 = **~205 lines** (33% smaller per file)
 - **Max file size**: 2,860 lines → **~600 lines** (financial_data_provider — largest plugin)
 - **Testability**: 0% → 100% (every module independently testable via contracts)
 - **Domain coupling**: 100% finance → **0% in core** (finance only in vitruvyan plugin)
+- **Bus coupling**: 0% in core (optional adapter in service layer only)
+- **Bus coupling**: 0% in core (optional adapter in service layer only)
 
 ---
 
-## Appendix B: Cognitive Bus Event Channels
+## Appendix B: Cognitive Bus — Optional Service-Level Notifications
+
+The Neural Engine core has **NO bus dependency**. The service layer MAY publish notifications via `adapters/bus_adapter.py` so Sacred Orders can react:
 
 ```
-neural_engine.screening.requested     — Graph/API sends screening request
-neural_engine.screening.completed     — Neural Engine publishes ranked results  
-neural_engine.screening.failed        — Neural Engine reports failure
-neural_engine.ranking.requested       — Single-feature rank request
-neural_engine.ranking.completed       — Ranking results published
-neural_engine.cache.invalidated       — Data provider signals fresh data available
+neural_engine.screening.completed     — Service notifies Sacred Orders after successful screening
+neural_engine.screening.failed        — Service notifies Sacred Orders after failure
 ```
 
-**Producers**: api_neural_engine (service), graph (orchestrator)
-**Consumers**: neural_engine.consumers.*, vault_keepers (archive results), orthodoxy_wardens (audit rankings)
+These are **fire-and-forget notifications**, not request-response patterns. NE doesn't consume bus events.
+
+**Publisher**: api_neural_engine service (optional, via bus_adapter)
+**Subscribers**: vault_keepers (archive results), orthodoxy_wardens (audit rankings)
+
+> **Note**: The bus adapter is OPTIONAL. NE works 100% without it. Sacred Orders subscribe if they want to react to screening results.
 
 ---
 
@@ -738,8 +745,8 @@ neural_engine.cache.invalidated       — Data provider signals fresh data avail
 | Primary agent | `inquisitor_agent.py` | `engine.py` |
 | Specialized agents | `confessor_agent.py`, `penitent_agent.py` | `scoring.py`, `composite.py`, `ranking.py` |
 | Domain objects | `domain/confession.py`, `domain/verdict.py` | `domain/screening_request.py`, `domain/entity_score.py` |
-| Events | `events/orthodoxy_events.py` | `events/neural_events.py` |
-| Bus consumers | `consumers/chronicler.py` | `consumers/screening_consumer.py` |
+| Events | `events/orthodoxy_events.py` | N/A in core (bus_adapter in service) |
+| Bus consumers | `consumers/chronicler.py` | N/A — request-response |
 | Service routes | `api/routes.py` | `api/routes.py` |
 | Config | `config.py` | `config.py` |
 | Bus adapter | `adapters/bus_adapter.py` | `adapters/bus_adapter.py` |
