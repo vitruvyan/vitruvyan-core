@@ -21,7 +21,7 @@ from datetime import datetime
 import warnings
 warnings.filterwarnings('ignore')
 
-from vitruvyan_core.domains.explainability_contract import ExplainabilityProvider
+from domains.explainability_contract import ExplainabilityProvider
 
 
 @dataclass

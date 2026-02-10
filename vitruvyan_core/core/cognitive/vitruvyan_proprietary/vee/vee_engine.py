@@ -29,7 +29,7 @@ from .vee_generator import VEEGenerator, ExplanationLevels, generate_explanation
 from .vee_memory_adapter import VEEMemoryAdapter, HistoricalExplanation
 
 # Import explainability contract
-from vitruvyan_core.domains.explainability_contract import ExplainabilityProvider
+from domains.explainability_contract import ExplainabilityProvider
 
 # PR-C: VSGS metrics and audit logging (optional)
 try:

@@ -15,7 +15,7 @@ Author: Vitruvyan Core Team
 Created: December 28, 2025
 """
 
-from vitruvyan_core.domains.base_domain import (
+from domains.base_domain import (
     BaseDomain,
     GenericDomain,
     DomainType,

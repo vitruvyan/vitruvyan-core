@@ -12,7 +12,7 @@ Extracts finance-specific logic from compose_node.py:
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from vitruvyan_core.core.orchestration.compose.response_formatter import (
+from core.orchestration.compose.response_formatter import (
     ResponseFormatter,
     FormattedResponse,
     ConversationType,

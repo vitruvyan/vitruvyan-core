@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from .vee_analyzer import AnalysisResult
 
-from vitruvyan_core.domains.explainability_contract import ExplainabilityProvider, ExplanationTemplate
+from domains.explainability_contract import ExplainabilityProvider, ExplanationTemplate
 
 
 @dataclass

@@ -7,7 +7,7 @@ Provides finance-specific implementations for the Vitruvyan orchestration layer:
 - SlotFiller for investment-related slot questions
 """
 
-from vitruvyan_core.domains.finance.response_formatter import (
+from domains.finance.response_formatter import (
     FinanceResponseFormatter,
     FinanceConversationType,
     TECHNICAL_INTENTS,
@@ -18,7 +18,7 @@ from vitruvyan_core.domains.finance.response_formatter import (
     generate_onboarding_cards,
     generate_factor_narrative,
 )
-from vitruvyan_core.domains.finance.slot_filler import (
+from domains.finance.slot_filler import (
     FinanceSlotFiller,
     FINANCE_SLOTS,
     DEFAULT_QUESTIONS,

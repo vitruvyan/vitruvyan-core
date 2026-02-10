@@ -12,7 +12,7 @@ Created: December 28, 2025
 Status: PLACEHOLDER ONLY
 """
 
-from vitruvyan_core.domains.base_domain import (
+from domains.base_domain import (
     BaseDomain,
     DomainType,
     EntitySchema,

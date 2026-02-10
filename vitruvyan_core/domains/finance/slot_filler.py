@@ -11,7 +11,7 @@ Extracts finance-specific slot logic from compose_node.py:
 
 from typing import Any, Dict, List, Optional
 
-from vitruvyan_core.core.orchestration.compose.slot_filler import (
+from core.orchestration.compose.slot_filler import (
     SlotFiller,
     SlotDefinition,
     SlotQuestion,

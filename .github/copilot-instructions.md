@@ -101,6 +101,33 @@ services/api_<order>/
 
 ---
 
+### Documentation Standards — README.md & Examples
+
+**All Sacred Orders (both LIVELLO 1 and LIVELLO 2) MUST have comprehensive documentation for developer onboarding.**
+
+#### README.md Requirements
+- **Location**: Root of each Sacred Order module (`vitruvyan_core/core/governance/<order>/` and `services/api_<order>/`)
+- **Content**: 
+  - Module purpose and domain responsibility
+  - Quick start (code examples)
+  - Architecture overview (two-level pattern)
+  - API endpoints (for services)
+  - Configuration (environment variables)
+  - Development setup (testing, building, deployment)
+- **Template**: Use existing READMEs as reference (Memory Orders, Vault Keepers, Orthodoxy Wardens)
+
+#### Examples Directory Requirements
+- **Location**: `examples/` in each Sacred Order module
+- **Content**: Executable scripts demonstrating functionality
+  - **LIVELLO 1**: Pure Python examples (no I/O, no dependencies)
+  - **LIVELLO 2**: API usage examples (HTTP calls to service endpoints)
+- **Purpose**: Enable developers to understand and test module functionality quickly
+- **Execution**: Scripts must run standalone with clear prerequisites
+
+**Status**: ✅ Complete for all conformant Sacred Orders (Memory Orders, Vault Keepers, Orthodoxy Wardens)
+
+---
+
 ### Step-by-Step Refactoring Procedure (MANDATORY)
 
 **When starting a Sacred Order refactoring, follow this exact sequence:**

@@ -38,9 +38,9 @@ from core.orchestration import (
 from core.agents.postgres_agent import PostgresAgent
 
 # Import compose layer abstractions
-from vitruvyan_core.core.orchestration.compose import ResponseFormatter, SlotFiller
-from vitruvyan_core.domains.finance.response_formatter import FinanceResponseFormatter
-from vitruvyan_core.domains.finance.slot_filler import FinanceSlotFiller
+from core.orchestration.compose import ResponseFormatter, SlotFiller
+from domains.finance.response_formatter import FinanceResponseFormatter
+from domains.finance.slot_filler import FinanceSlotFiller
 
 logger = logging.getLogger(__name__)
 

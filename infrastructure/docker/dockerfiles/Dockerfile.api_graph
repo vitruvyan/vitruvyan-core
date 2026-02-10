@@ -29,6 +29,9 @@ COPY --chown=vitruvyan:vitruvyan services/api_graph /app/api_graph
 # Copy ALL core modules
 COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/ /app/core/
 
+# Copy domains module (required by LangGraph orchestration)
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/domains/ /app/domains/
+
 # Copy config directory for Pattern Weavers API config
 COPY --chown=vitruvyan:vitruvyan config /app/config
 
