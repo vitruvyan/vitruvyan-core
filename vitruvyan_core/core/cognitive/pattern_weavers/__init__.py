@@ -1,20 +1,110 @@
 """
-Pattern Weavers — Sacred Order of Semantic Contextualization
-Epistemic Order: REASON (Semantic Layer)
+Pattern Weavers - Sacred Order #5
+=================================
 
-Connects concepts, sectors, regions, and risk profiles to enrich 
-quantitative analysis with semantic understanding.
+Domain-agnostic semantic contextualization engine.
 
-Author: Sacred Orders
-Created: November 9, 2025
-Status: PRODUCTION READY
+"From chaos, patterns. From patterns, understanding."
+
+Architecture:
+- domain/: Configuration and entity dataclasses
+- consumers/: Pure processing logic (WeaverConsumer, KeywordMatcherConsumer)
+- events/: Event channel constants
+- monitoring/: Metric name constants
+- governance/: Rules and classifiers (future)
+- philosophy/: Sacred Order charter
+- _legacy/: Pre-refactoring code (frozen archive)
+
+Integration:
+- LIVELLO 1 (this module): Pure Python, no I/O
+- LIVELLO 2 (services/api_pattern_weavers/): FastAPI, adapters, I/O
+
+Author: Vitruvyan Core Team
+Version: 2.0.0 (February 2026 - Domain-Agnostic Refactoring)
 """
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"
 __epistemic_order__ = "REASON"
 __layer__ = "SEMANTIC"
 
-from core.cognitive.pattern_weavers.weaver_engine import PatternWeaverEngine
-from core.cognitive.pattern_weavers.weaver_client import PatternWeaverClient
+# Domain layer
+from .domain import (
+    PatternConfig,
+    EmbeddingConfig,
+    CollectionConfig,
+    TableConfig,
+    StreamConfig,
+    TaxonomyConfig,
+    TaxonomyCategory,
+    get_config,
+    set_config,
+    WeaveStatus,
+    MatchType,
+    PatternMatch,
+    RiskProfile,
+    WeaveRequest,
+    WeaveResult,
+    EmbeddingVector,
+    TaxonomyEntry,
+    HealthStatus,
+)
 
-__all__ = ["PatternWeaverEngine", "PatternWeaverClient"]
+# Consumer layer
+from .consumers import (
+    BaseConsumer,
+    ProcessResult,
+    WeaverConsumer,
+    KeywordMatcherConsumer,
+)
+
+# Events
+from .events import (
+    Channels,
+    EventEnvelope,
+    create_event_envelope,
+)
+
+# Monitoring
+from .monitoring import (
+    MetricNames,
+    HealthCheckNames,
+    Labels,
+)
+
+
+__all__ = [
+    # Config
+    "PatternConfig",
+    "EmbeddingConfig",
+    "CollectionConfig",
+    "TableConfig",
+    "StreamConfig",
+    "TaxonomyConfig",
+    "TaxonomyCategory",
+    "get_config",
+    "set_config",
+    # Entities
+    "WeaveStatus",
+    "MatchType",
+    "PatternMatch",
+    "RiskProfile",
+    "WeaveRequest",
+    "WeaveResult",
+    "EmbeddingVector",
+    "TaxonomyEntry",
+    "HealthStatus",
+    # Consumers
+    "BaseConsumer",
+    "ProcessResult",
+    "WeaverConsumer",
+    "KeywordMatcherConsumer",
+    # Events
+    "Channels",
+    "EventEnvelope",
+    "create_event_envelope",
+    # Monitoring
+    "MetricNames",
+    "HealthCheckNames",
+    "Labels",
+]
+
