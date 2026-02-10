@@ -798,16 +798,32 @@ services:
 
 volumes:
   redis_data_core:
+    external: true
+    name: docker_redis_data_core
   postgres_data_core:
+    external: true
+    name: docker_postgres_data_core
   qdrant_data_core:
+    external: true
+    name: docker_qdrant_data_core
   babel_gardens_models:
+    external: true
+    name: docker_babel_gardens_models
   babel_gardens_logs:
+    external: true
+    name: docker_babel_gardens_logs
   vault_keeper_data:
+    external: true
+    name: docker_vault_keeper_data
   prometheus_data:
+    external: true
+    name: docker_prometheus_data
   grafana_data:
+    external: true
+    name: docker_grafana_data
   portainer_data_core:
 
 networks:
   core-net:
-    driver: bridge
+    external: true
     name: vitruvyan_core_net
