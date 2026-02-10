@@ -57,7 +57,7 @@ async def startup():
     logger.info(f"   Service: {settings.SERVICE_NAME}")
     logger.info(f"   Port: {settings.SERVICE_PORT}")
     logger.info(f"   Redis: {settings.REDIS_HOST}:{settings.REDIS_PORT}")
-    logger.info(f"   PostgreSQL: {settings.PG_HOST}:{settings.PG_PORT}/{settings.PG_DB}")
+    logger.info(f"   PostgreSQL: {settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}")
     logger.info(f"   Qdrant: {settings.QDRANT_HOST}:{settings.QDRANT_PORT}")
     
     # Initialize bus adapter (connects to StreamBus + PostgreSQL + Qdrant)

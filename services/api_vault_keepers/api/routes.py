@@ -120,7 +120,11 @@ async def backup(request: BackupRequest):
     """
     try:
         adapter = get_adapter()
-        result = adapter.handle_backup(request.dict())
+        result = adapter.handle_backup(
+            mode=request.mode,
+            include_vectors=request.include_vectors,
+            correlation_id=request.correlation_id
+        )
         return BackupResult(**result)
     except Exception as e:
         logger.error(f"Backup failed: {e}", exc_info=True)
@@ -136,7 +140,10 @@ async def restore(request: RestoreRequest):
     """
     try:
         adapter = get_adapter()
-        result = adapter.handle_restore(request.dict())
+        result = adapter.handle_restore(
+            snapshot_id=request.snapshot_id,
+            dry_run=request.dry_run
+        )
         return JSONResponse(content=result)
     except Exception as e:
         logger.error(f"Restore failed: {e}", exc_info=True)

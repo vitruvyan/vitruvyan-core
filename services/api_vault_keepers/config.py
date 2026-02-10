@@ -21,7 +21,7 @@ class Settings:
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
     
     # Redis / Cognitive Bus
-    REDIS_HOST = os.getenv("REDIS_HOST", "omni_redis")
+    REDIS_HOST = os.getenv("REDIS_HOST", "core_redis")
     REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
     REDIS_DB = int(os.getenv("REDIS_DB", "0"))
     
@@ -38,15 +38,15 @@ class Settings:
         "neural_engine.screening.completed",
     ]
     
-    # PostgreSQL (host machine)
-    PG_HOST = os.getenv("PG_HOST", "161.97.140.157")
-    PG_PORT = int(os.getenv("PG_PORT", "5432"))
-    PG_DB = os.getenv("PG_DB", "vitruvyan")
-    PG_USER = os.getenv("PG_USER", "vitruvyan_user")
-    PG_PASSWORD = os.getenv("PG_PASSWORD", "")
+    # PostgreSQL (aligned with docker-compose and PostgresAgent)
+    POSTGRES_HOST = os.getenv("POSTGRES_HOST", "core_postgres")
+    POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
+    POSTGRES_DB = os.getenv("POSTGRES_DB", "vitruvyan_core")
+    POSTGRES_USER = os.getenv("POSTGRES_USER", "vitruvyan_core_user")
+    POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "")
     
-    # Qdrant (vector database)
-    QDRANT_HOST = os.getenv("QDRANT_HOST", "161.97.140.157")
+    # Qdrant (vector database, aligned with docker-compose)
+    QDRANT_HOST = os.getenv("QDRANT_HOST", "core_qdrant")
     QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
     QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "phrases")
     

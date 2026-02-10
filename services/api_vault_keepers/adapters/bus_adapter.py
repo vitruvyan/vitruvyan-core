@@ -229,16 +229,22 @@ class VaultBusAdapter:
         audit_record = self.chamberlain.process(audit_input)
         self.persistence.store_audit_record(audit_record)
         
-        # Step 6: Build response
+        # Step 6: Build response (matches BackupResult schema)
         result = {
-            "correlation_id": correlation_id,
-            "timestamp": snapshot_plan.timestamp,
+            "success": backup_result["status"] == "completed",
             "snapshot_id": snapshot_plan.snapshot_id,
+            "postgresql_backup": {
+                "path": backup_result.get("postgresql_path"),
+                "status": backup_result.get("status", "completed")
+            } if backup_result.get("postgresql_path") else None,
+            "qdrant_backup": {
+                "path": backup_result.get("qdrant_path"),
+                "status": backup_result.get("status", "completed")
+            } if include_vectors and backup_result.get("qdrant_path") else None,
+            "sacred_timestamp": snapshot_plan.timestamp,
+            "correlation_id": correlation_id,
             "mode": mode,
             "scope": snapshot_plan.scope,
-            "status": backup_result["status"],
-            "postgresql_path": backup_result.get("postgresql_path"),
-            "qdrant_path": backup_result.get("qdrant_path"),
             "size_bytes": backup_result.get("size_bytes", 0)
         }
         
@@ -317,7 +323,7 @@ class VaultBusAdapter:
         # Step 4: Execute restore (or test if dry_run)
         if dry_run:
             restore_result = self.persistence.test_restore(snapshot_id)
-            status = "validated"
+            status = "completed"  # Audit status: completed (test passed)
         else:
             if orchestration.get("requires_approval"):
                 logger.warning(f"[{correlation_id}] Real restore requires explicit approval")

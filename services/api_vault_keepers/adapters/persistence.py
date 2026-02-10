@@ -53,7 +53,7 @@ class PersistenceAdapter:
             
             for table in tables_to_check:
                 try:
-                    result = self.pg_agent.fetch_all(f"SELECT COUNT(*) as count FROM {table}")
+                    result = self.pg_agent.fetch(f"SELECT COUNT(*) as count FROM {table}")
                     count = result[0]['count'] if result else 0
                     table_status[table] = {"count": count, "status": "healthy"}
                 except Exception as e:
@@ -88,7 +88,7 @@ class PersistenceAdapter:
             logger.info("PostgreSQL backup initiated")
             
             # For now, just validate connectivity
-            self.pg_agent.fetch_all("SELECT 1")
+            self.pg_agent.fetch("SELECT 1")
             
             return {
                 "status": "success",
@@ -111,9 +111,9 @@ class PersistenceAdapter:
         """
         try:
             if params:
-                return self.pg_agent.fetch_all(query, params)
+                return self.pg_agent.fetch(query, params)
             else:
-                return self.pg_agent.fetch_all(query)
+                return self.pg_agent.fetch(query)
         except Exception as e:
             logger.error(f"Query execution failed: {query}", exc_info=e)
             raise
@@ -131,7 +131,8 @@ class PersistenceAdapter:
         """
         try:
             # Check Qdrant health
-            health_ok = self.qdrant_agent.health_check()
+            health_result = self.qdrant_agent.health()
+            health_ok = health_result.get("status") == "ok"
             
             collection_info = {}
             try:
@@ -173,7 +174,7 @@ class PersistenceAdapter:
             # or delegate to vitruvyan_core/core/governance/vault_keepers/archivist.py
             
             # For now, just validate connectivity
-            self.qdrant_agent.health_check()
+            self.qdrant_agent.health()
             
             return {
                 "status": "success",
@@ -196,7 +197,7 @@ class PersistenceAdapter:
         """
         try:
             # Check if phrases in PostgreSQL match vectors in Qdrant
-            pg_result = self.pg_agent.fetch_all(
+            pg_result = self.pg_agent.fetch(
                 "SELECT COUNT(*) as count FROM phrases WHERE embedding_id IS NOT NULL"
             )
             pg_count = pg_result[0]['count'] if pg_result else 0
@@ -226,13 +227,14 @@ class PersistenceAdapter:
         qdrant_healthy = False
         
         try:
-            self.pg_agent.fetch_all("SELECT 1")
+            self.pg_agent.fetch("SELECT 1")
             pg_healthy = True
         except:
             pass
         
         try:
-            qdrant_healthy = self.qdrant_agent.health_check()
+            health_result = self.qdrant_agent.health()
+            qdrant_healthy = health_result.get("status") == "ok"
         except:
             pass
         
@@ -278,6 +280,9 @@ class PersistenceAdapter:
                 result["qdrant_status"] = qdrant_result["status"]
                 result["size_bytes"] += 512 * 1024  # Placeholder size
             
+            # Register snapshot in database
+            self._register_snapshot(snapshot_id, mode, include_vectors, result)
+            
             logger.info(f"Backup completed: snapshot_id={snapshot_id}, size={result['size_bytes']} bytes")
             return result
             
@@ -303,7 +308,7 @@ class PersistenceAdapter:
                     WHERE table_name = 'vault_snapshots'
                 )
             """
-            result = self.pg_agent.fetch_all(query)
+            result = self.pg_agent.fetch(query)
             table_exists = result[0]['exists'] if result else False
             
             if not table_exists:
@@ -312,7 +317,7 @@ class PersistenceAdapter:
             
             # Check if snapshot exists
             query = "SELECT 1 FROM vault_snapshots WHERE snapshot_id = %s"
-            result = self.pg_agent.fetch_all(query, (snapshot_id,))
+            result = self.pg_agent.fetch(query, (snapshot_id,))
             
             return len(result) > 0
             
@@ -519,3 +524,50 @@ class PersistenceAdapter:
         except Exception as e:
             logger.error(f"Audit record storage failed: {e}", exc_info=e)
             return {"status": "failed", "error": str(e)}
+    
+    def _register_snapshot(self, snapshot_id: str, mode: str, include_vectors: bool, result: Dict[str, Any]):
+        """
+        Register snapshot in vault_snapshots table.
+        
+        Args:
+            snapshot_id: Snapshot identifier
+            mode: Backup mode
+            include_vectors: Whether vectors were included
+            result: Backup result dict
+        """
+        try:
+            # Create table if doesn't exist
+            create_table = """
+                CREATE TABLE IF NOT EXISTS vault_snapshots (
+                    snapshot_id VARCHAR PRIMARY KEY,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    mode VARCHAR,
+                    include_vectors BOOLEAN,
+                    postgresql_path VARCHAR,
+                    qdrant_path VARCHAR,
+                    size_bytes BIGINT,
+                    status VARCHAR
+                )
+            """
+            self.pg_agent.execute(create_table)
+            
+            # Insert snapshot record
+            insert_query = """
+                INSERT INTO vault_snapshots 
+                (snapshot_id, mode, include_vectors, postgresql_path, qdrant_path, size_bytes, status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            self.pg_agent.execute(insert_query, (
+                snapshot_id,
+                mode,
+                include_vectors,
+                result.get("postgresql_path"),
+                result.get("qdrant_path"),
+                result.get("size_bytes", 0),
+                result.get("status", "completed")
+            ))
+            
+            logger.debug(f"Snapshot registered: {snapshot_id}")
+            
+        except Exception as e:
+            logger.error(f"Snapshot registration failed: {e}", exc_info=e)
