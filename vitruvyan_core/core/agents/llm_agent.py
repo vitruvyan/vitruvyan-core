@@ -71,7 +71,16 @@ from functools import wraps
 from threading import Lock
 from collections import deque
 
-from openai import OpenAI
+# Lazy import: Only load OpenAI if LLMAgent is actually instantiated
+# This prevents import errors in services that import PostgresAgent
+# but don't use LLM functionality (e.g., Memory Orders, Vault Keepers)
+try:
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+    OpenAI = None  # Type hint compatibility
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -322,6 +331,15 @@ class LLMAgent:
         # Skip re-initialization for singleton
         if hasattr(self, '_initialized') and self._initialized:
             return
+        
+        # Check OpenAI availability (COO fix: Feb 10, 2026)
+        if not OPENAI_AVAILABLE:
+            raise ImportError(
+                "❌ LLMAgent requires 'openai' package. "
+                "Install it: pip install openai>=1.0.0\n"
+                "Note: Services importing PostgresAgent without using LLM "
+                "functionality will not trigger this error (lazy import)."
+            )
         
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.default_model = default_model

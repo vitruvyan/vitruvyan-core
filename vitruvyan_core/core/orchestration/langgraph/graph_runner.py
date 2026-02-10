@@ -141,7 +141,21 @@ def run_graph_once(input_text: str, user_id: str = "demo", return_full: bool = F
             response["emotion_sentiment_score"] = final_state.get("emotion_sentiment_score")
             response["emotion_metadata"] = final_state.get("emotion_metadata")
         
-        # 💡 Phase 2.1: Append proactive suggestions (for all actions, not just answer)
+        # �️ FIX (Feb 10, 2026): Propagate Sacred Orders metadata (Orthodoxy + Vault)
+        if final_state.get("orthodoxy_verdict"):
+            response["orthodoxy_verdict"] = final_state.get("orthodoxy_verdict")
+            response["orthodoxy_blessing"] = final_state.get("orthodoxy_blessing")
+            response["orthodoxy_confidence"] = final_state.get("orthodoxy_confidence")
+            response["orthodoxy_findings"] = final_state.get("orthodoxy_findings")
+            response["orthodoxy_message"] = final_state.get("orthodoxy_message")
+            response["orthodoxy_timestamp"] = final_state.get("orthodoxy_timestamp")
+            response["theological_metadata"] = final_state.get("theological_metadata")
+        
+        if final_state.get("vault_blessing"):
+            response["vault_blessing"] = final_state.get("vault_blessing")
+            response["vault_status"] = final_state.get("vault_status")
+        
+        # �💡 Phase 2.1: Append proactive suggestions (for all actions, not just answer)
         if suggestions_text:
             if response.get("action") == "answer" and "raw_output" in response and isinstance(response["raw_output"], dict):
                 # Append to notes for answer responses
@@ -203,6 +217,16 @@ def run_graph_once(input_text: str, user_id: str = "demo", return_full: bool = F
             "emotion_sentiment_label": final_state.get("emotion_sentiment_label"),
             "emotion_sentiment_score": final_state.get("emotion_sentiment_score"),
             "emotion_metadata": final_state.get("emotion_metadata"),
+            # 🛡️ FIX (Feb 10, 2026): Add Sacred Orders metadata (Orthodoxy + Vault)
+            "orthodoxy_verdict": final_state.get("orthodoxy_verdict"),
+            "orthodoxy_blessing": final_state.get("orthodoxy_blessing"),
+            "orthodoxy_confidence": final_state.get("orthodoxy_confidence"),
+            "orthodoxy_findings": final_state.get("orthodoxy_findings"),
+            "orthodoxy_message": final_state.get("orthodoxy_message"),
+            "orthodoxy_timestamp": final_state.get("orthodoxy_timestamp"),
+            "theological_metadata": final_state.get("theological_metadata"),
+            "vault_blessing": final_state.get("vault_blessing"),
+            "vault_status": final_state.get("vault_status"),
             # ✅ FIX (Nov 2, 2025): Add intent, route, entity_ids, horizon to API response
             "intent": final_state.get("intent"),
             "route": final_state.get("route"),

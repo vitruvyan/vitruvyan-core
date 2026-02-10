@@ -78,12 +78,22 @@ def _extract_entities_from_output(raw_output: Dict[str, Any]) -> List[str]:
     """
     entity_ids = []
     
-    # Try extracting from ranking.entities
+    # Try extracting from ranking.entities (COO fix: defensive type check Feb 10, 2026)
     ranking = raw_output.get("ranking", {})
-    entities = ranking.get("entities", [])
+    
+    # Handle case where ranking is a list instead of expected dict
+    if isinstance(ranking, list):
+        # Ranking is already list of entities
+        entities = ranking
+    elif isinstance(ranking, dict):
+        # Ranking is dict with "entities" key
+        entities = ranking.get("entities", [])
+    else:
+        logger.warning(f"⚠️ [QUALITY_CHECK] Unexpected ranking type: {type(ranking)}")
+        entities = []
     
     if entities:
-        entity_ids = [entity.get("entity_id") for entity in entities if "entity_id" in entity]
+        entity_ids = [entity.get("entity_id") for entity in entities if isinstance(entity, dict) and "entity_id" in entity]
         if entity_ids:
             logger.info(f"🔍 [QUALITY_CHECK] Extracted {len(entity_ids)} entity_ids from NE ranking: {entity_ids}")
             return entity_ids
@@ -267,8 +277,19 @@ def quality_check_node(state: Dict[str, Any]) -> Dict[str, Any]:
     # Initialize validation structure
     validation = {"errors": [], "warnings": []}
     
-    # Extract state
-    raw_output = state.get("raw_output", {})
+    # Extract state (COO fix: defensive type check for raw_output, Feb 10, 2026)
+    raw_output_raw = state.get("raw_output", {})
+    
+    # Handle case where raw_output is list instead of expected dict
+    if isinstance(raw_output_raw, list):
+        logger.warning(f"⚠️ [QUALITY_CHECK] raw_output is list (len={len(raw_output_raw)}), wrapping in dict")
+        raw_output = {"ranking": raw_output_raw}  # Assume list is ranking entities
+    elif isinstance(raw_output_raw, dict):
+        raw_output = raw_output_raw
+    else:
+        logger.warning(f"⚠️ [QUALITY_CHECK] Unexpected raw_output type: {type(raw_output_raw)}")
+        raw_output = {}
+    
     entity_ids = state.get("entity_ids", [])
     horizon = state.get("horizon", "medium")
     intent = state.get("intent", "analysis")
