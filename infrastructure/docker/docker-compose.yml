@@ -432,6 +432,46 @@ services:
       retries: 3
       start_period: 15s
 
+  memory_orders_listener:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_memory_orders
+    container_name: core_memory_orders_listener
+    restart: unless-stopped
+    environment:
+      # Redis (Cognitive Bus)
+      - REDIS_HOST=core_redis
+      - REDIS_PORT=6379
+      # Database (Archivarium)
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
+      # Vector DB (Mnemosyne)
+      - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
+      - QDRANT_PORT=${QDRANT_PORT:-6333}
+      - QDRANT_URL=${QDRANT_URL:-http://core_qdrant:6333}
+      # Embedding Service
+      - EMBEDDING_SERVICE_URL=http://embedding:8010/embed
+      # Babel Gardens
+      - BABEL_GARDENS_URL=http://babel_gardens:8006
+      # Config
+      - LOG_LEVEL=INFO
+      - PYTHONUNBUFFERED=1
+      - MEMORY_LISTENER_ENABLED=1
+    volumes:
+      - ../../services/api_memory_orders:/app/api_memory_orders:ro
+      - ../../vitruvyan_core/core:/app/core:ro
+      - ./logs/memory_orders_listener:/app/logs
+    depends_on:
+      - redis
+      - memory_orders
+      - babel_gardens
+    networks:
+      - core-net
+    command: ["python3", "/app/api_memory_orders/streams_listener.py"]
+
   codex_hunters:
     build:
       context: ../..

@@ -22,6 +22,70 @@ This file is the **high-signal, stable context** Copilot needs to work productiv
 
 ---
 
+## Sacred Orders Refactoring (Active Work - Feb 2026)
+**Context**: Architectural refactoring in progress following the SACRED_ORDER_PATTERN (two-level architecture).
+
+### Refactoring Status
+| Sacred Order | LIVELLO 1 (Pure Domain) | LIVELLO 2 (Service) | Status |
+|--------------|-------------------------|---------------------|--------|
+| **Orthodoxy Wardens** | ✅ Complete | ✅ Complete | Template (Truth) |
+| **Vault Keepers** | ✅ Complete | ✅ Complete | Template (Memory) |
+| **Memory Orders** | 🔄 In Progress | 🔄 In Progress | Current Work |
+| Babel Gardens | ⏳ Planned | ⏳ Planned | Feb 2026 |
+| Codex Hunters | ⏳ Planned | ⏳ Planned | Feb 2026 |
+| Pattern Weavers | ⏳ Planned | ⏳ Planned | Feb 2026 |
+
+### Two-Level Pattern (Sacred Orders Only)
+**LIVELLO 1** (`vitruvyan_core/core/governance/<order>/`): Pure Python, no I/O, testable standalone
+- `domain/` — frozen dataclasses (immutable DTOs)
+- `consumers/` — pure `process()` functions (input dict → output dataclass, ZERO I/O)
+- `governance/` — rules, classifiers, engines (data-driven, not behavior)
+- `events/` — channel constants, event envelopes
+- `monitoring/` — metric NAME constants (no prometheus_client)
+- `philosophy/charter.md` — identity, mandate, invariants
+- `_legacy/` — pre-refactoring files (frozen, do not modify)
+
+**LIVELLO 2** (`services/api_<order>/`): Infrastructure, bus, database, API, Docker
+- `main.py` — < 100 lines (bootstrap only)
+- `config.py` — ALL os.getenv() centralized
+- `adapters/bus_adapter.py` — orchestrates LIVELLO 1 consumers + emits events
+- `adapters/persistence.py` — ONLY I/O point (PostgresAgent, QdrantAgent)
+- `api/routes.py` — thin HTTP endpoints (validate → delegate → return)
+- `models/schemas.py` — Pydantic request/response models
+- `streams_listener.py` — Redis Streams entry point
+
+**Direction rule**: `service → core` (ONE-WAY). LIVELLO 2 imports LIVELLO 1, never reverse.
+
+### Key Documents
+- **Pattern**: `vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md` (canonical blueprint)
+- **Templates**: 
+  - Orthodoxy Wardens: `vitruvyan_core/core/governance/orthodoxy_wardens/` (Truth/Governance example)
+  - Vault Keepers: `vitruvyan_core/core/governance/vault_keepers/` (Memory/Archival example)
+- **Service Pattern**: `services/SERVICE_PATTERN.md` (LIVELLO 2 structure)
+- **Refactoring Plan**: `SACRED_ORDERS_REFACTORING_PLAN.md` (roadmap + checklist)
+
+### Active Refactoring Rules (Memory Orders - Current)
+When working on Memory Orders refactoring:
+1. **FASE 0**: Move impure files to `_legacy/` (coherence.py, rag_health.py, phrase_sync.py)
+2. **FASE 1**: Create full LIVELLO 1 structure (10 subdirs: domain/, consumers/, governance/, events/, monitoring/, philosophy/, docs/, examples/, tests/, _legacy/)
+3. **FASE 2**: Create LIVELLO 2 adapters (bus_adapter.py orchestrates consumers, persistence.py handles all I/O)
+4. **FASE 3**: Reduce main.py to < 100 lines (only FastAPI bootstrap + adapter registration)
+5. **Verify**: No PostgresAgent/QdrantAgent/httpx in LIVELLO 1, all imports flow service → core
+
+### Quick Verification Checklist
+```bash
+# LIVELLO 1: Pure imports (no infra dependencies)
+python3 -c "from vitruvyan_core.core.governance.memory_orders.consumers import CoherenceAnalyzer; print('✅ Pure')"
+
+# LIVELLO 2: Service structure complete
+ls services/api_memory_orders/{config.py,adapters/,api/,models/,monitoring/,streams_listener.py}
+
+# Direction: No core → service imports
+rg "from services\." vitruvyan_core/core/governance/memory_orders/ && echo "❌ VIOLATION" || echo "✅ OK"
+```
+
+---
+
 ## Repo layout (what exists here)
 - `vitruvyan_core/`: the reusable OS core (agents, bus, governance primitives, contracts)
 - `services/`: reference microservices (examples of how to wire the core in a running system)
