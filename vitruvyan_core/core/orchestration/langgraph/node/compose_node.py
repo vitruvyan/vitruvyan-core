@@ -5,7 +5,7 @@ from core.cognitive.vitruvyan_proprietary.vee.vee_engine import VEEEngine
 from core.orchestration.langgraph.node.emotion_detector import detect_emotion, format_emotion_aware_response
 from core.foundation.persistence.postgres_agent import PostgresAgent
 from core.orchestration.langgraph.shared.state_preserv import merge_ux_into_response  # 🎭 UX injection helper
-from core.foundation.llm.conversational_llm import ConversationalLLM  # 🧠 LLM for natural conversations
+from core.llm.conversational_llm import ConversationalLLM  # 🧠 LLM for natural conversations
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
