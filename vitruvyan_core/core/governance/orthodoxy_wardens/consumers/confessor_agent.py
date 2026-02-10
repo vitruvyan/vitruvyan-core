@@ -14,14 +14,14 @@ from langgraph.graph import StateGraph, END
 from core.llm.llm_interface import LLMInterface
 
 # Import monitoring tools (NEW GOVERNANCE STRUCTURE)
-from core.governance.orthodoxy_wardens.code_analyzer import CodeAnalyzer
+from core.governance.orthodoxy_wardens.consumers.code_analyzer import CodeAnalyzer
 # LEGACY: These 3 files moved to _legacy/ during FASE 0 refactoring (Feb 9, 2026)
 # They will be eliminated entirely when confessor is rewritten as pure consumer (FASE 3)
 from core.governance.orthodoxy_wardens._legacy.chronicler_agent import SystemMonitor
 from core.governance.orthodoxy_wardens._legacy.docker_manager import DockerManager
 from core.governance.orthodoxy_wardens._legacy.git_monitor import GitMonitor
-from core.governance.orthodoxy_wardens.inquisitor_agent import ComplianceValidator
-from core.governance.orthodoxy_wardens.penitent_agent import AutoCorrector
+from core.governance.orthodoxy_wardens.consumers.inquisitor_agent import ComplianceValidator
+from core.governance.orthodoxy_wardens.consumers.penitent_agent import AutoCorrector
 # TODO: disaster_prevention moved to different location - to be implemented
 # from domains.trade.agents.disaster_prevention import get_disaster_prevention_agent
 

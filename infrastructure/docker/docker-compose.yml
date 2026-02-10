@@ -6,7 +6,11 @@
 # Ports:     9xxx (external) → 8xxx (internal)
 # Volumes:   <service>_data_core
 # Database:  vitruvyan_core / vitruvyan_core_user
+# Portainer: vitruvyan-core stack
 # ============================================================================
+
+# Stack name (for Portainer visibility)
+name: vitruvyan-core
 
 services:
 
@@ -426,7 +430,7 @@ services:
     networks:
       - core-net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8016/health/memory"]
+      test: ["CMD", "curl", "-f", "http://localhost:8016/health"]
       interval: 30s
       timeout: 10s
       retries: 3

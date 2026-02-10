@@ -19,7 +19,7 @@ from api_orthodoxy_wardens.models.schemas import (
 )
 
 # Import workflow orchestration
-from api_orthodoxy_wardens.core.workflows import (
+from api_orthodoxy_wardens._legacy.core.workflows import (
     run_confession_workflow,
     run_purification_ritual
 )

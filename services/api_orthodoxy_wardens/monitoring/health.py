@@ -16,7 +16,7 @@ from core.synaptic_conclave.transport.streams import StreamBus
 from core.synaptic_conclave.events.event_envelope import CognitiveEvent
 
 # Import event handlers
-from api_orthodoxy_wardens.core.event_handlers import (
+from api_orthodoxy_wardens._legacy.core.event_handlers import (
     handle_audit_request,
     handle_system_events
 )
