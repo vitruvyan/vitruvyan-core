@@ -66,11 +66,13 @@ def orthodoxy_node(state: Dict[str, Any]) -> Dict[str, Any]:
         
         # Publish audit request event
         audit_event = CognitiveEvent(
-            event_type="system.audit.requested",
-            emitter="langgraph_orthodoxy_node",
-            target="orthodoxy_wardens",
-            payload=audit_payload,
-            timestamp=datetime.utcnow().isoformat(),
+            type="system.audit.requested",
+            source="langgraph_orthodoxy_node",
+            payload={
+                **audit_payload,
+                "target": "orthodoxy_wardens"
+            },
+            timestamp=datetime.utcnow(),
             correlation_id=f"graph_audit_{user_id}_{int(session_start)}"
         )
         
