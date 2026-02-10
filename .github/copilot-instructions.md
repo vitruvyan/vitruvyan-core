@@ -22,67 +22,249 @@ This file is the **high-signal, stable context** Copilot needs to work productiv
 
 ---
 
-## Sacred Orders Refactoring (Active Work - Feb 2026)
-**Context**: Architectural refactoring in progress following the SACRED_ORDER_PATTERN (two-level architecture).
+## Sacred Orders Refactoring — NON-NEGOTIABLE PATTERN (Feb 2026)
+**All Sacred Orders MUST follow this two-level architecture. Pattern is mandatory, not optional.**
 
 ### Refactoring Status
-| Sacred Order | LIVELLO 1 (Pure Domain) | LIVELLO 2 (Service) | Status |
-|--------------|-------------------------|---------------------|--------|
-| **Orthodoxy Wardens** | ✅ Complete | ✅ Complete | Template (Truth) |
-| **Vault Keepers** | ✅ Complete | ✅ Complete | Template (Memory) |
-| **Memory Orders** | 🔄 In Progress | 🔄 In Progress | Current Work |
-| Babel Gardens | ⏳ Planned | ⏳ Planned | Feb 2026 |
-| Codex Hunters | ⏳ Planned | ⏳ Planned | Feb 2026 |
-| Pattern Weavers | ⏳ Planned | ⏳ Planned | Feb 2026 |
+| Sacred Order | LIVELLO 1 (Pure Domain) | LIVELLO 2 (Service) | Conformance | Reference |
+|--------------|-------------------------|---------------------|-------------|-----------|
+| **Memory Orders** | ✅ Complete | ✅ Complete | **100%** | Template (Coherence) |
+| **Vault Keepers** | ✅ Complete | ✅ Complete | **100%** | Template (Memory/Archival) |
+| **Orthodoxy Wardens** | ✅ Complete | ✅ Complete | **95%** | Template (Truth/Governance) |
+| Babel Gardens | ⏳ Planned | ⏳ Planned | 0% | 832 lines main.py |
+| Codex Hunters | ⏳ Planned | ⏳ Planned | 0% | 987 lines main.py |
+| Pattern Weavers | ⏳ Planned | ⏳ Planned | 0% | 163 lines main.py |
 
-### Two-Level Pattern (Sacred Orders Only)
-**LIVELLO 1** (`vitruvyan_core/core/governance/<order>/`): Pure Python, no I/O, testable standalone
-- `domain/` — frozen dataclasses (immutable DTOs)
-- `consumers/` — pure `process()` functions (input dict → output dataclass, ZERO I/O)
-- `governance/` — rules, classifiers, engines (data-driven, not behavior)
-- `events/` — channel constants, event envelopes
-- `monitoring/` — metric NAME constants (no prometheus_client)
-- `philosophy/charter.md` — identity, mandate, invariants
-- `_legacy/` — pre-refactoring files (frozen, do not modify)
+**Last updated**: Feb 10, 2026 (3/6 Sacred Orders conformant, 3 pending)
 
-**LIVELLO 2** (`services/api_<order>/`): Infrastructure, bus, database, API, Docker
-- `main.py` — < 100 lines (bootstrap only)
-- `config.py` — ALL os.getenv() centralized
-- `adapters/bus_adapter.py` — orchestrates LIVELLO 1 consumers + emits events
-- `adapters/persistence.py` — ONLY I/O point (PostgresAgent, QdrantAgent)
-- `api/routes.py` — thin HTTP endpoints (validate → delegate → return)
-- `models/schemas.py` — Pydantic request/response models
-- `streams_listener.py` — Redis Streams entry point
+---
 
-**Direction rule**: `service → core` (ONE-WAY). LIVELLO 2 imports LIVELLO 1, never reverse.
+### SACRED_ORDER_PATTERN — Mandatory Structure
 
-### Key Documents
-- **Pattern**: `vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md` (canonical blueprint)
-- **Templates**: 
-  - Orthodoxy Wardens: `vitruvyan_core/core/governance/orthodoxy_wardens/` (Truth/Governance example)
-  - Vault Keepers: `vitruvyan_core/core/governance/vault_keepers/` (Memory/Archival example)
-- **Service Pattern**: `services/SERVICE_PATTERN.md` (LIVELLO 2 structure)
-- **Refactoring Plan**: `SACRED_ORDERS_REFACTORING_PLAN.md` (roadmap + checklist)
+#### LIVELLO 1: Pure Domain Layer (`vitruvyan_core/core/governance/<order>/`)
+**Zero I/O. Pure Python. Testable standalone. No external dependencies (PostgreSQL/Redis/Qdrant/httpx).**
 
-### Active Refactoring Rules (Memory Orders - Current)
-When working on Memory Orders refactoring:
-1. **FASE 0**: Move impure files to `_legacy/` (coherence.py, rag_health.py, phrase_sync.py)
-2. **FASE 1**: Create full LIVELLO 1 structure (10 subdirs: domain/, consumers/, governance/, events/, monitoring/, philosophy/, docs/, examples/, tests/, _legacy/)
-3. **FASE 2**: Create LIVELLO 2 adapters (bus_adapter.py orchestrates consumers, persistence.py handles all I/O)
-4. **FASE 3**: Reduce main.py to < 100 lines (only FastAPI bootstrap + adapter registration)
-5. **Verify**: No PostgresAgent/QdrantAgent/httpx in LIVELLO 1, all imports flow service → core
-
-### Quick Verification Checklist
-```bash
-# LIVELLO 1: Pure imports (no infra dependencies)
-python3 -c "from vitruvyan_core.core.governance.memory_orders.consumers import CoherenceAnalyzer; print('✅ Pure')"
-
-# LIVELLO 2: Service structure complete
-ls services/api_memory_orders/{config.py,adapters/,api/,models/,monitoring/,streams_listener.py}
-
-# Direction: No core → service imports
-rg "from services\." vitruvyan_core/core/governance/memory_orders/ && echo "❌ VIOLATION" || echo "✅ OK"
+**Required directories** (create ALL 10):
 ```
+vitruvyan_core/core/governance/<order>/
+├── domain/              # Frozen dataclasses (immutable DTOs)
+├── consumers/           # Pure process() functions (dict → dataclass, NO I/O)
+├── governance/          # Rules, classifiers, engines (data-driven)
+├── events/              # Channel name constants, event envelopes
+├── monitoring/          # Metric NAME constants ONLY (no prometheus_client)
+├── philosophy/          # charter.md (identity, mandate, invariants)
+│   └── charter.md
+├── docs/                # Implementation notes, design decisions
+├── examples/            # Usage examples (pure Python, no service dependencies)
+├── tests/               # Unit tests (pytest, no Docker/Redis/Postgres)
+└── _legacy/             # Pre-refactoring code (frozen archive, read-only)
+```
+
+**Import rules (LIVELLO 1)**:
+- ✅ Relative imports ONLY: `from .domain import Event`, `from ..events import CHANNELS`
+- ✅ Core utilities: `from core.agents.postgres_agent import PostgresAgent` (TYPE HINTS ONLY, never instantiate)
+- ❌ FORBIDDEN: `import httpx`, `import psycopg2`, `import qdrant_client`, `from services.*`
+- ❌ FORBIDDEN: Instantiate PostgresAgent/QdrantAgent/StreamBus in consumers
+- ❌ FORBIDDEN: Absolute imports across Sacred Orders: `from core.governance.orthodoxy_wardens.*`
+
+#### LIVELLO 2: Service Layer (`services/api_<order>/`)
+**Infrastructure, I/O, HTTP, Docker. Orchestrates LIVELLO 1 via adapters.**
+
+**Required structure** (create ALL):
+```
+services/api_<order>/
+├── main.py              # < 100 lines (FastAPI bootstrap ONLY)
+├── config.py            # ALL os.getenv() centralized
+├── adapters/
+│   ├── bus_adapter.py   # Orchestrates LIVELLO 1 consumers + StreamBus
+│   └── persistence.py   # ONLY I/O point (PostgresAgent, QdrantAgent)
+├── api/
+│   └── routes.py        # Thin HTTP endpoints (validate → delegate → return)
+├── models/
+│   └── schemas.py       # Pydantic request/response models
+├── monitoring/
+│   └── health.py        # Health checks, Prometheus metrics
+├── streams_listener.py  # Redis Streams consumer (background process)
+├── Dockerfile           # Container definition
+├── requirements.txt     # Python dependencies
+└── _legacy/             # Pre-refactoring service code (frozen archive)
+```
+
+**Import rules (LIVELLO 2)**:
+- ✅ Import LIVELLO 1: `from core.governance.<order>.consumers import MyConsumer`
+- ✅ Import agents: `from core.agents.postgres_agent import PostgresAgent`
+- ✅ Import bus: `from core.synaptic_conclave.transport.streams import StreamBus`
+- ❌ FORBIDDEN: LIVELLO 1 imports LIVELLO 2 (service → core only, ONE-WAY)
+- ❌ FORBIDDEN: Cross-service imports: `from api_orthodoxy_wardens.*` in api_vault_keepers
+
+**main.py target**: < 100 lines (87 lines Orthodoxy, 59 lines Vault, 93 lines Memory)
+
+---
+
+### Step-by-Step Refactoring Procedure (MANDATORY)
+
+**When starting a Sacred Order refactoring, follow this exact sequence:**
+
+#### FASE 0: Audit & Archive Legacy Code
+1. **List root directory**: `ls -lh vitruvyan_core/core/governance/<order>/`
+2. **Identify violations**: Any `.py` files NOT in subdirectories = violation
+3. **Move to consumers/**: Large Python files (agents, analyzers, processors) → `consumers/`
+4. **Archive impure code**: Files with I/O/HTTP/DB logic → `_legacy/`
+5. **Update cross-file imports**: Search for `from core.governance.<order>.<filename>` and fix paths
+
+#### FASE 1: Create LIVELLO 1 Structure
+1. **Create 10 directories**: `mkdir -p {domain,consumers,governance,events,monitoring,philosophy,docs,examples,tests,_legacy}`
+2. **Create charter.md**: Document Sacred Order identity, mandate, invariants
+3. **Create __init__.py**: All directories need `__init__.py` (empty or with `__all__`)
+4. **Verify isolation**: `python3 -c "from core.governance.<order>.consumers import X; print('✅ Pure')"` (must work without Redis/Postgres/Docker)
+
+#### FASE 2: Create LIVELLO 2 Adapters
+1. **Create `adapters/bus_adapter.py`**:
+   - Instantiate LIVELLO 1 consumers
+   - Orchestrate consumer calls
+   - Emit events to StreamBus
+   - NO business logic (delegate to consumers)
+2. **Create `adapters/persistence.py`**:
+   - Instantiate PostgresAgent/QdrantAgent
+   - Wrapper methods for DB operations
+   - ALL I/O must go through this adapter
+3. **Verify**: No `PostgresAgent()` or `QdrantAgent()` in main.py or routes.py
+
+#### FASE 3: Reduce main.py to < 100 Lines
+1. **Current size**: `wc -l services/api_<order>/main.py`
+2. **Condense docstring**: Max 3 lines (title, description, version)
+3. **Consolidate imports**: Group by category (stdlib, fastapi, local)
+4. **Remove decorative comments**: No ASCII art, no `# ── Section ──` separators
+5. **Consolidate logging**: Max 4-5 logger.info calls in startup function
+6. **Simplify startup**: Global declarations in 1-3 lines, startup logic < 15 lines
+7. **Remove redundant endpoints**: /health handled by api/routes.py, remove duplicates
+8. **Final check**: `wc -l main.py` must show < 100
+
+#### FASE 4: Clean Service Layer
+1. **Archive extra directories**: `mkdir -p _legacy/ && mv {core,docs,examples,utils} _legacy/` (if they exist)
+2. **Update import paths**: `rg "from api_<order>.core" -l` → change to `_legacy.core`
+3. **Verify structure**: `ls services/api_<order>/` should show ONLY: main.py, config.py, adapters/, api/, models/, monitoring/, streams_listener.py, Dockerfile, requirements.txt, _legacy/
+
+#### FASE 5: Test & Deploy
+1. **Rebuild Docker**: `cd infrastructure/docker && docker compose build <order> <order>_listener`
+2. **Restart containers**: `docker stop core_<order> core_<order>_listener && docker rm core_<order> core_<order>_listener`
+3. **Deploy**: `docker compose up -d --no-deps <order> <order>_listener`
+4. **Verify logs**: `docker logs core_<order> --tail=50` (no ModuleNotFoundError, no import errors)
+5. **Test endpoints**: `curl http://localhost:<port>/health` (200 OK)
+
+#### FASE 6: Git Commit
+```bash
+git add -A
+git commit -m "refactor(<order>): SACRED_ORDER_PATTERN conformance - X% → Y%
+
+LIVELLO 1:
+- Moved N files (X,XXX lines) to consumers/
+- Created 10-directory structure
+
+LIVELLO 2:
+- main.py: X → Y lines (-Z%)
+- Archived legacy code to _legacy/
+- Created adapters/bus_adapter.py, adapters/persistence.py
+
+Test: Docker healthy, endpoints 200 OK"
+git push origin main
+```
+
+---
+
+### Verification Checklist (Run After Every Refactoring)
+
+**LIVELLO 1 Compliance**:
+```bash
+# 1. Structure complete (10 directories)
+ls vitruvyan_core/core/governance/<order>/ | grep -E "domain|consumers|governance|events|monitoring|philosophy|docs|examples|tests|_legacy" | wc -l
+# Expected: 10
+
+# 2. No root Python files (except __init__.py)
+find vitruvyan_core/core/governance/<order>/ -maxdepth 1 -name "*.py" ! -name "__init__.py"
+# Expected: (empty)
+
+# 3. Pure imports (no infrastructure dependencies)
+python3 -c "from core.governance.<order>.consumers import *; print('✅ Pure')"
+# Expected: ✅ Pure (no errors)
+
+# 4. No service imports in LIVELLO 1
+rg "from services\." vitruvyan_core/core/governance/<order>/ && echo "❌ VIOLATION" || echo "✅ OK"
+# Expected: ✅ OK
+```
+
+**LIVELLO 2 Compliance**:
+```bash
+# 1. main.py size < 100 lines
+wc -l services/api_<order>/main.py
+# Expected: < 100
+
+# 2. Required files exist
+ls services/api_<order>/{config.py,adapters/bus_adapter.py,adapters/persistence.py,api/routes.py}
+# Expected: all exist
+
+# 3. No PostgresAgent/QdrantAgent in main.py
+rg "PostgresAgent\(\)|QdrantAgent\(\)" services/api_<order>/main.py && echo "❌ VIOLATION" || echo "✅ OK"
+# Expected: ✅ OK
+
+# 4. Docker container healthy
+docker ps --filter "name=core_<order>" --format "{{.Status}}"
+# Expected: Up X minutes (healthy)
+```
+
+---
+
+### Templates & Reference Implementations
+
+**Use these as copy-paste starting points for new refactorings:**
+
+1. **Memory Orders** (100% conformant): 
+   - LIVELLO 1: `vitruvyan_core/core/governance/memory_orders/`
+   - LIVELLO 2: `services/api_memory_orders/`
+   - main.py: 93 lines ✅
+   - Best for: Coherence analysis, RAG, semantic operations
+
+2. **Vault Keepers** (100% conformant):
+   - LIVELLO 1: `vitruvyan_core/core/governance/vault_keepers/`
+   - LIVELLO 2: `services/api_vault_keepers/`
+   - main.py: 59 lines ✅
+   - Best for: Archival, persistence, snapshot operations
+
+3. **Orthodoxy Wardens** (95% conformant):
+   - LIVELLO 1: `vitruvyan_core/core/governance/orthodoxy_wardens/`
+   - LIVELLO 2: `services/api_orthodoxy_wardens/`
+   - main.py: 87 lines ✅
+   - Best for: Governance, validation, audit operations
+
+**Pattern documents**:
+- `vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md` (canonical specification)
+- `services/SERVICE_PATTERN.md` (LIVELLO 2 structure)
+- `SACRED_ORDERS_REFACTORING_PLAN.md` (roadmap + checklist)
+
+---
+
+### Common Mistakes to Avoid
+
+❌ **WRONG**: Creating only 5-6 directories (missing philosophy/, docs/, examples/, tests/)
+✅ **RIGHT**: Create all 10 directories, even if some are empty (future-proofing)
+
+❌ **WRONG**: Leaving `.py` files in `vitruvyan_core/core/governance/<order>/` root
+✅ **RIGHT**: ALL code files in subdirectories (consumers/, governance/, domain/)
+
+❌ **WRONG**: `from core.governance.orthodoxy_wardens.code_analyzer import X` in LIVELLO 1
+✅ **RIGHT**: `from .consumers.code_analyzer import X` (relative imports)
+
+❌ **WRONG**: Instantiating `PostgresAgent()` in consumers/
+✅ **RIGHT**: Pass database connection as function parameter (dependency injection)
+
+❌ **WRONG**: main.py 150 lines with ASCII art, verbose logging, inline logic
+✅ **RIGHT**: main.py < 100 lines, minimal comments, delegate to adapters/
+
+❌ **WRONG**: Importing across Sacred Orders: `from core.governance.vault_keepers.* in orthodoxy_wardens`
+✅ **RIGHT**: Communicate via StreamBus events (channel: `vault.archive.completed`)
+
+❌ **WRONG**: `docker compose up -d` fails with "container name conflict"
+✅ **RIGHT**: `docker stop core_<order> && docker rm core_<order>` before recreating
 
 ---
 
