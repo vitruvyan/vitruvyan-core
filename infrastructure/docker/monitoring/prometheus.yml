@@ -1,0 +1,66 @@
+# Prometheus Configuration for Vitruvyan Core
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'vitruvyan-core'
+
+rule_files:
+  - /etc/prometheus/alerts/*.yml
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node_exporter:9100']
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres_exporter:9187']
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis_exporter:9121']
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+  - job_name: 'memory_orders'
+    static_configs:
+      - targets: ['memory_orders:8000']
+    metrics_path: /metrics
+  - job_name: 'vault_keepers'
+    static_configs:
+      - targets: ['vault_keepers:8000']
+    metrics_path: /metrics
+  - job_name: 'orthodoxy_wardens'
+    static_configs:
+      - targets: ['orthodoxy_wardens:8000']
+    metrics_path: /metrics
+  - job_name: 'babel_gardens'
+    static_configs:
+      - targets: ['babel_gardens:8000']
+    metrics_path: /metrics
+  - job_name: 'codex_hunters'
+    static_configs:
+      - targets: ['codex_hunters:8000']
+    metrics_path: /metrics
+  - job_name: 'pattern_weavers'
+    static_configs:
+      - targets: ['pattern_weavers:8000']
+    metrics_path: /metrics
+  - job_name: 'embedding'
+    static_configs:
+      - targets: ['embedding:8000']
+    metrics_path: /metrics
+  - job_name: 'graph'
+    static_configs:
+      - targets: ['graph:8000']
+    metrics_path: /metrics
+  - job_name: 'neural_engine'
+    static_configs:
+      - targets: ['neural_engine:8000']
+    metrics_path: /metrics
+  - job_name: 'conclave'
+    static_configs:
+      - targets: ['conclave:8000']
+    metrics_path: /metrics
