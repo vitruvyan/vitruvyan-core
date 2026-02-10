@@ -1,15 +1,30 @@
+# ============================================================================
+# VITRUVYAN CORE — Docker Compose Stack
+# ============================================================================
+# Naming:    core_<service>
+# Network:   core-net
+# Ports:     9xxx (external) → 8xxx (internal)
+# Volumes:   <service>_data_core
+# Database:  vitruvyan_core / vitruvyan_core_user
+# ============================================================================
+
 services:
+
+  # ══════════════════════════════════════════════════════════════════════════
+  #  INFRASTRUCTURE — Redis, PostgreSQL, Qdrant, Keycloak
+  # ══════════════════════════════════════════════════════════════════════════
+
   redis:
     image: redis:7.2-alpine
-    container_name: omni_redis
+    container_name: core_redis
     restart: always
     command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save 60 1
     ports:
       - "9379:6379"
     volumes:
-      - redis_data_omni:/data
+      - redis_data_core:/data
     networks:
-      - omni-net
+      - core-net
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -18,29 +33,41 @@ services:
 
   postgres:
     image: postgres:16-alpine
-    container_name: omni_postgres
+    container_name: core_postgres
     restart: always
     environment:
-      POSTGRES_DB: vitruvyan_omni_omni
-      POSTGRES_USER: vitruvyan_omni_user
-      POSTGRES_PASSWORD: "@Caravaggio971_omni"
+      POSTGRES_DB: vitruvyan_core
+      POSTGRES_USER: vitruvyan_core_user
+      POSTGRES_PASSWORD: "@Caravaggio971_core"
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
     ports:
       - "9432:5432"
     volumes:
-      - postgres_data_omni:/var/lib/postgresql/data
+      - postgres_data_core:/var/lib/postgresql/data
     networks:
-      - omni-net
+      - core-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vitruvyan_omni_user -d vitruvyan_omni"]
+      test: ["CMD-SHELL", "pg_isready -U vitruvyan_core_user -d vitruvyan_core"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
 
+  qdrant:
+    image: qdrant/qdrant:v1.15.0
+    container_name: core_qdrant
+    restart: always
+    ports:
+      - "9333:6333"
+      - "9334:6334"
+    volumes:
+      - qdrant_data_core:/qdrant/storage
+    networks:
+      - core-net
+
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.1
-    container_name: keycloak
+    container_name: core_keycloak
     restart: always
     command:
       - start
@@ -59,130 +86,118 @@ services:
     ports:
       - "9080:8080"
     networks:
-      - omni-net
+      - core-net
 
-  qdrant:
-    image: qdrant/qdrant:v1.15.0
-    container_name: omni_qdrant
-    restart: always
-    ports:
-      - "9333:6333"
-      - "9334:6334"
-    volumes:
-      - qdrant_data_omni:/qdrant/storage
-    networks:
-      - omni-net
 
-  # Embedding Service - MiniLM-L6-v2 API (port 8010)
-  vitruvyan_api_embedding:
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_embedding
-    container_name: omni_api_embedding
-    networks:
-      - omni-net
-    depends_on:
-      - redis
-      - postgres
-      - qdrant
-    ports:
-      - "9010:8010"
-    restart: unless-stopped
-    environment:
-      - PYTHONPATH=/app
-      - POSTGRES_HOST=${POSTGRES_HOST:-omni_postgres}
-      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_omni}
-      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_omni_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971}
-      - QDRANT_URL=${QDRANT_URL_OMNI:-http://omni_qdrant:6333}
-      - REDIS_URL=${REDIS_URL:-redis://omni_redis:6379}
+  # ══════════════════════════════════════════════════════════════════════════
+  #  ORCHESTRATION — Graph Engine, Neural Engine, Embedding
+  # ══════════════════════════════════════════════════════════════════════════
 
-  # DEPRECATED SERVICES (Removed from Core)
-  # - vitruvyan_api_sentiment: Replaced by Babel Gardens
-  # - vitruvyan_api_semantic: Deprecated and removed
-  # - notion: Not core (integration-specific)
-
-  vitruvyan_api_graph:
+  graph:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_graph
-    container_name: omni_api_graph
+    container_name: core_graph
+    restart: unless-stopped
+    ports:
+      - "9004:8004"
     environment:
       - LANGGRAPH_ENABLED=0
-      - DISPATCHER_URL=http://vitruvyan_api:8000/dispatch
-      - DISPATCHER_HEALTH_URL=http://vitruvyan_api:8000/health
+      - DISPATCHER_URL=http://graph:8004/dispatch
+      - DISPATCHER_HEALTH_URL=http://graph:8004/health
       - GRAPH_HTTP_TIMEOUT=120
-      - POSTGRES_HOST=${POSTGRES_HOST_OMNI:-omni_postgres}
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB_OMNI:-vitruvyan_omni}
-      - POSTGRES_USER=${POSTGRES_USER_OMNI:-vitruvyan_omni_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_OMNI:-@Caravaggio971_omni}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GRAPH_LLM_MODEL=gpt-4o-mini
-      - QDRANT_HOST=${QDRANT_HOST_OMNI:-omni_qdrant}
-      - QDRANT_PORT=${QDRANT_PORT_OMNI:-6333}
-      - NE_BASE_URL=http://vitruvyan_api_neural:8003
-      - SENTIMENT_API_URL=http://vitruvyan_babel_gardens:8009
-      - EMBEDDING_API_URL=http://vitruvyan_api_embedding:8010
-      - REDIS_HOST=omni_redis
+      - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
+      - QDRANT_PORT=${QDRANT_PORT:-6333}
+      - NE_BASE_URL=http://neural_engine:8003
+      - SENTIMENT_API_URL=http://babel_gardens:8009
+      - EMBEDDING_API_URL=http://embedding:8010
+      - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       - LLM_CACHE_ENABLED=true
       - LLM_CACHE_TTL_HOURS=24
       - LLM_CACHE_MAX_SIZE=10000
-      # VSGS (Semantic Grounding) Configuration - PR-C
+      # VSGS (Semantic Grounding)
       - VSGS_ENABLED=${VSGS_ENABLED:-0}
       - VSGS_GROUNDING_TOPK=${VSGS_GROUNDING_TOPK:-3}
       - VSGS_PROMPT_BUDGET_CHARS=${VSGS_PROMPT_BUDGET_CHARS:-800}
       - VSGS_STORE_EVERY_N=${VSGS_STORE_EVERY_N:-1}
-    ports:
-      - "9004:8004"
-    restart: unless-stopped
     depends_on:
       - redis
       - postgres
     networks:
-      - omni-net
+      - core-net
 
-  # DEPRECATED SERVICES (Financial vertical - removed from Core)
-  # - vitruvyan_api_sentiment: Replaced by Babel Gardens
-  # - vitruvyan_api_semantic: Deprecated and removed
-  # - vitruvyan_portfolio_guardian: Financial-specific portfolio monitoring  
-  
-  # 🧠 NEURAL ENGINE - Domain-Agnostic Ranking Service
-  vitruvyan_api_neural:
+  neural_engine:
     build:
       context: ../..
       dockerfile: services/api_neural_engine/Dockerfile
-    container_name: omni_api_neural
+    container_name: core_neural_engine
+    restart: unless-stopped
     ports:
       - "9003:8003"
     environment:
       PYTHONPATH: /app
       LOG_LEVEL: info
       DOMAIN: mock
-    restart: unless-stopped
     networks:
-      - omni-net
+      - core-net
 
-  # 🏛️ ORTHODOXY WARDENS - Sacred Compliance & Divine Order
-  vitruvyan_api_orthodoxy_wardens:
+  embedding:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_embedding
+    container_name: core_embedding
+    restart: unless-stopped
+    ports:
+      - "9010:8010"
+    environment:
+      - PYTHONPATH=/app
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
+      - QDRANT_URL=${QDRANT_URL:-http://core_qdrant:6333}
+      - REDIS_URL=${REDIS_URL:-redis://core_redis:6379}
+    depends_on:
+      - redis
+      - postgres
+      - qdrant
+    networks:
+      - core-net
+
+
+  # ══════════════════════════════════════════════════════════════════════════
+  #  SACRED ORDERS — Orthodoxy Wardens, Vault Keepers, Synaptic Conclave
+  # ══════════════════════════════════════════════════════════════════════════
+
+  orthodoxy_wardens:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.orthodoxy_wardens
-    container_name: omni_api_orthodoxy_wardens
+    container_name: core_orthodoxy_wardens
+    restart: unless-stopped
+    ports:
+      - "9006:8006"
     environment:
       PYTHONPATH: /app
-      POSTGRES_HOST: ${POSTGRES_HOST_OMNI:-omni_postgres}
-      POSTGRES_PORT: ${POSTGRES_PORT_OMNI:-5432}
-      POSTGRES_DB: ${POSTGRES_DB_OMNI:-vitruvyan_omni}
-      POSTGRES_USER: ${POSTGRES_USER_OMNI:-vitruvyan_omni_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_OMNI:-@Caravaggio971_omni}
+      POSTGRES_HOST: ${POSTGRES_HOST:-core_postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-vitruvyan_core}
+      POSTGRES_USER: ${POSTGRES_USER:-vitruvyan_core_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-@Caravaggio971_core}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      REDIS_HOST: omni_redis
+      REDIS_HOST: core_redis
       REDIS_PORT: 6379
-      QDRANT_HOST: ${QDRANT_HOST_OMNI:-omni_qdrant}
-      QDRANT_PORT: ${QDRANT_PORT_OMNI:-6333}
+      QDRANT_HOST: ${QDRANT_HOST:-core_qdrant}
+      QDRANT_PORT: ${QDRANT_PORT:-6333}
       SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL}
       # Sacred Configuration
       ORTHODOXY_MONITORING_INTERVAL: 300
@@ -190,20 +205,14 @@ services:
       SACRED_COMPLIANCE_THRESHOLD: 0.8
       CONFESSION_AUTO_ABSOLUTION: "false"
     volumes:
-      # Mount only API code for hot-reload (FASE 4: flat services/ layout)
       - ../../services/api_orthodoxy_wardens:/app/api_orthodoxy_wardens:ro
       - ../../vitruvyan_core/core:/app/core:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro  # For sacred Docker operations
-    ports:
-      - "9006:8006"
-    restart: unless-stopped
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
       - redis
       - qdrant
-      # TEMPORARY: Commented for P1 FASE 1 testing (Feb 8, 2026)
-      # - vitruvyan_api_graph
     networks:
-      - omni-net
+      - core-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8006/divine-health"]
       interval: 30s
@@ -211,371 +220,38 @@ services:
       retries: 3
       start_period: 10s
 
-
-
-  # 🛡️ PORTFOLIO GUARDIAN: DISABLED - Legacy financial component from vertical
-  # Kept as template for future domain-specific implementations
-  # vitruvyan_portfolio_guardian:
-  #   build:
-  #     context: ../..
-  #     dockerfile: infrastructure/docker/dockerfiles/Dockerfile.portfolio_guardian
-  #   container_name: omni_portfolio_guardian
-  #   restart: unless-stopped
-  #   ports:
-  #     - "9011:8011"
-  #   environment:
-  #     - POSTGRES_HOST=${POSTGRES_HOST_OMNI:-omni_postgres}
-  #     - POSTGRES_PORT=5432
-  #     - POSTGRES_DB=${POSTGRES_DB_OMNI:-vitruvyan_omni}
-  #     - POSTGRES_USER=${POSTGRES_USER_OMNI:-vitruvyan_omni_user}
-  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_OMNI:-@Caravaggio971_omni}
-  #     - REDIS_HOST=omni_redis
-  #     - REDIS_PORT=6379
-  #     - OPENAI_API_KEY=${OPENAI_API_KEY}
-  #     - PORTFOLIO_GUARDIAN_MODE=production
-  #     - GUARDIAN_RISK_THRESHOLD=0.15
-  #     - GUARDIAN_PROTECTION_LEVEL=maximum
-  #     - GUARDIAN_UPDATE_INTERVAL=300
-  #     - GUARDIAN_ALERT_CHANNELS=log,redis
-  #     - AUDIT_ENGINE_URL=http://omni_api_orthodoxy_wardens:8006
-  #   networks:
-  #     - omni-net
-  #   depends_on:
-  #     - redis
-  #     - vitruvyan_api_orthodoxy_wardens
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:8011/guardian/health"]
-  #     interval: 60s
-  #     timeout: 15s
-  #     retries: 3
-  #     start_period: 10s
-
-  # 🌿 Babel Gardens - Sacred Linguistic Unity (Replaces Gemma Cognitive Layer)
-  vitruvyan_babel_gardens:
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_babel_gardens
-    container_name: omni_babel_gardens
-    restart: unless-stopped
-    ports:
-      - "9009:8009"
-    environment:
-      # Redis Cognitive Bus connection (EPOCH II)
-      - REDIS_URL=redis://omni_redis:6379/0
-      - REDIS_HOST=omni_redis
-      - REDIS_PORT=6379
-      
-      # Database connections (PostgreSQL in container)
-      - POSTGRES_HOST=${POSTGRES_HOST_OMNI:-omni_postgres}
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB_OMNI:-vitruvyan_omni}
-      - POSTGRES_USER=${POSTGRES_USER_OMNI:-vitruvyan_omni_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_OMNI:-@Caravaggio971_omni}
-      - QDRANT_URL=${QDRANT_URL_OMNI:-http://omni_qdrant:6333}
-      
-      # Service URLs for sacred bridge module
-      - SEMANTIC_ENGINE_URL=http://omni_api_semantic:8002
-      - NEURAL_ENGINE_URL=http://omni_api_neural:8003
-      
-      # Sacred Model configuration
-      - HUGGINGFACE_HUB_CACHE=/app/models
-      - TRANSFORMERS_CACHE=/app/models
-      - TORCH_HOME=/app/models
-      - HUGGINGFACE_HUB_TOKEN=${HUGGINGFACE_HUB_TOKEN}
-      
-      # Sacred Performance settings
-      - CUDA_VISIBLE_DEVICES=
-      - OMP_NUM_THREADS=4
-      - TOKENIZERS_PARALLELISM=false
-      
-      # Sacred Logging
-      - PYTHONUNBUFFERED=1
-      - LOG_LEVEL=INFO
-      
-    volumes:
-      # Sacred Model cache (persistent across restarts)
-      - babel_gardens_models:/app/models
-      - babel_gardens_logs:/app/logs
-      
-    networks:
-      - omni-net
-    depends_on:
-      - redis
-      - postgres
-      - qdrant
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8009/sacred-health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s          # Allow time for sacred model loading
-
-  # 🕯 Synaptic Conclave Core - Sacred Communication Hub (PHASE 3)
-  api_conclave:
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_conclave
-    container_name: omni_api_conclave
-    restart: unless-stopped
-    ports:
-      - "9012:8012"
-    environment:
-      # Redis connection for semantic event bus
-      - REDIS_URL=redis://omni_redis:6379/0
-      - REDIS_HOST=omni_redis
-      - CONCLAVE_PORT=8012
-      
-      # Database connections
-      - POSTGRES_HOST=${POSTGRES_HOST_OMNI:-omni_postgres}
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      
-      # Sacred Order endpoints for routing
-      - BABEL_GARDENS_URL=http://vitruvyan_babel_gardens:8009
-      - MEMORY_ORDERS_URL=http://vitruvyan_memory_orders:8016
-      - ORTHODOXY_WARDENS_URL=http://vitruvyan_api_orthodoxy_wardens:8006
-      - VAULT_KEEPERS_URL=http://vitruvyan_vault_keepers:8007
-      - SEMANTIC_ENGINE_URL=http://vitruvyan_api_semantic:8002
-      - NEURAL_ENGINE_URL=http://vitruvyan_api_neural:8003
-      # PHASE 1: Migrated to Babel Gardens unified API
-      - SENTIMENT_ENGINE_URL=http://vitruvyan_babel_gardens:8009
-      - SENTIMENT_API_URL=http://vitruvyan_babel_gardens:8009
-      - GRAPH_ORCHESTRATOR_URL=http://vitruvyan_api_graph:8004
-      
-      # Conclave configuration
-      - CONCLAVE_HOST=0.0.0.0
-      - CONCLAVE_PORT=8012
-      - PULSE_INTERVAL=30
-      - LOG_LEVEL=INFO
-      - PYTHONUNBUFFERED=1
-      
-    volumes:
-      # Using baked-in code from Dockerfile COPY - no volume mounts
-      # - ./core/cognitive_bus:/app/core/cognitive_bus
-      # - ./api_conclave:/app/api_conclave
-      - ./logs/conclave:/app/logs/conclave
-      # - ./utils:/app/utils
-      
-    networks:
-      - omni-net
-    depends_on:
-      - redis
-      - vitruvyan_babel_gardens
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8012/health"]
-      interval: 30s
-      timeout: 20s
-      retries: 5
-      start_period: 30s
-
-  # 🕯 Synaptic Conclave Listener - Epistemic Observatory
-  api_conclave_listener:
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_conclave
-    container_name: omni_api_conclave_listener
-    restart: unless-stopped
-    environment:
-      - REDIS_HOST=omni_redis
-      - REDIS_PORT=6379
-      - CONCLAVE_LISTENER_ENABLED=1
-    volumes:
-      - ./logs/conclave_listener:/app/logs
-    networks:
-      - omni-net
-    depends_on:
-      - redis
-      - api_conclave
-    command: ["python3", "/app/api_conclave/streams_listener.py"]
-
-  # ⚖️ Orthodoxy Wardens Listener - Epistemic Integrity Auditor
-  api_orthodoxy_wardens_listener:
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.orthodoxy_wardens
-    container_name: omni_orthodoxy_wardens_listener
-    restart: unless-stopped
-    environment:
-      - REDIS_HOST=omni_redis
-      - REDIS_PORT=6379
-      - ORTHODOXY_LISTENER_ENABLED=1
-    volumes:
-      - ./logs/orthodoxy_listener:/app/logs
-    networks:
-      - omni-net
-    depends_on:
-      - redis
-      - vitruvyan_api_orthodoxy_wardens
-    command: ["python3", "/app/api_orthodoxy_wardens/streams_listener.py"]
-
-  # 🏛️ Vault Keepers Listener - Archival Truth Monitor
-  api_vault_keepers_listener:
+  vault_keepers:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.vault_keepers
-    container_name: omni_vault_keepers_listener
-    restart: unless-stopped
-    environment:
-      - REDIS_HOST=omni_redis
-      - REDIS_PORT=6379
-      - VAULT_LISTENER_ENABLED=1
-      - POSTGRES_HOST=161.97.140.157
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=vitruvyan
-      - POSTGRES_USER=vitruvyan_user
-      - POSTGRES_PASSWORD=@Caravaggio971
-    volumes:
-      - ./logs/vault_listener:/app/logs
-    networks:
-      - omni-net
-    depends_on:
-      - redis
-      - vitruvyan_vault_keepers
-    command: ["python3", "/app/api_vault_keepers/streams_listener.py"]
-
-  # 🗣️ Babel Gardens Listener - Linguistic Synthesis Observer
-  api_babel_gardens_listener:
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_babel_gardens
-    container_name: omni_babel_gardens_listener
-    restart: unless-stopped
-    environment:
-      - REDIS_HOST=omni_redis
-      - REDIS_PORT=6379
-      - BABEL_LISTENER_ENABLED=1
-    volumes:
-      - ./logs/babel_listener:/app/logs
-    networks:
-      - omni-net
-    depends_on:
-      - redis
-      - vitruvyan_babel_gardens
-    command: ["python3", "/app/api_babel_gardens/streams_listener.py"]
-
-  # 📚 Codex Hunters Listener - Data Collection Monitor
-  api_codex_hunters_listener:
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_codex_hunters
-    container_name: omni_codex_hunters_listener
-    restart: unless-stopped
-    environment:
-      - REDIS_HOST=omni_redis
-      - REDIS_PORT=6379
-      - CODEX_LISTENER_ENABLED=1
-      - POSTGRES_HOST=161.97.140.157
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=vitruvyan
-      - POSTGRES_USER=vitruvyan_user
-      - POSTGRES_PASSWORD=@Caravaggio971
-    volumes:
-      - ./logs/codex_listener:/app/logs
-    networks:
-      - omni-net
-    depends_on:
-      - redis
-      - vitruvyan_codex_hunters
-    command: ["python3", "/app/api_codex_hunters/streams_listener.py"]
-
-  # 🧠 Memory Orders - Dual-Memory System (Archivarium + Mnemosyne) EPOCH II
-  vitruvyan_memory_orders:
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_memory_orders
-    container_name: omni_memory_orders
-    restart: unless-stopped
-    ports:
-      - "9016:8016"
-    environment:
-      # Redis Cognitive Bus connection (EPOCH II)
-      - REDIS_URL=redis://omni_redis:6379/0
-      - REDIS_HOST=omni_redis
-      - REDIS_PORT=6379
-      
-      # Database connections (Archivarium - PostgreSQL)
-      - POSTGRES_HOST=${POSTGRES_HOST_OMNI:-omni_postgres}
-      - POSTGRES_PORT=${POSTGRES_PORT_OMNI:-5432}
-      - POSTGRES_DB=${POSTGRES_DB_OMNI:-vitruvyan_omni}
-      - POSTGRES_USER=${POSTGRES_USER_OMNI:-vitruvyan_omni_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_OMNI:-@Caravaggio971_omni}
-      
-      # Vector Database (Mnemosyne - Qdrant)
-      - QDRANT_HOST=${QDRANT_HOST_OMNI:-omni_qdrant}
-      - QDRANT_PORT=${QDRANT_PORT_OMNI:-6333}
-      - QDRANT_URL=${QDRANT_URL_OMNI:-http://omni_qdrant:6333}
-      
-      # Embedding Service (MiniLM 384-dim)
-      - EMBEDDING_SERVICE_URL=http://vitruvyan_api_embedding:8010/embed
-      
-      # Memory Orders configuration
-      - MEMORY_API_HOST=0.0.0.0
-      - MEMORY_API_PORT=8016
-      - LOG_LEVEL=INFO
-      - PYTHONUNBUFFERED=1
-      
-      # Performance settings
-      - MEMORY_WRITE_TIMEOUT=5.0
-      - MEMORY_READ_TIMEOUT=3.0
-      - MEMORY_VECTOR_TIMEOUT=8.0
-      - DUAL_MEMORY_COHERENCE_CHECK=true
-      
-    volumes:
-      - ../../services/api_memory_orders:/app/api_memory_orders:ro
-      - ../../vitruvyan_core/core/foundation/semantic_sync:/app/core/foundation/semantic_sync:ro
-      - ../../vitruvyan_core/core/foundation/persistence:/app/core/foundation/persistence:ro
-      - ../../vitruvyan_core/core/foundation/cognitive_bus:/app/core/foundation/cognitive_bus:ro
-      - ./logs/memory_orders:/app/logs/memory_orders
-      
-    networks:
-      - omni-net
-    depends_on:
-      - redis
-      - qdrant
-      - vitruvyan_api_embedding
-      - vitruvyan_babel_gardens
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8016/health/memory"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
-
-  # 🏰 VAULT KEEPERS - Sacred Memory Custodians & Data Integrity
-  vitruvyan_vault_keepers:
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.vault_keepers
-    container_name: omni_vault_keepers
+    container_name: core_vault_keepers
     restart: unless-stopped
     ports:
       - "9007:8007"
     environment:
       - PYTHONPATH=/app
-      # Database connections
-      - POSTGRES_HOST=${POSTGRES_HOST_OMNI:-omni_postgres}
-      - POSTGRES_PORT=${POSTGRES_PORT_OMNI:-5432}
-      - POSTGRES_DB=${POSTGRES_DB_OMNI:-vitruvyan_omni}
-      - POSTGRES_USER=${POSTGRES_USER_OMNI:-vitruvyan_omni_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_OMNI:-@Caravaggio971_omni}
+      # Database
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
       # Vector DB
-      - QDRANT_HOST=${QDRANT_HOST_OMNI:-omni_qdrant}
-      - QDRANT_PORT=${QDRANT_PORT_OMNI:-6333}
-      # Redis for Cognitive Bus
-      - REDIS_HOST=omni_redis
+      - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
+      - QDRANT_PORT=${QDRANT_PORT:-6333}
+      # Redis (Cognitive Bus)
+      - REDIS_HOST=core_redis
       - REDIS_PORT=6379
-      # API Configuration
+      # API
       - VAULT_API_HOST=0.0.0.0
       - VAULT_API_PORT=8007
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - VAULT_LOG_LEVEL=INFO
-      # Backup Configuration
+      # Backup
       - BACKUP_MODE=auto
       - BACKUP_STORAGE=/var/vitruvyan/vaults
       - BACKUP_INTERVAL_MINUTES=30
-      # Google Drive Backup Configuration
+      # Google Drive Backup
       - GDRIVE_ENABLED=true
       - GDRIVE_USE_OAUTH=true
       - GDRIVE_FOLDER_ID=1fSFXHXSKKEmTMPZlaYdvjaSNQ6iChIpb
@@ -585,18 +261,15 @@ services:
       - GDRIVE_AUTO_DELETE_LOCAL=true
       - GDRIVE_KEEP_COUNT=30
     volumes:
-      # Mount only API code for hot-reload (NOT entire /app)
       - ../../services/api_vault_keepers:/app/api_vault_keepers:ro
       - ../../vitruvyan_core/core:/app/core:ro
-      # CRITICAL: Persistent backup storage
       - vault_keeper_data:/var/vitruvyan/vaults
-      # Google Drive service account credentials (read-only)
       - ../../infrastructure/secrets:/app/secrets:ro
-    networks:
-      - omni-net
     depends_on:
       - redis
       - qdrant
+    networks:
+      - core-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
       interval: 30s
@@ -604,41 +277,193 @@ services:
       retries: 3
       start_period: 10s
 
-  # 🗝️ CODEX HUNTERS - Discovery & Expedition Management
-  vitruvyan_codex_hunters:
+  conclave:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_conclave
+    container_name: core_conclave
+    restart: unless-stopped
+    ports:
+      - "9012:8012"
+    environment:
+      # Redis (Cognitive Bus)
+      - REDIS_URL=redis://core_redis:6379/0
+      - REDIS_HOST=core_redis
+      - CONCLAVE_PORT=8012
+      # Database
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      # Sacred Order endpoints
+      - BABEL_GARDENS_URL=http://babel_gardens:8009
+      - MEMORY_ORDERS_URL=http://memory_orders:8016
+      - ORTHODOXY_WARDENS_URL=http://orthodoxy_wardens:8006
+      - VAULT_KEEPERS_URL=http://vault_keepers:8007
+      - NEURAL_ENGINE_URL=http://neural_engine:8003
+      - SENTIMENT_API_URL=http://babel_gardens:8009
+      - GRAPH_ORCHESTRATOR_URL=http://graph:8004
+      # Conclave config
+      - CONCLAVE_HOST=0.0.0.0
+      - PULSE_INTERVAL=30
+      - LOG_LEVEL=INFO
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./logs/conclave:/app/logs/conclave
+    depends_on:
+      - redis
+      - babel_gardens
+    networks:
+      - core-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8012/health"]
+      interval: 30s
+      timeout: 20s
+      retries: 5
+      start_period: 30s
+
+
+  # ══════════════════════════════════════════════════════════════════════════
+  #  COGNITIVE SERVICES — Babel Gardens, Memory Orders, Codex, Weavers
+  # ══════════════════════════════════════════════════════════════════════════
+
+  babel_gardens:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_babel_gardens
+    container_name: core_babel_gardens
+    restart: unless-stopped
+    ports:
+      - "9009:8009"
+    environment:
+      # Redis (Cognitive Bus)
+      - REDIS_URL=redis://core_redis:6379/0
+      - REDIS_HOST=core_redis
+      - REDIS_PORT=6379
+      # Database
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
+      - QDRANT_URL=${QDRANT_URL:-http://core_qdrant:6333}
+      # Service URLs
+      - NEURAL_ENGINE_URL=http://neural_engine:8003
+      # Model config
+      - HUGGINGFACE_HUB_CACHE=/app/models
+      - TRANSFORMERS_CACHE=/app/models
+      - TORCH_HOME=/app/models
+      - HUGGINGFACE_HUB_TOKEN=${HUGGINGFACE_HUB_TOKEN}
+      # Performance
+      - CUDA_VISIBLE_DEVICES=
+      - OMP_NUM_THREADS=4
+      - TOKENIZERS_PARALLELISM=false
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    volumes:
+      - babel_gardens_models:/app/models
+      - babel_gardens_logs:/app/logs
+    depends_on:
+      - redis
+      - postgres
+      - qdrant
+    networks:
+      - core-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8009/sacred-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  memory_orders:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_memory_orders
+    container_name: core_memory_orders
+    restart: unless-stopped
+    ports:
+      - "9016:8016"
+    environment:
+      # Redis (Cognitive Bus)
+      - REDIS_URL=redis://core_redis:6379/0
+      - REDIS_HOST=core_redis
+      - REDIS_PORT=6379
+      # Database (Archivarium)
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
+      # Vector DB (Mnemosyne)
+      - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
+      - QDRANT_PORT=${QDRANT_PORT:-6333}
+      - QDRANT_URL=${QDRANT_URL:-http://core_qdrant:6333}
+      # Embedding Service
+      - EMBEDDING_SERVICE_URL=http://embedding:8010/embed
+      # Memory config
+      - MEMORY_API_HOST=0.0.0.0
+      - MEMORY_API_PORT=8016
+      - LOG_LEVEL=INFO
+      - PYTHONUNBUFFERED=1
+      # Performance
+      - MEMORY_WRITE_TIMEOUT=5.0
+      - MEMORY_READ_TIMEOUT=3.0
+      - MEMORY_VECTOR_TIMEOUT=8.0
+      - DUAL_MEMORY_COHERENCE_CHECK=true
+    volumes:
+      - ../../services/api_memory_orders:/app/api_memory_orders:ro
+      - ../../vitruvyan_core/core/foundation/semantic_sync:/app/core/foundation/semantic_sync:ro
+      - ../../vitruvyan_core/core/foundation/persistence:/app/core/foundation/persistence:ro
+      - ../../vitruvyan_core/core/foundation/cognitive_bus:/app/core/foundation/cognitive_bus:ro
+      - ./logs/memory_orders:/app/logs/memory_orders
+    depends_on:
+      - redis
+      - qdrant
+      - embedding
+      - babel_gardens
+    networks:
+      - core-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8016/health/memory"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  codex_hunters:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_codex_hunters
-    container_name: omni_codex_hunters
+    container_name: core_codex_hunters
     restart: unless-stopped
     ports:
       - "9008:8008"
     environment:
       - PYTHONPATH=/app
-      # Database connections
-      - POSTGRES_HOST=${POSTGRES_HOST_OMNI:-omni_postgres}
+      # Database
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB_OMNI:-vitruvyan_omni}
-      - POSTGRES_USER=${POSTGRES_USER_OMNI:-vitruvyan_omni_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_OMNI:-@Caravaggio971_omni}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
       # Vector DB
-      - QDRANT_HOST=${QDRANT_HOST_OMNI:-omni_qdrant}
-      - QDRANT_PORT=${QDRANT_PORT_OMNI:-6333}
-      # Redis for Cognitive Bus
-      - REDIS_HOST=omni_redis
+      - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
+      - QDRANT_PORT=${QDRANT_PORT:-6333}
+      # Redis (Cognitive Bus)
+      - REDIS_HOST=core_redis
       - REDIS_PORT=6379
-      # API Configuration
+      # API
       - CODEX_API_HOST=0.0.0.0
       - CODEX_API_PORT=8008
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - CODEX_LOG_LEVEL=INFO
-    # volumes:
-    #   - .:/app:ro  # Commented out to use baked-in code with prometheus_client
-    networks:
-      - omni-net
     depends_on:
       - redis
       - qdrant
+    networks:
+      - core-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8008/health"]
       interval: 30s
@@ -646,35 +471,35 @@ services:
       retries: 3
       start_period: 10s
 
-  vitruvyan_pattern_weavers:
+  pattern_weavers:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_weavers
-    container_name: omni_pattern_weavers
+    container_name: core_pattern_weavers
     restart: unless-stopped
     ports:
       - "9017:8011"
     environment:
       - PYTHONPATH=/app
-      # Database connections
-      - POSTGRES_HOST=${POSTGRES_HOST_OMNI:-omni_postgres}
+      # Database
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB_OMNI:-vitruvyan_omni}
-      - POSTGRES_USER=${POSTGRES_USER_OMNI:-vitruvyan_omni_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_OMNI:-@Caravaggio971_omni}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
       # Vector DB
-      - QDRANT_HOST=${QDRANT_HOST_OMNI:-omni_qdrant}
-      - QDRANT_PORT=${QDRANT_PORT_OMNI:-6333}
-      # Redis for Cognitive Bus
-      - REDIS_HOST=omni_redis
+      - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
+      - QDRANT_PORT=${QDRANT_PORT:-6333}
+      # Redis (Cognitive Bus)
+      - REDIS_HOST=core_redis
       - REDIS_PORT=6379
-      # OpenAI for semantic operations
+      # OpenAI
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-    networks:
-      - omni-net
     depends_on:
       - redis
       - qdrant
+    networks:
+      - core-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8011/health"]
       interval: 30s
@@ -682,13 +507,124 @@ services:
       retries: 3
       start_period: 10s
 
-  # ============================================================
-  # MONITORING STACK: Prometheus + Grafana + Exporters
-  # ============================================================
+
+  # ══════════════════════════════════════════════════════════════════════════
+  #  LISTENERS — Redis Streams Consumers (one per Sacred Order / Service)
+  # ══════════════════════════════════════════════════════════════════════════
+
+  conclave_listener:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_conclave
+    container_name: core_conclave_listener
+    restart: unless-stopped
+    environment:
+      - REDIS_HOST=core_redis
+      - REDIS_PORT=6379
+      - CONCLAVE_LISTENER_ENABLED=1
+    volumes:
+      - ./logs/conclave_listener:/app/logs
+    depends_on:
+      - redis
+      - conclave
+    networks:
+      - core-net
+    command: ["python3", "/app/api_conclave/streams_listener.py"]
+
+  orthodoxy_listener:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.orthodoxy_wardens
+    container_name: core_orthodoxy_listener
+    restart: unless-stopped
+    environment:
+      - REDIS_HOST=core_redis
+      - REDIS_PORT=6379
+      - ORTHODOXY_LISTENER_ENABLED=1
+    volumes:
+      - ./logs/orthodoxy_listener:/app/logs
+    depends_on:
+      - redis
+      - orthodoxy_wardens
+    networks:
+      - core-net
+    command: ["python3", "/app/api_orthodoxy_wardens/streams_listener.py"]
+
+  vault_listener:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.vault_keepers
+    container_name: core_vault_listener
+    restart: unless-stopped
+    environment:
+      - REDIS_HOST=core_redis
+      - REDIS_PORT=6379
+      - VAULT_LISTENER_ENABLED=1
+      - POSTGRES_HOST=161.97.140.157
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=vitruvyan
+      - POSTGRES_USER=vitruvyan_user
+      - POSTGRES_PASSWORD=@Caravaggio971
+    volumes:
+      - ./logs/vault_listener:/app/logs
+    depends_on:
+      - redis
+      - vault_keepers
+    networks:
+      - core-net
+    command: ["python3", "/app/api_vault_keepers/streams_listener.py"]
+
+  babel_listener:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_babel_gardens
+    container_name: core_babel_listener
+    restart: unless-stopped
+    environment:
+      - REDIS_HOST=core_redis
+      - REDIS_PORT=6379
+      - BABEL_LISTENER_ENABLED=1
+    volumes:
+      - ./logs/babel_listener:/app/logs
+    depends_on:
+      - redis
+      - babel_gardens
+    networks:
+      - core-net
+    command: ["python3", "/app/api_babel_gardens/streams_listener.py"]
+
+  codex_listener:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_codex_hunters
+    container_name: core_codex_listener
+    restart: unless-stopped
+    environment:
+      - REDIS_HOST=core_redis
+      - REDIS_PORT=6379
+      - CODEX_LISTENER_ENABLED=1
+      - POSTGRES_HOST=161.97.140.157
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=vitruvyan
+      - POSTGRES_USER=vitruvyan_user
+      - POSTGRES_PASSWORD=@Caravaggio971
+    volumes:
+      - ./logs/codex_listener:/app/logs
+    depends_on:
+      - redis
+      - codex_hunters
+    networks:
+      - core-net
+    command: ["python3", "/app/api_codex_hunters/streams_listener.py"]
+
+
+  # ══════════════════════════════════════════════════════════════════════════
+  #  MONITORING — Prometheus, Grafana, Exporters, Portainer
+  # ══════════════════════════════════════════════════════════════════════════
 
   prometheus:
     image: prom/prometheus:latest
-    container_name: omni_prometheus
+    container_name: core_prometheus
     restart: always
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -703,7 +639,7 @@ services:
       - ./monitoring/alerts:/etc/prometheus/alerts:ro
       - prometheus_data:/prometheus
     networks:
-      - omni-net
+      - core-net
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
       interval: 30s
@@ -712,7 +648,7 @@ services:
 
   grafana:
     image: grafana/grafana:latest
-    container_name: omni_grafana
+    container_name: core_grafana
     restart: always
     environment:
       - GF_SECURITY_ADMIN_USER=admin
@@ -725,10 +661,10 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
-    networks:
-      - omni-net
     depends_on:
       - prometheus
+    networks:
+      - core-net
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
       interval: 30s
@@ -737,20 +673,20 @@ services:
 
   redis_exporter:
     image: oliver006/redis_exporter:latest
-    container_name: omni_redis_exporter
+    container_name: core_redis_exporter
     restart: always
     environment:
-      - REDIS_ADDR=omni_redis:6379
+      - REDIS_ADDR=core_redis:6379
     ports:
       - "9121:9121"
-    networks:
-      - omni-net
     depends_on:
       - redis
+    networks:
+      - core-net
 
   postgres_exporter:
     image: prometheuscommunity/postgres-exporter:latest
-    container_name: omni_postgres_exporter
+    container_name: core_postgres_exporter
     restart: always
     environment:
       - DATA_SOURCE_NAME=postgresql://vitruvyan_user:@Caravaggio971@172.17.0.1:5432/vitruvyan?sslmode=disable
@@ -760,11 +696,11 @@ services:
     volumes:
       - ./monitoring/postgres_exporter_queries.yml:/etc/postgres_exporter/queries.yml:ro
     networks:
-      - omni-net
+      - core-net
 
   node_exporter:
     image: prom/node-exporter:latest
-    container_name: omni_node_exporter
+    container_name: core_node_exporter
     restart: always
     command:
       - '--path.rootfs=/host'
@@ -773,11 +709,11 @@ services:
     volumes:
       - /:/host:ro,rslave
     networks:
-      - omni-net
+      - core-net
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
-    container_name: omni_cadvisor
+    container_name: core_cadvisor
     restart: always
     privileged: true
     devices:
@@ -791,38 +727,43 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
     networks:
-      - omni-net
+      - core-net
 
   portainer:
     image: portainer/portainer-ce:latest
-    container_name: omni_portainer
+    container_name: core_portainer
     restart: always
     ports:
       - "9000:9000"
       - "9443:9443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data_omni:/data
+      - portainer_data_core:/data
     networks:
-      - omni-net
+      - core-net
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9000/api/status"]
       interval: 30s
       timeout: 10s
       retries: 3
 
+
+# ══════════════════════════════════════════════════════════════════════════
+#  VOLUMES & NETWORK
+# ══════════════════════════════════════════════════════════════════════════
+
 volumes:
-  redis_data_omni:
-  postgres_data_omni:
-  qdrant_data_omni:
+  redis_data_core:
+  postgres_data_core:
+  qdrant_data_core:
   babel_gardens_models:
   babel_gardens_logs:
   vault_keeper_data:
   prometheus_data:
   grafana_data:
-  portainer_data_omni:
+  portainer_data_core:
 
 networks:
-  omni-net:
+  core-net:
     driver: bridge
-    name: vitruvyan_omni_net
+    name: vitruvyan_core_net
