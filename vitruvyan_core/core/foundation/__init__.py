@@ -8,3 +8,4 @@ Subpackages:
 - persistence: Database and vector store agents
 
 Note: LLM clients are now in core.llm (not core.foundation.llm)
+"""

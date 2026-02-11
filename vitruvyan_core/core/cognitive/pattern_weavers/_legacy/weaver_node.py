@@ -12,7 +12,7 @@ Created: November 9, 2025
 """
 
 from typing import Dict, Any
-from core.cognitive.pattern_weavers.weaver_client import PatternWeaverClient
+from core.cognitive.pattern_weavers._legacy.weaver_client import PatternWeaverClient
 
 
 def weaver_node(state: Dict[str, Any]) -> Dict[str, Any]:

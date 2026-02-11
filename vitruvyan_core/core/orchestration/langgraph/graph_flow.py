@@ -9,7 +9,6 @@ from core.orchestration.langgraph.node.route_node import route_node
 from core.orchestration.langgraph.node.exec_node import exec_node
 from core.orchestration.langgraph.node.qdrant_node import qdrant_node
 from core.orchestration.langgraph.node.compose_node import compose_node
-from core.orchestration.langgraph.node.sentiment_node import run_sentiment_node
 # 🎭 PHASE 2.1 - Babel Gardens Emotion Detection
 from core.orchestration.langgraph.node.babel_emotion_node import babel_emotion_node
 # Enhanced LLM node with caching
@@ -46,8 +45,8 @@ from core.orchestration.langgraph.node.llm_mcp_node import llm_mcp_node
 # 🧠 VSGS (Vitruvyan Semantic Grounding System) - PR-A Bootstrap
 from core.orchestration.langgraph.node.semantic_grounding_node import semantic_grounding_node
 
-# 🕸️ Pattern Weavers - Semantic enrichment (Nov 2025)
-from core.cognitive.pattern_weavers.weaver_node import weaver_node
+# 🕸️ Pattern Weavers - Semantic enrichment (Nov 2025, _legacy until LIVELLO 2 completes)
+from core.cognitive.pattern_weavers._legacy.weaver_node import weaver_node
 
 # 🎯 Advisor Node - Decision-making layer (Dec 27, 2025)
 from core.orchestration.langgraph.node.advisor_node import advisor_node
