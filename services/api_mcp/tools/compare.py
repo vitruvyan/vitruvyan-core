@@ -39,20 +39,31 @@ async def execute_compare_entities(args: Dict[str, Any], user_id: str) -> Dict[s
             comparison_matrix = langgraph_data.get("comparison_matrix", {})
             numerical_panel = langgraph_data.get("numerical_panel", [])
             
+            # Domain-agnostic factor extraction (use config factor_keys)
+            factor_keys = config.validation.default_factor_keys
+            legacy_map = {
+                "momentum_z": factor_keys[0] if len(factor_keys) > 0 else "factor_1",
+                "trend_z": factor_keys[1] if len(factor_keys) > 1 else "factor_2",
+                "volatility_z": factor_keys[2] if len(factor_keys) > 2 else "factor_3",
+                "sentiment_z": factor_keys[3] if len(factor_keys) > 3 else "factor_4",
+                "fundamental_z": factor_keys[4] if len(factor_keys) > 4 else "factor_5",
+            }
+            
             comparison_data = []
             for entity_data in numerical_panel:
+                # Extract generic factors (backwards compatible with finance fields)
+                factors = {}
+                for legacy_key, generic_key in legacy_map.items():
+                    value = entity_data.get(legacy_key, 0.0)
+                    if value is not None:
+                        factors[generic_key] = value
+                
                 comparison_data.append({
                     "entity_id": entity_data.get("entity_id"),
                     "composite_score": entity_data.get("composite_score", 0.0),
                     "rank": entity_data.get("rank", 0),
                     "percentile": entity_data.get("percentile", 0.0),
-                    "factors": {
-                        "momentum_z": entity_data.get("momentum_z", 0.0),
-                        "trend_z": entity_data.get("trend_z", 0.0),
-                        "volatility_z": entity_data.get("volatility_z", 0.0),
-                        "sentiment_z": entity_data.get("sentiment_z", 0.0),
-                        "fundamental_z": entity_data.get("fundamental_z", 0.0)
-                    }
+                    "factors": factors  # Generic factor mapping
                 })
             
             winner = comparison_matrix.get("winner", entity_ids[0] if entity_ids else "")

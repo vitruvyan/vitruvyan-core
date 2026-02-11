@@ -666,7 +666,7 @@ POSTGRES_HOST=161.97.140.157  # ⚠️ CRITICAL: localhost on VPS, NOT in Docker
 POSTGRES_PORT=5432
 POSTGRES_DB=vitruvyan
 POSTGRES_USER=vitruvyan_user
-POSTGRES_PASSWORD=@Caravaggio971
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD}  # From environment (security requirement)
 
 # Memory Orders
 MEMORY_ORDERS_SYNC_ENABLED=true

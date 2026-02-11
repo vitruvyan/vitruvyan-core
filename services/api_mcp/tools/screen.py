@@ -16,13 +16,13 @@ async def execute_screen_entities(args: Dict[str, Any], user_id: str) -> Dict[st
     """Execute screen_entities tool via Neural Engine API."""
     config = get_config()
     entity_ids = args.get("entity_ids", [])
-    profile = args.get("profile", "balanced_mid")
+    profile = args.get("profile", "balanced")  # Changed from "balanced_mid" (agnostic)
     
     logger.info(f"🧠 Executing screen_entities: entity_ids={entity_ids}, profile={profile}")
     
     # Test mode: Inject heretical z-score for testing
     test_inject_heretical = args.get("_test_inject_heretical", False)
-    test_heretical_factor = args.get("_test_heretical_factor", "momentum_z")
+    test_heretical_factor = args.get("_test_heretical_factor", "factor_1")  # Generic factor name
     test_heretical_value = args.get("_test_heretical_value", 5.0)
     
     entities_str = ", ".join(entity_ids)
@@ -39,23 +39,34 @@ async def execute_screen_entities(args: Dict[str, Any], user_id: str) -> Dict[st
             langgraph_data = response.json()
             
             numerical_panel = langgraph_data.get("numerical_panel", [])
-            logger.info(f"✅ LangGraph response: {len(numerical_panel)} entity_ids")
+            logger.info(f"✅ LangGraph response: {len(numerical_panel)} entities")
+            
+            # Domain-agnostic factor extraction (use config factor_keys)
+            factor_keys = config.validation.default_factor_keys
+            legacy_map = {
+                "momentum_z": factor_keys[0] if len(factor_keys) > 0 else "factor_1",
+                "trend_z": factor_keys[1] if len(factor_keys) > 1 else "factor_2",
+                "vola_z": factor_keys[2] if len(factor_keys) > 2 else "factor_3",
+                "sentiment_z": factor_keys[3] if len(factor_keys) > 3 else "factor_4",
+                "fundamental_z": factor_keys[4] if len(factor_keys) > 4 else "factor_5",
+            }
             
             transformed_entities = []
             for entity_data in numerical_panel:
+                # Extract generic factors (backwards compatible with finance fields)
+                z_scores = {}
+                for legacy_key, generic_key in legacy_map.items():
+                    value = entity_data.get(legacy_key, 0.0)
+                    if value is not None:
+                        z_scores[generic_key] = value
+                
                 transformed_entities.append({
                     "entity_id": entity_data.get("entity_id"),
                     "composite_score": entity_data.get("composite_score", entity_data.get("composite", 0.0)),
                     "rank": entity_data.get("rank", 0),
                     "percentile": entity_data.get("percentile", 0.0),
-                    "z_scores": {
-                        "momentum_z": entity_data.get("momentum_z", 0.0),
-                        "trend_z": entity_data.get("trend_z", 0.0),
-                        "volatility_z": entity_data.get("vola_z", 0.0),
-                        "sentiment_z": entity_data.get("sentiment_z", 0.0),
-                        "fundamental_z": entity_data.get("fundamental_z", 0.0)
-                    },
-                    "vare": {
+                    "z_scores": z_scores,  # Generic factor scores
+                    "metadata": {  # Generic metadata (replaces finance-specific "vare")
                         "risk_score": entity_data.get("vare_risk_score", 0.0),
                         "risk_category": entity_data.get("vare_risk_category", "unknown"),
                         "confidence": entity_data.get("vare_confidence", 0.0)

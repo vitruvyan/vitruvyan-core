@@ -27,7 +27,6 @@ from core.orchestration.langgraph.node.params_extraction_node import params_extr
 
 # 🔥 New planned nodes (stubs + new)
 from core.orchestration.langgraph.node.entity_resolver_node import entity_resolver_node
-from core.orchestration.langgraph.node.screener_node import screener_node
 from core.orchestration.langgraph.node.output_normalizer_node import output_normalizer_node
 from core.orchestration.langgraph.node.audit_node_simple import audit_node
 
@@ -35,23 +34,14 @@ from core.orchestration.langgraph.node.audit_node_simple import audit_node
 from core.orchestration.langgraph.node.orthodoxy_node import orthodoxy_node
 from core.orchestration.langgraph.node.vault_node import vault_node
 
-# 🛡️ Sentinel Order Integration  
-from core.orchestration.langgraph.node.sentinel_node import sentinel_node
-
 # 🗝️ Codex Hunters Integration
 from core.orchestration.langgraph.node.codex_hunters_node import codex_hunters_node
-
-# 🧠 CrewAI Strategic Order Integration
-from core.orchestration.langgraph.node.crew_node import crew_node
 
 # 💡 Proactive Intelligence - Phase 2.1
 from core.orchestration.langgraph.node.proactive_suggestions_node import proactive_suggestions_node
 
 # 🔌 MCP Integration - Phase 4 (Model Context Protocol + OpenAI Function Calling)
 from core.orchestration.langgraph.node.llm_mcp_node import llm_mcp_node
-
-# 🏛️ Collection Analysis - Day 3
-from core.orchestration.langgraph.node.portfolio_node import portfolio_node
 
 # 🧠 VSGS (Vitruvyan Semantic Grounding System) - PR-A Bootstrap
 from core.orchestration.langgraph.node.semantic_grounding_node import semantic_grounding_node
@@ -65,23 +55,25 @@ from core.orchestration.langgraph.node.advisor_node import advisor_node
 # 🧠 CAN v2 - Conversational Advisor Node (Dec 27, 2025)
 from core.orchestration.langgraph.node.can_node import can_node
 
-# Shared state
+# Shared state — Domain-Agnostic OS Kernel
 class GraphState(TypedDict, total=False):
+    # Core OS fields
     input_text: str
     route: str
     result: Dict[str, Any]
     error: Optional[str]
     response: Dict[str, Any]
-    budget: Optional[str]
-    entity_ids: Optional[list[str]]
-    horizon: Optional[str]
     user_id: Optional[str]
-    sentiment: Optional[Dict[str, Any]]
     intent: Optional[str]
     raw_output: Optional[Dict[str, Any]]
-    top_k: Optional[int]
     final_response: Optional[str]            # 🎯 Formatted narrative for user display
     proactive_suggestions: Optional[List[Dict[str, Any]]]  # 💡 Phase 2.1 - Proactive suggestions
+    
+    # Domain-agnostic entity/signal fields (replaces budget/horizon/entity_ids)
+    entities: Optional[List[Dict[str, Any]]]  # Generic entities (id, type, attributes)
+    signals: Optional[Dict[str, Any]]         # Generic signals (sentiment, score, metadata)
+    context: Optional[Dict[str, Any]]         # Vertical-specific extensible context
+    top_k: Optional[int]                      # Generic parameter (top K results)
     
     # 🚨 Professional Boundaries Fields (Nov 2, 2025)
     needs_clarification: Optional[bool]      # True if query is ambiguous and requires clarification
@@ -246,7 +238,6 @@ def build_graph():
     g.add_node("params_extraction", params_extraction_node)
     
     g.add_node("decide", route_node)
-    g.add_node("sentiment_node", run_sentiment_node)
     # 🎭 PHASE 2.1 - Babel Gardens Emotion Detection
     g.add_node("babel_emotion", babel_emotion_node)
     # 🧠 PR-A: VSGS Semantic Grounding (feature flag OFF by default)
@@ -255,8 +246,6 @@ def build_graph():
     
     # 🔍 PHASE 2.2 - Consolidated Quality Check (fallback + validation)
     g.add_node("quality_check", quality_check_node)
-    
-    g.add_node("screener", screener_node)
     g.add_node("qdrant", qdrant_node)
     # 💡 UX Quick Win 2: Enhanced LLM with Emotional Intelligence (Oct 29, 2025)
     g.add_node("llm_soft", cached_llm_node)
@@ -266,27 +255,18 @@ def build_graph():
     # 💡 Phase 2.1: Proactive Intelligence
     g.add_node("proactive_suggestions", proactive_suggestions_node)
     
-    # � Advisor Node - Decision-making layer (Dec 27, 2025)
+    # 🎯 Advisor Node - Decision-making layer (Dec 27, 2025)
     g.add_node("advisor", advisor_node)
     
     # 🧠 CAN v2 - Conversational Advisor Node (Dec 27, 2025)
     g.add_node("can", can_node)
     
-    # �🏛️ Collection Analysis - Day 3
-    g.add_node("collection", portfolio_node)
-    
     # 🏛️ Sacred Orders Integration  
     g.add_node("orthodoxy", orthodoxy_node)
     g.add_node("vault", vault_node)
     
-    # 🛡️ Sentinel Order Integration
-    g.add_node("sentinel", sentinel_node)
-    
     # 🗝️ Codex Hunters Integration
     g.add_node("codex_hunters", codex_hunters_node)
-    
-    # 🧠 CrewAI Strategic Order Integration
-    g.add_node("crew", crew_node)
     
     # 🔌 MCP Integration - Phase 4 (OpenAI Function Calling gateway)
     g.add_node("llm_mcp", llm_mcp_node)
@@ -310,14 +290,14 @@ def build_graph():
         Debug wrapper for conditional routing from decide node.
         Returns the target node based on state['route'].
         
-        🔌 Phase 4: If USE_MCP=1 and route is dispatcher_exec, route to llm_mcp instead of sentiment_node.
+        🔌 Phase 4: If USE_MCP=1 and route is dispatcher_exec, route to llm_mcp instead of exec.
         This enables OpenAI Function Calling → MCP → Sacred Orders flow.
         """
         import os
         
         route_value = state.get("route")
         intent_value = state.get("intent")
-        entities_value = state.get("entity_ids")
+        entities_value = state.get("entities")  # Domain-agnostic entities field
         
         # 🔌 MCP Integration: Check if MCP should handle this route
         use_mcp = os.getenv("USE_MCP", "0") == "1"
@@ -334,7 +314,7 @@ def build_graph():
         print(f"🔀 [CONDITIONAL_EDGE] Evaluating route from 'decide' node:")
         print(f"  - state['route'] = '{route_value}'")
         print(f"  - state['intent'] = '{intent_value}'")
-        print(f"  - state['entity_ids'] = {entities_value}")
+        print(f"  - state['entities'] = {entities_value}")
         print(f"  - All state keys: {list(state.keys())}")
         print(f"🔀 Target node: '{route_value}'")
         print(f"{'🔀'*40}\n")
@@ -346,37 +326,23 @@ def build_graph():
         route_from_decide,
         {
             "semantic_fallback": "qdrant",
-            "dispatcher_exec": "sentiment_node",
+            "dispatcher_exec": "exec",            # Direct execution (no sentiment prereq)
             "llm_mcp": "llm_mcp",                 # 🔌 Phase 4: MCP routing (when USE_MCP=1)
             "slot_filler": "compose",
             "llm_soft": "llm_soft",
-            "screener": "screener",
-            "codex_expedition": "codex_hunters",  # 🗝️ New route for Codex Hunters
-            "sentinel_monitoring": "sentinel",    # 🛡️ Collection Guardian / Sentinel Order
-            "portfolio_guardian": "sentinel",     # 🛡️ Alternative route name
-            "risk_assessment": "sentinel",        # 🛡️ Risk analysis route
-            "emergency": "sentinel",              # 🛡️ Emergency response route
-            "portfolio_review": "collection",      # 🏛️ Collection analysis with LLM reasoning (Day 3)
-            "crew_strategy": "crew",              # 🧠 CrewAI strategic analysis
-            "trend": "crew",                      # 🧠 Trend analysis via CrewAI
-            "momentum": "crew",                   # 🧠 Momentum analysis via CrewAI
-            "volatility": "crew",                 # 🧠 Volatility analysis via CrewAI
-            "backtest": "crew",                   # 🧠 Backtest via CrewAI
-            "collection": "crew",                  # 🧠 Collection analysis via CrewAI (legacy)
+            "codex_expedition": "codex_hunters",  # 🗝️ Codex Hunters (maintenance system)
         },
     )
 
     # 🔍 PHASE 2.2: Consolidated quality check pipeline
     # exec → quality_check → output_normalizer
-    g.add_edge("sentiment_node", "exec")
     g.add_edge("exec", "quality_check")
     g.add_edge("quality_check", "output_normalizer")
     
     # 🔌 Phase 4: MCP → quality_check (Sacred Orders results validation)
     g.add_edge("llm_mcp", "quality_check")
     
-    # Altri rami verso normalizer
-    g.add_edge("screener", "output_normalizer")
+    # Other routes to normalizer
     g.add_edge("qdrant", "output_normalizer")
     g.add_edge("llm_soft", "output_normalizer")
     
@@ -396,38 +362,6 @@ def build_graph():
         {
             "quality_check": "quality_check",  # Expedition failed → quality check
             END: END,                          # Success → direct END (response already formatted)
-        }
-    )
-    
-    # 🛡️ Sentinel Order routing based on risk level and situation
-    g.add_conditional_edges(
-        "sentinel",
-        lambda state: state.get("route"),
-        {
-            "emergency": "vault",                   # Emergency → Direct vault protection
-            "monitor": "orthodoxy",                 # Enhanced monitoring → Standard flow
-            "compose": "output_normalizer",         # Normal operations → Continue normally
-            "escalation": "vault",                  # Escalated situations → Vault protection
-        }
-    )
-    
-    # 🧠 CrewAI Strategic Order routing (async acknowledgment flow)
-    g.add_conditional_edges(
-        "crew",
-        lambda state: state.get("route"),
-        {
-            "compose": "output_normalizer",         # Strategy request acknowledged → Continue
-            "error": "quality_check",               # Error in request → Quality check handling (PHASE 2.2)
-        }
-    )
-    
-    # 🏛️ Collection Analysis routing (Day 3)
-    g.add_conditional_edges(
-        "collection",
-        lambda state: state.get("route"),
-        {
-            "portfolio_complete": "compose",        # Collection analysis complete → Direct to compose (skip normalizer)
-            "error": "quality_check",               # Error in collection fetch → Quality check
         }
     )
 

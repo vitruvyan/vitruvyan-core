@@ -257,7 +257,7 @@ vitruvyan_mcp:
     - POSTGRES_PORT=5432
     - POSTGRES_DB=vitruvyan
     - POSTGRES_USER=vitruvyan_user
-    - POSTGRES_PASSWORD=@Caravaggio971
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}  # From environment (NEVER hardcode credentials)
   depends_on:
     - redis
   networks:

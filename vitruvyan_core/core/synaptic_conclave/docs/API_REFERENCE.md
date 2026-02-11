@@ -573,7 +573,7 @@ REDIS_URL=redis://vitruvyan_redis_master:6379
 # PostgreSQL (for Scribe)
 POSTGRES_HOST=161.97.140.157
 POSTGRES_USER=vitruvyan_user
-POSTGRES_PASSWORD=@Caravaggio971
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD}  # From environment (NEVER commit credentials)
 POSTGRES_DB=vitruvyan
 
 # Qdrant (for Scribe)

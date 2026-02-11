@@ -6,28 +6,22 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "screen_entities",
-            "description": "Screen entity_ids using Vitruvyan Neural Engine multi-factor ranking system. Returns composite scores, z-scores for momentum/trend/volatility/sentiment/fundamentals, and percentile ranks.",
+            "description": "Screen entities using Vitruvyan Neural Engine multi-factor ranking system. Returns composite scores, normalized factor scores, and percentile ranks. Domain-agnostic: works with any entity type (assets, documents, users, products, etc.).",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "entity_ids": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "List of entity entity_id symbols (e.g., ['EXAMPLE_ENTITY_1', 'EXAMPLE_ENTITY_2']). Max 10 entity_ids per call.",
+                        "description": "List of entity identifiers (e.g., ['entity_1', 'entity_2']). Max 10 entities per call. Entity type is deployment-configured.",
                         "minItems": 1,
                         "maxItems": 10
                     },
                     "profile": {
                         "type": "string",
-                        "enum": ["momentum_focus", "balanced_mid", "trend_follow", "short_spec", "sentiment_boost"],
-                        "description": "Screening profile (weighting strategy). Default: balanced_mid",
-                        "default": "balanced_mid"
-                    },
-                    "horizon": {
-                        "type": "string",
-                        "enum": ["short", "medium", "long"],
-                        "description": "Investment horizon. Default: medium",
-                        "default": "medium"
+                        "enum": ["balanced", "aggressive", "conservative", "custom"],
+                        "description": "Scoring profile (factor weighting strategy). Default: balanced. Profiles are deployment-configured.",
+                        "default": "balanced"
                     }
                 },
                 "required": ["entity_ids"]
@@ -38,13 +32,13 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "generate_vee_summary",
-            "description": "Generate Vitruvyan Explainability Engine (VEE) narrative summary for a entity_id. Returns conversational explanation suitable for non-technical users.",
+            "description": "Generate Vitruvyan Explainability Engine (VEE) narrative summary for an entity. Returns conversational explanation suitable for non-technical users. Domain-agnostic: explains scoring rationale for any entity type.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "entity_id": {
                         "type": "string",
-                        "description": "Entity entity_id symbol (e.g., 'EXAMPLE_ENTITY_1')"
+                        "description": "Entity identifier (e.g., 'entity_1'). Entity type is deployment-configured."
                     },
                     "language": {
                         "type": "string",
@@ -60,25 +54,25 @@ TOOL_SCHEMAS = [
     {
         "type": "function",
         "function": {
-            "name": "query_sentiment",
-            "description": "Query sentiment scores from Vitruvyan database for a entity_id. Returns average sentiment, trend, and recent sample phrases.",
+            "name": "query_signals",
+            "description": "Query signal scores from Vitruvyan database for an entity. Returns average signal values, trends, and sample context. Domain-agnostic: signals can be sentiment, quality, relevance, performance, etc.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "entity_id": {
                         "type": "string",
-                        "description": "Entity entity_id symbol (e.g., 'EXAMPLE_ENTITY_1')"
+                        "description": "Entity identifier (e.g., 'entity_1'). Entity type is deployment-configured."
                     },
-                    "days": {
+                    "time_window": {
                         "type": "integer",
                         "minimum": 1,
-                        "maximum": 30,
-                        "description": "Number of days to look back. Default: 7",
+                        "maximum": 90,
+                        "description": "Time window in days to look back. Default: 7",
                         "default": 7
                     },
-                    "include_phrases": {
+                    "include_context": {
                         "type": "boolean",
-                        "description": "Include sample sentiment phrases. Default: true",
+                        "description": "Include sample context (phrases, events, metadata). Default: true",
                         "default": True
                     }
                 },
@@ -90,21 +84,21 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "compare_entities",
-            "description": "Compare multiple entity_ids side-by-side using Vitruvyan comparison analysis. Returns winner/loser classification and factor deltas.",
+            "description": "Compare multiple entities side-by-side using Vitruvyan comparison analysis. Returns ranking, classification, and factor deltas. Domain-agnostic: works with any entity type.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "entity_ids": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "List of entity_id symbols to compare (e.g., ['EXAMPLE_ENTITY_1', 'EXAMPLE_ENTITY_4', 'EXAMPLE_ENTITY_5']). Min 2, max 5 entity_ids.",
+                        "description": "List of entity identifiers to compare (e.g., ['entity_1', 'entity_2']). Min 2, max 5 entities.",
                         "minItems": 2,
                         "maxItems": 5
                     },
                     "criteria": {
                         "type": "string",
-                        "enum": ["composite", "momentum", "trend", "volatility", "sentiment", "fundamentals"],
-                        "description": "Comparison criteria. Default: composite",
+                        "enum": ["composite", "factor_1", "factor_2", "factor_3", "factor_4", "factor_5"],
+                        "description": "Comparison criteria (factor name). Default: composite. Factor names are deployment-configured.",
                         "default": "composite"
                     }
                 },

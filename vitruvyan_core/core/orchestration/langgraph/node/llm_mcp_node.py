@@ -47,7 +47,7 @@ def _ensure_nest_asyncio():
 
 # Environment configuration
 USE_MCP = os.getenv("USE_MCP", "0") == "1"  # Master switch for MCP integration
-MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://omni_mcp:8021")  # vitruvyan-os uses port 8021
+MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://omni_mcp:8020")  # FIXED: Correct port 8020 (was 8021)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")  # Cost-optimized for tool calling
 
@@ -210,13 +210,15 @@ def llm_mcp_node(state: Dict[str, Any]) -> Dict[str, Any]:
     try:
         client = get_openai_client()
         
-        # Construct system prompt with context
-        system_prompt = f"""You are Vitruvyan AI, a financial analysis assistant.
+        # Construct system prompt with context (domain-agnostic)
+        system_prompt = f"""You are Vitruvyan AI, an epistemic reasoning assistant.
 User query language: {language}
-Available entity_ids: {', '.join(entity_ids) if entity_ids else 'None extracted yet'}
+Available entities: {', '.join(entity_ids) if entity_ids else 'None extracted yet'}
 
 Select the most appropriate tool to answer the user's question.
-If no tool matches, respond directly without tool calling."""
+If no tool matches, respond directly without tool calling.
+
+Note: Entity type and domain are deployment-configured (finance, documents, users, etc.)."""
         
         messages = [
             {"role": "system", "content": system_prompt},
@@ -257,7 +259,8 @@ If no tool matches, respond directly without tool calling."""
             **state,
             "mcp_tool_used": tool_name,
             "mcp_result": mcp_result,
-            "mcp_orthodoxy": mcp_result.get("data", {}).get("orthodoxy_status", "unknown")
+            # FIXED: Parse orthodoxy_status from top-level (line 262 in MCP response)
+            "mcp_orthodoxy": mcp_result.get("orthodoxy_status", "unknown")
         }
         
         # Map MCP result to LangGraph state keys
