@@ -53,10 +53,14 @@ async def sacred_orders_middleware(
     args: Dict[str, Any],
     result: Dict[str, Any],
     user_id: str,
-    conclave_id: str
+    conclave_id: str,
+    execution_time_ms: float = None
 ) -> str:
     """
     Sacred Orders Middleware - ALL MCP tool calls pass through this.
+    
+    Args:
+        execution_time_ms: Tool execution time in milliseconds (for Vault Keepers audit)
     
     Returns: orthodoxy_status: "blessed" | "purified" | "heretical"
     """
@@ -133,11 +137,21 @@ async def sacred_orders_middleware(
         pg = PostgresAgent()
         with pg.connection.cursor() as cur:
             cur.execute("""
-                INSERT INTO mcp_tool_calls (conclave_id, tool_name, args, result, orthodoxy_status, user_id, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (conclave_id, tool_name, json.dumps(args), json.dumps(result), orthodoxy_status, user_id, datetime.utcnow()))
+                INSERT INTO mcp_tool_calls 
+                (conclave_id, tool_name, args, result, orthodoxy_status, user_id, created_at, execution_time_ms)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                conclave_id, 
+                tool_name, 
+                json.dumps(args), 
+                json.dumps(result), 
+                orthodoxy_status, 
+                user_id, 
+                datetime.utcnow(),
+                execution_time_ms
+            ))
         pg.connection.commit()
-        logger.info(f"🏰 Vault Keepers: Archived {tool_name} (conclave={conclave_id})")
+        logger.info(f"🏰 Vault Keepers: Archived {tool_name} (conclave={conclave_id}, {execution_time_ms:.2f}ms)")
     except Exception as e:
         logger.error(f"❌ Vault Keepers archiving failed: {e}")
     

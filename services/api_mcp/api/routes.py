@@ -67,8 +67,8 @@ async def execute_tool(request: ExecuteRequest):
         result_data = await executor(args, user_id)
         result = {"status": "success", "tool": tool_name, "data": result_data}
         
-        orthodoxy_status = await sacred_orders_middleware(tool_name, args, result, user_id, conclave_id)
         execution_time_ms = (time.time() - start_time) * 1000
+        orthodoxy_status = await sacred_orders_middleware(tool_name, args, result, user_id, conclave_id, execution_time_ms)
         
         mcp_requests_total.labels(tool=tool_name, status="success").inc()
         mcp_execution_duration.labels(tool=tool_name).observe(time.time() - start_time)
