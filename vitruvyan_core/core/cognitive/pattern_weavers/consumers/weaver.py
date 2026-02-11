@@ -27,7 +27,6 @@ from ..domain import (
     WeaveResult,
     WeaveStatus,
     PatternMatch,
-    RiskProfile,
     MatchType,
 )
 
@@ -167,14 +166,10 @@ class WeaverConsumer(BaseConsumer):
             if match.name:
                 concepts.append(match.name)
         
-        # Aggregate risk profile
-        risk_profile = self._aggregate_risk(matches)
-        
         # Create WeaveResult
         result = WeaveResult(
             status=WeaveStatus.COMPLETED,
             matches=matches,
-            risk_profile=risk_profile,
             extracted_concepts=list(set(concepts)),
             latency_ms=int((datetime.utcnow() - start_time).total_seconds() * 1000),
         )
