@@ -13,7 +13,7 @@
       "title": "⚡ Live Event Storm — All Streams",
       "type": "timeseries",
       "gridPos": {"x": 0, "y": 0, "w": 24, "h": 10},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -34,7 +34,7 @@
       "title": "🎯 Sacred Orders Activity — Power Levels",
       "type": "barchart",
       "gridPos": {"x": 0, "y": 10, "w": 12, "h": 10},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
       "fieldConfig": {
         "defaults": {
           "color": {"mode": "palette-classic"},
@@ -52,7 +52,7 @@
       "title": "💎 Top Streams — Capacity Jewels",
       "type": "stat",
       "gridPos": {"x": 12, "y": 10, "w": 12, "h": 10},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -81,7 +81,7 @@
       "title": "🔥 Event Rate Heatmap — Intensity",
       "type": "heatmap",
       "gridPos": {"x": 0, "y": 20, "w": 12, "h": 10},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
       "options": {
         "calculate": false,
         "cellGap": 2,
@@ -94,7 +94,7 @@
       "title": "⚙️ System Vitals",
       "type": "stat",
       "gridPos": {"x": 12, "y": 20, "w": 6, "h": 10},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
       "fieldConfig": {
         "defaults": {
           "color": {"mode": "palette-classic"},
@@ -115,7 +115,7 @@
       "title": "📊 Live Ranking",
       "type": "table",
       "gridPos": {"x": 18, "y": 20, "w": 6, "h": 10},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
       "fieldConfig": {
         "defaults": {
           "custom": {"displayMode": "gradient-gauge"},

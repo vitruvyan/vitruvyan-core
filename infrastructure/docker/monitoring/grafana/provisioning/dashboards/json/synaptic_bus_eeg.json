@@ -27,7 +27,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "PBFA97CFB590B2093"
       },
       "description": "Real-time electroencephalogram of the Synaptic Conclave showing publish and consume rates across all Sacred Orders",
       "fieldConfig": {
@@ -98,7 +98,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "PBFA97CFB590B2093"
       },
       "description": "Live health matrix of all consumer groups (micelial polyp hyphae) showing lag, pending messages, and consumption rate",
       "fieldConfig": {
@@ -218,7 +218,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "PBFA97CFB590B2093"
       },
       "description": "Real-time visualization of the Synaptic Conclave as a living micelial network. Node size = message throughput, edge thickness = stream event rate, color = consumer lag",
       "options": {
@@ -271,7 +271,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "PBFA97CFB590B2093"
       },
       "description": "System-wide consume/publish ratio. Green (0.9-1.1) = healthy equilibrium, Red (<0.9) = backpressure, Blue (>1.1) = idle capacity",
       "fieldConfig": {
@@ -329,7 +329,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "PBFA97CFB590B2093"
       },
       "description": "Total pending messages across all streams (unacknowledged events waiting for consumer processing)",
       "fieldConfig": {
@@ -390,7 +390,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "PBFA97CFB590B2093"
       },
       "description": "Current length of each stream vs configured max_length (10000). Shows memory pressure and pruning needs",
       "fieldConfig": {
@@ -451,7 +451,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "PBFA97CFB590B2093"
       },
       "description": "Most active Redis Streams by event publish rate (1-minute moving average)",
       "fieldConfig": {
@@ -494,7 +494,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "PBFA97CFB590B2093"
       },
       "description": "Consumer groups with highest lag (backlog of unprocessed messages), indicating bottlenecks or slow processing",
       "fieldConfig": {
@@ -536,7 +536,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "PBFA97CFB590B2093"
         },
         "enable": true,
         "expr": "ALERTS{alertname=~\"SynapticBus.*\"}",

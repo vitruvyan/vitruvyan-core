@@ -85,7 +85,6 @@ class WeaveResult:
     
     status: WeaveStatus
     matches: List[PatternMatch] = field(default_factory=list)
-    risk_profile: Optional[RiskProfile] = None
     extracted_concepts: List[str] = field(default_factory=list)
     latency_ms: float = 0.0
     error_message: Optional[str] = None
@@ -101,7 +100,6 @@ class WeaveResult:
         return {
             "status": self.status.value,
             "matches": [m.to_dict() for m in self.matches],
-            "risk_profile": self.risk_profile.to_dict() if self.risk_profile else {},
             "extracted_concepts": self.extracted_concepts,
             "latency_ms": self.latency_ms,
             "error_message": self.error_message,

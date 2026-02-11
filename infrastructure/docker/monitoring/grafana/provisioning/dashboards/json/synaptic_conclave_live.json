@@ -4,446 +4,171 @@
   "tags": ["cognitive-system", "live", "neural-activity", "sacred-orders"],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 1,
+  "version": 2,
   "refresh": "5s",
-  "time": {
-    "from": "now-5m",
-    "to": "now"
-  },
+  "time": {"from": "now-5m", "to": "now"},
   "panels": [
     {
       "id": 1,
       "title": "⚡ Live Neural Pulse — Event Storm",
       "type": "timeseries",
       "gridPos": {"x": 0, "y": 0, "w": 24, "h": 10},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "description": "Real-time event activity across all streams — The heartbeat of the cognitive system",
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
       "fieldConfig": {
         "defaults": {
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
             "lineWidth": 3,
-            "fillOpacity": 30,
-            "gradientMode": "scheme",
-            "showPoints": "never",
-            "spanNulls": true,
-            "axisPlacement": "auto"
+            "fillOpacity": 20,
+            "gradientMode": "opacity"
           },
           "color": {"mode": "palette-classic"},
-          "unit": "events",
-          "decimals": 0,
-          "min": 0
-        },
-        "overrides": [
-          {
-            "matcher": {"id": "byRegexp", "options": ".*memory.*"},
-            "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "blue"}}]
-          },
-          {
-            "matcher": {"id": "byRegexp", "options": ".*vault.*"},
-            "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "green"}}]
-          },
-          {
-            "matcher": {"id": "byRegexp", "options": ".*orthodoxy.*"},
-            "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "purple"}}]
-          },
-          {
-            "matcher": {"id": "byRegexp", "options": ".*babel.*"},
-            "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "yellow"}}]
-          },
-          {
-            "matcher": {"id": "byRegexp", "options": ".*codex.*"},
-            "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "orange"}}]
-          },
-          {
-            "matcher": {"id": "byRegexp", "options": ".*pattern.*"},
-            "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}}]
-          }
-        ]
-      },
-      "options": {
-        "tooltip": {"mode": "multi", "sort": "desc"},
-        "legend": {"displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "max", "mean"]}
-      },
-      "targets": [
-        {
-          "expr": "topk(15, stream_length)",
-          "legendFormat": "{{stream}}",
-          "refId": "A"
+          "unit": "events"
         }
-      ]
+      },
+      "targets": [{"expr": "topk(12, stream_length)", "legendFormat": "{{stream}}", "refId": "A"}]
     },
     {
       "id": 2,
-      "title": "🕸️ Sacred Orders Network — Cognitive Topology",
-      "type": "nodeGraph",
-      "gridPos": {"x": 0, "y": 10, "w": 12, "h": 12},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "description": "Live network graph showing connections between Sacred Orders",
-      "options": {
-        "nodes": {
-          "mainStatUnit": "events",
-          "secondaryStatUnit": "events/s",
-          "arcs": [
-            {"field": "arc__health", "color": "green"},
-            {"field": "arc__warning", "color": "yellow"},
-            {"field": "arc__critical", "color": "red"}
-          ]
-        },
-        "edges": {
-          "mainStatUnit": "connections",
-          "secondaryStatUnit": "lag"
-        }
-      },
-      "targets": [
-        {
-          "expr": "sum(sacred_order_activity) by (sacred_order)",
-          "format": "table",
-          "refId": "nodes"
-        },
-        {
-          "expr": "stream_connection > 0",
-          "format": "table",
-          "refId": "edges"
-        }
-      ]
-    },
-    {
-      "id": 3,
-      "title": "🎯 Sacred Orders Activity Matrix",
-      "type": "barchart",
-      "gridPos": {"x": 12, "y": 10, "w": 12, "h": 12},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "description": "Real-time activity levels per Sacred Order",
+      "title": "🎯 Sacred Orders Power Levels — Live Activity",
+      "type": "bargauge",
+      "gridPos": {"x": 0, "y": 10, "w": 12, "h": 10},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
       "fieldConfig": {
         "defaults": {
           "color": {"mode": "palette-classic"},
-          "unit": "events",
-          "decimals": 0,
-          "min": 0
-        }
-      },
-      "options": {
-        "orientation": "horizontal",
-        "showValue": "always",
-        "groupWidth": 0.7,
-        "barWidth": 0.97,
-        "legend": {"displayMode": "hidden"}
-      },
-      "targets": [
-        {
-          "expr": "sacred_order_activity",
-          "legendFormat": "{{sacred_order}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "id": 4,
-      "title": "💎 Stream Capacity Jewels",
-      "type": "stat",
-      "gridPos": {"x": 0, "y": 22, "w": 8, "h": 8},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "description": "Top streams by message count — Cognitive load indicators",
-      "fieldConfig": {
-        "defaults": {
-          "color": {"mode": "thresholds"},
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {"color": "green", "value": null},
-              {"color": "yellow", "value": 50},
-              {"color": "orange", "value": 100},
-              {"color": "red", "value": 200}
+              {"color": "yellow", "value": 3000},
+              {"color": "red", "value": 5000}
             ]
           },
           "unit": "events",
-          "decimals": 0,
-          "mappings": []
+          "min": 0,
+          "max": 6000
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "text": {"valueSize": 20}
+      },
+      "targets": [{"expr": "sacred_order_activity", "legendFormat": "{{sacred_order}}", "refId": "A"}]
+    },
+    {
+      "id": 3,
+      "title": "💎 Stream Capacity Jewels — Top Streams",
+      "type": "stat",
+      "gridPos": {"x": 12, "y": 10, "w": 12, "h": 10},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 1000},
+              {"color": "orange", "value": 1500},
+              {"color": "red", "value": 2000}
+            ]
+          },
+          "unit": "events"
         }
       },
       "options": {
         "graphMode": "area",
-        "orientation": "auto",
-        "textMode": "value_and_name",
         "colorMode": "background",
-        "justifyMode": "auto",
-        "reduceOptions": {
-          "values": false,
-          "calcs": ["lastNotNull"]
+        "textMode": "value_and_name"
+      },
+      "targets": [{"expr": "topk(8, stream_length)", "legendFormat": "{{stream}}", "refId": "A"}]
+    },
+    {
+      "id": 4,
+      "title": "🔥 Event Rate Heatmap — Publishing Intensity",
+      "type": "timeseries",
+      "gridPos": {"x": 0, "y": 20, "w": 12, "h": 10},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 40,
+            "gradientMode": "hue",
+            "stacking": {"mode": "normal", "group": "A"}
+          },
+          "color": {"mode": "palette-classic"},
+          "unit": "events/s"
         }
       },
-      "targets": [
-        {
-          "expr": "topk(10, stream_length)",
-          "legendFormat": "{{stream}}",
-          "refId": "A"
-        }
-      ]
+      "targets": [{"expr": "sum(cognitive_bus_event_rate) by (job)", "legendFormat": "{{job}}", "refId": "A"}]
     },
     {
       "id": 5,
-      "title": "🔥 Event Rate Heatmap — Intensity Matrix",
-      "type": "heatmap",
-      "gridPos": {"x": 8, "y": 22, "w": 8, "h": 8},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "description": "Heatmap of event publishing rates across streams",
+      "title": "⚙️ System Vitals — Cognitive Health",
+      "type": "stat",
+      "gridPos": {"x": 12, "y": 20, "w": 6, "h": 10},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "unit": "short"
+        }
+      },
       "options": {
-        "calculate": false,
-        "cellGap": 2,
-        "cellRadius": 4,
-        "color": {
-          "mode": "scheme",
-          "scheme": "Spectral",
-          "fill": "dark-orange",
-          "scale": "exponential",
-          "exponent": 0.5,
-          "steps": 256
-        },
-        "yAxis": {"axisPlacement": "left", "decimals": 0},
-        "legend": {"show": true}
+        "graphMode": "area",
+        "colorMode": "value",
+        "textMode": "value_and_name"
       },
       "targets": [
-        {
-          "expr": "cognitive_bus_event_rate",
-          "format": "heatmap",
-          "legendFormat": "{{stream}}",
-          "refId": "A"
-        }
+        {"expr": "count(stream_length)", "legendFormat": "Streams", "refId": "A"},
+        {"expr": "sum(stream_length)", "legendFormat": "Total Events", "refId": "B"},
+        {"expr": "sum(sacred_order_activity)", "legendFormat": "Active Events", "refId": "C"}
       ]
     },
     {
       "id": 6,
-      "title": "⚙️ System Vitals — Cognitive Health",
-      "type": "stat",
-      "gridPos": {"x": 16, "y": 22, "w": 8, "h": 8},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "description": "Key system metrics at a glance",
+      "title": "📊 Live Ranking — Top 20 Streams",
+      "type": "table",
+      "gridPos": {"x": 18, "y": 20, "w": 6, "h": 10},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
       "fieldConfig": {
         "defaults": {
-          "color": {"mode": "palette-classic"},
-          "unit": "short",
-          "decimals": 0,
-          "mappings": []
-        },
-        "overrides": [
-          {
-            "matcher": {"id": "byName", "options": "Total Streams"},
-            "properties": [
-              {"id": "color", "value": {"mode": "fixed", "fixedColor": "blue"}},
-              {"id": "unit", "value": "streams"}
-            ]
-          },
-          {
-            "matcher": {"id": "byName", "options": "Total Events"},
-            "properties": [
-              {"id": "color", "value": {"mode": "fixed", "fixedColor": "green"}},
-              {"id": "unit", "value": "events"}
-            ]
-          },
-          {
-            "matcher": {"id": "byName", "options": "Exporter Scrapes"},
-            "properties": [
-              {"id": "color", "value": {"mode": "fixed", "fixedColor": "purple"}},
-              {"id": "unit", "value": "scrapes"}
-            ]
-          }
-        ]
-      },
-      "options": {
-        "graphMode": "area",
-        "orientation": "vertical",
-        "textMode": "value_and_name",
-        "colorMode": "value",
-        "justifyMode": "center",
-        "reduceOptions": {
-          "values": false,
-          "calcs": ["lastNotNull"]
+          "custom": {"displayMode": "gradient-gauge"},
+          "color": {"mode": "continuous-GrYlRd"},
+          "unit": "events"
         }
       },
-      "targets": [
-        {
-          "expr": "count(stream_length)",
-          "legendFormat": "Total Streams",
-          "refId": "A"
-        },
-        {
-          "expr": "sum(stream_length)",
-          "legendFormat": "Total Events",
-          "refId": "B"
-        },
-        {
-          "expr": "redis_streams_exporter_scrapes_total",
-          "legendFormat": "Exporter Scrapes",
-          "refId": "C"
-        }
-      ]
+      "targets": [{"expr": "topk(20, stream_length)", "format": "table", "instant": true, "refId": "A"}]
     },
     {
       "id": 7,
-      "title": "🎼 Event Symphony — Rate Distribution",
+      "title": "🌊 Cognitive Flux — Stream Growth Dynamics",
       "type": "timeseries",
-      "gridPos": {"x": 0, "y": 30, "w": 12, "h": 8},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "description": "Distribution of event rates across all streams",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "drawStyle": "bars",
-            "lineWidth": 0,
-            "fillOpacity": 80,
-            "gradientMode": "hue",
-            "showPoints": "never",
-            "barAlignment": 0
-          },
-          "color": {"mode": "palette-classic"},
-          "unit": "events/s",
-          "decimals": 2,
-          "min": 0
-        }
-      },
-      "options": {
-        "tooltip": {"mode": "multi", "sort": "desc"},
-        "legend": {"displayMode": "list", "placement": "bottom", "showLegend": false}
-      },
-      "targets": [
-        {
-          "expr": "sum(cognitive_bus_event_rate) by (job)",
-          "legendFormat": "{{job}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "id": 8,
-      "title": "📊 Top Active Streams — Live Ranking",
-      "type": "table",
-      "gridPos": {"x": 12, "y": 30, "w": 12, "h": 8},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "description": "Real-time ranking of most active streams",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "auto",
-            "displayMode": "auto"
-          },
-          "color": {"mode": "continuous-GrYlRd"},
-          "unit": "events",
-          "decimals": 0
-        },
-        "overrides": [
-          {
-            "matcher": {"id": "byName", "options": "stream"},
-            "properties": [
-              {"id": "custom.width", "value": 300}
-            ]
-          },
-          {
-            "matcher": {"id": "byName", "options": "Value"},
-            "properties": [
-              {"id": "custom.displayMode", "value": "gradient-gauge"},
-              {"id": "max", "value": 300},
-              {"id": "min", "value": 0}
-            ]
-          }
-        ]
-      },
-      "options": {
-        "showHeader": true,
-        "sortBy": [{"displayName": "Value", "desc": true}]
-      },
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {},
-            "indexByName": {"stream": 0, "Value": 1},
-            "renameByName": {"stream": "Stream", "Value": "Messages"}
-          }
-        }
-      ],
-      "targets": [
-        {
-          "expr": "topk(20, stream_length)",
-          "format": "table",
-          "instant": true,
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "id": 9,
-      "title": "🌊 Cognitive Flux — Stream Growth",
-      "type": "timeseries",
-      "gridPos": {"x": 0, "y": 38, "w": 24, "h": 8},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "description": "Rate of change in stream lengths — System growth dynamics",
+      "gridPos": {"x": 0, "y": 30, "w": 24, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
       "fieldConfig": {
         "defaults": {
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
             "lineWidth": 2,
-            "fillOpacity": 15,
+            "fillOpacity": 10,
             "gradientMode": "opacity",
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {"mode": "normal", "group": "A"}
+            "stacking": {"mode": "normal"}
           },
           "color": {"mode": "palette-classic"},
-          "unit": "events/s",
-          "decimals": 2,
-          "min": 0
+          "unit": "events/s"
         }
       },
-      "options": {
-        "tooltip": {"mode": "multi", "sort": "desc"},
-        "legend": {"displayMode": "table", "placement": "right", "calcs": ["mean", "max", "last"]}
-      },
-      "targets": [
-        {
-          "expr": "sum(rate(stream_length[30s])) by (stream)",
-          "legendFormat": "{{stream}}",
-          "refId": "A"
-        }
-      ]
+      "targets": [{"expr": "topk(10, rate(stream_length[30s]))", "legendFormat": "{{stream}}", "refId": "A"}]
     }
-  ],
-  "annotations": {
-    "list": [
-      {
-        "datasource": {"type": "prometheus", "uid": "prometheus"},
-        "enable": true,
-        "expr": "ALERTS{alertname=~\"SynapticBus.*\"}",
-        "iconColor": "red",
-        "name": "Synaptic Alerts",
-        "step": "15s",
-        "tagKeys": "alertname,severity",
-        "titleFormat": "Alert: {{alertname}}",
-        "textFormat": "{{alertname}}: {{severity}}"
-      }
-    ]
-  },
-  "templating": {
-    "list": [
-      {
-        "name": "sacred_order",
-        "type": "custom",
-        "options": [
-          {"text": "All", "value": "$__all", "selected": true},
-          {"text": "Memory Orders", "value": "memory"},
-          {"text": "Vault Keepers", "value": "vault"},
-          {"text": "Orthodoxy Wardens", "value": "orthodoxy"},
-          {"text": "Babel Gardens", "value": "babel"},
-          {"text": "Codex Hunters", "value": "codex"},
-          {"text": "Pattern Weavers", "value": "pattern"},
-          {"text": "Neural Engine", "value": "neural"}
-        ],
-        "multi": true,
-        "includeAll": true,
-        "allValue": ".*"
-      }
-    ]
-  }
+  ]
 }
