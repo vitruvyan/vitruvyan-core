@@ -20,7 +20,7 @@ import os
 from datetime import datetime
 
 # Add the core module to path for standalone execution
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..'))
 
 from vitruvyan_core.core.governance.codex_hunters.domain.config import CodexConfig, SourceConfig, CollectionConfig, TableConfig
 from vitruvyan_core.core.governance.codex_hunters.consumers.tracker import TrackerConsumer
@@ -34,69 +34,68 @@ def main():
     print("🏛️  Codex Hunters - Complete Workflow Example")
     print("=" * 50)
 
-    # Configure the system
+    # Configure the system (domain-agnostic)
     config = CodexConfig(
-        sources=(
-            SourceConfig(
-                name="financial_api",
+        sources={
+            "primary_api": SourceConfig(
+                name="primary_api",
                 rate_limit_per_minute=60,
                 timeout_seconds=30,
-                description="Financial data API"
+                description="Primary data source API"
             ),
-            SourceConfig(
-                name="news_feed",
+            "secondary_feed": SourceConfig(
+                name="secondary_feed",
                 rate_limit_per_minute=100,
                 timeout_seconds=10,
-                description="News and press releases"
+                description="Secondary data feed"
             ),
-        ),
-        collections=(
-            CollectionConfig(
+        },
+        collections={
+            "entity_vectors": CollectionConfig(
                 name="entity_vectors",
                 vector_size=384,
                 distance_metric="Cosine",
                 description="Vector embeddings for entity search"
             ),
-        ),
-        tables=(
-            TableConfig(
+        },
+        tables={
+            "entities": TableConfig(
                 name="entities",
                 schema="public",
                 primary_key="entity_id",
                 description="Entity metadata and relationships"
             ),
-        ),
-        quality_threshold=0.7,
-        dedupe_enabled=True
+        }
     )
 
     # Sample raw data (normally fetched by LIVELLO 2 adapters)
+    # Domain-agnostic examples: products, research papers, medical records, etc.
     raw_entities_data = {
-        "AAPL": {
-            "symbol": "AAPL",
-            "name": "Apple Inc.",
-            "sector": "Technology",
-            "industry": "Consumer Electronics",
-            "price": 150.25,
-            "market_cap": 2500000000000,
-            "pe_ratio": 28.5,
-            "dividend_yield": 0.82,
-            "country": "USA",
-            "exchange": "NASDAQ",
-            "description": "Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide."
+        "PROD_001": {
+            "product_id": "PROD_001",
+            "name": "Widget Alpha",
+            "category": "Electronics",
+            "subcategory": "Smart Devices",
+            "price": 299.99,
+            "stock_quantity": 1500,
+            "rating": 4.5,
+            "reviews_count": 287,
+            "manufacturer": "TechCorp Inc.",
+            "country_of_origin": "USA",
+            "description": "Advanced smart device with AI capabilities and IoT integration."
         },
-        "MSFT": {
-            "symbol": "MSFT",
-            "name": "Microsoft Corporation",
-            "sector": "Technology",
-            "industry": "Software",
-            "price": 305.50,
-            "market_cap": 2280000000000,
-            "pe_ratio": 32.1,
-            "dividend_yield": 0.95,
-            "country": "USA",
-            "exchange": "NASDAQ",
-            "description": "Microsoft Corporation develops, licenses, and supports software, services, devices, and solutions worldwide."
+        "PROD_002": {
+            "product_id": "PROD_002",
+            "name": "Widget Beta",
+            "category": "Electronics",
+            "subcategory": "Home Automation",
+            "price": 199.99,
+            "stock_quantity": 3200,
+            "rating": 4.8,
+            "reviews_count": 512,
+            "manufacturer": "SmartHome Solutions",
+            "country_of_origin": "Germany",
+            "description": "Energy-efficient home automation hub with voice control."
         }
     }
 
@@ -114,28 +113,26 @@ def main():
 
         # PHASE 1: Discovery (Tracker)
         discovery_input = {
-            "config": config,
-            "entity_ids": [entity_id],
-            "source_name": "financial_api",
-            "raw_data": {entity_id: raw_data},
+            "entity_id": entity_id,
+            "source": "primary_api",
+            "raw_data": raw_data,
             "metadata": {
                 "request_id": f"req_{entity_id.lower()}",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now().isoformat(),
                 "source_version": "v2.1"
             }
         }
 
         discovery_result = tracker.process(discovery_input)
         if not discovery_result.success:
-            print(f"❌ Discovery failed for {entity_id}: {discovery_result.error}")
+            print(f"❌ Discovery failed for {entity_id}: {discovery_result.errors}")
             continue
 
-        discovered_entity = discovery_result.data["entities"][0]
+        discovered_entity = discovery_result.data["entity"]
         print(f"✅ Discovered: {discovered_entity.entity_id} from {discovered_entity.source}")
 
         # PHASE 2: Restoration (Restorer)
         restoration_input = {
-            "config": config,
             "entity": discovered_entity,
             "validation_rules": {
                 "required_fields": ["symbol", "name", "price", "sector"],
@@ -149,19 +146,18 @@ def main():
 
         restoration_result = restorer.process(restoration_input)
         if not restoration_result.success:
-            print(f"❌ Restoration failed for {entity_id}: {restoration_result.error}")
+            print(f"❌ Restoration failed for {entity_id}: {restoration_result.errors}")
             continue
 
         restored_entity = restoration_result.data["entity"]
         print(f"✅ Restored: Quality Score {restored_entity.quality_score:.2f}")
 
-        if restored_entity.quality_score < config.quality_threshold:
-            print(f"⚠️  Low quality entity discarded (threshold: {config.quality_threshold})")
+        if restored_entity.quality_score < config.quality.threshold_valid:
+            print(f"⚠️  Low quality entity discarded (threshold: {config.quality.threshold_valid})")
             continue
 
         # PHASE 3: Binding (Binder)
         binding_input = {
-            "config": config,
             "entity": restored_entity,
             "storage_targets": {
                 "vector_collection": "entity_vectors",
@@ -173,12 +169,12 @@ def main():
 
         binding_result = binder.process(binding_input)
         if not binding_result.success:
-            print(f"❌ Binding failed for {entity_id}: {binding_result.error}")
+            print(f"❌ Binding failed for {entity_id}: {binding_result.errors}")
             continue
 
-        bound_entity = binding_result.data["entity"]
+        bound_entity = binding_result.data["bound_entity"]
         print(f"✅ Bound: Dedupe Key {bound_entity.dedupe_key[:16]}...")
-        print(f"   Storage Ready: {bound_entity.ready_for_storage}")
+        print(f"   Storage Refs: {bound_entity.storage_refs}")
 
         processed_entities.append(bound_entity)
 
@@ -189,7 +185,7 @@ def main():
     print(f"Successfully bound: {len(processed_entities)}")
 
     for entity in processed_entities:
-        print(f"  📋 {entity.entity_id}: {entity.dedupe_key[:16]}... (Quality: {entity.quality_score:.2f})")
+        print(f"  📋 {entity.entity_id}: {entity.dedupe_key[:16]}... (Status: {entity.status.value})")
 
     print("\n✅ Complete workflow example finished")
 

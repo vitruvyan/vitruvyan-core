@@ -1,196 +1,350 @@
 # Codex Hunters
 
-> **Knowledge Acquisition Service — Pure Domain Layer (LIVELLO 1)**
-
-Foundational module for discovering, validating, and normalizing external knowledge from disparate sources. The epistemic scholars that hunt for forgotten codices.
-
-## Sacred Order
-
-**Domain**: Perception (Ingestion)  
-**Mandate**: Acquire and normalize external knowledge, ensure data quality and deduplication  
-**Layer**: LIVELLO 1 (Pure Domain — No I/O, No Infrastructure)
+> **Structured Data Acquisition & Canonicalization Order**  
+> **Epistemic Layer**: PERCEPTION (Ingestion)  
+> **LIVELLO 1**: Pure Domain — Domain-Agnostic Knowledge Discovery
 
 ---
 
-## Quick Start
+## 📜 Charter
+
+Codex Hunters are responsible for **acquiring and normalizing external knowledge** from disparate sources. Like medieval scholars traveling to remote monasteries seeking forgotten manuscripts, the Hunters discover, validate, and preserve data with unwavering precision.
+
+**Sacred Mandate**: No codex left unfound, no data corrupted, no truth lost.
+
+---
+
+## 🎯 Quick Start
 
 ```python
-from vitruvyan_core.core.governance.codex_hunters.domain.codex_config import CodexConfig, DataSource
-from vitruvyan_core.core.governance.codex_hunters.consumers.tracker import Tracker
-from vitruvyan_core.core.governance.codex_hunters.consumers.restorer import Restorer
-from vitruvyan_core.core.governance.codex_hunters.consumers.binder import Binder
-
-# Configure data sources
-config = CodexConfig(
-    sources={
-        "api_source": SourceConfig(name="api_source", rate_limit_per_minute=100),
-        "file_source": SourceConfig(name="file_source", rate_limit_per_minute=50)
-    }
+from vitruvyan_core.core.governance.codex_hunters.domain.config import (
+    CodexConfig, SourceConfig, QualityConfig
+)
+from vitruvyan_core.core.governance.codex_hunters.consumers import (
+    TrackerConsumer, RestorerConsumer, BinderConsumer
 )
 
-# Track and discover entities
-tracker = Tracker(config)
-discovery_input = {
+# Configure (domain-agnostic)
+config = CodexConfig(
+    sources={
+        "primary_api": SourceConfig(
+            name="primary_api",
+            rate_limit_per_minute=100,
+            timeout_seconds=30
+        )
+    },
+    quality=QualityConfig(
+        threshold_valid=0.6,  # Minimum quality score
+        penalty_per_error=0.1
+    )
+)
+
+# Discovery Pipeline: Track → Restore → Bind
+tracker = TrackerConsumer(config)
+restorer = RestorerConsumer(config)
+binder = BinderConsumer(config)
+
+# Step 1: Discover entity
+result = tracker.process({
     "entity_id": "entity_001",
-    "source": "api_source",
-    "raw_data": {"name": "Example Entity", "category": "test"}
-}
-result = tracker.process(discovery_input)
-discovered_entity = result.data["entity"]
+    "source": "primary_api",
+    "raw_data": {"name": "Example", "value": 123}
+})
+discovered = result.data["entity"]
 
-# Restore and validate data quality
-restorer = Restorer(config)
-restoration_input = {"entity": discovered_entity}
-result = restorer.process(restoration_input)
+# Step 2: Restore (normalize + validate)
+result = restorer.process({"entity": discovered})
 restored = result.data["entity"]
-print(f"Entity: {restored.entity_id}, Quality: {restored.quality_score}")
+print(f"Quality score: {restored.quality_score}")  # 0.0-1.0
 
-# Bind for storage
-binder = Binder(config)
+# Step 3: Bind (prepare for storage)
 result = binder.process({"entity": restored})
 bound = result.data["bound_entity"]
-print(f"Bound entity: {bound.dedupe_key}")
+print(f"Dedupe key: {bound.dedupe_key}")  # Deterministic hash
 ```
 
 ---
 
-## Architecture
+## 🏛️ Architecture
 
-### Two-Level Pattern
+### Two-Level Pattern (SACRED_ORDER_PATTERN)
 
-| Level | Location | Purpose | Dependencies |
-|-------|----------|---------|--------------|
-| **LIVELLO 1** | `vitruvyan_core/core/governance/codex_hunters/` | Pure domain logic | None (stdlib only) |
-| **LIVELLO 2** | `services/api_codex_hunters/` | Infrastructure, API, Docker | PostgreSQL, Qdrant, Redis |
+| Layer | Location | Dependencies | Purpose |
+|-------|----------|--------------|---------|
+| **LIVELLO 1** | `vitruvyan_core/core/governance/codex_hunters/` | **None** (stdlib only) | Pure domain logic |
+| **LIVELLO 2** | `services/api_codex_hunters/` | Postgres, Qdrant, Redis | Infrastructure + I/O |
 
-**Direction: service → core** (ONE-WAY). LIVELLO 2 imports LIVELLO 1, never reverse.
+**Direction: `services/` → `core/`** (ONE-WAY)
 
-### Domain Model
+### Sacred Invariants
 
-```
-RawData ──track──▶ DiscoveredEntity ──restore──▶ RestoredEntity ──bind──▶ BoundEntity
-```
-
-### Core Components
-
-- **Tracker**: Discovers and locates data from configured sources
-- **Restorer**: Normalizes and validates data quality
-- **Binder**: Prepares entities for permanent storage with deduplication
-- **Inspector**: Audits data integrity and completeness
+1. **Source Agnosticism**: No hardcoded data sources (all configured via `CodexConfig`)
+2. **Pure Processing**: LIVELLO 1 consumers = pure functions (no I/O)
+3. **Quality Scores**: Every restored entity has `quality_score` (0.0-1.0)
+4. **Deduplication**: Deterministic `dedupe_key` = `hash(entity_id + source + data_hash)`
+5. **Event-Driven**: All operations emit domain-agnostic events
 
 ---
 
-## Domain Objects
+## 📦 Domain Model
 
-### CodexConfig
-```python
-@dataclass(frozen=True)
-class CodexConfig:
-    sources: tuple[DataSource, ...]
-    quality_threshold: float = 0.5
-    dedupe_enabled: bool = True
+```
+External Data ─┬─→ Track   → DiscoveredEntity
+               │   (locate)
+               │
+               ├─→ Restore → RestoredEntity
+               │   (normalize + validate)
+               │
+               └─→ Bind    → BoundEntity
+                   (prepare for storage)
 ```
 
-### DiscoveredEntity
+### Core Entities
+
+#### `DiscoveredEntity`
 ```python
 @dataclass(frozen=True)
 class DiscoveredEntity:
-    entity_id: str
-    source_name: str
-    raw_data: dict
-    timestamp: str
-    metadata: tuple
+    entity_id: str              # Domain identifier
+    source: str                 # Configured source name
+    discovered_at: datetime
+    raw_data: Dict[str, Any]    # Unprocessed payload
+    metadata: Dict[str, Any]
+    status: EntityStatus        # DISCOVERED
 ```
 
-### RestoredEntity
+#### `RestoredEntity`
 ```python
 @dataclass(frozen=True)
 class RestoredEntity:
     entity_id: str
-    source_name: str
-    normalized_data: dict
-    quality_score: float  # 0.0 to 1.0
-    validation_errors: tuple
-    timestamp: str
+    source: str
+    restored_at: datetime
+    normalized_data: Dict[str, Any]  # Cleaned payload
+    quality_score: float             # 0.0 (invalid) to 1.0 (perfect)
+    validation_errors: List[str]
+    status: EntityStatus             # RESTORED | INVALID
 ```
 
-### BoundEntity
+#### `BoundEntity`
 ```python
 @dataclass(frozen=True)
 class BoundEntity:
     entity_id: str
-    dedupe_key: str  # Deterministic key for duplicate detection
-    final_data: dict
-    quality_score: float
-    ready_for_storage: bool
-    timestamp: str
+    source: str
+    bound_at: datetime
+    storage_refs: Dict[str, str]     # {"relational": "entities", "vector": "embeddings"}
+    embedding_id: Optional[str]      # If embedding provided
+    dedupe_key: str                  # Deterministic hash
+    status: EntityStatus             # BOUND
 ```
 
 ---
 
-## Consumers (Pure Functions)
+## ⚙️ Configuration
 
-All consumers implement the `CodexRole` interface:
+### CodexConfig (Domain-Agnostic)
 
 ```python
-class CodexRole(ABC):
-    @property
-    def role_name(self) -> str: ...
-
-    @property
-    def description(self) -> str: ...
-
-    def can_handle(self, event: Any) -> bool: ...
-
-    def process(self, input_data: Any) -> Any: ...
+@dataclass
+class CodexConfig:
+    # Storage targets (abstract, no provider assumptions)
+    entity_table: TableConfig = TableConfig(name="entities")
+    embedding_collection: CollectionConfig = CollectionConfig(name="entity_embeddings")
+    
+    # Data sources (configured at deployment)
+    sources: Dict[str, SourceConfig] = field(default_factory=dict)
+    
+    # Quality scoring (config-driven, no hardcoded thresholds)
+    quality: QualityConfig = QualityConfig(
+        threshold_valid=0.5,       # Minimum score for VALID status
+        penalty_per_error=0.1,     # Score deduction per error
+        penalty_null_ratio=0.3     # Score deduction for null fields
+    )
+    
+    # Event streams
+    streams: StreamConfig = StreamConfig(prefix="codex")
+    
+    # Embedding settings
+    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    embedding_dimension: int = 384
 ```
 
-### Available Roles
-- **Tracker**: Data discovery and location from sources
-- **Restorer**: Data normalization and quality validation
-- **Binder**: Entity preparation and deduplication
-- **Inspector**: Data integrity auditing
+### YAML Configuration
+
+```yaml
+# config/deployment.yaml
+entity_table:
+  name: "medical_records"
+  schema: "healthcare"
+
+embedding_collection:
+  name: "patient_embeddings"
+  vector_size: 384
+
+sources:
+  ehr_system:
+    name: "Electronic Health Records"
+    rate_limit_per_minute: 50
+    timeout_seconds: 45
+  lab_results:
+    name: "Laboratory Results API"
+    rate_limit_per_minute: 100
+
+quality:
+  threshold_valid: 0.7
+  penalty_per_error: 0.15
+```
+
+```python
+# Load from YAML
+from pathlib import Path
+config = CodexConfig.from_yaml(Path("config/deployment.yaml"))
+```
 
 ---
 
-## Events & Channels
+## 🔧 Consumers (Pure Functions)
 
-Codex operations emit events to the Cognitive Bus:
+### TrackerConsumer
 
-- `codex.entity.discovered` — New entity located
-- `codex.entity.restored` — Entity normalized and validated
-- `codex.entity.bound` — Entity prepared for storage
-- `codex.quality.failed` — Entity failed quality check
+**Purpose**: Discover entities from configured sources  
+**Input**: `{entity_id, source, raw_data}`  
+**Output**: `DiscoveredEntity` + deterministic `dedupe_key`
+
+**Key Features**:
+- ✅ Validates source is configured
+- ✅ Generates hash-based dedupe key (NOT date-based)
+- ✅ No I/O (delegates fetch to LIVELLO 2 adapters)
+
+### RestorerConsumer
+
+**Purpose**: Normalize and validate data quality  
+**Input**: `{entity: DiscoveredEntity}`  
+**Output**: `RestoredEntity` with `quality_score`
+
+**Quality Scoring** (config-driven):
+```python
+score = 1.0
+score -= len(validation_errors) * config.quality.penalty_per_error
+score -= null_field_ratio * config.quality.penalty_null_ratio
+score = clamp(score, 0.0, 1.0)
+```
+
+**Status Assignment**:
+- `quality_score >= threshold_valid` → `RESTORED`
+- `quality_score < threshold_valid` → `INVALID`
+
+### BinderConsumer
+
+**Purpose**: Prepare entity for permanent storage  
+**Input**: `{entity: RestoredEntity, embedding: Optional[List[float]]}`  
+**Output**: `BoundEntity` + `normalized_data`
+
+**CRITICAL**: Returns domain-agnostic data. LIVELLO 2 adapter constructs provider-specific payloads (Postgres JSONB, Qdrant points).
 
 ---
 
-## Philosophy
+## 📡 Events
 
-*"No codex left unfound."*
+### Channel Naming (Domain-Neutral)
 
-Codex Hunters embody five sacred tenets:
+```
+codex.entity.discovered   → Entity tracked
+codex.entity.restored     → Entity normalized
+codex.entity.bound        → Entity ready for storage
+codex.expedition.completed → Batch operation finished
+```
 
-1. **Source Agnosticism** — No hardcoded data sources, all configured at runtime
-2. **Pure Processing** — LIVELLO 1 consumers are pure functions with no I/O
-3. **Quality Scores** — Every entity has a quality score (0.0-1.0)
-4. **Deduplication** — Deterministic dedupe keys prevent duplicates
-5. **Event-Driven** — All operations emit domain-agnostic events
+### Event Envelope
+
+```python
+{
+    "event_id": "evt_123",
+    "channel": "codex.entity.discovered",
+    "payload": {
+        "entity_id": "entity_001",
+        "source": "primary_api",
+        "discovered_at": "2026-02-11T10:30:00Z"
+    },
+    "timestamp": "2026-02-11T10:30:00.123Z"
+}
+```
 
 ---
 
-## Testing
+## 🧪 Testing
 
-Run unit tests (no infrastructure required):
 ```bash
+# Unit tests (no I/O, no Docker)
 cd vitruvyan_core/core/governance/codex_hunters
 pytest tests/
+
+# Verify purity (no infrastructure imports)
+python3 -c "from vitruvyan_core.core.governance.codex_hunters.consumers import *; print('✅ Pure')"
 ```
 
 ---
 
-## Related Components
+## 🎨 Domain Deployment Examples
 
-- **Service Layer**: `services/api_codex_hunters/` — REST API and infrastructure
-- **Agents**: `core.agents.postgres_agent`, `core.agents.qdrant_agent` — Data persistence
-- **Bus**: `core.synaptic_conclave.transport.streams.StreamBus` — Event publishing</content>
-<parameter name="filePath">/home/vitruvyan/vitruvyan-core/vitruvyan_core/core/governance/codex_hunters/README.md
+### Healthcare
+
+```python
+CodexConfig(
+    entity_table=TableConfig(name="patients"),
+    embedding_collection=CollectionConfig(name="patient_embeddings"),
+    sources={
+        "ehr": SourceConfig(name="Electronic Health Records", ...),
+        "labs": SourceConfig(name="Lab Results API", ...)
+    }
+)
+```
+
+### E-Commerce
+
+```python
+CodexConfig(
+    entity_table=TableConfig(name="products"),
+    embedding_collection=CollectionConfig(name="product_embeddings"),
+    sources={
+        "inventory": SourceConfig(name="Inventory Management", ...),
+        "supplier": SourceConfig(name="Supplier API", ...)
+    }
+)
+```
+
+### Research
+
+```python
+CodexConfig(
+    entity_table=TableConfig(name="papers"),
+    embedding_collection=CollectionConfig(name="paper_embeddings"),
+    sources={
+        "arxiv": SourceConfig(name="ArXiv API", ...),
+        "pubmed": SourceConfig(name="PubMed", ...)
+    }
+)
+```
+
+---
+
+## 📚 Philosophy
+
+See [charter.md](philosophy/charter.md) for Sacred Order identity, mandate, and invariants.
+
+---
+
+## 🔗 Integration
+
+- **LIVELLO 2 Service**: `services/api_codex_hunters/` (FastAPI + Docker)
+- **Adapters**: `services/api_codex_hunters/adapters/` (I/O bound
+
+ary)
+- **Examples**: `examples/` (usage patterns)
+- **Tests**: `tests/` (unit tests)
+
+---
+
+*"In the pursuit of knowledge, let no source be ignored, no data be corrupted, no truth be lost."*  
+— The Hunter's Creed

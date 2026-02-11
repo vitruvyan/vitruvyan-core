@@ -85,12 +85,15 @@ class CodexConfig:
         # Default (domain-agnostic)
         config = CodexConfig()
         
-        # Finance domain override
+        # Domain-specific override (via code)
         config = CodexConfig(
-            entity_table=TableConfig(name="tickers"),
-            embedding_collection=CollectionConfig(name="ticker_embeddings"),
-            streams=StreamConfig(prefix="codex.finance")
+            entity_table=TableConfig(name="products"),
+            embedding_collection=CollectionConfig(name="product_embeddings"),
+            streams=StreamConfig(prefix="codex.ecommerce")
         )
+        
+        # Domain-specific override (via YAML)
+        config = CodexConfig.from_yaml("config/healthcare.yaml")
     """
     
     # Entity storage (PostgreSQL)
