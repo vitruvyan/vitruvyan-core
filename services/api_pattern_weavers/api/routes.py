@@ -18,7 +18,6 @@ from ..models import (
     ErrorResponse,
     HealthStatus,
     PatternMatch,
-    RiskProfile,
     TaxonomyStats,
     WeaveRequest,
     WeaveResult,
@@ -103,15 +102,6 @@ async def weave_patterns(request: WeaveRequest):
             metadata=match_data.get("metadata", {}),
         ))
     
-    risk_data = process_result.data.get("risk_profile")
-    risk_profile = None
-    if risk_data:
-        risk_profile = RiskProfile(
-            level=risk_data.get("level", "medium"),
-            factors=risk_data.get("factors", []),
-            score=risk_data.get("score", 0.5),
-        )
-    
     processing_time = (time.time() - start_time) * 1000
     
     # Log the weave
@@ -126,7 +116,6 @@ async def weave_patterns(request: WeaveRequest):
         request_id=request_id,
         status="completed",
         matches=matches,
-        risk_profile=risk_profile,
         processing_time_ms=processing_time,
         metadata={"query_length": len(request.query)},
     )
