@@ -1,0 +1,329 @@
+{
+  "title": "🧠 Neural Topology — Sacred Orders Network",
+  "uid": "synaptic-topology-grid",
+  "tags": ["topology", "network", "sacred-orders", "live"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "5s",
+  "time": {"from": "now-5m", "to": "now"},
+  "panels": [
+    {
+      "id": 1,
+      "title": "🔍 Codex Hunters",
+      "description": "PERCEPTION — Discovery & Ingestion",
+      "type": "stat",
+      "gridPos": {"x": 0, "y": 0, "w": 4, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#3498db", "value": null},
+              {"color": "#2ecc71", "value": 3000},
+              {"color": "#f39c12", "value": 5000},
+              {"color": "#e74c3c", "value": 7000}
+            ]
+          },
+          "unit": "events"
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "background",
+        "textMode": "value_and_name",
+        "orientation": "auto"
+      },
+      "targets": [{"expr": "sacred_order_activity{sacred_order=\"codex\"}", "refId": "A"}]
+    },
+    {
+      "id": 2,
+      "title": "🧠 Memory Orders",
+      "description": "MEMORY — Coherence & RAG",
+      "type": "stat",
+      "gridPos": {"x": 5, "y": 0, "w": 4, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#9b59b6", "value": null},
+              {"color": "#2ecc71", "value": 3000},
+              {"color": "#f39c12", "value": 5000},
+              {"color": "#e74c3c", "value": 7000}
+            ]
+          },
+          "unit": "events"
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "background",
+        "textMode": "value_and_name",
+        "orientation": "auto"
+      },
+      "targets": [{"expr": "sacred_order_activity{sacred_order=\"memory\"}", "refId": "A"}]
+    },
+    {
+      "id": 3,
+      "title": "🕸️ Pattern Weavers",
+      "description": "REASON — Pattern Detection",
+      "type": "stat",
+      "gridPos": {"x": 10, "y": 0, "w": 4, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#e74c3c", "value": null},
+              {"color": "#2ecc71", "value": 3000},
+              {"color": "#f39c12", "value": 5000},
+              {"color": "#c0392b", "value": 7000}
+            ]
+          },
+          "unit": "events"
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "background",
+        "textMode": "value_and_name",
+        "orientation": "auto"
+      },
+      "targets": [{"expr": "sacred_order_activity{sacred_order=\"pattern\"}", "refId": "A"}]
+    },
+    {
+      "id": 4,
+      "title": "⚖️ Orthodoxy Wardens",
+      "description": "TRUTH — Governance & Audit",
+      "type": "stat",
+      "gridPos": {"x": 15, "y": 0, "w": 4, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#27ae60", "value": null},
+              {"color": "#2ecc71", "value": 3000},
+              {"color": "#f39c12", "value": 5000},
+              {"color": "#e74c3c", "value": 7000}
+            ]
+          },
+          "unit": "events"
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "background",
+        "textMode": "value_and_name",
+        "orientation": "auto"
+      },
+      "targets": [{"expr": "sacred_order_activity{sacred_order=\"orthodoxy\"}", "refId": "A"}]
+    },
+    {
+      "id": 5,
+      "title": "🏛️ Vault Keepers",
+      "description": "MEMORY — Archival & Snapshots",
+      "type": "stat",
+      "gridPos": {"x": 2, "y": 5, "w": 4, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#9b59b6", "value": null},
+              {"color": "#2ecc71", "value": 3000},
+              {"color": "#f39c12", "value": 5000},
+              {"color": "#e74c3c", "value": 7000}
+            ]
+          },
+          "unit": "events"
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "background",
+        "textMode": "value_and_name",
+        "orientation": "auto"
+      },
+      "targets": [{"expr": "sacred_order_activity{sacred_order=\"vault\"}", "refId": "A"}]
+    },
+    {
+      "id": 6,
+      "title": "⚡ Neural Engine",
+      "description": "REASON — Analysis & Screening",
+      "type": "stat",
+      "gridPos": {"x": 7, "y": 5, "w": 4, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#e74c3c", "value": null},
+              {"color": "#2ecc71", "value": 3000},
+              {"color": "#f39c12", "value": 5000},
+              {"color": "#c0392b", "value": 7000}
+            ]
+          },
+          "unit": "events"
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "background",
+        "textMode": "value_and_name",
+        "orientation": "auto"
+      },
+      "targets": [{"expr": "sacred_order_activity{sacred_order=\"neural\"}", "refId": "A"}]
+    },
+    {
+      "id": 7,
+      "title": "🌐 Babel Gardens",
+      "description": "DISCOURSE — Narratives & UX",
+      "type": "stat",
+      "gridPos": {"x": 12, "y": 5, "w": 4, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#f39c12", "value": null},
+              {"color": "#2ecc71", "value": 3000},
+              {"color": "#e67e22", "value": 5000},
+              {"color": "#e74c3c", "value": 7000}
+            ]
+          },
+          "unit": "events"
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "background",
+        "textMode": "value_and_name",
+        "orientation": "auto"
+      },
+      "targets": [{"expr": "sacred_order_activity{sacred_order=\"babel\"}", "refId": "A"}]
+    },
+    {
+      "id": 8,
+      "title": "🔥 Neural Pulse — Event Storm",
+      "type": "timeseries",
+      "gridPos": {"x": 0, "y": 10, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 3,
+            "fillOpacity": 30,
+            "gradientMode": "opacity",
+            "showPoints": "never"
+          },
+          "color": {"mode": "palette-classic"},
+          "unit": "events"
+        }
+      },
+      "options": {
+        "legend": {"displayMode": "list", "placement": "bottom"}
+      },
+      "targets": [
+        {"expr": "sacred_order_activity", "legendFormat": "{{sacred_order}}", "refId": "A"}
+      ]
+    },
+    {
+      "id": 9,
+      "title": "🎯 Activity Matrix — Power Distribution",
+      "type": "bargauge",
+      "gridPos": {"x": 12, "y": 10, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "continuous-GrYlRd"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 3000},
+              {"color": "orange", "value": 5000},
+              {"color": "red", "value": 7000}
+            ]
+          },
+          "unit": "events",
+          "min": 0,
+          "max": 8000
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "text": {"valueSize": 18}
+      },
+      "targets": [
+        {"expr": "sacred_order_activity", "legendFormat": "{{sacred_order}}", "refId": "A"}
+      ]
+    },
+    {
+      "id": 10,
+      "title": "⚡ System Vitals",
+      "type": "stat",
+      "gridPos": {"x": 0, "y": 18, "w": 8, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "unit": "short"
+        }
+      },
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "value_and_name",
+        "orientation": "horizontal"
+      },
+      "targets": [
+        {"expr": "count(stream_length)", "legendFormat": "Active Streams", "refId": "A"},
+        {"expr": "sum(stream_length)", "legendFormat": "Total Events", "refId": "B"},
+        {"expr": "sum(sacred_order_activity)", "legendFormat": "Sacred Orders Activity", "refId": "C"}
+      ]
+    },
+    {
+      "id": 11,
+      "title": "🌊 Stream Flow Rate",
+      "type": "timeseries",
+      "gridPos": {"x": 8, "y": 18, "w": 16, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "gradientMode": "hue"
+          },
+          "color": {"mode": "palette-classic"},
+          "unit": "events/s"
+        }
+      },
+      "targets": [
+        {"expr": "sum(rate(stream_length[1m]))", "legendFormat": "Global Flow Rate", "refId": "A"}
+      ]
+    }
+  ]
+}

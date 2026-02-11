@@ -1,0 +1,103 @@
+{
+  "title": "🧠 Synaptic Topology — Network Diagram (Mermaid)",
+  "uid": "synaptic-topology-diagram",
+  "tags": ["topology", "network", "sacred-orders", "mermaid"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "5s",
+  "time": {"from": "now-5m", "to": "now"},
+  "panels": [
+    {
+      "id": 1,
+      "title": "🌐 Sacred Orders Network — Cognitive Topology",
+      "type": "jdbranham-diagram-panel",
+      "gridPos": {"x": 0, "y": 0, "w": 24, "h": 16},
+      "options": {
+        "mode": "mermaid",
+        "content": "graph TB\n    %% Sacred Orders Network Topology\n    \n    %% Perception Layer\n    codex[(\"🔍 Codex Hunters<br/>PERCEPTION<br/>Discovery & Ingestion\")]\n    \n    %% Memory Layer\n    memory[(\"🧠 Memory Orders<br/>MEMORY<br/>Coherence & RAG\")]\n    vault[(\"🏛️ Vault Keepers<br/>MEMORY<br/>Archival & Snapshots\")]\n    \n    %% Reason Layer\n    pattern[(\"🕸️ Pattern Weavers<br/>REASON<br/>Pattern Detection\")]\n    neural[(\"⚡ Neural Engine<br/>REASON<br/>Analysis & Screening\")]\n    \n    %% Discourse Layer\n    babel[(\"🌐 Babel Gardens<br/>DISCOURSE<br/>Narratives & UX\")]\n    \n    %% Truth Layer\n    orthodoxy[(\"⚖️ Orthodoxy Wardens<br/>TRUTH<br/>Governance & Audit\")]\n    \n    %% Stream Connections (Data Flow)\n    codex -->|discovery.mapped| memory\n    codex -->|discovery.stored| vault\n    \n    memory -->|coherence.analyzed| pattern\n    memory -->|entities.enriched| neural\n    memory -->|context.retrieved| babel\n    \n    vault -->|archive.completed| orthodoxy\n    vault -->|snapshot.created| memory\n    \n    pattern -->|pattern.detected| babel\n    pattern -->|anomaly.found| orthodoxy\n    \n    neural -->|screening.completed| babel\n    neural -->|ranking.updated| memory\n    \n    babel -->|narrative.generated| orthodoxy\n    babel -->|translation.completed| memory\n    \n    orthodoxy -->|validation.passed| memory\n    orthodoxy -->|audit.failed| codex\n    \n    %% Styling\n    classDef perception fill:#3498db,stroke:#2980b9,stroke-width:4px,color:#fff\n    classDef memory fill:#9b59b6,stroke:#8e44ad,stroke-width:4px,color:#fff\n    classDef reason fill:#e74c3c,stroke:#c0392b,stroke-width:4px,color:#fff\n    classDef discourse fill:#f39c12,stroke:#e67e22,stroke-width:4px,color:#fff\n    classDef truth fill:#27ae60,stroke:#229954,stroke-width:4px,color:#fff\n    \n    class codex perception\n    class memory,vault memory\n    class pattern,neural reason\n    class babel discourse\n    class orthodoxy truth",
+        "init": "%%{init: {'theme': 'dark', 'themeVariables': { 'fontSize': '18px'}}}%%"
+      }
+    },
+    {
+      "id": 2,
+      "title": "🎯 Sacred Orders Activity — Live Metrics",
+      "type": "bargauge",
+      "gridPos": {"x": 0, "y": 16, "w": 12, "h": 6},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "continuous-GrYlRd"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 15000},
+              {"color": "orange", "value": 20000},
+              {"color": "red", "value": 25000}
+            ]
+          },
+          "unit": "events",
+          "min": 0
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "text": {"valueSize": 20}
+      },
+      "targets": [
+        {"expr": "sacred_order_activity", "legendFormat": "{{sacred_order}}", "refId": "A"}
+      ]
+    },
+    {
+      "id": 3,
+      "title": "🔥 Neural Pulse — Live Activity",
+      "type": "timeseries",
+      "gridPos": {"x": 12, "y": 16, "w": 12, "h": 6},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 3,
+            "fillOpacity": 25,
+            "gradientMode": "opacity"
+          },
+          "color": {"mode": "palette-classic"},
+          "unit": "events"
+        }
+      },
+      "targets": [
+        {"expr": "sacred_order_activity", "legendFormat": "{{sacred_order}}", "refId": "A"}
+      ]
+    },
+    {
+      "id": 4,
+      "title": "⚡ System Vitals",
+      "type": "stat",
+      "gridPos": {"x": 0, "y": 22, "w": 24, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "unit": "short"
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "textMode": "value_and_name",
+        "orientation": "horizontal"
+      },
+      "targets": [
+        {"expr": "count(stream_length)", "legendFormat": "Active Streams", "refId": "A"},
+        {"expr": "sum(stream_length)", "legendFormat": "Total Events", "refId": "B"},
+        {"expr": "sum(sacred_order_activity)", "legendFormat": "Sacred Orders Activity", "refId": "C"},
+        {"expr": "sum(rate(stream_length[1m])) * 60", "legendFormat": "Events/min", "refId": "D"}
+      ]
+    }
+  ]
+}

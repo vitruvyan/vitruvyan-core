@@ -726,6 +726,8 @@ services:
       - GF_SERVER_ROOT_URL=http://localhost:3000
       - GF_SERVER_DOMAIN=localhost
       - GF_INSTALL_PLUGINS=redis-datasource
+      - GF_PLUGINS_ANGULAR_SUPPORT=true
+      - GF_FEATURE_TOGGLES_ENABLE=angularDeprecationUI
     ports:
       - "3000:3000"
     volumes:
