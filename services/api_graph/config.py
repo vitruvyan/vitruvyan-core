@@ -49,6 +49,9 @@ class Settings:
     # Graph execution config
     DEFAULT_USER_ID: str = "demo"
     GRAPH_TIMEOUT_SECONDS: int = int(os.getenv("GRAPH_TIMEOUT_SECONDS", "60"))
+    
+    # Phase 1: Minimal LangGraph wrapper (4 nodes)
+    ENABLE_MINIMAL_GRAPH: bool = os.getenv("ENABLE_MINIMAL_GRAPH", "false").lower() == "true"
 
 
 settings = Settings()

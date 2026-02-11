@@ -8,14 +8,14 @@ from typing import Dict, Any
 
 from prometheus_client import Counter
 
-from .config import get_config
-from .core.validation import (
+from config import get_config
+from core.validation import (
     validate_factor_scores,
     validate_composite_score,
     validate_summary_length,
     aggregate_validation_results
 )
-from .core.models import ValidationStatus
+from core.models import ValidationStatus
 from core.agents.postgres_agent import PostgresAgent
 from core.synaptic_conclave.transport.streams import StreamBus
 

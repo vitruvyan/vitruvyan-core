@@ -13,6 +13,7 @@ from typing import Dict, Any
 from datetime import datetime
 
 from core.orchestration.langgraph.graph_runner import run_graph_once, run_graph
+from core.orchestration.langgraph.graph_flow import build_graph, build_minimal_graph
 from core.orchestration.langgraph.simple_graph_audit_monitor import get_simple_graph_monitor
 from api_graph.config import settings
 
@@ -37,7 +38,12 @@ class GraphOrchestrationAdapter:
         self.monitor = get_simple_graph_monitor()
         self.audit_enabled = settings.AUDIT_ENABLED
         
-        logger.info(f"GraphOrchestrationAdapter initialized (audit={self.audit_enabled})")
+        if settings.ENABLE_MINIMAL_GRAPH:
+            self.graph = build_minimal_graph()
+        else:
+            self.graph = build_graph()
+        
+        logger.info(f"GraphOrchestrationAdapter initialized (audit={self.audit_enabled}, minimal={settings.ENABLE_MINIMAL_GRAPH})")
     
     async def execute_graph(self, input_text: str, user_id: str) -> Dict[str, Any]:
         """

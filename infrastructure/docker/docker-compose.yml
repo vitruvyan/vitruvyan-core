@@ -153,6 +153,54 @@ services:
     networks:
       - core-net
 
+  mcp:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_mcp
+    container_name: core_mcp
+    restart: unless-stopped
+    ports:
+      - "8020:8020"
+    environment:
+      - PYTHONPATH=/app:/app/vitruvyan_core
+      - LOG_LEVEL=${MCP_LOG_LEVEL:-INFO}
+      - PORT=8020
+      # PostgreSQL
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
+      # Redis (StreamBus)
+      - REDIS_HOST=core_redis
+      - REDIS_PORT=6379
+      # MCP Validation Config (domain-agnostic thresholds)
+      - MCP_Z_THRESHOLD=${MCP_Z_THRESHOLD:-3.0}
+      - MCP_COMPOSITE_THRESHOLD=${MCP_COMPOSITE_THRESHOLD:-5.0}
+      - MCP_MIN_SUMMARY_WORDS=${MCP_MIN_SUMMARY_WORDS:-100}
+      - MCP_MAX_SUMMARY_WORDS=${MCP_MAX_SUMMARY_WORDS:-200}
+      - MCP_FACTOR_KEYS=${MCP_FACTOR_KEYS:-factor_1,factor_2,factor_3,factor_4,factor_5}
+      # External APIs
+      - NEURAL_ENGINE_API=http://neural_engine:8003
+      - LANGGRAPH_URL=http://graph:8004
+      - PATTERN_WEAVERS_API=http://pattern_weavers:8017
+      # OpenAI (Function Calling)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${MCP_OPENAI_MODEL:-gpt-4o-mini}
+    depends_on:
+      - redis
+      - postgres
+      - neural_engine
+      - graph
+    networks:
+      - core-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8020/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   embedding:
     build:
       context: ../..

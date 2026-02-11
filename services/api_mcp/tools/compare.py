@@ -6,8 +6,8 @@ from datetime import datetime
 from typing import Dict, Any
 import httpx
 
-from ..config import get_config
-from ..errors import MCPError
+from config import get_config
+from errors import MCPError
 
 logger = logging.getLogger(__name__)
 

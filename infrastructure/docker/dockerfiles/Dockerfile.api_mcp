@@ -14,16 +14,15 @@ WORKDIR /app
 COPY services/api_mcp/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy vitruvyan_core foundation modules (minimal dependencies)
-COPY vitruvyan_core/core/__init__.py ./vitruvyan_core/core/__init__.py
-COPY vitruvyan_core/core/foundation/__init__.py ./vitruvyan_core/core/foundation/__init__.py
-COPY vitruvyan_core/core/foundation/persistence ./vitruvyan_core/core/foundation/persistence
+# Copy vitruvyan_core foundation modules (PostgresAgent, StreamBus, etc.)
+COPY vitruvyan_core/core/ /app/core/
 
-# Copy MCP server code
+# Copy MCP server code (including NEW core/ refactoring)
 COPY services/api_mcp/main.py .
 COPY services/api_mcp/config.py .
 COPY services/api_mcp/errors.py .
 COPY services/api_mcp/middleware.py .
+COPY services/api_mcp/core ./core
 COPY services/api_mcp/api ./api
 COPY services/api_mcp/schemas ./schemas
 COPY services/api_mcp/tools ./tools

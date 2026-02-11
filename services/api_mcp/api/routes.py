@@ -9,9 +9,9 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse, Response
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 
-from ..schemas import TOOL_SCHEMAS, ExecuteRequest, MCPResponse
-from ..tools import TOOL_EXECUTORS
-from ..middleware import sacred_orders_middleware
+from schemas import TOOL_SCHEMAS, ExecuteRequest, MCPResponse
+from tools import TOOL_EXECUTORS
+from middleware import sacred_orders_middleware
 
 logger = logging.getLogger(__name__)
 
@@ -35,9 +35,9 @@ async def root():
 @router.get("/health")
 async def health():
     """Health check."""
-    from ..middleware import get_redis
-    redis_client = get_redis()
-    return {"status": "healthy", "service": "vitruvyan_mcp_server", "redis": "connected" if redis_client else "disconnected", "timestamp": datetime.utcnow().isoformat()}
+    from middleware import get_stream_bus
+    stream_bus = get_stream_bus()
+    return {"status": "healthy", "service": "vitruvyan_mcp_server", "bus": "connected" if stream_bus else "disconnected", "timestamp": datetime.utcnow().isoformat()}
 
 
 @router.get("/tools")

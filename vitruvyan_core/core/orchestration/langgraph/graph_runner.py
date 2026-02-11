@@ -1,8 +1,9 @@
 # core/langgraph/graph_runner.py
 
+import os
 import json
 from typing import Dict, Any
-from core.orchestration.langgraph.graph_flow import build_graph
+from core.orchestration.langgraph.graph_flow import build_graph, build_minimal_graph
 from core.orchestration.langgraph.memory_utils import merge_slots
 from core.orchestration.langgraph.node.proactive_suggestions_node import format_suggestions_for_response
 # from core.logging.audit import  # TODO: audit module not available generate_trace_id  # 🆕 VSGS trace_id generation
@@ -35,7 +36,8 @@ def _detect_language(text: str) -> str:
 _SESSION_STATE: Dict[str, Dict[str, Any]] = {}
 
 # Compile the LangGraph once at module load
-_GRAPH = build_graph()
+_ENABLE_MINIMAL = os.getenv("ENABLE_MINIMAL_GRAPH", "false").lower() == "true"
+_GRAPH = build_minimal_graph() if _ENABLE_MINIMAL else build_graph()
 
 
 def run_graph_once(input_text: str, user_id: str = "demo", return_full: bool = False) -> Dict[str, Any]:

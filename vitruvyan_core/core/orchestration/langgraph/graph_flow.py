@@ -432,3 +432,28 @@ def build_graph():
 
     compiled.invoke = invoke_with_propagation
     return compiled
+
+
+def build_minimal_graph():
+    """Phase 1: Minimal LangGraph (4 nodes)."""
+    g = StateGraph(GraphState)
+
+    g.add_node("parse", parse_node)
+    g.add_node("intent", intent_detection_node)
+    g.add_node("decide", route_node)
+    g.add_node("compose", compose_node)
+
+    g.set_entry_point("parse")
+
+    g.add_edge("parse", "intent")
+    g.add_edge("intent", "decide")
+
+    g.add_conditional_edges(
+        "decide",
+        lambda state: "compose",
+        {"compose": "compose"},
+    )
+
+    g.add_edge("compose", END)
+
+    return g.compile()

@@ -8,7 +8,12 @@ pydantic==2.5.0
 prometheus-client==0.19.0
 psycopg2-binary==2.9.9
 redis==5.0.1
-python-dotenv==1.0.0
+structlog==24.1.0  # Required by core/synaptic_conclave/transport/streams.py
 qdrant-client==1.7.0
 alembic==1.13.1
-sentence-transformers==2.2.2
+python-dotenv==1.0.0
+# qdrant-client==1.7.0  # Removed: MCP is gateway (no vector ops), use Neural Engine for embeddings
+# alembic==1.13.1      # Removed: MCP doesn't manage DB migrations (PostgresAgent handles connection)
+# sentence-transformers==2.2.2  # Removed: MCP gateway (no ML), brings torch/transformers (GB dependencies)
+openai==1.12.0  # Added: Required for OpenAI Function Calling (llm_mcp_node integration)
+

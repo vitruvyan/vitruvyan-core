@@ -241,6 +241,42 @@ This isn't mysticism - it's a cognitive architecture metaphor.
 
 ---
 
+## 🌉 MCP Gateway (Model Context Protocol)
+
+**Status**: ✅ Production Ready — 100% Domain-Agnostic (Refactored Feb 2026)
+
+The **MCP Gateway** (port 8020) is a stateless bridge between LLMs (OpenAI Function Calling) and the Sacred Orders, providing:
+
+- **5 Generic Tools**: `screen_entities`, `generate_vee_summary`, `query_signals`, `compare_entities`, `extract_semantic_context`
+- **Orthodoxy Validation**: BLESSED/PURIFIED/HERETICAL filtering via config-driven thresholds (z-scores, composite scores, text length)
+- **StreamBus Native**: Events emitted to `conclave.mcp.actions` channel  
+- **Zero Domain Logic**: All entity types, factor names, and thresholds from ENV variables
+
+**Architecture**: LIVELLO 1 (pure validation logic) + LIVELLO 2 (I/O adapters)
+
+```bash
+# Test MCP Gateway
+curl -X POST http://localhost:8020/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool": "screen_entities",
+    "args": {"entity_ids": ["entity_1", "entity_2"], "profile": "balanced"},
+    "user_id": "test_user"
+  }'
+
+# Response includes orthodoxy_status
+{
+  "status": "success",
+  "orthodoxy_status": "blessed",  # or "purified", "heretical"
+  "data": {...},
+  "execution_time_ms": 145.2
+}
+```
+
+**See**: [Appendix K — MCP Integration](.github/Vitruvyan_Appendix_K_MCP_Integration.md)
+
+---
+
 ## 📝 Status
 
 **Current State**: Foundation Phase  
