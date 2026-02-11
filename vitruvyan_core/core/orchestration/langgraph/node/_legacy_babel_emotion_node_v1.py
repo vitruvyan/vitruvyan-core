@@ -43,11 +43,12 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 import httpx
+from config.api_config import get_babel_url
 
 logger = logging.getLogger(__name__)
 
-# Babel Gardens API endpoint (internal Docker network)
-BABEL_GARDENS_EMOTION_API = "http://vitruvyan_babel_gardens:8009/v1/emotion/detect"
+# Babel Gardens API endpoint (dynamic from config.api_config)
+BABEL_GARDENS_EMOTION_API = f"{get_babel_url()}/v1/emotion/detect"
 EMOTION_API_TIMEOUT = 5.0  # seconds
 
 

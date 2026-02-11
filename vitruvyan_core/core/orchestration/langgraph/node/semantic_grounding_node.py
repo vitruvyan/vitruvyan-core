@@ -350,128 +350,24 @@ def semantic_grounding_node(state: Dict[str, Any]) -> Dict[str, Any]:
         
         # ============================================================
         # 🧠 VSGS PR-B: DUAL WRITE (PostgreSQL + Qdrant)
-        # Save the NEW user query (not the matches!) for future retrieval
+        # ⚠️ DISABLED (Feb 11, 2026): Deprecated due to core.leo migration
+        # ============================================================
+        # Reason: core.leo.postgres_agent path no longer exists (migrated to core.agents.postgres_agent)
+        #         save_grounding_event() function removed (no replacement in new architecture)
+        # Impact: Dual write to PostgreSQL archival disabled, Qdrant ingestion still works via main flow
+        # TODO: Re-enable with core.agents.postgres_agent if dual write is needed
         # ============================================================
         
-        # Always save new query (even if no matches found)
-        try:
-            import hashlib
-            import numpy as np
-            import psycopg2
-            from core.leo.postgres_agent import save_grounding_event
-            from core.leo.qdrant_agent import QdrantAgent
-            from core.monitoring.vsgs_metrics import vsgs_ingest_total
-            
-            # Generate phrase_hash for deduplication
-            phrase_hash = hashlib.sha256(
-                f"{user_id}:{input_text}:{language}".encode()
-            ).hexdigest()
-            
-            # Calculate grounding confidence (mean of match scores, or 0 if no matches)
-            if semantic_matches:
-                grounding_confidence = float(np.mean([m["score"] for m in semantic_matches]))
-            else:
-                grounding_confidence = 0.0
-            
-            # Get affective state from state (if available from babel_emotion_node)
-            affective_state = state.get("emotion", None)
-            
-            # Save to PostgreSQL (Archivarium)
-            pg_conn = psycopg2.connect(
-                host=os.getenv("POSTGRES_HOST", "localhost"),
-                port=os.getenv("POSTGRES_PORT", "5432"),
-                dbname=os.getenv("POSTGRES_DB"),
-                user=os.getenv("POSTGRES_USER"),
-                password=os.getenv("POSTGRES_PASSWORD")
-            )
-            
-            grounding_id = save_grounding_event(
-                pg_conn,
-                user_id=user_id,
-                trace_id=trace_id,
-                query_text=input_text,
-                language=language,
-                affective_state=affective_state,
-                semantic_context=semantic_matches,
-                grounding_confidence=grounding_confidence,
-                phrase_hash=phrase_hash,
-                phase="ingest"
-            )
-            
-            pg_conn.close()
-            
-            if grounding_id:
-                logger.info(f"✅ [VSGS PR-B] Saved grounding event to PostgreSQL (id={grounding_id})")
-            else:
-                logger.warning(f"⚠️ [VSGS PR-B] Grounding event already exists (phrase_hash={phrase_hash[:16]}...)")
-            
-            # Upsert NEW USER QUERY to Qdrant (Mnemosyne) - for future retrieval
-            # 🐛 FIX (Dec 27, 2025): Save the NEW query with embedding, not old matches
-            qdrant = QdrantAgent()
-            
-            from qdrant_client.models import PointStruct
-            import uuid
-            
-            # Create point for the NEW user query
-            new_query_point = PointStruct(
-                id=str(uuid.uuid4()),
-                vector=embedding,  # The embedding we generated for THIS query
-                payload={
-                    "user_id": user_id,
-                    "query_text": input_text,
-                    "text": input_text,  # Alias for compatibility
-                    "intent": intent,
-                    "language": language,
-                    "entity_ids": state.get("entity_ids", []),
-                    "horizon": state.get("horizon", "medium"),
-                    "trace_id": trace_id,
-                    "timestamp": datetime.now().isoformat(),
-                    "phase": "ingest",
-                    "grounding_confidence": grounding_confidence
-                }
-            )
-            
-            try:
-                qdrant.client.upsert(
-                    collection_name="semantic_states",
-                    points=[new_query_point]
-                )
-                logger.info(f"✅ [VSGS PR-B] Saved new query to Qdrant (id={new_query_point.id[:8]}...)")
-            except Exception as qdrant_err:
-                logger.error(f"❌ [VSGS PR-B] Qdrant upsert failed: {qdrant_err}")
-            
-            # Update Prometheus metrics (source = semantic_grounding_node)
-            vsgs_ingest_total.labels(user_id=user_id, source="semantic_grounding").inc()
-            
-            # Audit dual write (now saving NEW query, not old matches)
-            audit(
-                agent="semantic_ingestion",
-                payload={
-                    "grounding_id": grounding_id,
-                    "new_query_saved": True,
-                    "matches_found": len(semantic_matches),
-                    "phase": "ingest",
-                    "phrase_hash": phrase_hash[:16],
-                    "grounding_confidence": grounding_confidence
-                },
-                trace_id=trace_id,
-                user_id=user_id
-            )
-            
-        except Exception as e:
-            logger.error(f"❌ [VSGS PR-B] Dual write failed: {e}", exc_info=True)
-            
-            # Audit error (non-blocking, grounding still succeeded)
-            audit(
-                agent="semantic_ingestion",
-                payload={
-                    "error": str(e),
-                    "phase": "ingest",
-                    "status": "failed"
-                },
-                trace_id=trace_id,
-                user_id=user_id
-            )
+        # Original block commented out (lines 357-474):
+        # try:
+        #     import hashlib
+        #     import numpy as np
+        #     import psycopg2
+        #     from core.leo.postgres_agent import save_grounding_event
+        #     from core.leo.qdrant_agent import QdrantAgent
+        #     ...
+        # except Exception as e:
+        #     logger.error(f"❌ [VSGS PR-B] Dual write failed: {e}", exc_info=True)
         
         # ============================================================
         # END DUAL WRITE

@@ -40,12 +40,12 @@ class APIService(Enum):
     # Core Services
     LANGGRAPH = ("langgraph", 8004, "/langgraph")
     NEURAL = ("neural", 8003, "/neural")
-    BABEL = ("babel_gardens", 8009, "/babel")  # FIX (Nov 19): Container name is vitruvyan_babel_gardens
+    BABEL = ("babel_gardens", 8009, "/babel")
     EMBEDDING = ("embedding", 8010, "/embedding")
     
     # Agent Services
     CREWAI = ("crewai", 8005, "/crew")
-    WEAVERS = ("weavers", 8017, "/weavers")
+    WEAVERS = ("pattern_weavers", 8011, "/weavers")  # FIX (Feb 11): Service name pattern_weavers, port 8011
     AUDIT = ("audit", 8006, "/audit")
     
     # Support Services
@@ -141,11 +141,8 @@ def get_api_url(
     if env == "production":
         base_url = f"{APIEnvironment.PRODUCTION_BASE}{service.prod_path}"
     elif env == "docker":
-        # Special case: babel_gardens doesn't have "api_" prefix in container name
-        if service == APIService.BABEL:
-            base_url = f"http://vitruvyan_{service.service_name}:{service.port}"
-        else:
-            base_url = f"{APIEnvironment.DOCKER_PREFIX}{service.service_name}:{service.port}"
+        # Docker internal: Use service names from docker-compose.yml (no vitruvyan_ prefix)
+        base_url = f"http://{service.service_name}:{service.port}"
     elif env == "local":
         base_url = f"{APIEnvironment.LOCAL_BASE}:{service.port}"
     else:
