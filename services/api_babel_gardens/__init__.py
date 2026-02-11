@@ -23,7 +23,6 @@ __description__ = "Unified Gemma Cognitive Layer for Vitruvyan OS"
 # Export key components for external use
 from .modules import (
     EmbeddingEngineModule,
-    SentimentFusionModule,
     ProfileProcessorModule, 
     CognitiveBridgeModule
 )
@@ -38,7 +37,6 @@ from .shared import (
 __all__ = [
     # Modules
     "EmbeddingEngineModule",
-    "SentimentFusionModule",
     "ProfileProcessorModule", 
     "CognitiveBridgeModule",
     

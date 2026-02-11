@@ -10,7 +10,6 @@ from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 from .config import get_config
 from .modules.embedding_engine import EmbeddingEngineModule
-from .modules.sentiment_fusion import SentimentFusionModule
 from .modules.profile_processor import ProfileProcessorModule
 from .modules.cognitive_bridge import CognitiveBridgeModule
 from .shared.model_manager import model_manager
@@ -23,7 +22,6 @@ class BabelGardensService:
     """Unified service facade."""
     def __init__(self):
         self.semantic_grove = EmbeddingEngineModule()
-        self.emotional_meadow = SentimentFusionModule()
         self.profile_processor = ProfileProcessorModule()
         self.cognitive_bridge = CognitiveBridgeModule()
 
