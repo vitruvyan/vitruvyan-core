@@ -373,7 +373,7 @@ but understand *why that code must think before it speaks.*
 1. **Manual Keycloak Password Reset**
    - Access: https://user.vitruvyan.com/admin/
    - Realm: vitruvyan → Users → info@vitruvyan.com
-   - Set password: `@Caravaggio971` (Temporary: OFF)
+   - Set password via Keycloak admin UI (use `${KEYCLOAK_ADMIN_PASSWORD}` from env)
 
 2. **UI Conversational Testing**
    - Test chat.jsx ticker autocomplete (MSFT, Microsoft, SHOP, Shopify)
