@@ -1,15 +1,188 @@
 # 🧠 Appendix J: LangGraph Executive Summary — Vitruvyan Conversational Orchestration
 
-**Status**: Production (v1.2 - CAN v2 Language Golden Rule)  
-**Last Updated**: December 27, 2025  
-**Architecture Phase**: PHASE 4.2 - Actionable Investment Recommendations  
-**Total Nodes**: 26 (optimized from 30+ legacy nodes)
+**Status**: Production (v2.0 - Plugin Architecture)  
+**Last Updated**: February 11, 2026  
+**Architecture Phase**: Domain-Agnostic Orchestration + Plugin System  
+**Core Nodes**: 32 (domain-agnostic base), extensible via GraphPlugin
 
 ---
 
-## 🎯 Executive Overview
+## ⚠️ Plugin Architecture Refactoring (February 2026)
 
-Vitruvyan's **LangGraph orchestration engine** is a state-machine-driven conversational AI pipeline that transforms raw user queries into strategic financial insights through a 26-node directed acyclic graph (DAG).
+**This document was originally written for a finance vertical (Dec 2025).** As of February 2026, the LangGraph orchestration engine has been **completely refactored** into a **plugin-based system** using abstract contracts.
+
+### What Changed
+
+| Aspect | Before (Dec 2025) | After (Feb 2026) |
+|--------|-------------------|------------------|
+| **Path** | `core/langgraph/` | `core/orchestration/` (LEVEL 1) + `core/orchestration/langgraph/` (LEVEL 2) |
+| **State** | Finance TypedDict (`tickers`, `budget`, `horizon`) | `BaseGraphState` (35 agnostic fields) + `GraphPlugin.get_state_extensions()` |
+| **Nodes** | 26 hardcoded finance nodes | 32 core nodes + domain extensions via `GraphPlugin.get_nodes()` |
+| **Routing** | Hardcoded intent→node mapping | `RouteRegistry` + `IntentRegistry` + plugin-injected routes |
+| **Architecture** | Monolithic `graph_flow.py` | `GraphEngine` (builder) + `GraphPlugin` (ABC) |
+| **Entry pipeline** | Hardcoded `parse_node → intent_detection → ...` | `SacredFlowConfig` + `GraphPlugin.get_entry_pipeline()` |
+| **Exit pipeline** | Hardcoded Sacred Flow | `SacredFlowConfig` (output_normalizer → orthodoxy → vault → compose → can → advisor → proactive) |
+| **Domain coupling** | Finance tickers/sentiment/portfolio hardcoded | Zero finance knowledge in core (injected via plugins) |
+
+### Current File Structure
+
+```
+vitruvyan_core/core/orchestration/              # LEVEL 1 (pure Python, no LangGraph dependency)
+├── base_state.py                                # BaseGraphState TypedDict (35 universal fields)
+├── graph_engine.py                              # GraphEngine builder + GraphPlugin ABC
+├── intent_registry.py                           # IntentRegistry + IntentDefinition
+├── route_registry.py                            # RouteRegistry + RouteDefinition
+├── parser.py                                    # Parser ABC + BaseParser + GenericParser
+├── sacred_flow.py                               # Sacred Flow pipeline config
+├── compose/
+│   ├── base_composer.py
+│   ├── response_formatter.py
+│   └── slot_filler.py
+└── langgraph/                                   # LEVEL 2 (LangGraph StateGraph compilation)
+    ├── graph_flow.py                            # build_graph() — compiles GraphEngine config
+    ├── graph_runner.py                          # run_graph() / run_graph_once() execution
+    ├── simple_graph_audit_monitor.py
+    └── node/                                    # 32 node files
+        ├── parse_node.py, intent_detection_node.py, route_node.py, ...
+        ├── babel_gardens_node.py                # Domain-agnostic HTTP adapter
+        ├── pattern_weavers_node.py              # Domain-agnostic HTTP adapter
+        ├── entity_resolver_node.py              # STUB (GraphPlugin provides impl)
+        ├── exec_node.py                         # STUB (GraphPlugin provides impl)
+        └── orthodoxy_node.py, vault_node.py, can_node.py, compose_node.py, ...
+```
+
+### BaseGraphState — Current API
+
+**35 universal fields** (no domain knowledge):
+
+| Category | Fields (count) |
+|----------|----------------|
+| **ESSENTIAL** | `input_text`, `route`, `result`, `error`, `response`, `user_id` (6) |
+| **INTENT** | `intent`, `needs_clarification`, `clarification_reason` (3) |
+| **LANGUAGE** | `language_detected`, `language_confidence`, `cultural_context`, `babel_status` (4) |
+| **EMOTION** | `emotion_detected`, `emotion_confidence`, `emotion_intensity`, `emotion_secondary`, `emotion_reasoning`, `_ux_metadata` (6) |
+| **ORTHODOXY** | `orthodoxy_status`, `orthodoxy_verdict`, `orthodoxy_findings`, `orthodoxy_confidence`, `orthodoxy_blessing`, `orthodoxy_message`, `orthodoxy_timestamp`, `orthodoxy_duration_ms`, `theological_metadata` (9) |
+| **VAULT** | `vault_status`, `vault_protection`, `vault_guardian`, `vault_blessing`, `vault_timestamp`, `vault_duration_ms` (6) |
+| **TRACING** | `trace_id`, `semantic_matches`, `vsgs_status` (3) |
+| **WEAVER** | `weaver_context` (1) |
+| **CAN** | `can_response`, `can_mode`, `can_route`, `follow_ups`, `conversation_type`, `final_response`, `proactive_suggestions` (7) |
+
+**Domain extensions** added via `GraphPlugin.get_state_extensions()`
+
+```python
+from core.orchestration import BaseGraphState
+from core.orchestration.base_state import ALL_BASE_FIELDS
+
+# Example finance plugin state extension
+class FinanceGraphState(BaseGraphState, total=False):
+    tickers: List[str]
+    budget: str
+    horizon: str
+    sentiment: Dict[str, Any]
+    portfolio_allocation: Dict[str, float]
+```
+
+### GraphPlugin ABC — Full Interface
+
+```python
+from core.orchestration import GraphPlugin, NodeContract
+
+class MyDomainPlugin(GraphPlugin):
+    def get_domain_name(self) -> str:                          # e.g. "finance", "research"
+        return "my_domain"
+    
+    def get_state_extensions(self) -> Dict[str, Any]:          # Extra TypedDict fields
+        return {"domain_entity_ids": List[str], "domain_score": float}
+    
+    def get_nodes(self) -> Dict[str, NodeContract]:            # Node name → contract
+        return {
+            "entity_resolver_impl": NodeContract(
+                name="entity_resolver",
+                handler=my_entity_resolver_node,
+                description="Domain-specific entity resolution",
+                required_fields=["input_text"],
+                produced_fields=["domain_entity_ids"],
+                is_conditional=False,
+                domain="my_domain"
+            )
+        }
+    
+    def get_route_map(self) -> Dict[str, str]:                 # Route value → target node
+        return {"analyze_domain": "exec_domain_analyzer"}
+    
+    def get_intents(self) -> List[str]:                        # Domain intents
+        return ["analyze_domain", "discover_patterns"]
+    
+    def get_entry_pipeline(self) -> List[str]:                 # Pre-routing nodes
+        return ["parse_node", "intent_detection", "entity_resolver"]
+    
+    def get_post_routing_edges(self) -> List[Tuple[str, str]]: # Extra graph edges
+        return [("exec_domain_analyzer", "quality_check")]
+```
+
+### Sacred Flow Pipeline — Mandatory Universal Exit Path
+
+**All domains** traverse the Sacred Flow after routing:
+
+```
+output_normalizer → orthodoxy → vault → compose → can → [advisor] → proactive → END
+```
+
+Defined in `core/orchestration/sacred_flow.py` (324 lines).
+
+### GraphEngine — Current API
+
+```python
+from core.orchestration import GraphEngine, get_engine
+
+engine = get_engine()  # Singleton
+engine.register_plugin(MyDomainPlugin())
+
+build_config = engine.get_build_config()
+# Pass to graph_flow.build_graph(build_config) to compile LangGraph StateGraph
+```
+
+### Example Migration: Finance Vertical
+
+Before (hardcoded):
+```python
+# graph_flow.py (hardcoded)
+from .node.ticker_resolver_node import ticker_resolver_node
+graph.add_node("ticker_resolver", ticker_resolver_node)
+```
+
+After (plugin-injected):
+```python
+# domains/finance/graph_plugin.py
+class FinanceGraphPlugin(GraphPlugin):
+    def get_nodes(self):
+        return {
+            "entity_resolver": NodeContract(
+                name="entity_resolver",
+                handler=ticker_resolver_node,  # Finance-specific implementation
+                ...
+            )
+        }
+
+# services/api_graph/main.py
+from domains.finance.graph_plugin import FinanceGraphPlugin
+engine = get_engine()
+engine.register_plugin(FinanceGraphPlugin())
+```
+
+---
+
+## 📋 Table of Contents (Original — Finance Domain Example)
+
+> **NOTE**: Everything below documents the **original finance vertical** (Dec 2025) as reference for building finance plugins.
+
+---
+
+## 🎯 Executive Overview (Historical — Finance Domain)
+
+Vitruvyan's **LangGraph orchestration engine** (finance vertical implementation) is a state-machine-driven conversational AI pipeline that transforms raw user queries into strategic financial insights through a multi-node directed acyclic graph (DAG).
+
+> **Note (Feb 2026)**: This description applies to the finance domain implementation. The core orchestration layer is now domain-agnostic — the finance-specific behavior described below would be implemented as a `GraphPlugin`.
 
 **Core Philosophy**:
 - **Semantic-First**: No regex, no heuristics — pure LLM reasoning + vector embeddings

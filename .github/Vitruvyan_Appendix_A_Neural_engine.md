@@ -1,25 +1,138 @@
 # Vitruvyan Neural Engine - Guida Completa
 
-## 📋 Indice
-
-1. [Introduzione](#introduzione)
-2. [Architettura](#architettura)
-3. [Le 14 Funzioni del Neural Engine](#le-14-funzioni-del-neural-engine)
-4. [Profili di Rischio](#profili-di-rischio)
-5. [Subscription Tiers & Access Control](#subscription-tiers--access-control)
-6. [Modalità di Utilizzo](#modalità-di-utilizzo)
-7. [Esempi Pratici](#esempi-pratici)
-8. [API Reference](#api-reference)
-9. [Performance Metrics](#performance-metrics)
-10. [Best Practices](#best-practices)
+> **Last Updated**: February 11, 2026  
+> **Architecture Version**: 3.0.0 (Domain-Agnostic Contracts)
 
 ---
 
-## Introduzione
+## ⚠️ Domain-Agnostic Refactoring (February 2026)
 
-### Cos'è il Neural Engine?
+**This document was originally written for a finance/trading vertical implementation (Dec 2025).** As of February 2026, the Neural Engine has been **completely refactored** into a **domain-agnostic scoring engine** using abstract contracts.
+
+### What Changed
+
+| Aspect | Before (Dec 2025) | After (Feb 2026) |
+|--------|-------------------|-------------------|
+| **Architecture** | Monolithic `engine_core.py` with 14 finance functions | Contract-based: `IDataProvider` + `IScoringStrategy` ABCs |
+| **Path** | `core/logic/neural_engine/engine_core.py` | `vitruvyan_core/core/neural_engine/engine.py` |
+| **Domain coupling** | Hardcoded tickers, fundamentals, dark pools | Zero domain knowledge — any entity type |
+| **Scoring** | 14 fixed functions (A–L + P + Earnings) | Pluggable via `IScoringStrategy.get_profile_weights()` |
+| **Data source** | Direct PostgreSQL + Alpha Vantage + Yahoo Finance | Injected via `IDataProvider` (any backend) |
+| **Composite weights** | Hardcoded 0.3/0.7 global/stratified | Configurable `composite_global_weight` parameter |
+| **Bucket thresholds** | Hardcoded 70/30 percentile | Configurable `bucket_top_threshold` / `bucket_bottom_threshold` |
+| **Performance** | `iterrows()` loop in composite scoring | Numpy vectorized matrix operations (~100x speedup) |
+| **Tests** | 1 integration test | 33 unit tests (ZScore, Composite, Ranking, Integration) |
+
+### Current File Structure
+
+```
+vitruvyan_core/
+├── contracts/                          # ABC interfaces (shared across engines)
+│   ├── __init__.py                     # Exports IDataProvider, IScoringStrategy + exceptions
+│   ├── data_provider.py                # IDataProvider ABC (get_universe, get_features, get_metadata)
+│   └── scoring_strategy.py             # IScoringStrategy ABC (get_profile_weights, apply_risk_adjustment)
+│
+├── core/neural_engine/                 # Core engine (100% domain-agnostic)
+│   ├── __init__.py                     # Public API: NeuralEngine, ZScoreCalculator, CompositeScorer, RankingEngine
+│   ├── engine.py                       # 304 lines — 8-step pipeline orchestrator
+│   ├── scoring.py                      # 204 lines — Z-score modes: global/stratified/composite
+│   ├── composite.py                    # ~170 lines — Vectorized weighted composite scoring
+│   ├── ranking.py                      # 205 lines — Percentile ranking + configurable bucketing
+│   └── domain_examples/                # Stub implementations for testing/onboarding
+│       ├── mock_data_provider.py       # MockDataProvider (IDataProvider)
+│       └── mock_scoring_strategy.py    # MockScoringStrategy (IScoringStrategy)
+```
+
+### Contract Interfaces
+
+#### `IDataProvider` — Data source abstraction
+```python
+from vitruvyan_core.contracts import IDataProvider
+
+class IDataProvider(ABC):
+    def get_universe(self, filters=None) -> pd.DataFrame: ...        # Must return entity_id column
+    def get_features(self, entity_ids, feature_names=None) -> pd.DataFrame: ...
+    def get_metadata(self) -> Dict[str, Any]: ...                     # domain, entity_type, stratification_field
+    def validate_entity_ids(self, entity_ids) -> Dict[str, bool]: ...
+```
+
+#### `IScoringStrategy` — Scoring profile abstraction
+```python
+from vitruvyan_core.contracts import IScoringStrategy
+
+class IScoringStrategy(ABC):
+    def get_profile_weights(self, profile: str) -> Dict[str, float]: ...  # Weights must sum to 1.0
+    def get_available_profiles(self) -> List[str]: ...
+    def apply_risk_adjustment(self, df, risk_tolerance=None, risk_columns=None) -> pd.DataFrame: ...
+```
+
+### NeuralEngine — Current API
+```python
+from vitruvyan_core.core.neural_engine import NeuralEngine
+
+engine = NeuralEngine(
+    data_provider=MyDataProvider(),           # Implements IDataProvider
+    scoring_strategy=MyScoringStrategy(),     # Implements IScoringStrategy
+    stratification_mode="composite",          # "global" | "stratified" | "composite"
+    composite_global_weight=0.3,              # Configurable (default: 30% global, 70% stratified)
+    bucket_top_threshold=70.0,                # Configurable percentile thresholds
+    bucket_bottom_threshold=30.0,
+)
+
+result = engine.run(profile="balanced", top_k=10)
+# Returns: {ranked_entities: DataFrame, metadata: dict, profile_weights: dict, statistics: dict, diagnostics: dict}
+```
+
+### Pipeline (8-step)
+```
+Universe → Features → Z-Scores → Time Decay → Composite → Risk Adjust → Rank → Results
+```
+
+### Core Classes
+
+| Class | File | Responsibility |
+|-------|------|---------------|
+| `NeuralEngine` | `engine.py` | Pipeline orchestrator — wires all components |
+| `ZScoreCalculator` | `scoring.py` | Computes z-scores: global ($z = \frac{x - \mu}{\sigma}$), stratified (per-group), composite ($g \cdot z_{global} + (1-g) \cdot z_{strat}$) |
+| `CompositeScorer` | `composite.py` | Vectorized weighted average: $\text{composite} = \frac{\sum z_i \cdot w_i}{\sum w_i}$ (NaN-safe) |
+| `RankingEngine` | `ranking.py` | Percentile + bucket classification (top/middle/bottom) |
+
+### How to Add a New Domain
+
+1. Implement `IDataProvider` for your data source (PostgreSQL, API, CSV, etc.)
+2. Implement `IScoringStrategy` with your domain's scoring profiles
+3. Instantiate `NeuralEngine(data_provider=..., scoring_strategy=...)`
+4. Call `engine.run(profile="your_profile", top_k=10)`
+
+See `domain_examples/` for templates.
+
+---
+
+## 📋 Indice (Documento Originale — Finance Domain Example)
+
+> **NOTE**: Everything below this line documents the **original finance/trading vertical implementation** (Dec 2025). 
+> These 14 functions (A–L + P + Earnings) represent a **domain-specific implementation** of the contracts above.
+> The patterns remain valid as a reference for building finance verticals, but the core engine no longer contains this logic.
+
+1. [Architettura (Historical)](#architettura)
+2. [Le 14 Funzioni del Neural Engine](#le-14-funzioni-del-neural-engine)
+3. [Profili di Rischio](#profili-di-rischio)
+4. [Subscription Tiers & Access Control](#subscription-tiers--access-control)
+5. [Modalità di Utilizzo](#modalità-di-utilizzo)
+6. [Esempi Pratici](#esempi-pratici)
+7. [API Reference](#api-reference)
+8. [Performance Metrics](#performance-metrics)
+9. [Best Practices](#best-practices)
+
+---
+
+## Introduzione (Historical — Finance Domain)
+
+### Cos'è il Neural Engine? (Finance Implementation)
 
 Il **Neural Engine** è il cuore analitico di Vitruvyan, un sistema di ranking multi-dimensionale che combina analisi fondamentale, tecnica e comportamentale per identificare opportunità di trading ad alto potenziale.
+
+> **Note (Feb 2026)**: This description applies to the finance domain implementation. The core engine is now domain-agnostic — the 14 functions described below would be implemented as an `IScoringStrategy` + `IDataProvider` pair in the new architecture.
 
 A differenza dei sistemi tradizionali che usano singoli indicatori, il Neural Engine:
 - **Integra 14 funzioni analitiche** complementari
@@ -31,46 +144,48 @@ A differenza dei sistemi tradizionali che usano singoli indicatori, il Neural En
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  INPUT: Universe di 500+ tickers                            │
+│  INPUT: Universe of entities (domain-specific)              │
 │  ↓                                                           │
-│  ANALISI: 14 funzioni indipendenti (A-L + P + Earnings)     │
+│  FEATURES: Via IDataProvider.get_features()                  │
 │  ↓                                                           │
 │  NORMALIZZAZIONE: Z-scores per comparabilità                │
 │  ↓                                                           │
-│  COMPOSIZIONE: Weighted average basato su profilo utente    │
+│  COMPOSIZIONE: Weighted average via IScoringStrategy         │
 │  ↓                                                           │
-│  FILTERING: Applicazione filtri opzionali                   │
+│  RANKING: Percentile bucketing (configurable thresholds)    │
 │  ↓                                                           │
-│  OUTPUT: Top K ticker rankati con spiegazioni               │
+│  OUTPUT: Top K entities ranked with diagnostics             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 **Principi Chiave:**
 1. **Explainability**: Ogni score è tracciabile fino alla metrica sorgente
-2. **Flexibility**: 16 parametri configurabili per personalizzazione
-3. **Robustness**: Gestione graceful di dati mancanti
-4. **Performance**: Query ottimizzate, caching, parallel processing
+2. **Flexibility**: Configurable parameters + pluggable contracts
+3. **Robustness**: Gestione graceful di dati mancanti (NaN-safe vectorized)
+4. **Performance**: Numpy vectorized operations (~100x vs iterrows)
 
 ---
 
-## Architettura
+## Architettura (Historical — Pre-Feb 2026)
 
-### Stack Tecnologico
+> **Note**: The architecture below shows the **original finance monolith**. Current architecture uses contract injection (see top of document).
+
+### Stack Tecnologico (Historical)
 
 ```python
 ┌──────────────────────────────────────────────────────────────┐
 │                   API Layer (FastAPI)                        │
-│                   api_neural_engine/api_server.py            │
+│                   services/api_neural_engine/                │
 ├──────────────────────────────────────────────────────────────┤
-│                   Orchestration Layer                        │
-│                   core/logic/neural_engine/engine_core.py    │
-│                   - run_ne_once()                            │
-│                   - Funzioni A-L + P + Earnings Safety       │
+│                   Core Engine (Feb 2026)                     │
+│                   vitruvyan_core/core/neural_engine/         │
+│                   - NeuralEngine.run()                       │
+│                   - IDataProvider + IScoringStrategy          │
 ├──────────────────────────────────────────────────────────────┤
-│                   Data Layer                                 │
+│                   Data Layer (injected via IDataProvider)     │
 │  ┌────────────────────┬─────────────────┬──────────────────┐ │
-│  │ PostgreSQL         │ Alpha Vantage   │ Yahoo Finance    │ │
-│  │ (historical data)  │ (dark pool)     │ (earnings)       │ │
+│  │ Any DB backend     │ Any external API│ Any data source  │ │
+│  │ (via PostgresAgent)│ (via adapters)  │ (CSV, REST, etc.)│ │
 │  └────────────────────┴─────────────────┴──────────────────┘ │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -114,7 +229,12 @@ graph TD
 
 ---
 
-## Le 14 Funzioni del Neural Engine
+## Le 14 Funzioni del Neural Engine (Historical — Finance Domain)
+
+> **Note (Feb 2026)**: These 14 functions are a **finance-specific implementation** of the Neural Engine.
+> In the current architecture, they would be expressed as features returned by `IDataProvider.get_features()` 
+> and weighted by `IScoringStrategy.get_profile_weights()`. This section is preserved as a reference for 
+> building finance domain verticals.
 
 ### Funzioni Base (A-E) - Sempre Attive
 
@@ -2291,35 +2411,41 @@ curl -X POST http://localhost:8004/run \
 
 ## Roadmap
 
-### Planned Enhancements (Q1 2026)
+### Completed (Feb 2026)
+- ✅ Domain-agnostic refactoring (IDataProvider + IScoringStrategy contracts)
+- ✅ Numpy vectorized composite scoring (~100x performance improvement)
+- ✅ Configurable parameters (composite weights, bucket thresholds)
+- ✅ 33 unit tests (ZScore, Composite, Ranking, Integration)
+- ✅ Orchestrator bucket bug fix (engine_orchestrator.py)
 
-- **Function M**: Machine Learning Ensemble (LSTM + XGBoost)
-- **Function N**: Options Flow Analysis (put/call ratios, IV rank)
-- **Function O**: Sector Rotation (relative strength between sectors)
-- **Real-time WebSocket**: Streaming composite scores
-- **Backtesting API**: Historical performance simulation
-- **Portfolio Optimizer**: Max Sharpe allocation
+### Planned Enhancements (Q2–Q3 2026)
+- Domain-specific `IDataProvider` implementations (finance, research, etc.)
+- Real-time streaming via `IDataProvider.supports_streaming()`
+- Additional stratification modes
+- Backtesting framework using historical data providers
 
 ---
 
 ## Conclusione
 
-Il Neural Engine di Vitruvyan rappresenta un **sistema di ranking all'avanguardia** che combina:
+Il Neural Engine di Vitruvyan è un **sistema di ranking domain-agnostic** basato su contracts:
 
-✅ **14 funzioni analitiche** (fundamental + technical + behavioral)  
-✅ **Transparency completa** (ogni score è spiegabile)  
-✅ **Flessibilità massima** (16 parametri configurabili)  
-✅ **Competitive advantage** (Function P: dark pool tracking)  
-✅ **Production-ready** (latency <1s, error handling robusto)
+✅ **Contract-based**: `IDataProvider` + `IScoringStrategy` ABCs per qualsiasi dominio  
+✅ **Transparency completa**: Ogni score tracciabile (diagnostics + weights_used)  
+✅ **Flessibilità massima**: Parametri configurabili + strategie pluggabili  
+✅ **Performance**: Numpy vectorized operations (~100x vs loop-based)  
+✅ **Production-ready**: 33 unit tests, error handling, NaN-safe  
+✅ **Backward compatible**: Finance vertical (14 functions) implementabile come IScoringStrategy
 
 **Per supporto**:
-- GitHub Issues: `vitruvyan/issues`
-- Documentazione API: `/docs/API_REFERENCE.md`
-- Esempi: `/scripts/test_neural_engine_*.py`
+- Core engine: `vitruvyan_core/core/neural_engine/`
+- Contracts: `vitruvyan_core/contracts/`
+- Domain examples: `vitruvyan_core/core/neural_engine/domain_examples/`
+- Tests: `tests/test_neural_engine_unit.py`
 
 ---
 
-**Last Updated**: 2025-12-06 (Fundamentals Layer Backend Integration)  
-**Version**: 2.1.0 (Function E production-ready with VEE integration)  
+**Last Updated**: February 11, 2026 (Domain-Agnostic Contracts Architecture)  
+**Version**: 3.0.0 (IDataProvider + IScoringStrategy contracts, vectorized scoring)  
 **Authors**: Vitruvyan Core Team  
 **License**: Proprietary
