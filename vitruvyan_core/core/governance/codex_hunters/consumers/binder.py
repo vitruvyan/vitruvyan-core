@@ -58,10 +58,8 @@ class BinderConsumer(BaseConsumer):
             embedding: List[float] (optional, from adapter)
             
         Returns:
-            ProcessResult with:
-            - postgres_payload: Dict ready for PostgreSQL insert
-            - qdrant_payload: Dict ready for Qdrant upsert
-            - bound_entity: BoundEntity object
+            ProcessResult with domain-agnostic BoundEntity.
+            Adapter layer (LIVELLO 2) constructs provider-specific payloads.
         """
         start_time = datetime.utcnow()
         
@@ -101,31 +99,22 @@ class BinderConsumer(BaseConsumer):
             )
         
         try:
-            # Generate dedupe key
+            # Generate dedupe key (deterministic hash)
             dedupe_key = self._generate_dedupe_key(entity_id, source, normalized_data)
             
-            # Prepare PostgreSQL payload
-            postgres_payload = self._prepare_postgres_payload(
-                entity_id, source, normalized_data, quality_score, dedupe_key
-            )
-            
-            # Prepare Qdrant payload (if embedding provided)
-            qdrant_payload = None
+            # Generate embedding ID if embedding provided
             embedding_id = None
             if embedding:
                 embedding_id = self._generate_embedding_id(entity_id, source)
-                qdrant_payload = self._prepare_qdrant_payload(
-                    embedding_id, entity_id, source, normalized_data, embedding
-                )
             
-            # Create bound entity
+            # Create domain-agnostic BoundEntity
             bound = BoundEntity(
                 entity_id=entity_id,
                 source=source,
                 bound_at=datetime.utcnow(),
                 storage_refs={
-                    "postgres": self.config.entity_table.name,
-                    "qdrant": self.config.embedding_collection.name if qdrant_payload else None,
+                    "relational": self.config.entity_table.name,
+                    "vector": self.config.embedding_collection.name if embedding_id else None,
                 },
                 embedding_id=embedding_id,
                 dedupe_key=dedupe_key,
@@ -135,12 +124,15 @@ class BinderConsumer(BaseConsumer):
             self._record_success()
             processing_time = int((datetime.utcnow() - start_time).total_seconds() * 1000)
             
+            # Return domain-agnostic entity + data
+            # LIVELLO 2 adapter constructs provider-specific payloads
             return ProcessResult(
                 success=True,
                 data={
                     "bound_entity": bound,
-                    "postgres_payload": postgres_payload,
-                    "qdrant_payload": qdrant_payload,
+                    "normalized_data": normalized_data,
+                    "embedding": embedding,
+                    "quality_score": quality_score,
                     "dedupe_key": dedupe_key,
                 },
                 processing_time_ms=processing_time

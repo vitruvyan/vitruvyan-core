@@ -16,6 +16,8 @@ Created: February 2026
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
+from pathlib import Path
+import yaml
 
 
 @dataclass(frozen=True)
@@ -59,6 +61,16 @@ class StreamConfig:
     def channel(self, event_type: str) -> str:
         """Build full channel name."""
         return f"{self.prefix}.{event_type}"
+
+
+@dataclass(frozen=True)
+class QualityConfig:
+    """Configuration for data quality scoring."""
+    
+    threshold_valid: float = 0.5  # Minimum score for VALID status
+    penalty_per_error: float = 0.1  # Score deduction per validation error
+    penalty_null_ratio: float = 0.3  # Score deduction for null field ratio
+    max_null_ratio: float = 0.5  # Maximum allowed null field ratio
 
 
 @dataclass
@@ -123,6 +135,9 @@ class CodexConfig:
     # Event streams configuration
     streams: StreamConfig = field(default_factory=StreamConfig)
     
+    # Quality scoring configuration
+    quality: QualityConfig = field(default_factory=QualityConfig)
+    
     # Embedding model (domain-agnostic default)
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     embedding_dimension: int = 384
@@ -147,6 +162,90 @@ class CodexConfig:
     def get_source(self, key: str) -> Optional[SourceConfig]:
         """Get source config by key."""
         return self.sources.get(key)
+    
+    @classmethod
+    def from_yaml(cls, config_path: Path) -> "CodexConfig":
+        """
+        Load CodexConfig from YAML file.
+        
+        Expected format:
+            entity_table:
+              name: "my_entities"
+              schema: "public"
+            embedding_collection:
+              name: "my_embeddings"
+              vector_size: 384
+            sources:
+              source1:
+                name: "Source One"
+                rate_limit_per_minute: 100
+            quality:
+              threshold_valid: 0.6
+              penalty_per_error: 0.15
+        """
+        try:
+            with open(config_path, "r") as f:
+                data = yaml.safe_load(f) or {}
+            
+            # Parse entity table
+            entity_table = CodexConfig().entity_table  # default
+            if "entity_table" in data:
+                et_data = data["entity_table"]
+                entity_table = TableConfig(
+                    name=et_data.get("name", "entities"),
+                    schema=et_data.get("schema", "public"),
+                    primary_key=et_data.get("primary_key", "id"),
+                    description=et_data.get("description", "")
+                )
+            
+            # Parse embedding collection
+            embedding_collection = CodexConfig().embedding_collection  # default
+            if "embedding_collection" in data:
+                ec_data = data["embedding_collection"]
+                embedding_collection = CollectionConfig(
+                    name=ec_data.get("name", "entity_embeddings"),
+                    vector_size=ec_data.get("vector_size", 384),
+                    distance_metric=ec_data.get("distance_metric", "Cosine"),
+                    description=ec_data.get("description", "")
+                )
+            
+            # Parse sources
+            sources = {}
+            if "sources" in data:
+                for src_key, src_data in data["sources"].items():
+                    sources[src_key] = SourceConfig(
+                        name=src_data.get("name", src_key),
+                        rate_limit_per_minute=src_data.get("rate_limit_per_minute", 60),
+                        timeout_seconds=src_data.get("timeout_seconds", 30),
+                        retry_attempts=src_data.get("retry_attempts", 3),
+                        description=src_data.get("description", ""),
+                        enabled=src_data.get("enabled", True)
+                    )
+            
+            # Parse quality config
+            quality = QualityConfig()
+            if "quality" in data:
+                q_data = data["quality"]
+                quality = QualityConfig(
+                    threshold_valid=q_data.get("threshold_valid", 0.5),
+                    penalty_per_error=q_data.get("penalty_per_error", 0.1),
+                    penalty_null_ratio=q_data.get("penalty_null_ratio", 0.3),
+                    max_null_ratio=q_data.get("max_null_ratio", 0.5)
+                )
+            
+            return cls(
+                entity_table=entity_table,
+                embedding_collection=embedding_collection,
+                sources=sources if sources else cls().sources,
+                quality=quality,
+                embedding_model=data.get("embedding_model", "sentence-transformers/all-MiniLM-L6-v2"),
+                embedding_dimension=data.get("embedding_dimension", 384),
+                default_batch_size=data.get("default_batch_size", 100),
+                max_concurrent_expeditions=data.get("max_concurrent_expeditions", 5),
+                expedition_timeout_seconds=data.get("expedition_timeout_seconds", 300)
+            )
+        except Exception as e:
+            raise ValueError(f"Failed to load config from {config_path}: {e}")
 
 
 # Default singleton instance (can be replaced at runtime)

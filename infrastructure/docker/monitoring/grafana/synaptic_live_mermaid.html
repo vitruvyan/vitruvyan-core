@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 Synaptic Conclave — Live Neural Network</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+        }
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid rgba(52, 152, 219, 0.3);
+        }
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(90deg, #3498db, #9b59b6, #e74c3c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(52, 152, 219, 0.5);
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+        .stat {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            font-size: 1.2em;
+        }
+        .stat strong {
+            color: #3498db;
+        }
+        #diagram-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: calc(100vh - 180px);
+            padding: 20px;
+        }
+        .mermaid {
+            transform: scale(1.2);
+        }
+        /* Dynamic glow effects */
+        @keyframes pulse-green {
+            0%, 100% { filter: drop-shadow(0 0 10px rgba(46, 204, 113, 0.8)); }
+            50% { filter: drop-shadow(0 0 30px rgba(46, 204, 113, 1)); }
+        }
+        @keyframes pulse-yellow {
+            0%, 100% { filter: drop-shadow(0 0 10px rgba(241, 196, 15, 0.8)); }
+            50% { filter: drop-shadow(0 0 30px rgba(241, 196, 15, 1)); }
+        }
+        @keyframes pulse-red {
+            0%, 100% { filter: drop-shadow(0 0 10px rgba(231, 76, 60, 0.8)); }
+            50% { filter: drop-shadow(0 0 30px rgba(231, 76, 60, 1)); }
+        }
+        .activity-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: rgba(46, 204, 113, 0.2);
+            border: 2px solid #2ecc71;
+            border-radius: 10px;
+            font-size: 1.1em;
+            animation: pulse-green 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧠 Synaptic Conclave — Live Neural Network</h1>
+        <div class="stats">
+            <div class="stat"><strong id="total-events">0</strong> Total Events</div>
+            <div class="stat"><strong id="active-streams">67</strong> Active Streams</div>
+            <div class="stat"><strong id="event-rate">0</strong> Events/min</div>
+        </div>
+    </div>
+
+    <div class="activity-indicator">
+        ⚡ LIVE — Refreshing every 5s
+    </div>
+
+    <div id="diagram-container">
+        <div class="mermaid" id="mermaid-diagram">
+        </div>
+    </div>
+
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({ 
+            startOnLoad: false,
+            theme: 'dark',
+            themeVariables: {
+                fontSize: '18px',
+                darkMode: true,
+                background: 'transparent',
+                primaryColor: '#3498db',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#2980b9',
+                lineColor: '#34495e',
+                secondaryColor: '#9b59b6',
+                tertiaryColor: '#e74c3c'
+            }
+        });
+
+        // Metrics data
+        let metrics = {
+            memory: 0,
+            vault: 0,
+            orthodoxy: 0,
+            babel: 0,
+            codex: 0,
+            pattern: 0,
+            neural: 0
+        };
+
+        // Color mapping based on activity level
+        function getColor(value) {
+            if (value < 15000) return { fill: '#2ecc71', stroke: '#27ae60', glow: 'green' };
+            if (value < 20000) return { fill: '#f39c12', stroke: '#e67e22', glow: 'yellow' };
+            return { fill: '#e74c3c', stroke: '#c0392b', glow: 'red' };
+        }
+
+        // Fetch metrics from Prometheus
+        async function fetchMetrics() {
+            try {
+                const response = await fetch('http://localhost:15000/api/v1/query?query=sacred_order_activity');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    data.data.result.forEach(item => {
+                        const order = item.metric.sacred_order;
+                        const value = parseFloat(item.value[1]);
+                        metrics[order] = value;
+                    });
+
+                    // Update stats
+                    const total = Object.values(metrics).reduce((a, b) => a + b, 0);
+                    document.getElementById('total-events').textContent = total.toLocaleString();
+
+                    // Calculate event rate (approximate)
+                    const rate = Math.round(total / 3); // rough estimate based on simulator
+                    document.getElementById('event-rate').textContent = rate.toLocaleString();
+                }
+
+                // Fetch stream count
+                const streamsResponse = await fetch('http://localhost:15000/api/v1/query?query=count(stream_length)');
+                const streamsData = await streamsResponse.json();
+                if (streamsData.status === 'success' && streamsData.data.result.length > 0) {
+                    const streamCount = parseInt(streamsData.data.result[0].value[1]);
+                    document.getElementById('active-streams').textContent = streamCount;
+                }
+            } catch (error) {
+                console.error('Error fetching metrics:', error);
+            }
+        }
+
+        // Generate Mermaid diagram with dynamic colors
+        function generateDiagram() {
+            const memoryColor = getColor(metrics.memory);
+            const vaultColor = getColor(metrics.vault);
+            const codexColor = getColor(metrics.codex);
+            const patternColor = getColor(metrics.pattern);
+            const neuralColor = getColor(metrics.neural);
+            const babelColor = getColor(metrics.babel);
+            const orthodoxyColor = getColor(metrics.orthodoxy);
+
+            const diagram = `
+graph TB
+    codex[("🔍 Codex Hunters<br/>PERCEPTION<br/>${metrics.codex.toLocaleString()} events")]
+    memory[("🧠 Memory Orders<br/>MEMORY<br/>${metrics.memory.toLocaleString()} events")]
+    vault[("🏛️ Vault Keepers<br/>MEMORY<br/>${metrics.vault.toLocaleString()} events")]
+    pattern[("🕸️ Pattern Weavers<br/>REASON<br/>${metrics.pattern.toLocaleString()} events")]
+    neural[("⚡ Neural Engine<br/>REASON<br/>${metrics.neural.toLocaleString()} events")]
+    babel[("🌐 Babel Gardens<br/>DISCOURSE<br/>${metrics.babel.toLocaleString()} events")]
+    orthodoxy[("⚖️ Orthodoxy Wardens<br/>TRUTH<br/>${metrics.orthodoxy.toLocaleString()} events")]
+    
+    codex -->|discovery.mapped| memory
+    codex -->|discovery.stored| vault
+    memory -->|coherence.analyzed| pattern
+    memory -->|entities.enriched| neural
+    memory -->|context.retrieved| babel
+    vault -->|archive.completed| orthodoxy
+    vault -->|snapshot.created| memory
+    pattern -->|pattern.detected| babel
+    pattern -->|anomaly.found| orthodoxy
+    neural -->|screening.completed| babel
+    neural -->|ranking.updated| memory
+    babel -->|narrative.generated| orthodoxy
+    babel -->|translation.completed| memory
+    orthodoxy -->|validation.passed| memory
+    orthodoxy -->|audit.failed| codex
+    
+    classDef codexStyle fill:${codexColor.fill},stroke:${codexColor.stroke},stroke-width:4px,color:#fff
+    classDef memoryStyle fill:${memoryColor.fill},stroke:${memoryColor.stroke},stroke-width:4px,color:#fff
+    classDef vaultStyle fill:${vaultColor.fill},stroke:${vaultColor.stroke},stroke-width:4px,color:#fff
+    classDef patternStyle fill:${patternColor.fill},stroke:${patternColor.stroke},stroke-width:4px,color:#fff
+    classDef neuralStyle fill:${neuralColor.fill},stroke:${neuralColor.stroke},stroke-width:4px,color:#fff
+    classDef babelStyle fill:${babelColor.fill},stroke:${babelColor.stroke},stroke-width:4px,color:#fff
+    classDef orthodoxyStyle fill:${orthodoxyColor.fill},stroke:${orthodoxyColor.stroke},stroke-width:4px,color:#fff
+    
+    class codex codexStyle
+    class memory memoryStyle
+    class vault vaultStyle
+    class pattern patternStyle
+    class neural neuralStyle
+    class babel babelStyle
+    class orthodoxy orthodoxyStyle
+            `;
+
+            return diagram;
+        }
+
+        // Render diagram
+        async function renderDiagram() {
+            await fetchMetrics();
+            const diagram = generateDiagram();
+            const element = document.getElementById('mermaid-diagram');
+            element.textContent = diagram;
+            
+            try {
+                await mermaid.run({ nodes: [element] });
+            } catch (error) {
+                console.error('Mermaid rendering error:', error);
+            }
+        }
+
+        // Initial render
+        renderDiagram();
+
+        // Auto-refresh every 5 seconds
+        setInterval(renderDiagram, 5000);
+    </script>
+</body>
+</html>

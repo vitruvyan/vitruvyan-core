@@ -91,7 +91,7 @@ class TrackerConsumer(BaseConsumer):
                 success=True,
                 data={
                     "entity": discovered,
-                    "dedupe_key": self._generate_dedupe_key(entity_id, source),
+                    "dedupe_key": self._generate_dedupe_key(entity_id, source, raw_data),
                 },
                 processing_time_ms=processing_time
             )
@@ -154,9 +154,20 @@ class TrackerConsumer(BaseConsumer):
             status=EntityStatus.DISCOVERED
         )
     
-    def _generate_dedupe_key(self, entity_id: str, source: str) -> str:
-        """Generate deduplication key for entity."""
-        key_data = f"{entity_id}:{source}:{datetime.utcnow().strftime('%Y-%m-%d')}"
+    def _generate_dedupe_key(self, entity_id: str, source: str, raw_data: Dict[str, Any]) -> str:
+        """
+        Generate deterministic deduplication key for entity.
+        
+        Per Charter Invariant #4: Key is deterministic based on entity_id + source + data hash.
+        NEVER uses date/time (non-deterministic).
+        """
+        import json
+        # Deterministic hash of raw data (sorted keys for consistency)
+        data_str = json.dumps(raw_data, sort_keys=True, default=str)
+        data_hash = hashlib.sha256(data_str.encode()).hexdigest()[:8]
+        
+        # Combine entity_id + source + data_hash
+        key_data = f"{entity_id}:{source}:{data_hash}"
         return hashlib.sha256(key_data.encode()).hexdigest()[:16]
     
     def validate_entity_id(self, entity_id: str) -> List[str]:

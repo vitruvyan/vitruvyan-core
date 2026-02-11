@@ -126,7 +126,7 @@ class RestorerConsumer(BaseConsumer):
                 normalized_data=normalized_data,
                 quality_score=quality_score,
                 validation_errors=validation_errors,
-                status=EntityStatus.RESTORED if quality_score > 0.5 else EntityStatus.INVALID
+                status=EntityStatus.RESTORED if quality_score >= self.config.quality.threshold_valid else EntityStatus.INVALID
             )
             
             self._record_success()
@@ -230,17 +230,18 @@ class RestorerConsumer(BaseConsumer):
         Compute quality score for restored data.
         
         Score from 0.0 (invalid) to 1.0 (perfect).
+        Uses config-driven weights (no hardcoded constants).
         """
         if not normalized_data:
             return 0.0
         
         score = 1.0
         
-        # Deduct for validation errors
-        score -= len(validation_errors) * 0.1
+        # Deduct for validation errors (config-driven)
+        score -= len(validation_errors) * self.config.quality.penalty_per_error
         
-        # Deduct for null fields
+        # Deduct for null fields (config-driven)
         null_ratio = sum(1 for v in normalized_data.values() if v is None) / max(1, len(normalized_data))
-        score -= null_ratio * 0.3
+        score -= null_ratio * self.config.quality.penalty_null_ratio
         
         return max(0.0, min(1.0, score))

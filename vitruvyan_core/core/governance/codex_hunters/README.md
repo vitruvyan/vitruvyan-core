@@ -22,27 +22,34 @@ from vitruvyan_core.core.governance.codex_hunters.consumers.binder import Binder
 
 # Configure data sources
 config = CodexConfig(
-    sources=[
-        DataSource(name="api_source", url="https://api.example.com", format="json"),
-        DataSource(name="file_source", path="/data/input.csv", format="csv")
-    ]
+    sources={
+        "api_source": SourceConfig(name="api_source", rate_limit_per_minute=100),
+        "file_source": SourceConfig(name="file_source", rate_limit_per_minute=50)
+    }
 )
 
 # Track and discover entities
-tracker = Tracker()
-discovery_input = {"config": config, "query": "AAPL"}
-discovered_entities = tracker.process(discovery_input)
+tracker = Tracker(config)
+discovery_input = {
+    "entity_id": "entity_001",
+    "source": "api_source",
+    "raw_data": {"name": "Example Entity", "category": "test"}
+}
+result = tracker.process(discovery_input)
+discovered_entity = result.data["entity"]
 
 # Restore and validate data quality
-restorer = Restorer()
-for entity in discovered_entities:
-    restored = restorer.process({"entity": entity, "config": config})
-    print(f"Entity: {restored.entity_id}, Quality: {restored.quality_score}")
+restorer = Restorer(config)
+restoration_input = {"entity": discovered_entity}
+result = restorer.process(restoration_input)
+restored = result.data["entity"]
+print(f"Entity: {restored.entity_id}, Quality: {restored.quality_score}")
 
 # Bind for storage
-binder = Binder()
-bound_entity = binder.process({"entity": restored, "config": config})
-print(f"Bound entity: {bound_entity.dedupe_key}")
+binder = Binder(config)
+result = binder.process({"entity": restored})
+bound = result.data["bound_entity"]
+print(f"Bound entity: {bound.dedupe_key}")
 ```
 
 ---

@@ -57,7 +57,9 @@ class CodexHuntersCognitiveBusListener:
             "codex.technical.volatility.requested", # Volatility backfill
             "codex.schema.validation.requested",  # Schema validation
             "codex.fundamentals.refresh.requested", # Fundamentals extraction
-            "codex.risk.refresh.requested"       # VARE risk analysis (Sacred Order #7 - Dec 2025)
+            # NOTE: codex.risk.refresh.requested REMOVED (Feb 11, 2026)
+            # Risk analysis violates Codex Hunters epistemic boundary.
+            # Risk scoring belongs in Neural Engine (Reason layer), NOT ingestion (Perception).
         ]
         
         # ✨ Inizializza AGENTI INTELLIGENTI (non HTTP endpoints)
@@ -149,8 +151,6 @@ class CodexHuntersCognitiveBusListener:
             await self.handle_schema_validation(message['data'])
         elif channel == "codex.fundamentals.refresh.requested":
             await self.handle_fundamentals_extraction(message['data'])
-        elif channel == "codex.risk.refresh.requested":
-            await self.handle_vare_risk_analysis(message['data'])
         else:
             logger.warning(f"🗝️ Unknown sacred channel: {channel}")
     
@@ -231,49 +231,21 @@ class CodexHuntersCognitiveBusListener:
         except Exception as e:
             logger.error(f"🗝️ Fundamentals extraction error: {e}")
     
-    async def handle_vare_risk_analysis(self, data: bytes):
-        """🗝️ Handle VARE risk analysis (Sacred Order #7 - Cassandra - Dec 2025)"""
-        try:
-            payload = json.loads(data.decode('utf-8'))
-            tickers = payload.get('tickers', [])
-            
-            logger.info(f"🛡️ Cassandra awakens... prophecy for {len(tickers)} tickers requested")
-            
-            # Import and execute Cassandra (The Risk Prophet)
-            from core.codex_hunters.cassandra import Cassandra
-            
-            cassandra = Cassandra()
-            result = cassandra.execute(tickers=tickers)
-            
-            logger.info(f"🛡️ Cassandra's prophecy delivered: {result.get('status')}")
-            
-            # Publish completion event
-            await self.publish_vare_completed(result)
-            
-        except Exception as e:
-            logger.error(f"🛡️ VARE risk analysis error: {e}")
+    # NOTE: handle_vare_risk_analysis() REMOVED (Feb 11, 2026)
+    # EPISTEMIC BOUNDARY ENFORCEMENT:
+    # Codex Hunters (Perception) → Data Acquisition & Normalization
+    # Neural Engine (Reason) → Risk Scoring & Interpretation
+    # Risk analysis (VARE/Cassandra) violates ingestion layer mandate.
+    # 
+    # Migration path:
+    # - Neural Engine should subscribe to codex.entity.bound events
+    # - Neural Engine computes risk scores for bound entities
+    # - Neural Engine emits risk.analysis.completed events
+    # 
+    # This enforces proper Sacred Order separation.
     
-    async def publish_vare_completed(self, result: Dict):
-        """🗝️ Publish VARE risk analysis completion event"""
-        try:
-            event = {
-                "event_type": "codex.risk.completed",
-                "tickers_analyzed": result.get('tickers_analyzed', 0),
-                "tickers_persisted": result.get('tickers_persisted', 0),
-                "statistics": result.get('statistics', {}),
-                "status": result.get('status', 'unknown'),
-                "timestamp": datetime.now().isoformat()
-            }
-            
-            await self.redis_client.publish(
-                "codex.risk.completed",
-                json.dumps(event)
-            )
-            
-            logger.info(f"🛡️ Published codex.risk.completed")
-            
-        except Exception as e:
-            logger.error(f"🛡️ Event publishing error: {e}")
+    # NOTE: publish_vare_completed() REMOVED (Feb 11, 2026)
+    # Codex Hunters no longer publishes risk completion events.
     
     async def publish_expedition_completed(self, request: Dict, result: Dict):
         """🗝️ Publish expedition completion event"""

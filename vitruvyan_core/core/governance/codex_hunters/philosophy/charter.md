@@ -63,16 +63,20 @@ All significant operations emit events via configured channels. Events are domai
 All domain-specific values are provided through `CodexConfig`:
 
 ```python
-# Domain-agnostic (core)
-config = CodexConfig()  # Uses defaults: "entities", "embeddings"
+# Domain-agnostic (core default)
+config = CodexConfig()  # Uses defaults: "entities", "entity_embeddings"
 
-# Domain-specific (at deployment)
+# Healthcare domain deployment
 config = CodexConfig(
-    entity_table=TableConfig(name="tickers"),
-    embedding_collection=CollectionConfig(name="ticker_embeddings"),
-    sources={"yahoo": SourceConfig(...), "news": SourceConfig(...)},
-    streams=StreamConfig(prefix="codex.finance")
+    entity_table=TableConfig(name="patients"),
+    embedding_collection=CollectionConfig(name="patient_embeddings"),
+    sources={"ehr": SourceConfig(...), "labs": SourceConfig(...)},
+    streams=StreamConfig(prefix="codex.healthcare")
 )
+
+# E-commerce domain deployment
+config = CodexConfig.from_yaml("deployments/ecommerce_config.yaml")
+# YAML defines: products, product_embeddings, inventory+catalog sources
 ```
 
 The core never knows what domain it's serving. That knowledge lives in configuration.
