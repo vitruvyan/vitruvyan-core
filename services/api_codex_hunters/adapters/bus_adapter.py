@@ -90,7 +90,7 @@ class BusAdapter:
     def process_discovery(
         self,
         entity_id: str,
-        source_type: str,
+        source: str,
         raw_data: Dict[str, Any],
         metadata: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
@@ -99,7 +99,7 @@ class BusAdapter:
         
         Args:
             entity_id: Unique entity identifier
-            source_type: Source type (configurable)
+            source: Source identifier (must match configured sources)
             raw_data: Raw data from source
             metadata: Additional metadata
             
@@ -112,7 +112,7 @@ class BusAdapter:
         # Prepare event for pure consumer
         event = {
             "entity_id": entity_id,
-            "source_type": source_type,
+            "source": source,
             "raw_data": raw_data,
             "metadata": metadata or {},
             "timestamp": datetime.utcnow().isoformat(),
@@ -129,7 +129,7 @@ class BusAdapter:
                     Channels.DISCOVERED,
                     {
                         "entity_id": entity_id,
-                        "source_type": source_type,
+                        "source": source,
                         "discovered_at": datetime.utcnow().isoformat(),
                         "data": result.data,
                     }
@@ -140,7 +140,6 @@ class BusAdapter:
         return {
             "success": result.success,
             "entity_id": entity_id,
-            "message": result.message,
             "data": result.data,
             "errors": result.errors,
         }
@@ -149,7 +148,7 @@ class BusAdapter:
         self,
         entity_id: str,
         raw_data: Dict[str, Any],
-        source_type: str
+        source: str
     ) -> Dict[str, Any]:
         """
         Process data restoration through LIVELLO 1 consumer.
@@ -157,7 +156,7 @@ class BusAdapter:
         Args:
             entity_id: Entity identifier
             raw_data: Raw data to restore
-            source_type: Source type
+            source: Source identifier
             
         Returns:
             Processing result with normalized data
@@ -165,12 +164,20 @@ class BusAdapter:
         if not self.restorer_consumer:
             return {"success": False, "error": "RestorerConsumer not available"}
         
-        # Prepare event for pure consumer
+        # Prepare event for pure consumer (RestorerConsumer expects 'entity' key)
+        from core.governance.codex_hunters.domain.entities import DiscoveredEntity
+        from datetime import datetime as dt
+        
+        discovered_entity = DiscoveredEntity(
+            entity_id=entity_id,
+            source=source,
+            discovered_at=dt.utcnow(),
+            raw_data=raw_data,
+            metadata={},
+        )
+        
         event = {
-            "entity_id": entity_id,
-            "raw_data": raw_data,
-            "source_type": source_type,
-            "timestamp": datetime.utcnow().isoformat(),
+            "entity": discovered_entity,
         }
         
         # Process through pure consumer (no I/O)
@@ -231,7 +238,7 @@ class BusAdapter:
             "timestamp": datetime.utcnow().isoformat(),
         }
         
-        # Process through pure consumer (prepares payloads, no I/O)
+        # Process through pure consumer (domain-agnostic, no I/O)
         result = self.binder_consumer.process(event)
         
         # Now perform actual I/O through persistence adapter
@@ -239,22 +246,43 @@ class BusAdapter:
         qdrant_success = False
         
         if result.success and result.data:
+            # Get domain-agnostic data from Binder
+            bound_entity = result.data.get("bound_entity")
+            normalized_data_out = result.data.get("normalized_data", normalized_data)
+            embedding_out = result.data.get("embedding", embedding)
+            quality_score = result.data.get("quality_score", 1.0)
+            dedupe_key = result.data.get("dedupe_key")
+            
+            # LIVELLO 2 responsibility: Construct provider-specific payloads
+            # PostgreSQL payload (JSONB storage)
+            postgres_payload = {
+                "entity_id": entity_id,
+                "data": normalized_data_out,
+                "quality_score": quality_score,
+                "dedupe_key": dedupe_key,
+                "bound_at": datetime.utcnow().isoformat(),
+            }
+            
             # Store in PostgreSQL
-            postgres_payload = result.data.get("postgres_payload", {})
-            if postgres_payload:
-                pg_success = self._persistence.store_entity(
-                    table_name=codex_config.table.entities,
-                    entity_id=entity_id,
-                    data=postgres_payload
-                )
+            pg_success = self._persistence.store_entity(
+                table_name=codex_config.entity_table.name,
+                entity_id=entity_id,
+                data=postgres_payload
+            )
             
             # Store in Qdrant (if embedding provided)
-            qdrant_payload = result.data.get("qdrant_payload", {})
-            if qdrant_payload and embedding:
+            if embedding_out:
+                # LIVELLO 2 responsibility: Construct Qdrant point payload
+                qdrant_payload = {
+                    "entity_id": entity_id,
+                    "bound_at": datetime.utcnow().isoformat(),
+                    **self._extract_searchable_fields(normalized_data_out)
+                }
+                
                 qdrant_success = self._persistence.store_embedding(
-                    collection_name=codex_config.collection.embeddings,
+                    collection_name=codex_config.embedding_collection.name,
                     entity_id=entity_id,
-                    embedding=embedding,
+                    embedding=embedding_out,
                     payload=qdrant_payload
                 )
         
@@ -279,8 +307,19 @@ class BusAdapter:
             "entity_id": entity_id,
             "postgres_stored": pg_success,
             "qdrant_stored": qdrant_success,
-            "errors": result.errors,
+            "dedupe_key": dedupe_key,
         }
+    
+    def _extract_searchable_fields(self, data: Dict[str, Any], max_fields: int = 10) -> Dict[str, Any]:
+        """
+        Extract searchable fields from normalized data for Qdrant payload.
+        LIVELLO 2 responsibility (provider-specific extraction).
+        """
+        searchable = {}
+        for k, v in list(data.items())[:max_fields]:
+            if isinstance(v, (str, int, float, bool)):
+                searchable[k] = v
+        return searchable
     
     # =========================================================================
     # Health Checks
