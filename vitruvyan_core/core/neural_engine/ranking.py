@@ -28,8 +28,28 @@ class RankingEngine:
     - Rank by composite score (descending)
     - Top-K selection
     - Percentile calculation
-    - Bucket classification (top/middle/bottom)
+    - Bucket classification (top/middle/bottom) with configurable thresholds
     """
+    
+    def __init__(
+        self,
+        bucket_top_threshold: float = 70.0,
+        bucket_bottom_threshold: float = 30.0
+    ):
+        """
+        Initialize Ranking Engine.
+        
+        Args:
+            bucket_top_threshold: Percentile threshold for 'top' bucket (default: 70.0)
+            bucket_bottom_threshold: Percentile threshold for 'bottom' bucket (default: 30.0)
+        """
+        if not 0 <= bucket_bottom_threshold < bucket_top_threshold <= 100:
+            raise ValueError(
+                f"Invalid bucket thresholds: bottom={bucket_bottom_threshold}, top={bucket_top_threshold}. "
+                f"Must satisfy 0 <= bottom < top <= 100."
+            )
+        self.bucket_top_threshold = bucket_top_threshold
+        self.bucket_bottom_threshold = bucket_bottom_threshold
     
     def rank_entities(
         self,
@@ -109,14 +129,14 @@ class RankingEngine:
         """
         Classifies entity into bucket based on percentile.
         
-        Buckets:
-        - top: percentile >= 70
-        - middle: 30 <= percentile < 70
-        - bottom: percentile < 30
+        Buckets (configurable thresholds):
+        - top: percentile >= bucket_top_threshold
+        - middle: bucket_bottom_threshold <= percentile < bucket_top_threshold
+        - bottom: percentile < bucket_bottom_threshold
         """
-        if percentile >= 70:
+        if percentile >= self.bucket_top_threshold:
             return "top"
-        elif percentile >= 30:
+        elif percentile >= self.bucket_bottom_threshold:
             return "middle"
         else:
             return "bottom"

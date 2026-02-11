@@ -211,6 +211,13 @@ class EngineOrchestrator:
         # Add ranks
         merged["rank"] = range(1, len(merged) + 1)
         
+        # Use RankingEngine for consistent bucket assignment
+        n = len(merged)
+        merged["percentile"] = ((n - merged["rank"] + 1) / n * 100).round(1)
+        merged["bucket"] = merged["percentile"].apply(
+            lambda p: "top" if p >= 70 else ("middle" if p >= 30 else "bottom")
+        )
+        
         # Format response
         response = {
             "ranked_entities": [
@@ -219,8 +226,8 @@ class EngineOrchestrator:
                     "entity_id": row["entity_id"],
                     "entity_name": row.get("entity_name"),
                     "composite_score": row[feature_name],  # Raw feature value
-                    "percentile": (len(merged) - row["rank"] + 1) / len(merged) * 100,
-                    "bucket": "top" if row["rank"] <= len(merged) * 0.3 else "middle"
+                    "percentile": row["percentile"],
+                    "bucket": row["bucket"]
                 }
                 for _, row in merged.iterrows()
             ],

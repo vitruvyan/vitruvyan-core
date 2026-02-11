@@ -44,7 +44,8 @@ class ZScoreCalculator:
     def __init__(
         self, 
         stratification_mode: StratificationMode = "global",
-        stratification_field: Optional[str] = None
+        stratification_field: Optional[str] = None,
+        composite_global_weight: float = 0.3
     ):
         """
         Initialize Z-Score Calculator.
@@ -52,12 +53,18 @@ class ZScoreCalculator:
         Args:
             stratification_mode: "global", "stratified", or "composite"
             stratification_field: Column name for stratification (required if mode != "global")
+            composite_global_weight: Weight for global z-score in composite mode (default: 0.3).
+                                    Stratified weight = 1 - composite_global_weight.
         """
         self.stratification_mode = stratification_mode
         self.stratification_field = stratification_field
+        self.composite_global_weight = composite_global_weight
         
         if stratification_mode in ["stratified", "composite"] and not stratification_field:
-            raise ValueError(f"stratification_field required for mode '{stratification_mode}'")
+            raise ValueError(f"stratification_field required for mode '{stratification_mode}')")
+        
+        if not 0.0 <= composite_global_weight <= 1.0:
+            raise ValueError(f"composite_global_weight must be between 0.0 and 1.0, got {composite_global_weight}")
     
     def compute_z_scores(
         self,
@@ -140,11 +147,12 @@ class ZScoreCalculator:
         return df.groupby(self.stratification_field, group_keys=False)[col].transform(group_z)
     
     def _compute_composite_z(self, df: pd.DataFrame, col: str) -> pd.Series:
-        """Computes composite z-score (30% global + 70% stratified)."""
+        """Computes composite z-score (configurable global/stratified blend)."""
         z_global = self._compute_global_z(df, col)
         z_stratified = self._compute_stratified_z(df, col)
+        g = self.composite_global_weight
         
-        return 0.3 * z_global + 0.7 * z_stratified
+        return g * z_global + (1 - g) * z_stratified
     
     def apply_time_decay(
         self,

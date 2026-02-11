@@ -44,8 +44,8 @@ class NeuralEngine:
     
     Usage:
         # Initialize with domain-specific implementations
-        provider = FinancialDataProvider()  # implements IDataProvider
-        strategy = FinancialScoringStrategy()  # implements IScoringStrategy
+        provider = MyDataProvider()  # implements IDataProvider
+        strategy = MyScoringStrategy()  # implements IScoringStrategy
         
         engine = NeuralEngine(
             data_provider=provider,
@@ -68,7 +68,10 @@ class NeuralEngine:
         scoring_strategy: IScoringStrategy,
         stratification_mode: StratificationMode = "global",
         enable_time_decay: bool = False,
-        time_decay_half_life: float = 30.0
+        time_decay_half_life: float = 30.0,
+        composite_global_weight: float = 0.3,
+        bucket_top_threshold: float = 70.0,
+        bucket_bottom_threshold: float = 30.0
     ):
         """
         Initialize Neural Engine.
@@ -79,6 +82,9 @@ class NeuralEngine:
             stratification_mode: "global", "stratified", or "composite"
             enable_time_decay: Apply exponential time decay to z-scores
             time_decay_half_life: Decay half-life in days (default: 30)
+            composite_global_weight: Global z-score weight in composite mode (default: 0.3)
+            bucket_top_threshold: Percentile threshold for 'top' bucket (default: 70.0)
+            bucket_bottom_threshold: Percentile threshold for 'bottom' bucket (default: 30.0)
         """
         self.data_provider = data_provider
         self.scoring_strategy = scoring_strategy
@@ -93,10 +99,14 @@ class NeuralEngine:
         # Initialize components
         self.z_calculator = ZScoreCalculator(
             stratification_mode=stratification_mode,
-            stratification_field=self.stratification_field
+            stratification_field=self.stratification_field,
+            composite_global_weight=composite_global_weight
         )
         self.composite_scorer = CompositeScorer(scoring_strategy)
-        self.ranker = RankingEngine()
+        self.ranker = RankingEngine(
+            bucket_top_threshold=bucket_top_threshold,
+            bucket_bottom_threshold=bucket_bottom_threshold
+        )
         
         logger.info(f"NeuralEngine initialized: domain={self.metadata.get('domain')}, "
                    f"stratification={stratification_mode}, time_decay={enable_time_decay}")

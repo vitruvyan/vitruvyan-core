@@ -60,7 +60,7 @@ class CompositeScorer:
         feature_z_mapping: Dict[str, str]
     ) -> pd.DataFrame:
         """
-        Computes composite scores using profile weights.
+        Computes composite scores using profile weights (vectorized).
         
         Args:
             df: DataFrame with z-score columns
@@ -84,39 +84,66 @@ class CompositeScorer:
         # Get profile weights
         profile_weights = self.scoring_strategy.get_profile_weights(profile)
         
-        # Compute composite score per row
-        def compute_row_score(row: pd.Series) -> tuple[float, Dict[str, float]]:
-            """Returns (composite_score, normalized_weights_used)"""
-            score_parts = []
-            
-            for feature_name, weight in profile_weights.items():
-                z_col = feature_z_mapping.get(feature_name)
-                
-                if z_col and z_col in row.index:
-                    z_value = row[z_col]
-                    
-                    if pd.notnull(z_value):
-                        score_parts.append((feature_name, z_value, weight))
-            
-            if not score_parts:
-                return (np.nan, {})
-            
-            # Compute weighted sum with normalization
-            total_weight = sum(w for _, _, w in score_parts)
-            
-            if total_weight <= 0:
-                return (np.nan, {})
-            
-            composite = sum(z * (w / total_weight) for _, z, w in score_parts)
-            normalized_weights = {name: round(w / total_weight, 3) for name, _, w in score_parts}
-            
-            return (composite, normalized_weights)
+        # Build aligned arrays for vectorized computation
+        feature_names = []
+        z_cols = []
+        weights = []
         
-        # Apply to all rows
-        results = [compute_row_score(row) for _, row in out.iterrows()]
+        for feature_name, weight in profile_weights.items():
+            z_col = feature_z_mapping.get(feature_name)
+            if z_col and z_col in out.columns:
+                feature_names.append(feature_name)
+                z_cols.append(z_col)
+                weights.append(weight)
         
-        out["composite_score"] = [score for score, _ in results]
-        out["weights_used"] = [weights for _, weights in results]
+        if not z_cols:
+            out["composite_score"] = np.nan
+            out["weights_used"] = [{}] * len(out)
+            return out
+        
+        if len(out) == 0:
+            out["composite_score"] = pd.Series(dtype=float)
+            out["weights_used"] = pd.Series(dtype=object)
+            return out
+        
+        # Vectorized: extract z-score matrix and compute weighted sum
+        z_matrix = out[z_cols].values.astype(float)            # shape: (n_entities, n_features)
+        weights_arr = np.array(weights)                        # shape: (n_features,)
+        available_mask = ~np.isnan(z_matrix)                   # True where z-score exists
+        
+        # Per-entity active weights (zero where z-score is NaN)
+        active_weights = available_mask * weights_arr          # broadcast: (n, f) * (f,)
+        weight_sums = active_weights.sum(axis=1)               # shape: (n,)
+        
+        # Weighted z-scores (NaN treated as 0 for summation)
+        z_filled = np.where(available_mask, z_matrix, 0.0)
+        weighted_z_sums = (z_filled * active_weights).sum(axis=1)
+        
+        # Composite score with normalization (NaN where no features available)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            composite_scores = np.where(
+                weight_sums > 0,
+                weighted_z_sums / weight_sums,
+                np.nan
+            )
+        
+        out["composite_score"] = composite_scores
+        
+        # Build per-entity normalized weights (readable audit trail)
+        weights_used_list = []
+        for i in range(len(out)):
+            ws = weight_sums[i]
+            if ws > 0:
+                entity_weights = {
+                    feature_names[j]: round(float(active_weights[i, j] / ws), 3)
+                    for j in range(len(feature_names))
+                    if available_mask[i, j]
+                }
+            else:
+                entity_weights = {}
+            weights_used_list.append(entity_weights)
+        
+        out["weights_used"] = weights_used_list
         
         logger.info(f"Composite scores computed for profile '{profile}': "
                    f"{out['composite_score'].notna().sum()}/{len(out)} entities scored")
