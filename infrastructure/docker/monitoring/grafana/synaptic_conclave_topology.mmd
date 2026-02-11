@@ -1,0 +1,55 @@
+graph TB
+    %% Sacred Orders Network Topology
+    
+    %% Perception Layer
+    codex[("🔍 Codex Hunters<br/>PERCEPTION<br/>Discovery & Ingestion")]
+    
+    %% Memory Layer
+    memory[("🧠 Memory Orders<br/>MEMORY<br/>Coherence & RAG")]
+    vault[("🏛️ Vault Keepers<br/>MEMORY<br/>Archival & Snapshots")]
+    
+    %% Reason Layer
+    pattern[("🕸️ Pattern Weavers<br/>REASON<br/>Pattern Detection")]
+    neural[("⚡ Neural Engine<br/>REASON<br/>Analysis & Screening")]
+    
+    %% Discourse Layer
+    babel[("🌐 Babel Gardens<br/>DISCOURSE<br/>Narratives & UX")]
+    
+    %% Truth Layer
+    orthodoxy[("⚖️ Orthodoxy Wardens<br/>TRUTH<br/>Governance & Audit")]
+    
+    %% Stream Connections (Data Flow)
+    codex -->|discovery.mapped| memory
+    codex -->|discovery.stored| vault
+    
+    memory -->|coherence.analyzed| pattern
+    memory -->|entities.enriched| neural
+    memory -->|context.retrieved| babel
+    
+    vault -->|archive.completed| orthodoxy
+    vault -->|snapshot.created| memory
+    
+    pattern -->|pattern.detected| babel
+    pattern -->|anomaly.found| orthodoxy
+    
+    neural -->|screening.completed| babel
+    neural -->|ranking.updated| memory
+    
+    babel -->|narrative.generated| orthodoxy
+    babel -->|translation.completed| memory
+    
+    orthodoxy -->|validation.passed| memory
+    orthodoxy -->|audit.failed| codex
+    
+    %% Styling
+    classDef perception fill:#3498db,stroke:#2980b9,stroke-width:4px,color:#fff
+    classDef memory fill:#9b59b6,stroke:#8e44ad,stroke-width:4px,color:#fff
+    classDef reason fill:#e74c3c,stroke:#c0392b,stroke-width:4px,color:#fff
+    classDef discourse fill:#f39c12,stroke:#e67e22,stroke-width:4px,color:#fff
+    classDef truth fill:#27ae60,stroke:#229954,stroke-width:4px,color:#fff
+    
+    class codex perception
+    class memory,vault memory
+    class pattern,neural reason
+    class babel discourse
+    class orthodoxy truth

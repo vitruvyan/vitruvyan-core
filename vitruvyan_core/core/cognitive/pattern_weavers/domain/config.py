@@ -55,7 +55,7 @@ class StreamConfig:
 
 @dataclass(frozen=True)
 class TaxonomyCategory:
-    """A single category in the taxonomy (e.g., a concept, sector, region)."""
+    """A single taxonomic category (e.g., concept, entity type, domain-specific classification)."""
     
     name: str
     keywords: List[str] = field(default_factory=list)
@@ -83,10 +83,13 @@ class TaxonomyConfig:
               concepts:
                 - name: "Category1"
                   keywords: ["key1", "key2"]
-                  metadata: {risk_level: "high"}
-              sectors:
-                - name: "Sector1"
-                  keywords: ["sec1", "sec2"]
+                  metadata: {priority: "high", source: "manual"}
+              entities:
+                - name: "Entity1"
+                  keywords: ["ent1", "ent2"]
+                  metadata: {domain: "finance"}
+        
+        Metadata is domain-specific and NOT interpreted by Pattern Weavers.
         """
         try:
             with open(path, "r") as f:
