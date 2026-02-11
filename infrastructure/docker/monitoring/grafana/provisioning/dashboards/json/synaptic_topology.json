@@ -1,0 +1,124 @@
+{
+  "title": "🧠 Synaptic Topology — Live Network Map",
+  "uid": "synaptic-topology",
+  "tags": ["topology", "network", "sacred-orders", "live"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "5s",
+  "time": {"from": "now-5m", "to": "now"},
+  "panels": [
+    {
+      "id": 1,
+      "title": "🌐 Sacred Orders Network — Live Topology",
+      "type": "agenty-flowcharting-panel",
+      "gridPos": {"x": 0, "y": 0, "w": 24, "h": 20},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "options": {
+        "flowchartData": "graph TB\n    codex[(\"🔍 Codex Hunters<br/>PERCEPTION\")]\n    memory[(\"🧠 Memory Orders<br/>MEMORY\")]\n    vault[(\"🏛️ Vault Keepers<br/>MEMORY\")]\n    pattern[(\"🕸️ Pattern Weavers<br/>REASON\")]\n    neural[(\"⚡ Neural Engine<br/>REASON\")]\n    babel[(\"🌐 Babel Gardens<br/>DISCOURSE\")]\n    orthodoxy[(\"⚖️ Orthodoxy Wardens<br/>TRUTH\")]\n    \n    codex -->|discovery| memory\n    codex -->|storage| vault\n    memory -->|analysis| pattern\n    memory -->|enrichment| neural\n    memory -->|context| babel\n    vault -->|archive| orthodoxy\n    vault -->|snapshot| memory\n    pattern -->|pattern| babel\n    pattern -->|anomaly| orthodoxy\n    neural -->|screening| babel\n    neural -->|ranking| memory\n    babel -->|narrative| orthodoxy\n    babel -->|translation| memory\n    orthodoxy -->|validation| memory\n    orthodoxy -->|audit| codex\n    \n    classDef perception fill:#3498db,stroke:#2980b9,stroke-width:4px,color:#fff\n    classDef memory fill:#9b59b6,stroke:#8e44ad,stroke-width:4px,color:#fff\n    classDef reason fill:#e74c3c,stroke:#c0392b,stroke-width:4px,color:#fff\n    classDef discourse fill:#f39c12,stroke:#e67e22,stroke-width:4px,color:#fff\n    classDef truth fill:#27ae60,stroke:#229954,stroke-width:4px,color:#fff\n    \n    class codex perception\n    class memory,vault memory\n    class pattern,neural reason\n    class babel discourse\n    class orthodoxy truth",
+        "mermaidRender": true,
+        "center": true,
+        "scale": "100%",
+        "lock": false,
+        "grid": false,
+        "bgColor": "#1a1a1a",
+        "tooltip": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "range",
+              "options": {
+                "from": 0,
+                "to": 3000,
+                "result": {"color": "green"}
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 3000,
+                "to": 5000,
+                "result": {"color": "yellow"}
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 5000,
+                "to": 10000,
+                "result": {"color": "red"}
+              }
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "sacred_order_activity{sacred_order=\"memory\"}",
+          "legendFormat": "memory",
+          "refId": "A"
+        },
+        {
+          "expr": "sacred_order_activity{sacred_order=\"vault\"}",
+          "legendFormat": "vault",
+          "refId": "B"
+        },
+        {
+          "expr": "sacred_order_activity{sacred_order=\"orthodoxy\"}",
+          "legendFormat": "orthodoxy",
+          "refId": "C"
+        },
+        {
+          "expr": "sacred_order_activity{sacred_order=\"babel\"}",
+          "legendFormat": "babel",
+          "refId": "D"
+        },
+        {
+          "expr": "sacred_order_activity{sacred_order=\"codex\"}",
+          "legendFormat": "codex",
+          "refId": "E"
+        },
+        {
+          "expr": "sacred_order_activity{sacred_order=\"pattern\"}",
+          "legendFormat": "pattern",
+          "refId": "F"
+        },
+        {
+          "expr": "sacred_order_activity{sacred_order=\"neural\"}",
+          "legendFormat": "neural",
+          "refId": "G"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "📊 Network Stats — Live Metrics",
+      "type": "stat",
+      "gridPos": {"x": 0, "y": 20, "w": 24, "h": 6},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "options": {
+        "graphMode": "area",
+        "colorMode": "background",
+        "textMode": "value_and_name",
+        "orientation": "horizontal"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "unit": "events"
+        }
+      },
+      "targets": [
+        {"expr": "sacred_order_activity{sacred_order=\"memory\"}", "legendFormat": "🧠 Memory", "refId": "A"},
+        {"expr": "sacred_order_activity{sacred_order=\"vault\"}", "legendFormat": "🏛️ Vault", "refId": "B"},
+        {"expr": "sacred_order_activity{sacred_order=\"orthodoxy\"}", "legendFormat": "⚖️ Orthodoxy", "refId": "C"},
+        {"expr": "sacred_order_activity{sacred_order=\"babel\"}", "legendFormat": "🌐 Babel", "refId": "D"},
+        {"expr": "sacred_order_activity{sacred_order=\"codex\"}", "legendFormat": "🔍 Codex", "refId": "E"},
+        {"expr": "sacred_order_activity{sacred_order=\"pattern\"}", "legendFormat": "🕸️ Pattern", "refId": "F"},
+        {"expr": "sacred_order_activity{sacred_order=\"neural\"}", "legendFormat": "⚡ Neural", "refId": "G"}
+      ]
+    }
+  ]
+}

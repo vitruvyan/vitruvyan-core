@@ -11,7 +11,7 @@ Configuration:
 
 Entities:
 - WeaveRequest, WeaveResult: Operation request/response
-- PatternMatch, RiskProfile: Match results
+- PatternMatch: Match results
 - EmbeddingVector: Embedding with metadata
 - WeaveStatus, MatchType, HealthStatus: Enums
 """
@@ -32,7 +32,6 @@ from .entities import (
     WeaveStatus,
     MatchType,
     PatternMatch,
-    RiskProfile,
     WeaveRequest,
     WeaveResult,
     EmbeddingVector,
@@ -56,7 +55,6 @@ __all__ = [
     "WeaveStatus",
     "MatchType",
     "PatternMatch",
-    "RiskProfile",
     "WeaveRequest",
     "WeaveResult",
     "EmbeddingVector",

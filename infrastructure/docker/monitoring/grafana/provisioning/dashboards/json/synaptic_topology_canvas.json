@@ -1,0 +1,331 @@
+{
+  "title": "🧠 Synaptic Topology — Neural Network (Canvas)",
+  "uid": "synaptic-topology-canvas",
+  "tags": ["topology", "network", "sacred-orders", "live", "canvas"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "5s",
+  "time": {"from": "now-5m", "to": "now"},
+  "panels": [
+    {
+      "id": 1,
+      "title": "🌐 Sacred Orders Network — Live Interactive Topology",
+      "type": "canvas",
+      "gridPos": {"x": 0, "y": 0, "w": 24, "h": 18},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "options": {
+        "root": {
+          "elements": [
+            {
+              "type": "metric-value",
+              "config": {
+                "name": "🧠 Memory Orders",
+                "field": "memory",
+                "align": "center",
+                "valign": "middle",
+                "color": {"fixed": "text"},
+                "size": 16,
+                "text": "🧠 Memory\\n{value}"
+              },
+              "placement": {
+                "top": 200,
+                "left": 400,
+                "width": 150,
+                "height": 80
+              },
+              "background": {
+                "color": {"fixed": "#9b59b6"}
+              },
+              "border": {
+                "color": {"fixed": "#8e44ad"},
+                "width": 4
+              },
+              "constraint": {}
+            },
+            {
+              "type": "metric-value",
+              "config": {
+                "name": "🏛️ Vault Keepers",
+                "field": "vault",
+                "align": "center",
+                "valign": "middle",
+                "color": {"fixed": "text"},
+                "size": 16,
+                "text": "🏛️ Vault\\n{value}"
+              },
+              "placement": {
+                "top": 320,
+                "left": 400,
+                "width": 150,
+                "height": 80
+              },
+              "background": {
+                "color": {"fixed": "#9b59b6"}
+              },
+              "border": {
+                "color": {"fixed": "#8e44ad"},
+                "width": 4
+              }
+            },
+            {
+              "type": "metric-value",
+              "config": {
+                "name": "🔍 Codex Hunters",
+                "field": "codex",
+                "align": "center",
+                "valign": "middle",
+                "color": {"fixed": "text"},
+                "size": 16,
+                "text": "🔍 Codex\\n{value}"
+              },
+              "placement": {
+                "top": 260,
+                "left": 100,
+                "width": 150,
+                "height": 80
+              },
+              "background": {
+                "color": {"fixed": "#3498db"}
+              },
+              "border": {
+                "color": {"fixed": "#2980b9"},
+                "width": 4
+              }
+            },
+            {
+              "type": "metric-value",
+              "config": {
+                "name": "🕸️ Pattern Weavers",
+                "field": "pattern",
+                "align": "center",
+                "valign": "middle",
+                "color": {"fixed": "text"},
+                "size": 16,
+                "text": "🕸️ Pattern\\n{value}"
+              },
+              "placement": {
+                "top": 200,
+                "left": 700,
+                "width": 150,
+                "height": 80
+              },
+              "background": {
+                "color": {"fixed": "#e74c3c"}
+              },
+              "border": {
+                "color": {"fixed": "#c0392b"},
+                "width": 4
+              }
+            },
+            {
+              "type": "metric-value",
+              "config": {
+                "name": "⚡ Neural Engine",
+                "field": "neural",
+                "align": "center",
+                "valign": "middle",
+                "color": {"fixed": "text"},
+                "size": 16,
+                "text": "⚡ Neural\\n{value}"
+              },
+              "placement": {
+                "top": 320,
+                "left": 700,
+                "width": 150,
+                "height": 80
+              },
+              "background": {
+                "color": {"fixed": "#e74c3c"}
+              },
+              "border": {
+                "color": {"fixed": "#c0392b"},
+                "width": 4
+              }
+            },
+            {
+              "type": "metric-value",
+              "config": {
+                "name": "🌐 Babel Gardens",
+                "field": "babel",
+                "align": "center",
+                "valign": "middle",
+                "color": {"fixed": "text"},
+                "size": 16,
+                "text": "🌐 Babel\\n{value}"
+              },
+              "placement": {
+                "top": 440,
+                "left": 550,
+                "width": 150,
+                "height": 80
+              },
+              "background": {
+                "color": {"fixed": "#f39c12"}
+              },
+              "border": {
+                "color": {"fixed": "#e67e22"},
+                "width": 4
+              }
+            },
+            {
+              "type": "metric-value",
+              "config": {
+                "name": "⚖️ Orthodoxy Wardens",
+                "field": "orthodoxy",
+                "align": "center",
+                "valign": "middle",
+                "color": {"fixed": "text"},
+                "size": 16,
+                "text": "⚖️ Orthodoxy\\n{value}"
+              },
+              "placement": {
+                "top": 80,
+                "left": 550,
+                "width": 150,
+                "height": 80
+              },
+              "background": {
+                "color": {"fixed": "#27ae60"}
+              },
+              "border": {
+                "color": {"fixed": "#229954"},
+                "width": 4
+              }
+            },
+            {
+              "type": "icon",
+              "config": {
+                "path": "img/icons/unicons/arrow-up.svg",
+                "fill": "#ffffff"
+              },
+              "placement": {
+                "top": 240,
+                "left": 250,
+                "width": 140,
+                "height": 30
+              }
+            },
+            {
+              "type": "icon",
+              "config": {
+                "path": "img/icons/unicons/arrow-up.svg",
+                "fill": "#ffffff"
+              },
+              "placement": {
+                "top": 360,
+                "left": 250,
+                "width": 140,
+                "height": 30
+              }
+            },
+            {
+              "type": "icon",
+              "config": {
+                "path": "img/icons/unicons/arrow-right.svg",
+                "fill": "#ffffff"
+              },
+              "placement": {
+                "top": 220,
+                "left": 560,
+                "width": 130,
+                "height": 30
+              }
+            },
+            {
+              "type": "icon",
+              "config": {
+                "path": "img/icons/unicons/arrow-right.svg",
+                "fill": "#ffffff"
+              },
+              "placement": {
+                "top": 340,
+                "left": 560,
+                "width": 130,
+                "height": 30
+              }
+            }
+          ]
+        },
+        "inlineEditing": true,
+        "showAdvancedTypes": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "green"},
+              {"value": 3000, "color": "yellow"},
+              {"value": 5000, "color": "red"}
+            ]
+          }
+        }
+      },
+      "targets": [
+        {"expr": "sacred_order_activity{sacred_order=\"memory\"}", "legendFormat": "memory", "refId": "memory"},
+        {"expr": "sacred_order_activity{sacred_order=\"vault\"}", "legendFormat": "vault", "refId": "vault"},
+        {"expr": "sacred_order_activity{sacred_order=\"codex\"}", "legendFormat": "codex", "refId": "codex"},
+        {"expr": "sacred_order_activity{sacred_order=\"pattern\"}", "legendFormat": "pattern", "refId": "pattern"},
+        {"expr": "sacred_order_activity{sacred_order=\"neural\"}", "legendFormat": "neural", "refId": "neural"},
+        {"expr": "sacred_order_activity{sacred_order=\"babel\"}", "legendFormat": "babel", "refId": "babel"},
+        {"expr": "sacred_order_activity{sacred_order=\"orthodoxy\"}", "legendFormat": "orthodoxy", "refId": "orthodoxy"}
+      ]
+    },
+    {
+      "id": 2,
+      "title": "📊 Live Activity Bars — Sacred Orders Power",
+      "type": "bargauge",
+      "gridPos": {"x": 0, "y": 18, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 3000},
+              {"color": "red", "value": 5000}
+            ]
+          },
+          "unit": "events",
+          "min": 0,
+          "max": 6000
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true
+      },
+      "targets": [
+        {"expr": "sacred_order_activity", "legendFormat": "{{sacred_order}}", "refId": "A"}
+      ]
+    },
+    {
+      "id": 3,
+      "title": "🔥 Event Storm — Real-Time Flow",
+      "type": "timeseries",
+      "gridPos": {"x": 12, "y": 18, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "gradientMode": "opacity"
+          },
+          "color": {"mode": "palette-classic"},
+          "unit": "events/s"
+        }
+      },
+      "targets": [
+        {"expr": "sum(rate(stream_length[30s])) by (job)", "legendFormat": "{{job}}", "refId": "A"}
+      ]
+    }
+  ]
+}
