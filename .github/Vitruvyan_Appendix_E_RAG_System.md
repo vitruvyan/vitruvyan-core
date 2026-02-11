@@ -1,8 +1,11 @@
 # Appendix E — RAG System Architecture (Sacred Orders)
 **Vitruvyan AI Trading Advisor - Official Documentation**  
-**Version**: 2.0 (Sacred Orders Refactor)  
-**Last Updated**: October 28, 2025  
+**Version**: 3.0 (Feb 2026 - LIVELLO 1+2 Refactoring)  
+**Last Updated**: February 11, 2026  
 **Status**: ✅ ACTIVE - Production Ready
+
+> **Architecture Note (Feb 2026)**: Codex Hunters and Memory Orders now follow the **LIVELLO 1+2 Pattern**.
+> Paths updated: `core/leo/` → `core/agents/`, `core/memory_orders/` → `core/governance/`
 
 ---
 
@@ -39,12 +42,12 @@ echo "TRANSLATION_PROVIDER=groq" >> .env
 ### Translation Agent Usage
 ```bash
 # Translate 1.7M vectors to Italian (8 hours, $0.12)
-python3 core/memory_orders/codex_hunters/translation_agent.py \
+python3 vitruvyan_core/core/governance/codex_hunters/translation_agent.py \
     --target-languages it \
     --batch-size 100
 
 # Translate to 4 languages (32 hours, $0.50)
-python3 core/memory_orders/codex_hunters/translation_agent.py \
+python3 vitruvyan_core/core/governance/codex_hunters/translation_agent.py \
     --target-languages it,es,fr,de \
     --batch-size 100
 ```
@@ -79,7 +82,7 @@ Multilingual semantic search enabled
 ### Solution: Language-First Enforcement (FASE 1+2)
 
 #### 1. QdrantAgent Validation Layer
-**File**: `core/leo/qdrant_agent.py`
+**File**: `vitruvyan_core/core/agents/qdrant_agent.py` (Feb 2026 path)
 
 All `upsert()` operations now **REQUIRE** valid ISO 639-1 language codes:
 ```python
@@ -985,13 +988,14 @@ services:
 
 ## 📚 References
 
-### Key Files
-- **Embedding API**: `scripts/api_embedding_server.py`
-- **Babel Gardens**: `docker/services/api_babel_gardens/`
-- **Memory Orders**: `docker/services/api_memory_orders/`
-- **Codex Scribe**: `core/agents/codex_hunters/scribe.py`
-- **QdrantAgent**: `core/leo/qdrant_agent.py`
-- **PostgresAgent**: `core/leo/postgres_agent.py`
+### Key Files (Feb 2026 Paths)
+- **Embedding API**: `services/api_babel_gardens/` (FastAPI service)
+- **Babel Gardens**: `services/api_babel_gardens/` (LIVELLO 2)
+- **Memory Orders**: `services/api_memory_orders/` (LIVELLO 2)
+- **Codex Hunters**: `vitruvyan_core/core/governance/codex_hunters/` (LIVELLO 1)
+- **QdrantAgent**: `vitruvyan_core/core/agents/qdrant_agent.py`
+- **PostgresAgent**: `vitruvyan_core/core/agents/postgres_agent.py`
+- **StreamBus**: `vitruvyan_core/core/synaptic_conclave/transport/streams.py`
 
 ### Related Documentation
 - **Action Plan**: `docs/RAG_INTEGRATION_ACTION_PLAN.md`

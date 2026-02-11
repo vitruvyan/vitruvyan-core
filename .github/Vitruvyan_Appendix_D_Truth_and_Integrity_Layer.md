@@ -1,6 +1,9 @@
 # Appendix D — Truth & Integrity Layer
 *The Epistemic Governance Framework of Vitruvyan*
 
+**Last Updated**: February 11, 2026  
+**Architecture**: LIVELLO 1+2 Pattern (Sacred Orders), Synaptic Conclave (event transport)
+
 ---
 
 ## Overview
@@ -8,7 +11,9 @@ The **Truth & Integrity Layer** forms the moral and procedural backbone of the V
 It ensures that every action, computation, and explanation adheres to epistemic integrity, transparency, and traceability.
 
 This layer is composed of **four interdependent guardians**:  
-**Orthodoxy Wardens**, **Vault Keepers**, **Sentinel**, and the **Redis Cognitive Bus**.
+**Orthodoxy Wardens**, **Vault Keepers**, **Sentinel**, and the **Synaptic Conclave** (event bus).
+
+> **Architecture Note (Feb 2026)**: Orthodoxy Wardens and Vault Keepers now follow the **LIVELLO 1+2 Pattern** (10-directory pure domain + service layers). See Sacred Orders documentation for details.
 
 Together, they establish a **self-auditing, self-healing governance fabric** that supervises all cognitive orders — from perception (data) to truth (reason).
 
@@ -29,7 +34,7 @@ They monitor for epistemic drift (divergence from truth), model inconsistencies,
 
 ### Integration
 ```
-LangGraph Output → Orthodoxy Wardens → Redis Cognitive Bus → Audit Log (PostgreSQL)
+LangGraph Output → Orthodoxy Wardens → Synaptic Conclave (StreamBus) → Audit Log (PostgreSQL)
 ```
 
 ### Example
@@ -75,7 +80,7 @@ It is both **watchdog** and **protector**, alerting the user and the Orthodoxy W
 
 ### Integration
 ```
-Neural Engine → Sentinel Stream → Redis Cognitive Bus → VARE → LangGraph Alert
+Neural Engine → Sentinel Stream → Synaptic Conclave (StreamBus) → VARE → LangGraph Alert
 ```
 
 ### Example
@@ -83,7 +88,7 @@ If portfolio volatility exceeds 25% above baseline, Sentinel activates VARE to r
 
 ---
 
-## 4. Redis Cognitive Bus
+## 4. Synaptic Conclave (Event Bus)
 **Role:** Epistemic Nervous System — the real-time communication substrate.
 
 ### Description
@@ -113,7 +118,7 @@ When Codex Hunters ingest a corrupted record, Redis triggers an “epistemic qua
         └────────────┬─────────────┘
                      │
                      ▼
-             Redis Cognitive Bus
+          Synaptic Conclave (StreamBus)
                      │
       ┌──────────────┼──────────────┐
       ▼                              ▼
@@ -161,6 +166,22 @@ This ensures not only accuracy but *integrity* — a harmony between data, logic
 
 ---
 
+## Current Architecture Paths (Feb 2026)
+
+| Sacred Order | LIVELLO 1 (Pure Domain) | LIVELLO 2 (Service) | Documentation |
+|--------------|-------------------------|---------------------|---------------|
+| **Orthodoxy Wardens** | `core/governance/orthodoxy_wardens/` | `services/api_orthodoxy_wardens/` | `.github/Vitruvyan_Appendix_O_Orthodoxy_Wardens.md` |
+| **Vault Keepers** | `core/governance/vault_keepers/` | `services/api_vault_keepers/` | (README in progress) |
+| **Memory Orders** | `core/governance/memory_orders/` | `services/api_memory_orders/` | (README in progress) |
+
+**Event Bus**: `core/synaptic_conclave/transport/streams.py` (StreamBus, Redis Streams)  
+**Agents**: `core/agents/postgres_agent.py`, `core/agents/qdrant_agent.py`
+
+**See also**: `.github/Vitruvyan_Appendix_L_Synaptic_Conclave.md` for bus architecture.
+
+---
+
 **Author:** Vitruvyan Ethics & Governance Council  
-**Version:** 1.0.0  
+**Version:** 2.0.0 (LIVELLO 1+2 Pattern, Synaptic Conclave terminology)  
+**Last Updated:** February 11, 2026  
 **Last Updated:** 2025-10-26
