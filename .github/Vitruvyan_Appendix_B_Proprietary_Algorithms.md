@@ -1,6 +1,11 @@
 # Appendix B — Proprietary Algorithms & Cognitive Signatures
 *Vitruvyan Cognitive Core — The Signature Algorithms*
 
+**Last Updated**: February 11, 2026  
+**Status**: Finance Domain Algorithms (Not Core Primitives)
+
+> **Note (Feb 2026)**: VEE and VARE described below are **finance domain-specific algorithms**. The core Neural Engine is now domain-agnostic via `IDataProvider` + `IScoringStrategy` contracts. These algorithms remain valid for finance verticals but are not part of the core engine primitives.
+
 ---
 
 ## Overview

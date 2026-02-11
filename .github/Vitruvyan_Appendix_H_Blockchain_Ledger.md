@@ -1,5 +1,8 @@
 # APPENDIX H — BLOCKCHAIN LEDGER SYSTEM (Nov 5, 2025)
-**Status**: ✅ PRODUCTION READY
+**Status**: ✅ PRODUCTION READY  
+**Last Updated**: February 11, 2026 (architecture paths updated)
+
+> **Note (Feb 2026)**: Path migrations: `core/ledger/` → external vertical (if needed), `core/audit_engine/` → `core/governance/orthodoxy_wardens/` (LIVELLO 1+2).
 
 **Purpose**: Immutable audit trail anchoring system using Tron blockchain for cryptographic proof of epistemic integrity.
 

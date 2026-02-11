@@ -3,8 +3,10 @@
 
 **Status**: Phase 2 - LangGraph Integration Complete (Week 2, Day 7)  
 **Created**: January 8, 2026  
-**Last Updated**: January 18, 2026  
+**Last Updated**: February 11, 2026 (bus terminology + path notes)  
 **Architecture Phase**: MVP Development (4-week timeline)
+
+> **Note (Feb 2026)**: Path `core/portfolio_architects/` removed (domain vertical pattern). Event bus: `cognitive_bus:portfolio_architects` → StreamBus channel-based routing. See `core/synaptic_conclave/transport/streams.py`.
 
 ---
 

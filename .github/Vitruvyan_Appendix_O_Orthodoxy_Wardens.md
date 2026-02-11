@@ -179,7 +179,7 @@ class OrthodoxyEvent:
 | Archive | `ARCHIVE_REQUESTED`, `ARCHIVE_COMPLETED` |
 | System | `HEARTBEAT`, `ERROR`, `RULESET_UPDATED` |
 
-All constants are plain strings (no Enum), following the Cognitive Bus convention.
+All constants are plain strings (no Enum), following the Synaptic Conclave convention.
 
 ---
 

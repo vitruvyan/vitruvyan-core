@@ -1,7 +1,12 @@
-# 🧠 VITRUVYAN CONVERSATIONAL ARCHITECTURE V1
-**Status**: 🔨 WORK IN PROGRESS (Last Updated: Nov 2, 2025)  
+# 🧠 VITRUVYAN CONVERSATIONAL ARCHITECTURE V1 (HISTORICAL)
+**Status**: 📋 LEGACY — Superseded by Plugin Architecture (Last Updated: Feb 11, 2026)  
 **Sacred Order**: Discourse (Linguistic Reasoning Layer)  
 **Core Philosophy**: LLM-First Epistemic Reasoning with Anti-Hallucination Guardrails
+
+> **Note (Feb 2026)**: This document describes the **V1 architecture** (pre-plugin system).  
+> **Current architecture**: `core/orchestration/` with `GraphPlugin` ABC + `BaseGraphState` (35 universal fields).  
+> **Path migration**: `core/langgraph/` → `core/orchestration/` (LEVEL 1 pure Python + LEVEL 2 LangGraph).  
+> **See Appendix J** for current plugin-based architecture.
 
 ---
 

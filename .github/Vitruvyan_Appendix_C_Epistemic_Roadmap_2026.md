@@ -1,4 +1,25 @@
 # Appendix C — Epistemic Roadmap 2026
+
+**Last Updated**: February 11, 2026  
+**Status**: Updated with Q1 2026 completions
+
+## Completed Milestones (Q4 2025 - Q1 2026)
+
+- ✅ Sacred Orders LIVELLO 1+2 refactoring (Memory Orders, Vault Keepers, Orthodoxy Wardens)
+- ✅ Domain-agnostic core architecture (Neural Engine contracts, LangGraph plugins)
+- ✅ Synaptic Conclave event bus (Redis Streams, channel-based routing)
+- ✅ Graph simplification v1 (removed legacy nodes, streamlined pipeline)
+- ✅ Plugin architecture (`GraphPlugin` ABC + `BaseGraphState` 35 universal fields)
+- ✅ Numpy vectorized composite scoring (~100x speedup)
+
+**Last Updated**: February 11, 2026  
+**Status**: Updated with Q1 2026 completions
+
+## Q4 2025 (COMPLETED ✅)
+- Sacred Orders LIVELLO 1+2 refactoring (Memory Orders, Vault Keepers, Orthodoxy Wardens)
+- Domain-agnostic core architecture (Neural Engine contracts, LangGraph plugins)
+- Synaptic Conclave event bus (Redis Streams, channel-based routing)
+- Graph simplification v1 (removed legacy nodes, streamlined pipeline)
 *The Evolution of Vitruvyan toward Autonomous Epistemic Intelligence*
 
 ---

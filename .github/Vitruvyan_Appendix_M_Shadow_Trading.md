@@ -1,8 +1,11 @@
 # Appendix M — Shadow Trading System (Sacred Order #6)
 **Status**: ✅ PHASE 3.1 COMPLETE (Jan 7, 2026 13:45 CET)  
+**Last Updated**: February 11, 2026 (bus terminology updated)  
 **Epistemic Order**: Reason + Perception + Truth (AI Reasoning Agent)  
 **Sacred Order**: #6 (peer to Pattern Weavers, Codex Hunters, Vault Keepers)  
 **Latest**: CAN Integration for trade results + LLM-based intent detection + Pre-trade validation ready
+
+> **Note (Feb 2026)**: Event bus terminology updated: `cognitive_bus:events` → `StreamBus.emit('shadow.trades.detected', ...)`. See `core/synaptic_conclave/transport/streams.py`.
 
 ---
 

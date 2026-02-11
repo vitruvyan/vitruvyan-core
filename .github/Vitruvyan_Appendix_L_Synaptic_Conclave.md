@@ -1,12 +1,14 @@
-# Appendix L — Synaptic Conclave: The Cognitive Bus
+# Appendix L — Synaptic Conclave: The Event Bus
 **Status**: ✅ PRODUCTION READY (Redis Streams Architecture — Domain-Agnostic Core)
 **Last Updated**: February 11, 2026 (Domain-Agnostic Refactoring Documentation)
+
+> **Terminology Note**: Previously known as "Cognitive Bus" in older docs. Standardized to "Synaptic Conclave" as of Feb 2026.
 
 ---
 
 ## Executive Summary
 
-**Synaptic Conclave** (also known as the **Cognitive Bus**) is Vitruvyan's distributed event backbone — a Redis Streams-based neural substrate that enables asynchronous, durable, and causally-linked communication between Sacred Orders services.
+**Synaptic Conclave** is Vitruvyan's distributed event backbone — a Redis Streams-based neural substrate that enables asynchronous, durable, and causally-linked communication between Sacred Orders services.
 
 ### The Big Picture
 
