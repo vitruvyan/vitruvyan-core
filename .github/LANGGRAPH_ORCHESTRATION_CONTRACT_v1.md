@@ -30,6 +30,22 @@ Vitruvyan is an **epistemic operating system**, not a monolithic application. La
 
 ## 2. Hard Boundary Definition
 
+### Transport Layer Architecture
+
+Vitruvyan uses **heterogeneous transport** for orchestration:
+
+| Pattern | Transport | Status | Use Case |
+|---------|-----------|--------|----------|
+| **Synchronous** | HTTP | Canonical | Request/response domain operations |
+| **Asynchronous** | Redis Streams | Canonical | Event-driven cognitive processing |
+| **Pub/Sub** | DEPRECATED | Legacy | ❌ Fire-and-forget ephemeral (removed) |
+
+**Critical Distinction**: 
+- **Redis Streams** = Persistent, ordered, replayable event log with consumer groups (XADD, XREADGROUP, acknowledgment)
+- **Pub/Sub** = Ephemeral fire-and-forget broadcast (deprecated in Vitruvyan)
+
+The Cognitive Bus is **Redis Streams only**. Events are durable state transitions, not notifications.
+
 ### Decision Tree: "Who Owns This?"
 
 ```
@@ -39,7 +55,9 @@ Is it a calculation on domain data?
     ├─ YES → LangGraph
     └─ NO → Is it HTTP transport?
         ├─ YES → LangGraph
-        └─ NO → ⚠️ Undefined (escalate to architecture review)
+        └─ NO → Is it event processing (Redis Streams)?
+            ├─ YES → LangGraph (Event Processor Node)
+            └─ NO → ⚠️ Undefined (escalate to architecture review)
 ```
 
 ### Litmus Test
@@ -64,7 +82,91 @@ if confidence < 0.7:  # What is "confidence"? Finance? Medical?
 
 ## 3. Allowed vs Forbidden Responsibilities
 
-### 3.1 Orchestration Layer (LangGraph Nodes)
+### 3.1 Node Category Definitions
+
+LangGraph recognizes **three node categories** based on transport layer:
+
+#### Category 1: HTTP Domain Adapters
+
+**Purpose**: Synchronous request/response to Sacred Order services.
+
+**Pattern**:
+```python
+def example_node(state: Dict[str, Any]) -> Dict[str, Any]:
+    response = httpx.post(SERVICE_URL, json={"query": state["input"]})
+    
+    if response.status_code == 200:
+        result = response.json()
+        state["service_result"] = result  # Opaque storage
+        state["metric"] = result["metrics"]["avg_confidence"]  # Extract
+    
+    return state
+```
+
+**Examples**: `babel_gardens_node.py`, `pattern_weavers_node.py`, `codex_hunters_node.py`
+
+---
+
+#### Category 2: Event Processor Nodes
+
+**Purpose**: Consume Redis Streams events (persistent event log, not Pub/Sub).
+
+**Pattern**:
+```python
+def mnemosyne_node(state: Dict[str, Any]) -> Dict[str, Any]:
+    """Process semantic search results from Cognitive Bus."""
+    
+    # Event already consumed by streams_listener (XREADGROUP)
+    event = state.get("event")  # TransportEvent from Redis Streams
+    
+    if event:
+        payload = event.get("payload", {})
+        
+        # Extract pre-calculated metrics from event producer
+        state["search_results"] = payload.get("matches", [])
+        state["avg_similarity"] = payload["metrics"]["avg_similarity"]  # ✅ Pre-computed
+        state["match_count"] = payload["metrics"]["match_count"]
+    
+    return state
+```
+
+**Key Characteristics**:
+- Consumes from **Redis Streams** (persistent, ordered, replayable)
+- Uses **consumer groups** for parallelism
+- **Extracts** metrics from event payload (no calculation)
+- Event producer (Sacred Order) **pre-calculates** all metrics
+
+**Examples**: `mnemosyne_node.py` (semantic search results), `archivarium_node.py` (archival events)
+
+**Not Pub/Sub**: Events are durable, acknowledged, replayable—not fire-and-forget.
+
+---
+
+#### Category 3: Infrastructure Adapters (Deprecated)
+
+**Purpose**: Direct database/cache access (legacy, being phased out).
+
+**Deprecation**: All infrastructure operations should flow through Sacred Order services.
+
+---
+
+### 3.2 Unified Prohibition (All Categories)
+
+**The Hard Rule**: Regardless of transport layer, **no domain calculation** in orchestration.
+
+| Forbidden | HTTP Nodes | Event Nodes | Reason |
+|-----------|------------|-------------|--------|
+| `sum()`, `avg()` | ❌ | ❌ | Calculation = domain semantics |
+| `score > threshold` | ❌ | ❌ | Interpretation = business logic |
+| `sorted(key=lambda...)` | ❌ | ❌ | Prioritization = domain knowledge |
+
+**Calculation Location**:
+- **HTTP Nodes**: Pre-calculated in service response
+- **Event Nodes**: Pre-calculated in event producer payload
+
+---
+
+### 3.3 Orchestration Layer (LangGraph Nodes)
 
 #### ✅ ALLOWED
 
@@ -90,7 +192,7 @@ if confidence < 0.7:  # What is "confidence"? Finance? Medical?
 
 ---
 
-### 3.2 Domain Layer (Sacred Orders)
+### 3.4 Domain Layer (Sacred Orders)
 
 #### ✅ REQUIRED
 
@@ -310,6 +412,97 @@ def pattern_weavers_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     return state
 ```
+
+---
+
+### 4.5 Event Processor Example: Mnemosyne Node
+
+#### ❌ WRONG (Calculating in Event Consumer)
+
+```python
+# mnemosyne_node.py (Violation)
+
+def mnemosyne_node(state: Dict[str, Any]) -> Dict[str, Any]:
+    """Process semantic search results from Cognitive Bus."""
+    
+    event = state.get("event")
+    matches = event["payload"]["matches"]
+    
+    # ❌ VIOLATION: Domain arithmetic
+    similarity_scores = [m["similarity_score"] for m in matches]
+    avg_similarity = sum(similarity_scores) / len(similarity_scores)  # ❌
+    
+    state["avg_similarity"] = avg_similarity
+    return state
+```
+
+**Why Wrong**: 
+- Event consumer calculates `avg_similarity` (domain metric)
+- Averaging logic belongs in event **producer** (Sacred Order)
+- Formula change requires modifying orchestration layer
+
+---
+
+#### ✅ CORRECT (Extract from Event Producer)
+
+**Event Producer (Memory Orders Service)**:
+```python
+# services/api_memory_orders/adapters/bus_adapter.py
+
+class BusAdapter:
+    def publish_search_results(self, query_id: str, matches: List[Match]):
+        """Emit semantic search results to Cognitive Bus."""
+        
+        # Pre-calculate all metrics in producer
+        similarity_scores = [m.similarity_score for m in matches]
+        avg_similarity = sum(similarity_scores) / len(similarity_scores) if similarity_scores else 0.0
+        max_similarity = max(similarity_scores) if similarity_scores else 0.0
+        
+        payload = {
+            "query_id": query_id,
+            "matches": [m.to_dict() for m in matches],
+            "metrics": {
+                "avg_similarity": avg_similarity,  # ✅ Pre-calculated
+                "max_similarity": max_similarity,
+                "match_count": len(matches),
+                "threshold_met": avg_similarity >= 0.7,
+            },
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        
+        # Publish to Redis Streams (XADD)
+        self.bus.publish("memory.vector.match.fulfilled", payload)
+```
+
+**Event Consumer (Mnemosyne Node)**:
+```python
+# vitruvyan_core/core/orchestration/langgraph/node/mnemosyne_node.py
+
+def mnemosyne_node(state: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract semantic search results from Cognitive Bus."""
+    
+    event = state.get("event")
+    
+    if event:
+        payload = event.get("payload", {})
+        
+        # ✅ Extract pre-calculated metrics (no computation)
+        state["search_results"] = payload.get("matches", [])
+        state["avg_similarity"] = payload["metrics"]["avg_similarity"]  # ✅
+        state["match_count"] = payload["metrics"]["match_count"]
+        state["threshold_met"] = payload["metrics"]["threshold_met"]
+    else:
+        # Neutral fallback
+        state["search_results"] = []
+        state["avg_similarity"] = 0.0
+    
+    return state
+```
+
+**Key Pattern**: 
+- Producer (Sacred Order) calculates → Consumer (LangGraph) extracts
+- Same prohibition as HTTP nodes, different transport
+- Redis Streams provides durable event log (not Pub/Sub)
 
 ---
 

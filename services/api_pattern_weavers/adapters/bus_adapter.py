@@ -176,6 +176,66 @@ class BusAdapter:
             return self.bus.ping()
         except Exception:
             return False
+    
+    def publish_semantic_search_results(
+        self,
+        query_text: str,
+        matches: list,
+        query_id: str = "unknown",
+        top_k: int = 10
+    ) -> bool:
+        """
+        Publish semantic search results to memory.vector.match.fulfilled.
+        
+        CONTRACT COMPLIANCE:
+        - Pre-calculates all domain metrics (avg_similarity, max, min)
+        - Consumer (mnemosyne_node) extracts, never computes
+        
+        Args:
+            query_text: Original query
+            matches: List of match dicts with similarity_score
+            query_id: Request correlation ID
+            top_k: Number of results requested
+            
+        Returns:
+            bool: Success status
+        """
+        if not self.bus:
+            return False
+        
+        try:
+            # ✅ Pre-calculate all metrics (producer responsibility)
+            similarity_scores = [m.get("similarity_score", 0.0) for m in matches]
+            avg_similarity = sum(similarity_scores) / len(similarity_scores) if similarity_scores else 0.0
+            max_similarity = max(similarity_scores) if similarity_scores else 0.0
+            min_similarity = min(similarity_scores) if similarity_scores else 0.0
+            match_count = len(matches)
+            
+            # ✅ Pre-sort matches by similarity (consumer preserves order)
+            sorted_matches = sorted(matches, key=lambda m: m.get("similarity_score", 0), reverse=True)
+            
+            payload = {
+                "query_id": query_id,
+                "query_text": query_text,
+                "matches": sorted_matches,
+                "top_k": top_k,
+                "metrics": {
+                    "avg_similarity": round(avg_similarity, 3),
+                    "max_similarity": round(max_similarity, 3),
+                    "min_similarity": round(min_similarity, 3),
+                    "match_count": match_count,
+                    "threshold_met": avg_similarity >= 0.7,
+                },
+                "timestamp": __import__("datetime").datetime.utcnow().isoformat(),
+            }
+            
+            self.bus.emit("memory.vector.match.fulfilled", payload)
+            logger.info(f"✅ Published semantic search results: {match_count} matches, avg_sim={avg_similarity:.3f}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to publish semantic search: {e}")
+            return False
 
 
 # Singleton
