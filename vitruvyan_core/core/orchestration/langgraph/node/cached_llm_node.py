@@ -10,7 +10,7 @@ import os
 from dotenv import load_dotenv
 
 # Import our cache manager
-from core.foundation.llm.cache_manager import get_cache_manager, CacheEntry
+from core.llm.cache_manager import get_cache_manager, CacheEntry
 # 🆕 Import emotion detection
 from core.orchestration.langgraph.node.emotion_detector import detect_emotion, get_emotion_system_prompt_fragment
 

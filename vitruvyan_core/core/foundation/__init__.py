@@ -6,7 +6,5 @@ Foundation layer provides core infrastructure primitives.
 
 Subpackages:
 - persistence: Database and vector store agents
-- llm: Language model clients
 
-Author: Vitruvyan Core Team
-"""
+Note: LLM clients are now in core.llm (not core.foundation.llm)

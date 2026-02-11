@@ -75,7 +75,7 @@ class MemoryStreamsListener:
         # Create consumer groups
         for channel in self.channels:
             try:
-                self.bus.create_consumer_group(channel, self.group, mkstream=True)
+                self.bus.create_consumer_group(channel, self.group)
                 logger.info(f"✅ Consumer group '{self.group}' ready for {channel}")
             except Exception as e:
                 logger.warning(f"Consumer group may already exist for {channel}: {e}")

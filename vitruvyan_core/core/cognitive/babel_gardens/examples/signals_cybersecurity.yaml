@@ -1,0 +1,56 @@
+# Cybersecurity Vertical - Signal Schema Configuration
+# Babel Gardens v2.1 - Domain-Agnostic Signal Extraction
+
+signals:
+  - name: threat_severity
+    range: [0.0, 1.0]
+    aggregation_method: max
+    fusion_weight: 1.0
+    explainability_required: true
+    extraction_method: "model:secbert"
+    description: "CVE/exploit severity classification"
+  
+  - name: exploit_imminence
+    range: [0.0, 1.0]
+    aggregation_method: weighted
+    fusion_weight: 0.9
+    explainability_required: true
+    extraction_method: "model:threatbert"
+    description: "Likelihood of active exploitation"
+  
+  - name: attribution_confidence
+    range: [0.0, 1.0]
+    aggregation_method: mean
+    fusion_weight: 0.7
+    explainability_required: true
+    extraction_method: "model:aptbert"
+    description: "Confidence in threat actor attribution"
+  
+  - name: lateral_movement_risk
+    range: [0.0, 1.0]
+    aggregation_method: max
+    fusion_weight: 0.8
+    explainability_required: false
+    extraction_method: "heuristic:mitre_attack"
+    description: "Risk of attacker pivoting across network"
+
+taxonomy:
+  categories:
+    - malware
+    - phishing
+    - ransomware
+    - zero_day
+    - apt
+    - data_exfiltration
+    - privilege_escalation
+    - reconnaissance
+  
+  embeddings:
+    model: "sentence-transformers/all-MiniLM-L6-v2"
+    dimension: 384
+
+metadata:
+  vertical: cybersecurity
+  version: "2.1.0"
+  created: "2026-02-11"
+  contact: "babel-cyber@vitruvyan.ai"

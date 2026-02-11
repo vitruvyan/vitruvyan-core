@@ -1,0 +1,56 @@
+# Maritime Vertical - Signal Schema Configuration
+# Babel Gardens v2.1 - Domain-Agnostic Signal Extraction
+
+signals:
+  - name: operational_disruption
+    range: [0.0, 1.0]
+    aggregation_method: weighted
+    fusion_weight: 0.9
+    explainability_required: true
+    extraction_method: "model:maritimebert"
+    description: "Port/shipping operational impact severity"
+  
+  - name: delay_severity
+    range: [0, 10]  # days
+    aggregation_method: max
+    fusion_weight: 1.0
+    explainability_required: true
+    extraction_method: "heuristic:temporal_extraction"
+    description: "Estimated delay duration in days"
+  
+  - name: route_viability
+    range: [0.0, 1.0]
+    aggregation_method: mean
+    fusion_weight: 0.8
+    explainability_required: false
+    extraction_method: "model:routebert"
+    description: "Shipping route safety/accessibility score"
+  
+  - name: cargo_risk
+    range: [0.0, 1.0]
+    aggregation_method: max
+    fusion_weight: 0.7
+    explainability_required: true
+    extraction_method: "heuristic:cargo_classifier"
+    description: "Risk to cargo integrity (damage, theft, contamination)"
+
+taxonomy:
+  categories:
+    - port_congestion
+    - weather_disruption
+    - piracy
+    - geopolitical_closure
+    - labor_strikes
+    - infrastructure_failure
+    - environmental_hazard
+    - customs_delay
+  
+  embeddings:
+    model: "sentence-transformers/all-MiniLM-L6-v2"
+    dimension: 384
+
+metadata:
+  vertical: maritime
+  version: "2.1.0"
+  created: "2026-02-11"
+  contact: "babel-maritime@vitruvyan.ai"

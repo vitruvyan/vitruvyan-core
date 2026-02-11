@@ -1,0 +1,107 @@
+groups:
+  - name: synaptic_bus_alerts
+    interval: 30s
+    rules:
+      # High Lag Alert — Consumer group falling behind
+      - alert: SynapticBusHighLag
+        expr: stream_consumer_lag > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: synaptic_bus
+          sacred_order: "{{ $labels.consumer_group }}"
+        annotations:
+          summary: "High consumer lag detected in {{ $labels.consumer_group }}"
+          description: "Consumer group {{ $labels.consumer_group }} on stream {{ $labels.stream }} has lag of {{ $value }} messages (threshold: 100). This indicates processing bottleneck or consumer slowness."
+          dashboard: "http://localhost:3000/d/synaptic-bus-eeg"
+
+      # Critical Lag Alert — Consumer group severely behind
+      - alert: SynapticBusCriticalLag
+        expr: stream_consumer_lag > 1000
+        for: 2m
+        labels:
+          severity: critical
+          component: synaptic_bus
+          sacred_order: "{{ $labels.consumer_group }}"
+        annotations:
+          summary: "CRITICAL lag in {{ $labels.consumer_group }}"
+          description: "Consumer group {{ $labels.consumer_group }} has lag of {{ $value }} messages (threshold: 1000). Immediate intervention required to prevent data loss or system instability."
+          dashboard: "http://localhost:3000/d/synaptic-bus-eeg"
+
+      # Pending Messages Overflow — Stream accumulating unprocessed events
+      - alert: SynapticBusPendingOverflow
+        expr: stream_pending_messages > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: synaptic_bus
+        annotations:
+          summary: "High pending messages on stream {{ $labels.stream }}"
+          description: "Stream {{ $labels.stream }} has {{ $value }} pending messages (threshold: 1000). Check consumer acknowledgment logic and processing capacity."
+          dashboard: "http://localhost:3000/d/synaptic-bus-eeg"
+
+      # Stale Consumer — No activity for extended period
+      - alert: SynapticBusStaleConsumer
+        expr: (time() - stream_last_event_timestamp) > 300
+        for: 5m
+        labels:
+          severity: warning
+          component: synaptic_bus
+          sacred_order: "{{ $labels.consumer_group }}"
+        annotations:
+          summary: "Consumer {{ $labels.consumer_group }} appears stale"
+          description: "Consumer group {{ $labels.consumer_group }} on stream {{ $labels.stream }} has not consumed events for {{ $value }}s (threshold: 300s). Possible listener crash or network partition."
+          dashboard: "http://localhost:3000/d/synaptic-bus-eeg"
+
+      # Cognitive Instability — Consume/publish ratio out of equilibrium
+      - alert: SynapticBusCognitiveInstability
+        expr: |
+          (
+            sum(rate(listener_consumed_total[5m])) / 
+            sum(rate(cognitive_bus_events_total{event_type="publish"}[5m]))
+          ) < 0.85
+        for: 10m
+        labels:
+          severity: warning
+          component: synaptic_bus
+        annotations:
+          summary: "Cognitive stability index below threshold"
+          description: "System-wide consume/publish ratio is {{ $value | humanizePercentage }} (threshold: 85%). Consumers are falling behind publishers, indicating systemic backpressure. Scale consumers or optimize processing."
+          dashboard: "http://localhost:3000/d/synaptic-bus-eeg"
+
+      # Stream Capacity Critical — Approaching max_length
+      - alert: SynapticBusStreamCapacityCritical
+        expr: stream_length > 9000
+        for: 5m
+        labels:
+          severity: critical
+          component: synaptic_bus
+        annotations:
+          summary: "Stream {{ $labels.stream }} near capacity"
+          description: "Stream {{ $labels.stream }} has {{ $value }} entries (max_length: 10000). Redis will start pruning oldest entries soon. Increase MAXLEN or scale consumers urgently."
+          dashboard: "http://localhost:3000/d/synaptic-bus-eeg"
+
+      # No Events Published — System-wide silence (possible failure)
+      - alert: SynapticBusNoEventsPublished
+        expr: sum(rate(cognitive_bus_events_total{event_type="publish"}[5m])) == 0
+        for: 10m
+        labels:
+          severity: critical
+          component: synaptic_bus
+        annotations:
+          summary: "No events published to Synaptic Bus"
+          description: "Zero events published system-wide for 10+ minutes. Check if all Sacred Order services are operational and able to publish to Redis Streams."
+          dashboard: "http://localhost:3000/d/synaptic-bus-eeg"
+
+      # Consumer Group Down — No consumption activity
+      - alert: SynapticBusConsumerGroupDown
+        expr: rate(listener_consumed_total[5m]) == 0
+        for: 10m
+        labels:
+          severity: critical
+          component: synaptic_bus
+          sacred_order: "{{ $labels.consumer_group }}"
+        annotations:
+          summary: "Consumer group {{ $labels.consumer_group }} not consuming"
+          description: "Consumer group {{ $labels.consumer_group }} has consumed zero messages for 10+ minutes. Listener container may be crashed or unable to connect to Redis."
+          dashboard: "http://localhost:3000/d/synaptic-bus-eeg"

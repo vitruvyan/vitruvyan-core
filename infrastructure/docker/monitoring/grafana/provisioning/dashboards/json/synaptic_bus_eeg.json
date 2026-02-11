@@ -1,0 +1,549 @@
+{
+  "title": "Synaptic Bus EEG",
+  "uid": "synaptic-bus-eeg",
+  "tags": [
+    "cognitive-system",
+    "redis-streams",
+    "sacred-orders"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "⚡ Cognitive EEG — Global Event Activity",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Real-time electroencephalogram of the Synaptic Conclave showing publish and consume rates across all Sacred Orders",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "events/s",
+          "decimals": 2
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(cognitive_bus_events_total{event_type=\"publish\"}[1m])) by (service)",
+          "legendFormat": "📤 {{service}} (publish)",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(listener_consumed_total[1m])) by (consumer_group)",
+          "legendFormat": "📥 {{consumer_group}} (consume)",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(cognitive_bus_event_duration_seconds_bucket[1m])) by (le, service))",
+          "legendFormat": "⏱️ p95 latency ({{service}})",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(stream_consumer_lag) by (consumer_group)",
+          "legendFormat": "🐌 lag: {{consumer_group}}",
+          "refId": "D"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "🧠 Polypo Matrix — Consumer Group Health",
+      "type": "table",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Live health matrix of all consumer groups (micelial polyp hyphae) showing lag, pending messages, and consumption rate",
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Lag"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "value": 0,
+                      "color": "green"
+                    },
+                    {
+                      "value": 10,
+                      "color": "yellow"
+                    },
+                    {
+                      "value": 100,
+                      "color": "red"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Pending"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "value": 0,
+                      "color": "green"
+                    },
+                    {
+                      "value": 50,
+                      "color": "yellow"
+                    },
+                    {
+                      "value": 500,
+                      "color": "red"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "consumer_group": "Consumer Group",
+              "Value #A": "Lag",
+              "Value #B": "Pending",
+              "Value #C": "Rate (events/s)"
+            }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "expr": "stream_consumer_lag",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        },
+        {
+          "expr": "stream_pending_messages",
+          "format": "table",
+          "instant": true,
+          "refId": "B"
+        },
+        {
+          "expr": "rate(listener_consumed_total[1m])",
+          "format": "table",
+          "instant": true,
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "🕸️ Micelial Network — Sacred Orders Topology",
+      "type": "nodeGraph",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Real-time visualization of the Synaptic Conclave as a living micelial network. Node size = message throughput, edge thickness = stream event rate, color = consumer lag",
+      "options": {
+        "nodes": {
+          "mainStatUnit": "events/s",
+          "secondaryStatUnit": "ms",
+          "arcs": [
+            {
+              "field": "Lag",
+              "color": "green",
+              "min": 0,
+              "max": 10
+            },
+            {
+              "field": "Lag",
+              "color": "yellow",
+              "min": 10,
+              "max": 100
+            },
+            {
+              "field": "Lag",
+              "color": "red",
+              "min": 100,
+              "max": 1000
+            }
+          ]
+        },
+        "edges": {
+          "mainStatUnit": "events/s"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(cognitive_bus_events_total[1m])) by (service, channel)",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "⚖️ Cognitive Stability Index",
+      "type": "gauge",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 6,
+        "h": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "System-wide consume/publish ratio. Green (0.9-1.1) = healthy equilibrium, Red (<0.9) = backpressure, Blue (>1.1) = idle capacity",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 3,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "red"
+              },
+              {
+                "value": 0.9,
+                "color": "green"
+              },
+              {
+                "value": 1.1,
+                "color": "blue"
+              }
+            ]
+          },
+          "mappings": []
+        }
+      },
+      "options": {
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true,
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(listener_consumed_total[1m])) / sum(rate(cognitive_bus_events_total{event_type=\"publish\"}[1m]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "📊 Stream Integrity — Pending Messages",
+      "type": "stat",
+      "gridPos": {
+        "x": 6,
+        "y": 16,
+        "w": 6,
+        "h": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Total pending messages across all streams (unacknowledged events waiting for consumer processing)",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              },
+              {
+                "value": 100,
+                "color": "yellow"
+              },
+              {
+                "value": 1000,
+                "color": "red"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "textMode": "value_and_name",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(stream_pending_messages)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "📈 Stream Capacity — Fill Levels",
+      "type": "bargauge",
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Current length of each stream vs configured max_length (10000). Shows memory pressure and pruning needs",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "max": 10000,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              },
+              {
+                "value": 70,
+                "color": "yellow"
+              },
+              {
+                "value": 90,
+                "color": "red"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        }
+      },
+      "targets": [
+        {
+          "expr": "stream_length",
+          "legendFormat": "{{stream}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "🔥 Top 10 Hottest Streams (Rate)",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 12,
+        "h": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Most active Redis Streams by event publish rate (1-minute moving average)",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 0,
+            "fillOpacity": 80,
+            "gradientMode": "hue"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "events/s"
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "expr": "topk(10, sum(rate(cognitive_bus_events_total{event_type=\"publish\"}[1m])) by (channel))",
+          "legendFormat": "{{channel}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "⏳ Slowest Consumer Groups (Lag)",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 22,
+        "w": 12,
+        "h": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Consumer groups with highest lag (backlog of unprocessed messages), indicating bottlenecks or slow processing",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 30,
+            "gradientMode": "scheme"
+          },
+          "color": {
+            "mode": "continuous-RdYlGr",
+            "reverse": true
+          },
+          "unit": "messages"
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "topk(10, stream_consumer_lag)",
+          "legendFormat": "{{consumer_group}} ({{stream}})",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "enable": true,
+        "expr": "ALERTS{alertname=~\"SynapticBus.*\"}",
+        "iconColor": "red",
+        "name": "Synaptic Bus Alerts",
+        "tagKeys": "alertname,severity"
+      }
+    ]
+  }
+}

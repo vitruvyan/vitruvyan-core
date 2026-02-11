@@ -45,8 +45,20 @@ def get_agent(agent_name: str):
     return getattr(main_module, agent_name, None)
 
 # =============================================================================
-# DIVINE HEALTH CHECK
+# HEALTH CHECKS
 # =============================================================================
+
+@router.get("/health")
+async def health_check():
+    """Standard health check endpoint"""
+    divine_response = await divine_health_check()
+    return {
+        "status": divine_response.sacred_status,
+        "service": "orthodoxy_wardens",
+        "version": "2.0.0",
+        "blessing_level": divine_response.blessing_level,
+        "divine_council": divine_response.divine_council
+    }
 
 @router.get("/divine-health", response_model=DivineHealthResponse)
 async def divine_health_check():

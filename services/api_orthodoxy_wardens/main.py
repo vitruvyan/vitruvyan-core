@@ -11,7 +11,7 @@ sys.path.append("/app")
 
 from api_orthodoxy_wardens.api.routes import router
 from api_orthodoxy_wardens.config import settings
-from api_orthodoxy_wardens.monitoring.health import setup_synaptic_conclave_listeners
+from api_orthodoxy_wardens.monitoring.health import setup_synaptic_conclave_listeners, metrics_endpoint
 from api_orthodoxy_wardens.adapters.bus_adapter import OrthodoxyBusAdapter
 from api_orthodoxy_wardens._legacy.core import event_handlers
 from api_orthodoxy_wardens._legacy.core.roles import (
@@ -82,6 +82,13 @@ async def startup():
         logger.info("TEST_MODE: Skipping Sacred Roles + Conclave")
 
     logger.info("Orthodoxy Wardens ready")
+
+
+@app.get("/metrics")
+async def prometheus_metrics():
+    """Prometheus metrics endpoint."""
+    return await metrics_endpoint()
+
 
 if __name__ == "__main__":
     import uvicorn

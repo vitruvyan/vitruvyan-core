@@ -50,7 +50,11 @@ class VaultBusAdapter:
         self.archivist = Archivist()
         self.chamberlain = Chamberlain()
         
-        logger.info("Vault Bus Adapter initialized with all consumers")
+        # Babel Gardens v2.1 integration
+        from core.governance.vault_keepers.consumers import SignalArchivist
+        self.signal_archivist = SignalArchivist()
+        
+        logger.info("Vault Bus Adapter initialized with all consumers (+ SignalArchivist)")
     
     # ═══════════════════════════════════════════════════════════════════════
     # INTEGRITY VALIDATION
@@ -458,6 +462,145 @@ class VaultBusAdapter:
         
         logger.info(f"[{correlation_id}] Archive stored: archive_id={archive_metadata.archive_id}")
         return result
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # SIGNAL TIMESERIES ARCHIVAL (Babel Gardens v2.1)
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    def handle_signal_timeseries_archival(
+        self,
+        entity_id: str,
+        signal_results: list,
+        vertical: str,
+        schema_version: str = "2.1",
+        retention_days: int = 365,
+        correlation_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Handle signal timeseries archival (Babel Gardens integration).
+        
+        Workflow:
+          1. Create timeseries plan via SignalArchivist (LIVELLO 1)
+          2. Store timeseries via persistence
+          3. Create audit record
+          4. Emit completion event
+        
+        Args:
+            entity_id: Entity identifier (domain-agnostic: ticker, IP, patient ID, etc.)
+            signal_results: List of signal extraction results from Babel Gardens
+            vertical: Vertical domain ("finance", "cybersecurity", "healthcare", etc.)
+            schema_version: Babel Gardens schema version (default: "2.1")
+            retention_days: Retention period in days (default: 365)
+            correlation_id: Optional correlation ID
+            
+        Returns:
+            Archival result dict
+        """
+        correlation_id = correlation_id or f"signal_archive_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        
+        logger.info(f"[{correlation_id}] Processing signal timeseries archival: entity={entity_id}, vertical={vertical}, signals={len(signal_results)}")
+        
+        # Step 1: Create timeseries plan via SignalArchivist (pure logic)
+        archivist_input = {
+            "operation": "archive_signal_timeseries",
+            "entity_id": entity_id,
+            "signal_results": signal_results,
+            "vertical": vertical,
+            "schema_version": schema_version,
+            "retention_days": retention_days,
+            "correlation_id": correlation_id
+        }
+        
+        timeseries = self.signal_archivist.process(archivist_input)
+        
+        # Step 2: Store timeseries via persistence layer
+        storage_result = self.persistence.store_signal_timeseries(timeseries)
+        
+        # Step 3: Create audit record
+        audit_input = {
+            "operation": "archive",
+            "performed_by": "babel_gardens",
+            "resource_type": "signal_timeseries",
+            "resource_id": timeseries.timeseries_id,
+            "action": "signal_timeseries_archived",
+            "status": storage_result["status"],
+            "correlation_id": correlation_id,
+            "metadata": {
+                "entity_id": entity_id,
+                "signal_name": timeseries.signal_name,
+                "vertical": vertical,
+                "data_points_count": len(timeseries.data_points),
+                "retention_until": timeseries.retention_until
+            }
+        }
+        audit_record = self.chamberlain.process(audit_input)
+        self.persistence.store_audit_record(audit_record)
+        
+        # Step 4: Build response
+        result = {
+            "correlation_id": correlation_id,
+            "timestamp": timeseries.archive_timestamp,
+            "timeseries_id": timeseries.timeseries_id,
+            "entity_id": entity_id,
+            "signal_name": timeseries.signal_name,
+            "vertical": vertical,
+            "data_points_count": len(timeseries.data_points),
+            "retention_until": timeseries.retention_until,
+            "status": storage_result["status"],
+            "size_bytes": storage_result.get("size_bytes", 0)
+        }
+        
+        # Step 5: Emit event
+        self._emit_event(
+            channel="vault.signal_timeseries.archived",
+            data=result,
+            correlation_id=correlation_id
+        )
+        
+        logger.info(f"[{correlation_id}] Signal timeseries archived: id={timeseries.timeseries_id}, points={len(timeseries.data_points)}")
+        return result
+    
+    def query_signal_timeseries(
+        self,
+        entity_id: str,
+        signal_name: Optional[str] = None,
+        vertical: Optional[str] = None,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+        limit: int = 100
+    ) -> Dict[str, Any]:
+        """
+        Query signal timeseries by entity + signal + time range.
+        
+        Args:
+            entity_id: Entity to query
+            signal_name: Signal name filter (optional)
+            vertical: Vertical filter (optional)
+            start_time: ISO 8601 start of time range (optional)
+            end_time: ISO 8601 end of time range (optional)
+            limit: Maximum results
+            
+        Returns:
+            Query result dict with timeseries list
+        """
+        logger.info(f"Querying signal timeseries: entity={entity_id}, signal={signal_name}, vertical={vertical}")
+        
+        results = self.persistence.query_signal_timeseries(
+            entity_id=entity_id,
+            signal_name=signal_name,
+            vertical=vertical,
+            start_time=start_time,
+            end_time=end_time,
+            limit=limit
+        )
+        
+        return {
+            "entity_id": entity_id,
+            "signal_name": signal_name,
+            "vertical": vertical,
+            "timeseries_count": len(results),
+            "timeseries": results
+        }
     
     # ═══════════════════════════════════════════════════════════════════════
     # EVENT EMISSION

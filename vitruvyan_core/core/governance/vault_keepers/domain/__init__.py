@@ -14,10 +14,22 @@ from .vault_objects import (
     AuditRecord,
 )
 
+from .signal_archive import (
+    SignalDataPoint,
+    SignalTimeseries,
+    SignalArchiveQuery,
+)
+
 __all__ = [
+    # Vault operations
     "VaultSnapshot",
     "IntegrityReport",
     "ArchiveMetadata",
     "RecoveryPlan",
     "AuditRecord",
+    
+    # Signal archival (Babel Gardens v2.1 integration)
+    "SignalDataPoint",
+    "SignalTimeseries",
+    "SignalArchiveQuery",
 ]

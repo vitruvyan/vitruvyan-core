@@ -218,7 +218,7 @@ services:
     networks:
       - core-net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8006/divine-health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -375,7 +375,7 @@ services:
     networks:
       - core-net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8009/sacred-health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8009/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -524,7 +524,7 @@ services:
     ports:
       - "9017:8011"
     environment:
-      - PYTHONPATH=/app
+      - PYTHONPATH=/app:/app/vitruvyan_core
       # Database
       - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=5432
@@ -601,18 +601,21 @@ services:
     container_name: core_vault_listener
     restart: unless-stopped
     environment:
+      - PYTHONPATH=/app
       - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       - VAULT_LISTENER_ENABLED=1
-      - POSTGRES_HOST=161.97.140.157
+      # Database (local container)
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=vitruvyan
-      - POSTGRES_USER=vitruvyan_user
-      - POSTGRES_PASSWORD=@Caravaggio971
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
     volumes:
       - ./logs/vault_listener:/app/logs
     depends_on:
       - redis
+      - postgres
       - vault_keepers
     networks:
       - core-net
@@ -625,16 +628,30 @@ services:
     container_name: core_babel_listener
     restart: unless-stopped
     environment:
+      - PYTHONPATH=/app
       - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       - BABEL_LISTENER_ENABLED=1
+      # Database (local container)
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
     volumes:
       - ./logs/babel_listener:/app/logs
     depends_on:
       - redis
+      - postgres
       - babel_gardens
     networks:
       - core-net
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import redis; r = redis.Redis(host='core_redis', port=6379); r.ping(); print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     command: ["python3", "/app/api_babel_gardens/streams_listener.py"]
 
   codex_listener:
@@ -644,21 +661,30 @@ services:
     container_name: core_codex_listener
     restart: unless-stopped
     environment:
+      - PYTHONPATH=/app
       - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       - CODEX_LISTENER_ENABLED=1
-      - POSTGRES_HOST=161.97.140.157
+      # Database (local container)
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=vitruvyan
-      - POSTGRES_USER=vitruvyan_user
-      - POSTGRES_PASSWORD=@Caravaggio971
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
     volumes:
       - ./logs/codex_listener:/app/logs
     depends_on:
       - redis
+      - postgres
       - codex_hunters
     networks:
       - core-net
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import redis; r = redis.Redis(host='core_redis', port=6379); r.ping(); print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     command: ["python3", "/app/api_codex_hunters/streams_listener.py"]
 
 
@@ -727,6 +753,30 @@ services:
       - redis
     networks:
       - core-net
+
+  redis_streams_exporter:
+    build:
+      context: ../../services/redis_streams_exporter
+      dockerfile: Dockerfile
+    container_name: core_redis_streams_exporter
+    restart: always
+    environment:
+      - REDIS_HOST=core_redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - EXPORTER_PORT=9121
+      - SCRAPE_INTERVAL=15
+    ports:
+      - "9122:9121"
+    depends_on:
+      - redis
+    networks:
+      - core-net
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import requests; requests.get('http://localhost:9121/health').raise_for_status()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   postgres_exporter:
     image: prometheuscommunity/postgres-exporter:latest

@@ -21,32 +21,37 @@ scrape_configs:
   - job_name: 'redis'
     static_configs:
       - targets: ['redis_exporter:9121']
+  - job_name: 'redis_streams'
+    static_configs:
+      - targets: ['core_redis_streams_exporter:9121']
+    metrics_path: /metrics
+    scrape_interval: 15s
   - job_name: 'cadvisor'
     static_configs:
       - targets: ['cadvisor:8080']
   - job_name: 'memory_orders'
     static_configs:
-      - targets: ['memory_orders:8000']
+      - targets: ['core_memory_orders:8016']
     metrics_path: /metrics
   - job_name: 'vault_keepers'
     static_configs:
-      - targets: ['vault_keepers:8000']
+      - targets: ['core_vault_keepers:8007']
     metrics_path: /metrics
   - job_name: 'orthodoxy_wardens'
     static_configs:
-      - targets: ['orthodoxy_wardens:8000']
+      - targets: ['core_orthodoxy_wardens:8006']
     metrics_path: /metrics
   - job_name: 'babel_gardens'
     static_configs:
-      - targets: ['babel_gardens:8000']
+      - targets: ['core_babel_gardens:8009']
     metrics_path: /metrics
   - job_name: 'codex_hunters'
     static_configs:
-      - targets: ['codex_hunters:8000']
+      - targets: ['core_codex_hunters:8008']
     metrics_path: /metrics
   - job_name: 'pattern_weavers'
     static_configs:
-      - targets: ['pattern_weavers:8000']
+      - targets: ['core_pattern_weavers:8011']
     metrics_path: /metrics
   - job_name: 'embedding'
     static_configs:

@@ -1,0 +1,65 @@
+# Healthcare Vertical - Signal Schema Configuration
+# Babel Gardens v2.1 - Domain-Agnostic Signal Extraction
+# 
+# This is an EXAMPLE demonstrating how to create a healthcare vertical.
+# The same core code works for finance, cybersecurity, maritime, healthcare, legal, sports, etc.
+
+signals:
+  - name: diagnostic_confidence
+    range: [0.0, 1.0]
+    aggregation_method: weighted
+    fusion_weight: 0.9
+    explainability_required: true
+    extraction_method: "model:bioclinicalbert"
+    description: "Confidence in diagnostic conclusion from clinical notes"
+  
+  - name: treatment_urgency
+    range: [0, 10]  # Triage scale (0=routine, 10=immediate)
+    aggregation_method: max
+    fusion_weight: 1.0
+    explainability_required: true
+    extraction_method: "model:medbert"
+    description: "Urgency of treatment required based on symptoms/vitals"
+  
+  - name: patient_risk_score
+    range: [0.0, 1.0]
+    aggregation_method: mean
+    fusion_weight: 0.8
+    explainability_required: true
+    extraction_method: "heuristic:risk_calculator"
+    description: "Overall patient risk assessment (comorbidities, age, vitals)"
+  
+  - name: adverse_event_probability
+    range: [0.0, 1.0]
+    aggregation_method: max
+    fusion_weight: 0.7
+    explainability_required: true
+    extraction_method: "model:drugbert"
+    description: "Likelihood of adverse drug interactions or complications"
+
+taxonomy:
+  categories:
+    - diagnosis
+    - symptoms
+    - lab_results
+    - medications
+    - contraindications
+    - comorbidities
+    - vital_signs
+    - imaging_findings
+  
+  embeddings:
+    model: "sentence-transformers/all-MiniLM-L6-v2"
+    dimension: 384
+
+metadata:
+  vertical: healthcare
+  version: "2.1.0"
+  created: "2026-02-11"
+  contact: "babel-healthcare@vitruvyan.ai"
+  description: "Medical signal extraction for clinical decision support"
+  use_cases:
+    - "Triage prioritization from ER notes"
+    - "Drug interaction detection from prescriptions"
+    - "Patient risk stratification from EHR"
+    - "Diagnostic confidence assessment from radiology reports"

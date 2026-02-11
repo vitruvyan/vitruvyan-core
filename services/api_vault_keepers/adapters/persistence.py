@@ -463,6 +463,166 @@ class PersistenceAdapter:
             logger.error(f"Archive storage failed: {e}", exc_info=e)
             return {"status": "failed", "error": str(e)}
     
+    def store_signal_timeseries(self, timeseries: Any) -> Dict[str, Any]:
+        """
+        Store signal timeseries in vault (Babel Gardens v2.1 integration).
+        
+        Creates dedicated signal_timeseries table optimized for:
+        - Query by entity_id + signal_name + time range
+        - Efficient timeseries data storage (JSONB)
+        - Retention policy enforcement
+        
+        Args:
+            timeseries: SignalTimeseries object from SignalArchivist
+            
+        Returns:
+            Dict with storage result
+        """
+        try:
+            logger.info(f"Storing signal timeseries: id={timeseries.timeseries_id}, entity={timeseries.entity_id}, signal={timeseries.signal_name}")
+            
+            # Create table if doesn't exist
+            create_table = """
+                CREATE TABLE IF NOT EXISTS signal_timeseries (
+                    timeseries_id VARCHAR PRIMARY KEY,
+                    entity_id VARCHAR NOT NULL,
+                    signal_name VARCHAR NOT NULL,
+                    vertical VARCHAR NOT NULL,
+                    data_points JSONB NOT NULL,
+                    schema_version VARCHAR,
+                    retention_until TIMESTAMP,
+                    archive_timestamp TIMESTAMP NOT NULL,
+                    metadata JSONB,
+                    created_at TIMESTAMP DEFAULT NOW()
+                );
+                
+                -- Indexes for efficient queries
+                CREATE INDEX IF NOT EXISTS idx_signal_ts_entity_signal 
+                ON signal_timeseries(entity_id, signal_name);
+                
+                CREATE INDEX IF NOT EXISTS idx_signal_ts_vertical 
+                ON signal_timeseries(vertical);
+                
+                CREATE INDEX IF NOT EXISTS idx_signal_ts_archive_time 
+                ON signal_timeseries(archive_timestamp);
+            """
+            self.pg_agent.execute(create_table)
+            
+            # Serialize timeseries to dict
+            import json
+            ts_data = timeseries.to_dict()
+            data_points_json = json.dumps(ts_data["data_points"])
+            metadata_json = json.dumps(ts_data.get("metadata", {}))
+            
+            # Insert timeseries
+            insert_query = """
+                INSERT INTO signal_timeseries 
+                (timeseries_id, entity_id, signal_name, vertical, data_points, 
+                 schema_version, retention_until, archive_timestamp, metadata)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (timeseries_id) DO UPDATE SET
+                    data_points = EXCLUDED.data_points,
+                    archive_timestamp = EXCLUDED.archive_timestamp,
+                    metadata = EXCLUDED.metadata
+            """
+            self.pg_agent.execute(insert_query, (
+                timeseries.timeseries_id,
+                timeseries.entity_id,
+                timeseries.signal_name,
+                timeseries.vertical,
+                data_points_json,
+                timeseries.schema_version,
+                timeseries.retention_until,
+                timeseries.archive_timestamp,
+                metadata_json
+            ))
+            
+            data_points_count = len(timeseries.data_points)
+            size_bytes = len(data_points_json.encode('utf-8'))
+            
+            logger.info(f"Signal timeseries stored: id={timeseries.timeseries_id}, points={data_points_count}, size={size_bytes} bytes")
+            
+            return {
+                "status": "completed",
+                "timeseries_id": timeseries.timeseries_id,
+                "entity_id": timeseries.entity_id,
+                "signal_name": timeseries.signal_name,
+                "data_points_count": data_points_count,
+                "size_bytes": size_bytes
+            }
+            
+        except Exception as e:
+            logger.error(f"Signal timeseries storage failed: {e}", exc_info=e)
+            return {"status": "failed", "error": str(e)}
+    
+    def query_signal_timeseries(
+        self,
+        entity_id: str,
+        signal_name: Optional[str] = None,
+        vertical: Optional[str] = None,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+        limit: int = 100
+    ) -> List[Dict[str, Any]]:
+        """
+        Query signal timeseries by entity + signal + time range.
+        
+        Args:
+            entity_id: Entity to query (required)
+            signal_name: Signal name filter (optional - if None, returns all signals)
+            vertical: Vertical filter (optional)
+            start_time: ISO 8601 start of time range (optional)
+            end_time: ISO 8601 end of time range (optional)
+            limit: Maximum results to return
+            
+        Returns:
+            List of timeseries dicts
+        """
+        try:
+            # Build query
+            conditions = ["entity_id = %s"]
+            params = [entity_id]
+            
+            if signal_name:
+                conditions.append("signal_name = %s")
+                params.append(signal_name)
+            
+            if vertical:
+                conditions.append("vertical = %s")
+                params.append(vertical)
+            
+            if start_time:
+                conditions.append("archive_timestamp >= %s")
+                params.append(start_time)
+            
+            if end_time:
+                conditions.append("archive_timestamp <= %s")
+                params.append(end_time)
+            
+            where_clause = " AND ".join(conditions)
+            params.append(limit)
+            
+            query = f"""
+                SELECT 
+                    timeseries_id, entity_id, signal_name, vertical,
+                    data_points, schema_version, retention_until, 
+                    archive_timestamp, metadata
+                FROM signal_timeseries
+                WHERE {where_clause}
+                ORDER BY archive_timestamp DESC
+                LIMIT %s
+            """
+            
+            results = self.pg_agent.fetch(query, tuple(params))
+            
+            logger.info(f"Signal timeseries query: entity={entity_id}, signal={signal_name}, results={len(results)}")
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"Signal timeseries query failed: {e}", exc_info=e)
+            return []
+    
     def store_audit_record(self, audit_record: Any) -> Dict[str, Any]:
         """
         Store audit record in vault.

@@ -1,0 +1,65 @@
+# Legal Vertical - Signal Schema Configuration
+# Babel Gardens v2.1 - Domain-Agnostic Signal Extraction
+#
+# This is an EXAMPLE demonstrating how to create a legal vertical.
+# The same core code works for finance, cybersecurity, maritime, healthcare, legal, sports, etc.
+
+signals:
+  - name: precedent_strength
+    range: [0.0, 1.0]
+    aggregation_method: weighted
+    fusion_weight: 0.9
+    explainability_required: true
+    extraction_method: "model:legalbert"
+    description: "Strength of legal precedent supporting argument"
+  
+  - name: liability_exposure
+    range: [0.0, 1.0]
+    aggregation_method: max
+    fusion_weight: 1.0
+    explainability_required: true
+    extraction_method: "model:contractbert"
+    description: "Degree of liability risk from contract clauses"
+  
+  - name: verdict_probability
+    range: [0.0, 1.0]
+    aggregation_method: mean
+    fusion_weight: 0.8
+    explainability_required: true
+    extraction_method: "model:casebert"
+    description: "Predicted probability of favorable verdict"
+  
+  - name: compliance_risk
+    range: [0.0, 1.0]
+    aggregation_method: max
+    fusion_weight: 0.7
+    explainability_required: true
+    extraction_method: "heuristic:regulation_matcher"
+    description: "Risk of regulatory non-compliance"
+
+taxonomy:
+  categories:
+    - contract_law
+    - tort
+    - criminal
+    - intellectual_property
+    - employment
+    - regulatory_compliance
+    - litigation
+    - dispute_resolution
+  
+  embeddings:
+    model: "sentence-transformers/all-MiniLM-L6-v2"
+    dimension: 384
+
+metadata:
+  vertical: legal
+  version: "2.1.0"
+  created: "2026-02-11"
+  contact: "babel-legal@vitruvyan.ai"
+  description: "Legal signal extraction for case analysis and contract review"
+  use_cases:
+    - "Contract risk assessment"
+    - "Case law precedent analysis"
+    - "Compliance gap detection"
+    - "Verdict outcome prediction"

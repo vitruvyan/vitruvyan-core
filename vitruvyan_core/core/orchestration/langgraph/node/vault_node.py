@@ -146,10 +146,10 @@ def _request_divine_protection(protection_type: str, state: Dict[str, Any]) -> D
         
         # Prepare protection request event
         protection_event = CognitiveEvent(
-            event_type=_map_protection_to_event(protection_type),
-            emitter='langgraph_vault_node',
-            target='vault_keepers_conclave',
+            type=_map_protection_to_event(protection_type),
+            source='langgraph_vault_node',
             payload={
+                'target': 'vault_keepers_conclave',
                 'protection_type': protection_type,
                 'state_context': {
                     'intent': state.get('intent'),
@@ -159,7 +159,7 @@ def _request_divine_protection(protection_type: str, state: Dict[str, Any]) -> D
                 },
                 'priority': 'high' if protection_type == 'critical' else 'normal'
             },
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.utcnow(),
             correlation_id=correlation_id
         )
         

@@ -9,10 +9,11 @@ Available consumers:
   - Sentinel:    Validates data integrity
   - Archivist:   Plans backup/archive operations
   - Chamberlain: Creates audit records
+  - SignalArchivist: Plans signal timeseries archival (Babel Gardens v2.1)
 
 Usage:
     from vitruvyan_core.core.governance.vault_keepers.consumers import (
-        Guardian, Sentinel, Archivist, Chamberlain
+        Guardian, Sentinel, Archivist, Chamberlain, SignalArchivist
     )
     
     sentinel = Sentinel()
@@ -25,6 +26,7 @@ from .guardian import Guardian
 from .sentinel import Sentinel
 from .archivist import Archivist
 from .chamberlain import Chamberlain
+from .signal_archivist import SignalArchivist, archive_signal_timeseries
 
 __all__ = [
     "VaultRole",
@@ -32,4 +34,8 @@ __all__ = [
     "Sentinel",
     "Archivist",
     "Chamberlain",
+    
+    # Signal archival (Babel Gardens v2.1 integration)
+    "SignalArchivist",
+    "archive_signal_timeseries",
 ]

@@ -10,10 +10,22 @@ import logging
 import os
 import asyncio
 import threading
+from prometheus_client import Counter, Gauge, Histogram, generate_latest, CONTENT_TYPE_LATEST
+from fastapi.responses import Response
 
 # Synaptic Conclave integration
 from core.synaptic_conclave.transport.streams import StreamBus
 from core.synaptic_conclave.events.event_envelope import CognitiveEvent
+
+# Prometheus metrics
+from core.governance.orthodoxy_wardens.monitoring.metrics import (
+    CONFESSIONS_RECEIVED_TOTAL,
+    EXAMINATIONS_TOTAL,
+    EXAMINATIONS_DURATION_SECONDS,
+    FINDINGS_TOTAL,
+    VERDICTS_TOTAL,
+    SURVEILLANCE_CYCLES_TOTAL,
+)
 
 # Import event handlers
 from api_orthodoxy_wardens._legacy.core.event_handlers import (
@@ -22,6 +34,46 @@ from api_orthodoxy_wardens._legacy.core.event_handlers import (
 )
 
 logger = logging.getLogger(__name__)
+
+# =============================================================================
+# PROMETHEUS COLLECTORS
+# =============================================================================
+
+confessions_received_counter = Counter(
+    CONFESSIONS_RECEIVED_TOTAL,
+    "Total confessions received by Orthodoxy Wardens"
+)
+
+examinations_total_counter = Counter(
+    EXAMINATIONS_TOTAL,
+    "Total examinations conducted"
+)
+
+examinations_duration_histogram = Histogram(
+    EXAMINATIONS_DURATION_SECONDS,
+    "Duration of examinations in seconds"
+)
+
+findings_total_counter = Counter(
+    FINDINGS_TOTAL,
+    "Total findings discovered"
+)
+
+verdicts_total_counter = Counter(
+    VERDICTS_TOTAL,
+    "Total verdicts issued"
+)
+
+surveillance_cycles_counter = Counter(
+    SURVEILLANCE_CYCLES_TOTAL,
+    "Total surveillance cycles executed"
+)
+
+# Health status gauge
+orthodoxy_health_status = Gauge(
+    "orthodoxy_health_status",
+    "Overall health status (0=down, 1=degraded, 2=healthy)"
+)
 
 # =============================================================================
 # SYNAPTIC CONCLAVE LISTENER SETUP
@@ -119,3 +171,13 @@ async def _consume_channel(bus: StreamBus, channel: str, group: str, consumer: s
     except Exception as e:
         logger.error(f"💀 Fatal error in consumption loop for {channel}: {e}")
         # TODO: Implement reconnection logic
+
+
+# =============================================================================
+# METRICS ENDPOINT
+# =============================================================================
+
+async def metrics_endpoint():
+    """Prometheus metrics endpoint."""
+    orthodoxy_health_status.set(2)  # Mark as healthy when metrics are accessible
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
