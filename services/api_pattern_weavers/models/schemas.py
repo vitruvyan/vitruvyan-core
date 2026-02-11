@@ -48,21 +48,12 @@ class PatternMatch(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
-class RiskProfile(BaseModel):
-    """Risk profile derived from patterns."""
-    
-    level: str = Field("medium", description="Risk level")
-    factors: List[str] = Field(default_factory=list)
-    score: float = Field(0.5, ge=0.0, le=1.0)
-
-
 class WeaveResult(BaseModel):
     """Result of pattern weaving."""
     
     request_id: str = Field(..., description="Unique request ID")
     status: str = Field("completed", description="Processing status")
     matches: List[PatternMatch] = Field(default_factory=list)
-    risk_profile: Optional[RiskProfile] = None
     processing_time_ms: float = Field(0.0)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
