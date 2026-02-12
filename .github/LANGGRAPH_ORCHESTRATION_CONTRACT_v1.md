@@ -1,9 +1,10 @@
-# LangGraph Orchestration Contract v1.0
+# LangGraph Orchestration Contract v1.1
 
 **Status**: BINDING CONSTITUTIONAL DOCUMENT  
-**Effective Date**: February 11, 2026  
+**Effective Date**: February 12, 2026  
 **Authors**: Vitruvyan Core Team  
-**Enforcement**: Mandatory (CI/CD blocking)
+**Enforcement**: Mandatory (CI/CD blocking)  
+**Previous Version**: v1.0 (2026-02-11)
 
 ---
 
@@ -78,11 +79,53 @@ if confidence < 0.7:  # What is "confidence"? Finance? Medical?
     return route_to("low_quality_handler")
 ```
 
+### Golden Rule: Plug-and-Play Domains
+
+**Test**: "If we replaced a Sacred Order with a different domain implementation (finance → medical, IoT → legal), would the graph work unchanged?"
+
+- **YES** → Contract-compliant orchestration
+- **NO** → Domain semantics leaked into graph
+
+**Example**:
+```python
+# ✅ Domain-agnostic routing
+if state["service_status"] == "completed":  # Any domain can signal completion
+    return route_to("next_node")
+
+# ❌ Domain-coupled routing  
+if state["stock_volatility"] > 0.3:  # Finance-specific concept
+    return route_to("risk_analysis")
+```
+
+If you hardcode **domain concepts** in routing logic, you've broken portability.
+
 ---
 
 ## 3. Allowed vs Forbidden Responsibilities
 
-### 3.1 Node Category Definitions
+### 3.1 Routing Authority Matrix
+
+Explicit delineation of decision-making powers.
+
+| Decision Type | LangGraph | Sacred Orders | Example |
+|---------------|-----------|---------------|----------|
+| **Which service to call next** | ✅ | ❌ | "After entity extraction, call pattern matching" |
+| **Fallback on HTTP error** | ✅ | ❌ | "If 503, route to cached results" |
+| **Interrupt for user input** | ✅ | ❌ | "Missing required field, pause graph" |
+| **Parallel fan-out** | ✅ | ❌ | "Call 3 analysis services simultaneously" |
+| **What entities to extract** | ❌ | ✅ | "Detect companies, not products" |
+| **Quality thresholds** | ❌ | ✅ | "Confidence < 0.7 = low quality" |
+| **Ranking criteria** | ❌ | ✅ | "Sort by relevance, then recency" |
+| **Business rules** | ❌ | ✅ | "Exclude results from competitors" |
+| **Metric formulas** | ❌ | ✅ | "Weighted average with decay" |
+
+**Boundary Principle**: 
+- LangGraph decides **graph topology** (which nodes run when)
+- Sacred Orders decide **data semantics** (what the data means)
+
+---
+
+### 3.2 Node Category Definitions
 
 LangGraph recognizes **three node categories** based on transport layer:
 
@@ -142,7 +185,61 @@ def mnemosyne_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
 ---
 
-#### Category 3: Infrastructure Adapters (Deprecated)
+#### Category 3: LLM Nodes (Clarification)
+
+**Purpose**: Large Language Model invocations for synthesis, narrative generation, explanation.
+
+**Allowed Responsibilities**:
+- Synthesize information from multiple sources (without calculating metrics)
+- Generate natural language explanations of data
+- Combine qualitative signals into narrative
+- Translate technical outputs into user-facing text
+- Ask clarifying questions based on context
+
+**Forbidden Responsibilities**:
+- Create numeric confidence scores or metrics from raw data
+- Apply business thresholds to determine quality
+- Bypass Sacred Order domain decisions
+- Extract entities/signals from text (Perception layer responsibility)
+- Rank/filter results by calculated criteria
+
+**Example Pattern**:
+```python
+def narrative_synthesis_node(state: Dict[str, Any]) -> Dict[str, Any]:
+    # ✅ Allowed: Combine pre-calculated metrics into narrative
+    prompt = f"""
+    Explain to user:
+    - Pattern confidence: {state['weave_confidence']}  # Pre-calculated
+    - Match quality: {state['match_quality']}  # Pre-calculated by service
+    - Recommendation: {state['recommendation']}  # Pre-decided by domain
+    """
+    
+    response = openai.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    
+    state["narrative"] = response.choices[0].message.content
+    return state
+```
+
+**Anti-Patterns (Forbidden)**:
+```python
+# ❌ LLM shouldn't calculate domain metrics
+prompt = "Analyze these 50 entities and calculate average sentiment score"
+
+# ❌ LLM shouldn't apply business thresholds
+prompt = "Filter results keeping only high-quality matches (score > 0.7)"
+
+# ❌ LLM shouldn't extract structured signals
+prompt = "Extract all company names and their sentiment from this text"
+```
+
+**Golden Rule**: LLM nodes are **presentation layer**, not **calculation layer**.
+
+---
+
+#### Category 4: Infrastructure Adapters (Deprecated)
 
 **Purpose**: Direct database/cache access (legacy, being phased out).
 
@@ -150,7 +247,7 @@ def mnemosyne_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
 ---
 
-### 3.2 Unified Prohibition (All Categories)
+### 3.3 Unified Prohibition (All Categories)
 
 **The Hard Rule**: Regardless of transport layer, **no domain calculation** in orchestration.
 
@@ -166,7 +263,7 @@ def mnemosyne_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
 ---
 
-### 3.3 Orchestration Layer (LangGraph Nodes)
+### 3.4 Orchestration Layer (LangGraph Nodes)
 
 #### ✅ ALLOWED
 
@@ -192,7 +289,7 @@ def mnemosyne_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
 ---
 
-### 3.4 Domain Layer (Sacred Orders)
+### 3.5 Domain Layer (Sacred Orders)
 
 #### ✅ REQUIRED
 
@@ -508,7 +605,74 @@ def mnemosyne_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
 ## 5. Enforcement Rules
 
-### 5.1 Automated Detection (Pre-Commit Hook)
+### 5.1 Trasformazioni Tecniche Consentite (Allowed Technical Transformations)
+
+Orchestration may perform **structural adaptations** without violating domain boundaries.
+
+#### ✅ ALLOWED
+
+| Transformation | Example | Rationale |
+|----------------|---------|----------|
+| **Normalize structure** | `state["result"] = response.json()` | Transport format → state format |
+| **Adapt payload** | `state["items"] = result.get("data", [])` | Extract from envelope |
+| **Default values** | `state["score"] = result.get("score", 0.0)` | Safe fallback for missing data |
+| **Map keys** | `state["entities"] = result["detected_items"]` | Rename for graph consistency |
+| **Slice by index** | `state["top_3"] = matches[:3]` | Preserve producer ordering |
+| **Min/Max scalars** | `timeout = min(user_timeout, 30)` | Infrastructure constraints |
+| **JSON wrapping** | `payload = {"query": state["text"]}` | API contract compliance |
+
+#### ❌ FORBIDDEN
+
+| Transformation | Example | Why Forbidden |
+|----------------|---------|---------------|
+| **Aggregate collections** | `sum(scores)`, `len(items)` | Domain calculation |
+| **Calculate from data** | `avg = sum(vals) / len(vals)` | Statistical operation |
+| **Sort by criteria** | `sorted(items, key=lambda x: x.score)` | Domain prioritization |
+| **Filter semantically** | `[x for x in items if x.quality == "high"]` | Business logic |
+| **Min/Max on collections** | `min(scores)`, `max([x.val for x in items])` | Domain metrics |
+
+**Principle**: If transformation depends on **understanding data meaning**, it's domain logic.
+
+#### 5.1.1 Edge Cases Clarified
+
+**Slicing (Allowed)**:
+```python
+# ✅ Preserve producer order
+state["top_results"] = matches[:10]  # Trust service ranking
+state["first_match"] = matches[0] if matches else None
+```
+**Rationale**: Slicing **preserves producer's semantic ordering**. Node doesn't re-rank.
+
+**Scalar Min/Max (Allowed)**:
+```python
+# ✅ Infrastructure constraints
+timeout_sec = min(user_requested_timeout, MAX_ALLOWED_TIMEOUT)
+retry_count = max(0, requested_retries)  # Prevent negative
+```
+**Rationale**: Operates on **configuration scalars**, not domain collections.
+
+**Collection Min/Max (Forbidden)**:
+```python
+# ❌ Domain calculation
+highest_score = max([m.score for m in matches])  # Semantic: "best"
+lowest_latency = min(service_times)  # Semantic: "fastest"
+```
+**Rationale**: Requires understanding **what metric means** in domain.
+
+**JSON Construction (Allowed)**:
+```python
+# ✅ Transport format compliance
+payload = {
+    "query": state["user_input"],
+    "options": {"limit": 10, "threshold": 0.7}  # Pass-through config
+}
+response = httpx.post(url, json=payload)
+```
+**Rationale**: Wrapping data in required API schema is **transport responsibility**.
+
+---
+
+### 5.2 Automated Detection (Pre-Commit Hook)
 
 **Forbidden Patterns in `langgraph/node/*.py`**:
 
@@ -534,7 +698,7 @@ sorted\(.*key=lambda.*\b(score|confidence|priority)
 
 ---
 
-### 5.2 CI Pipeline Guard
+### 5.3 CI Pipeline Guard
 
 ```bash
 #!/bin/bash
@@ -569,7 +733,7 @@ echo "✅ Contract compliance verified"
 
 ---
 
-### 5.3 Pytest Architectural Guard
+### 5.4 Pytest Architectural Guard
 
 ```python
 # tests/architectural/test_orchestration_contract.py
@@ -815,41 +979,50 @@ If you believe a case requires domain logic in orchestration:
 
 ## 10. Version History
 
-| Version | Date | Changes |
-|---------|------|---------|
-| **1.0** | 2026-02-11 | Initial contract, binding enforcement |
+| Version | Date | Changes | Migration Impact |
+|---------|------|---------|------------------|
+| **1.1** | 2026-02-12 | • LLM nodes clarification (Category 3)<br>• Technical transformations allowed (Section 5.1)<br>• Edge cases codified (5.1.1)<br>• Routing authority matrix (3.1)<br>• Golden Rule plug-and-play test | **LOW**: Clarifications only, no breaking changes |
+| **1.0** | 2026-02-11 | Initial contract, binding enforcement | N/A (baseline) |
 
 ---
 
-## Appendix A: Current Violations Audit
+## 11. Migration Guide (v1.0 → v1.1)
 
-### babel_gardens_node.py
+### What Changed
 
-**Line 95**: Processing time calculation
-```python
-processing_time = (datetime.now() - start_time).total_seconds() * 1000
-```
-**Fix**: Remove. Service should return `processing_time_ms` in metadata.
+1. **LLM Nodes Clarified** (Section 3.2, Category 3):
+   - Explicit allowed/forbidden list for Large Language Model invocations
+   - Anti-patterns documented: LLM shouldn't calculate metrics or apply thresholds
+   - Golden Rule: LLM = presentation layer, not calculation layer
+
+2. **Technical Transformations Codified** (Section 5.1):
+   - Added explicit "allowed adaptations" table (normalize, map keys, slice, defaults)
+   - Edge cases clarified: slicing allowed (preserves order), scalar min/max allowed (config), collection min/max forbidden (domain)
+   - JSON wrapping for API compliance explicitly allowed
+
+3. **Routing Authority Matrix** (Section 3.1):
+   - Explicit table: which decisions belong to LangGraph vs Sacred Orders
+   - LangGraph: topology, fallbacks, parallelism
+   - Sacred Orders: semantics, thresholds, ranking
+
+4. **Golden Rule Added**:
+   - "Plug-and-play domains" test: replace Sacred Order implementation, graph works unchanged
+   - Codifies domain-agnostic principle with concrete examples
+
+### Action Required
+
+**For existing nodes**:
+- ✅ No breaking changes—v1.1 is **clarification-only**
+- ✅ Compliant v1.0 nodes remain compliant in v1.1
+- ⚠️ LLM nodes: review against new anti-patterns (Section 3.2)
+
+**For new nodes**:
+- Use Section 5.1 edge cases guide (slicing, min/max, JSON wrapping)
+- Check Routing Authority Matrix (3.1) when designing control flow
+- Apply Golden Rule test before committing
 
 ---
 
-### pattern_weavers_node.py
-
-**Lines 92-94**: Confidence aggregation
-```python
-scores = [m.get("score", 0.0) for m in matches]
-state["weave_confidence"] = sum(scores) / len(scores) if scores else 0.0
-```
-**Fix**: Service must return `avg_confidence` in response.
-
----
-
-## Appendix B: Reference Implementation
-
-See `.github/examples/contract_compliant_node.py` for minimal reference implementation.
-
----
-
-**END OF CONTRACT**
+**END OF CONTRACT v1.1**
 
 *This document is binding. Violations block CI/CD pipeline.*
