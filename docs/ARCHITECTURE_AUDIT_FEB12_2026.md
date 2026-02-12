@@ -12,7 +12,7 @@
 - **14 servizi** in `services/`
 - **6 Sacred Orders** al 100% SACRED_ORDER_PATTERN conformance
 - **33 file .md** alla root del repo (work logs, audit, debug)
-- **40+ file finance-leaky** nel core attivo (esclusi legacy/tests)
+- **40+ file finance-leaky** nel core attivo → **CORRETTO: ~30 file** (4 file orchestration/ erano falsi positivi da grep, codice effettivamente refactorizzato Feb 10)
 
 ---
 
@@ -64,20 +64,20 @@ vitruvyan-core/
 │   │   │   ├── composite.py          Composite scoring
 │   │   │   ├── ranking.py            Ranking framework
 │   │   │   └── domain_examples/      Mock implementations (ha ref finance)
-│   │   ├── orchestration/             ⚠️ MISTO — core + finance-leaky
-│   │   │   ├── base_state.py          ⚠️ Ha "ticker/portfolio/sentiment"
-│   │   │   ├── graph_engine.py        ⚠️ Ha "ticker/stock"
-│   │   │   ├── parser.py             ⚠️ Ha "ticker/trading"
-│   │   │   ├── intent_registry.py     ✅ CORE
-│   │   │   ├── route_registry.py      ✅ CORE
-│   │   │   ├── sacred_flow.py         ⚠️ Ha "sentiment"
+│   │   ├── orchestration/             ✅ REFACTORED (Feb 10, 2026) — 9/11 files agnostic
+│   │   │   ├── base_state.py          ✅ CORE — 196 righe, puro domain-agnostic (ZERO finance terms)
+│   │   │   ├── graph_engine.py        ✅ CORE — GraphPlugin ABC + NodeContract (finance solo in docstring example)
+│   │   │   ├── parser.py             ✅ CORE — Parser ABC generico (finance solo in docstring examples)
+│   │   │   ├── intent_registry.py     ✅ CORE — IntentRegistry generico
+│   │   │   ├── route_registry.py      ✅ CORE — RouteRegistry generico
+│   │   │   ├── sacred_flow.py         ✅ CORE — Pure config + dataclass (ZERO finance terms)
 │   │   │   ├── compose/
-│   │   │   │   ├── base_composer.py       ✅ CORE — ABC
-│   │   │   │   ├── response_formatter.py  ✅ CORE — ABC
-│   │   │   │   └── slot_filler.py         ✅ CORE — Generic slot filler
+│   │   │   │   ├── base_composer.py       ✅ CORE — BaseComposer ABC
+│   │   │   │   ├── response_formatter.py  ✅ CORE — ResponseFormatter ABC
+│   │   │   │   └── slot_filler.py         ✅ CORE — SlotFiller ABC generico
 │   │   │   └── langgraph/
-│   │   │       ├── graph_flow.py      ⚠️ Ha "sentiment/trading"
-│   │   │       ├── graph_runner.py    ⚠️ Ha "sentiment"
+│   │   │       ├── graph_flow.py      ⚠️ RUNNER CONCRETO — GraphState ha sentiment_label, sentinel_portfolio_value, crew_* fields; importa 20+ nodi concreti (by design)
+│   │   │       ├── graph_runner.py    ⚠️ RUNNER CONCRETO — Propaga entity_ids, horizon, sentiment al response (by design)
 │   │   │       └── node/             40+ nodi (dettaglio sotto)
 │   │   └── synaptic_conclave/         ✅ CORE — Bus transport
 │   │       ├── transport/
@@ -205,9 +205,13 @@ vitruvyan-core/
 
 **40 file nel core attivo** (esclusi _legacy/ _archived/ tests/ examples/ domain_examples/) contengono terminologia finance-specific:
 
-### Area: orchestration/ (14 files)
-- `base_state.py`, `graph_engine.py`, `parser.py`, `sacred_flow.py`
-- `langgraph/graph_flow.py`, `graph_runner.py`
+### Area: orchestration/ (2 file runner concreti + nodi)
+- `langgraph/graph_flow.py` — Runner concreto: `sentiment_label`, `sentinel_portfolio_value`, `crew_*` fields in GraphState
+- `langgraph/graph_runner.py` — Runner concreto: propaga `entity_ids`, `horizon`, `sentiment` 
+- ~~`base_state.py`~~ ✅ REFACTORED (puro agnostico, ZERO finance)
+- ~~`graph_engine.py`~~ ✅ REFACTORED (ABC, finance solo in docstring example)
+- ~~`parser.py`~~ ✅ REFACTORED (ABC, finance solo in docstring examples)
+- ~~`sacred_flow.py`~~ ✅ REFACTORED (puro agnostico, ZERO finance)
 - `langgraph/node/`: intent_detection, proactive_suggestions, advisor, params_extraction, cached_llm, entity_resolver, enhanced_llm, parse, semantic_grounding
 
 ### Area: synaptic_conclave/ (6 files)
