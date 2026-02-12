@@ -1,25 +1,153 @@
-# Vitruvyan Core — Documentation
+# Vitruvyan Core — Documentation Portal
 
-Questa è la documentazione (in Markdown) del progetto **Vitruvyan Core**.
+> **Last Updated**: February 12, 2026  
+> **Organization**: Locality-First Pattern (Phase 1-2 Reorganization Complete)
 
-## Start here
+Questa è la documentazione del progetto **Vitruvyan Core** — un framework agentic AI domain-agnostic basato su architettura cognitiva.
 
-- [Overview](VITRUVYAN_OVERVIEW.md)
-- [Pipeline Walkthrough](VITRUVYAN_PIPELINE_WALKTHROUGH.md)
+---
 
-## Foundational
+## 🚀 Start Here
 
-- [Bus Invariants](foundational/Vitruvyan_Bus_Invariants.md)
+**New to Vitruvyan?** Inizia da questi documenti chiave:
+
+- [📖 Overview](foundational/VITRUVYAN_OVERVIEW.md) — Cos'è Vitruvyan e come funziona
+- [🏛️ Epistemic Charter](foundational/Vitruvyan_Epistemic_Charter.md) — Filosofia e principi fondamentali
+- [🔗 Bus Invariants](foundational/Vitruvyan_Bus_Invariants.md) — Cognitive Bus constraints
+- [🧬 Octopus Mycelium Architecture](foundational/Vitruvyan_Octopus_Mycelium_Architecture.md) — Research paper (bio-inspired architecture)
+
+---
+
+## 📚 Global Documentation (docs/)
+
+Documentazione cross-cutting organizzata per categoria:
+
+### 🏗️ Architecture (12 files)
+Audit architetturali, refactoring plans, technical debt:
+- [Architecture Audits & Refactoring Plans](architecture/)
+- [Technical Debt Audit](architecture/TECHNICAL_DEBT_AUDIT.md)
+- [Cleanup Audit](architecture/CLEANUP_AUDIT_JAN18.md)
+- [CrewAI Deprecation Plan](architecture/CREWAI_DEPRECATION_PLAN.md)
+
+### 📅 Changelog (21 files)
+Phase reports, checkpoints, COO approvals:
+- [Phase Reports & Completion](changelog/)
+- [Report Finale](changelog/REPORT_FINALE.md)
+- [Phase 6 Plasticity Report](changelog/PHASE_6_PLASTICITY_IMPLEMENTATION_REPORT.md)
+
+### 🏛️ Foundational (7 files)
+Core philosophy, charter, invariants, overview:
+- [Vitruvyan Overview](foundational/VITRUVYAN_OVERVIEW.md)
 - [Epistemic Charter](foundational/Vitruvyan_Epistemic_Charter.md)
+- [Bus Invariants](foundational/Vitruvyan_Bus_Invariants.md)
 - [Vertical Specification](foundational/Vitruvyan_Vertical_Specification.md)
+- [Pipeline Walkthrough](foundational/VITRUVYAN_PIPELINE_WALKTHROUGH.md)
+- [Core Status Analysis](foundational/VITRUVYAN_CORE_STATUS_ANALYSIS.md)
+- [Octopus Mycelium Architecture](foundational/Vitruvyan_Octopus_Mycelium_Architecture.md) (research paper)
 
-## Engineering notes
+### 🎯 Planning (2 files)
+Strategic blueprints, TODO patterns:
+- [**ALBERATURA Framework**](planning/_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md) — 🚀 Post-refactoring reorganization roadmap
+- [TODO Examples Pattern](planning/TODO_EXAMPLES_PATTERN.md)
 
-- [Neural Engine Patterns](NEURAL_ENGINE_PATTERNS.md)
-- [Neural Engine Contracts](NEURAL_ENGINE_CONTRACTS.md)
-- [Technical Debt Audit](TECHNICAL_DEBT_AUDIT.md)
+### 📝 Prompts (6 files)
+Session work logs:
+- [Session Prompts](prompts/)
 
-## Services
+### 🧪 Testing (2 files)
+Test plans, boot validation:
+- [Boot Test Plan](testing/BOOT_TEST_PLAN.md)
+- [Boot Test Status](testing/BOOT_TEST_STATUS.md)
 
-- [MCP Gateway (Model Context Protocol)](services/mcp.md)
-- [Codex Hunters (Perception / Data Collection)](services/codex_hunters.md)
+### 🌐 Services (2 files)
+Service descriptions:
+- [MCP Gateway](services/mcp.md) — Model Context Protocol
+- [Codex Hunters](services/codex_hunters.md) — Data Discovery
+
+---
+
+## 🗂️ Module-Specific Documentation (Locality-First)
+
+Ogni modulo ha la propria cartella `docs/` co-locata con il codice:
+
+### Core Modules
+
+**LangGraph Orchestration**  
+→ [`vitruvyan_core/core/orchestration/langgraph/docs/`](../vitruvyan_core/core/orchestration/langgraph/docs/)
+- Refactoring plans, domain-agnostic analysis, architecture
+
+**Synaptic Conclave (Cognitive Bus)**  
+→ [`vitruvyan_core/core/synaptic_conclave/docs/`](../vitruvyan_core/core/synaptic_conclave/docs/)
+- Bus architecture, Redis Streams, listener migration, API reference
+
+**Neural Engine**  
+→ [`vitruvyan_core/core/neural_engine/docs/`](../vitruvyan_core/core/neural_engine/docs/)
+- Architecture, patterns, contracts, philosophy
+
+### Sacred Orders (Governance Subsystems)
+
+**Memory Orders** (Coherence & Retrieval)  
+→ [`vitruvyan_core/core/governance/memory_orders/docs/`](../vitruvyan_core/core/governance/memory_orders/docs/)
+
+**Vault Keepers** (Archival & Persistence)  
+→ [`vitruvyan_core/core/governance/vault_keepers/docs/`](../vitruvyan_core/core/governance/vault_keepers/docs/)
+
+**Orthodoxy Wardens** (Validation & Audit)  
+→ [`vitruvyan_core/core/governance/orthodoxy_wardens/docs/`](../vitruvyan_core/core/governance/orthodoxy_wardens/docs/)
+
+**Codex Hunters** (Data Discovery)  
+→ [`vitruvyan_core/core/governance/codex_hunters/docs/`](../vitruvyan_core/core/governance/codex_hunters/docs/)
+
+**Babel Gardens** (Linguistic Processing)  
+→ [`vitruvyan_core/core/cognitive/babel_gardens/docs/`](../vitruvyan_core/core/cognitive/babel_gardens/docs/)
+
+**Pattern Weavers** (Temporal Analysis)  
+→ [`vitruvyan_core/core/cognitive/pattern_weavers/docs/`](../vitruvyan_core/core/cognitive/pattern_weavers/docs/)
+
+### Services
+
+**MCP Gateway** (Model Context Protocol)  
+→ [`services/api_mcp/docs/`](../services/api_mcp/docs/)
+
+**Orthodoxy Wardens Service**  
+→ [`services/api_orthodoxy_wardens/docs/`](../services/api_orthodoxy_wardens/docs/)
+
+### Infrastructure
+
+**Monitoring** (Grafana, Prometheus)  
+→ [`infrastructure/monitoring/docs/`](../infrastructure/monitoring/docs/)
+
+---
+
+## 🏗️ SACRED_ORDER_PATTERN
+
+Tutti i Sacred Orders seguono il **pattern a due livelli obbligatorio**:
+
+- **LIVELLO 1** (Pure Domain): 10 directory (`domain/`, `consumers/`, `governance/`, `events/`, `monitoring/`, `philosophy/`, `docs/`, `examples/`, `tests/`, `_legacy/`)
+- **LIVELLO 2** (Service): I/O adapters, REST API, Docker deployment
+
+**Status**: ✅ 100% conformance (6/6 Sacred Orders refactored, Feb 2026)
+
+---
+
+## 📖 How to Navigate
+
+1. **Intro / Philosophy**: Leggi [Foundational](#-foundational-7-files)
+2. **Architecture / Status**: Consulta [Architecture](#-architecture-12-files) e [Planning](#-planning-2-files)
+3. **Module-Specific**: Vai alla cartella `docs/` del modulo (vedi [Module-Specific Documentation](#-module-specific-documentation-locality-first))
+4. **History / Evolution**: Vedi [Changelog](#-changelog-21-files)
+
+---
+
+## 🔍 Quick Links
+
+- [Back to Main README](../README.md)
+- [ALBERATURA Framework Roadmap](planning/_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md) — Master reorganization plan
+- [Technical Debt Status](architecture/TECHNICAL_DEBT_AUDIT.md)
+- [Epistemic Charter](foundational/Vitruvyan_Epistemic_Charter.md) — Core principles
+- [Bus Invariants](foundational/Vitruvyan_Bus_Invariants.md) — Cognitive Bus rules
+
+---
+
+**Locality-First Pattern**: Documentation lives with the code it documents.  
+**Last Reorganization**: February 12, 2026 (Phase 1-2, 77 files, 2 commits)
