@@ -7,13 +7,13 @@ from core.orchestration.langgraph.shared.state_preserv import preserve_ux_state 
 @preserve_ux_state
 def output_normalizer_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Normalizza gli output provenienti da diversi percorsi (exec/NE, crew fallback, screener, qdrant, llm_soft).
-    Obiettivo: avere sempre una chiave `result` coerente per il compose node.
+    Normalizes outputs from diverse execution routes into a consistent `result` structure.
+    Ensures compose_node always receives a uniform result dict regardless of upstream route.
     """
     route = state.get("route", "")
     result: Dict[str, Any] = {}
 
-    # Caso 1: Exec (Neural Engine)
+    # Route: Neural Engine execution
     if route == "ne" and "raw_output" in state:
         result = {
             "route": "ne",
@@ -21,23 +21,23 @@ def output_normalizer_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "raw_output": state["raw_output"],
         }
 
-    # Caso 2: Crew fallback
+    # Route: Secondary engine fallback
     elif route == "crew_fallback" and "raw_output" in state:
         result = {
             "route": "crew_fallback",
-            "summary": "CrewAI fallback results",
+            "summary": "Fallback engine results",
             "raw_output": state["raw_output"],
         }
 
-    # Caso 3: Screener
+    # Route: Batch scoring / screening
     elif route == "screener" and "raw_output" in state:
         result = {
             "route": "screener",
-            "summary": "Screener results",
+            "summary": "Batch scoring results",
             "raw_output": state["raw_output"],
         }
 
-    # Caso 4: Qdrant semantic fallback
+    # Route: Qdrant semantic fallback
     elif route == "semantic_fallback" and "result" in state:
         result = {
             "route": "semantic_fallback",
@@ -45,7 +45,7 @@ def output_normalizer_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "hits": state["result"].get("hits", []),
         }
 
-    # Caso 5: Soft LLM response
+    # Route: Soft LLM response
     elif route == "llm_soft" and "result" in state:
         result = {
             "route": "llm_soft",
@@ -53,7 +53,7 @@ def output_normalizer_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "raw_output": state["result"],
         }
 
-    # Caso 6: Validation error
+    # Route: Validation error
     elif route == "validation_error":
         result = {
             "route": "validation_error",
@@ -61,7 +61,7 @@ def output_normalizer_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "raw_output": state.get("validation", {}),
         }
 
-    # Caso fallback generico
+    # Route: Generic fallback
     else:
         result = {
             "route": route or "unknown",

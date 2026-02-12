@@ -181,7 +181,7 @@ def _handle_data_refresh_event(payload: Dict[str, Any], correlation_id: str) -> 
         scope = f"{len(entity_ids)} entity_ids"
         target_list = entity_ids
     else:
-        scope = "general market data"
+        scope = "general data"
         target_list = []
     
     # Generate narrative response

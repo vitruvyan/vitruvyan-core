@@ -1,5 +1,4 @@
 from typing import Dict, Any
-import json
 
 def route_node(state: dict) -> dict:
     """
@@ -12,13 +11,9 @@ def route_node(state: dict) -> dict:
       4. Else, if intent is technical (trend, momentum, volatility, risk, backtest, allocate, collection, sentiment) → dispatcher_exec.
       5. Fallback: semantic_fallback.
     """
-    print(f"\n{'='*80}")
-    print(f"🔍 [ROUTE_NODE] ENTRY - Full state dump:")
-    print(f"  - emotion_detected: {state.get('emotion_detected')}")
-    print(f"  - _ux_metadata: {state.get('_ux_metadata')}")
-    print(f"  - State keys: {list(state.keys())}")
-    print(json.dumps({k: str(v)[:100] if isinstance(v, (dict, list)) else v for k, v in state.items()}, indent=2))
-    print(f"{'='*80}\n")
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.debug(f"[ROUTE_NODE] intent={state.get('intent')}, proposed_exec={state.get('proposed_exec')}")
 
     # 🗝️ Check for Codex Hunters expedition trigger first
     try:
@@ -70,13 +65,5 @@ def route_node(state: dict) -> dict:
         state["route"] = "semantic_fallback"
         print(f"➡️ Routing: intent '{intent}' not recognized → semantic_fallback")
 
-    print(f"\n{'='*80}")
-    print(f"🔍 [ROUTE_NODE] EXIT:")
-    print(f"  - route: {state['route']}")
-    print(f"  - intent: {intent}")
-    print(f"  - proposed_exec: {proposed_exec}")
-    print(f"  - entity_ids: {state.get('entity_ids')}")
-    print(f"  - State keys: {list(state.keys())}")
-    print(f"{'='*80}\n")
-    
+    logger.info(f"[ROUTE_NODE] intent={intent} → route={state['route']}")
     return state

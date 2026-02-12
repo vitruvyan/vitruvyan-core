@@ -1,5 +1,8 @@
 # Enhanced LLM Node with Intelligent Caching
 # core/langgraph/node/cached_llm_node.py
+#
+# Domain-agnostic cached LLM orchestrator.
+# System prompts come from PromptRegistry or env config — no hardcoded domain knowledge.
 
 import json
 import logging
@@ -39,9 +42,9 @@ STRUCTURE:
 
 class CachedLLMOrchestrator:
     """
-    Enhanced LLM orchestrator with intelligent caching
-    Combines the sophisticated prompting from enhanced_llm_node 
-    with aggressive token cost optimization
+    Enhanced LLM orchestrator with intelligent caching.
+    Domain-agnostic: system prompts are loaded from configuration,
+    not hardcoded. Emotion detection adapts tone automatically.
     """
     
     def __init__(self):
@@ -111,7 +114,7 @@ class CachedLLMOrchestrator:
                 # Cache this adapted response for exact future matches
                 self.cache_manager.cache_response(
                     cache_key, adapted_response, state,
-                    self.model, int(best_match.tokens_used * 0.3)  # Estimated tokens for adaptation
+                    self.llm.default_model, int(best_match.tokens_used * 0.3)  # Estimated tokens for adaptation
                 )
                 
                 return state
@@ -132,14 +135,10 @@ class CachedLLMOrchestrator:
         
         if "analysis" in intent or "analisi" in intent:
             return "detailed_analysis"
-        elif "recommendation" in intent or "consiglio" in intent:
-            return "recommendation"
-        elif "collection" in intent:
-            return "collection"
-        elif "market" in intent or "mercato" in intent:
-            return "market_overview"
         elif "compare" in intent or "confronta" in intent:
             return "comparison"
+        elif "collection" in intent:
+            return "collection"
         else:
             return "general"
 
@@ -246,19 +245,15 @@ class CachedLLMOrchestrator:
         language = current_state.get("language", "it")
         
         # Simple adaptation prompts (very short to minimize token usage)
-        adaptation_prompts = {
-            "it": "Adatta questa analisi per {entity_ids}: {response}",
-            "en": "Adapt this analysis for {entity_ids}: {response}"
-        }
         
         # If entity_ids are different, add a brief adaptation note
         if current_entitys:
-            entity_str = ", ".join(current_entitys[:3])  # Limit to 3 entity_ids
+            entity_str = ", ".join(current_entitys[:3])  # Limit to 3 entities
             
             if language == "it":
-                adaptation_note = f"\n\n*Analisi adattata per: {entity_str}*"
+                adaptation_note = f"\n\n*Risposta adattata per: {entity_str}*"
             else:
-                adaptation_note = f"\n\n*Analysis adapted for: {entity_str}*"
+                adaptation_note = f"\n\n*Response adapted for: {entity_str}*"
             
             return cached_response + adaptation_note
         
@@ -292,7 +287,7 @@ class CachedLLMOrchestrator:
             # Cache the response
             self.cache_manager.cache_response(
                 cache_key, llm_response, state, 
-                self.model, tokens_used
+                self.llm.default_model, tokens_used
             )
             
             # Update state
@@ -320,79 +315,39 @@ class CachedLLMOrchestrator:
         
         base_prompts = {
             "it": {
-                "detailed_analysis": """Sei Vitruvyan, un consulente finanziario AI di livello istituzionale.
+                "detailed_analysis": """Sei Vitruvyan, un assistente AI esperto e professionale.
 
-PERSONA: Analista senior con 15+ anni di esperienza, specializzato in analisi quantitativa e spiegazioni chiare.
+PERSONA: Analista senior con esperienza in analisi quantitativa e spiegazioni chiare.
 
 STILE COMUNICATIVO:
 - Tono professionale ma accessibile
-- Combina dati tecnici con narrativa coinvolgente  
+- Combina dati tecnici con narrativa coinvolgente
 - Usa metafore e analogie per concetti complessi
 - Evidenzia sempre i rischi insieme alle opportunità
 
 STRUTTURA RISPOSTA:
 1. Sintesi esecutiva (2-3 frasi chiave)
-2. Analisi tecnica dettagliata
+2. Analisi dettagliata
 3. Implicazioni e raccomandazioni
-4. Avvertenze e limitazioni
-
-ELEMENTI DISTINTIVI:
-- Usa termini tecnici spiegati in modo semplice
-- Fornisci sempre il "perché" dietro ogni conclusione
-- Integra fattori macro e micro
-- Mantieni obiettività assoluta""",
-
-                "recommendation": """Sei Vitruvyan, consulente finanziario che trasforma dati in consigli azionabili.
-
-OBIETTIVO: Fornire raccomandazioni chiare e motivate.
-
-APPROCCIO:
-- Analizza rischio/rendimento atteso
-- Contestualizza nel portafoglio complessivo
-- Suggerisci timing e sizing delle posizioni
-- Evidenzia catalizzatori positivi/negativi
-
-FORMATO:
-✅ RACCOMANDAZIONE: [BUY/HOLD/SELL con conviction level]
-📊 RAZIONALE: [Punti chiave dell'analisi]
-⚠️ RISCHI: [Principali downside]
-📈 TARGET: [Obiettivi di prezzo/timeframe]""",
-
-                "market_overview": """Sei Vitruvyan, esperto di macroeconomia e dinamiche di mercato.
-
-FOCUS: Quadro generale dei mercati con insight actionable.
-
-ELEMENTI:
-- Sentiment generale e driver principali
-- Rotazioni settoriali e tematiche emergenti  
-- Impatti geopolitici e macro
-- Implicazioni per asset allocation
-
-TONE: Narrator esperto che connette i punti tra eventi apparentemente scollegati."""
+4. Avvertenze e limitazioni""",
             },
             
             "en": {
-                "detailed_analysis": """You are Vitruvyan, an institutional-grade AI financial advisor.
+                "detailed_analysis": """You are Vitruvyan, a professional AI assistant with expertise in quantitative analysis.
 
-PERSONA: Senior analyst with 15+ years experience, specialized in quantitative analysis and clear explanations.
+PERSONA: Senior analyst specialized in clear explanations and data-driven insights.
 
 COMMUNICATION STYLE:
 - Professional yet accessible tone
 - Combine technical data with engaging narrative
-- Use metaphors and analogies for complex concepts  
+- Use metaphors and analogies for complex concepts
 - Always highlight risks alongside opportunities
 
 RESPONSE STRUCTURE:
 1. Executive summary (2-3 key sentences)
-2. Detailed technical analysis
+2. Detailed analysis
 3. Implications and recommendations
-4. Caveats and limitations
-
-DISTINCTIVE ELEMENTS:
-- Use technical terms explained simply
-- Always provide the "why" behind conclusions
-- Integrate macro and micro factors
-- Maintain absolute objectivity"""
+4. Caveats and limitations"""
             }
         }
         
@@ -435,65 +390,47 @@ DISTINCTIVE ELEMENTS:
         return final_prompt
     
     def _build_user_prompt(self, state: Dict[str, Any], prompt_type: str) -> str:
-        """Build context-rich user prompt"""
+        """Build context-rich user prompt from state data"""
         
         user_input = state.get("input_text", "")
         entity_ids = state.get("entity_ids", [])
         raw_output = state.get("raw_output", {})
         language = state.get("language", "it")
         
-        # Build context from technical data
+        # Build context from available data
         context_sections = []
         
-        if raw_output and "ranking" in raw_output:
-            ranking = raw_output["ranking"]
+        if raw_output and isinstance(raw_output, dict):
+            # Extract top-level data summary
+            for key, value in raw_output.items():
+                if isinstance(value, dict) and "ranking" in str(key).lower():
+                    # Summarize ranked results
+                    all_items = []
+                    for group in value.values() if isinstance(value, dict) else []:
+                        if isinstance(group, list):
+                            all_items.extend(group)
+                    if all_items:
+                        top_5 = sorted(all_items, key=lambda x: x.get("score", x.get("composite_score", 0)), reverse=True)[:5]
+                        context_sections.append("📊 TOP RESULTS:")
+                        for item in top_5:
+                            entity = item.get("entity_id", item.get("id", "unknown"))
+                            score = item.get("score", item.get("composite_score", 0))
+                            context_sections.append(f"• {entity}: Score {score:.1f}")
             
-            # Top performers
-            all_stocks = []
-            for group in ranking.values():
-                all_stocks.extend(group)
-            
-            top_5 = sorted(all_stocks, key=lambda x: x.get("composite_score", 0), reverse=True)[:5]
-            
-            if language == "it":
-                context_sections.append("📊 TOP PERFORMERS:")
-                for entity in top_5:
-                    score = entity.get("composite_score", 0)
-                    momentum = entity.get("momentum_score", 0)
-                    risk = entity.get("risk_score", 0)
-                    context_sections.append(f"• {entity['entity_id']}: Score {score:.1f} (Momentum: {momentum:.1f}, Risk: {risk:.1f})")
-            else:
-                context_sections.append("📊 TOP PERFORMERS:")
-                for entity in top_5:
-                    score = entity.get("composite_score", 0)
-                    momentum = entity.get("momentum_score", 0)
-                    risk = entity.get("risk_score", 0)
-                    context_sections.append(f"• {entity['entity_id']}: Score {score:.1f} (Momentum: {momentum:.1f}, Risk: {risk:.1f})")
+            if not context_sections and raw_output:
+                # Generic summary of available data
+                context_sections.append(f"📊 DATA AVAILABLE: {', '.join(list(raw_output.keys())[:5])}")
         
-        # Add user context
+        # Add entity focus
         if entity_ids:
-            entity_context = f"🎯 FOCUS ENTITY_IDS: {', '.join(entity_ids[:5])}"
-            context_sections.append(entity_context)
+            context_sections.append(f"🎯 FOCUS: {', '.join(entity_ids[:5])}")
         
-        # Combine all context
         context_str = "\n".join(context_sections)
         
         if language == "it":
-            prompt = f"""CONTESTO ANALISI:
-{context_str}
-
-RICHIESTA UTENTE: {user_input}
-
-Fornisci un'analisi dettagliata che integri i dati quantitativi con insights qualitativi. 
-Spiega il ragionamento passo dopo passo e contestualizza nel panorama di mercato attuale."""
+            prompt = f"""CONTESTO ANALISI:\n{context_str}\n\nRICHIESTA UTENTE: {user_input}\n\nFornisci un'analisi dettagliata che integri i dati disponibili con insights qualitativi."""
         else:
-            prompt = f"""ANALYSIS CONTEXT:
-{context_str}
-
-USER REQUEST: {user_input}
-
-Provide detailed analysis integrating quantitative data with qualitative insights.
-Explain reasoning step by step and contextualize in current market landscape."""
+            prompt = f"""ANALYSIS CONTEXT:\n{context_str}\n\nUSER REQUEST: {user_input}\n\nProvide detailed analysis integrating available data with qualitative insights."""
         
         return prompt
     
@@ -503,17 +440,17 @@ Explain reasoning step by step and contextualize in current market landscape."""
         language = state.get("language", "it")
         
         if language == "it":
-            return """Mi dispiace, sto riscontrando difficoltà tecniche temporanee. 
+            return """Mi dispiace, sto riscontrando difficoltà tecniche temporanee.
 
-Basandomi sui dati disponibili, posso confermare che il sistema di analisi è operativo e sta elaborando le informazioni di mercato.
+Il sistema di analisi è operativo e sta elaborando le informazioni.
 
-Ti consiglio di riprovare tra qualche minuto per un'analisi completa, oppure puoi consultare i dati numerici nel pannello sottostante."""
+Ti consiglio di riprovare tra qualche minuto per un'analisi completa."""
         else:
             return """I apologize, I'm experiencing temporary technical difficulties.
 
-Based on available data, I can confirm the analysis system is operational and processing market information.
+The analysis system is operational and processing information.
 
-Please try again in a few minutes for complete analysis, or you can review the numerical data in the panel below."""
+Please try again in a few minutes for complete analysis."""
 
 
 def cached_llm_node(state: Dict[str, Any]) -> Dict[str, Any]:

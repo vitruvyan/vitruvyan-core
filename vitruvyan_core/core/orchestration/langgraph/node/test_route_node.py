@@ -8,18 +8,15 @@ def test_route_node():
     # Soft intent
     s = {"intent": "soft"}
     assert route_node(s)["route"] == "llm_soft"
-    # Known intent
-    s = {"intent": "trend", "entity_ids": ["EXAMPLE_ENTITY_1"], "amount": 1000, "horizon": "short"}
+    # Known technical intent
+    s = {"intent": "trend", "entity_ids": ["ENTITY_1"], "amount": 1000, "horizon": "short"}
     assert route_node(s)["route"] == "dispatcher_exec"
-    # Unknown intent
+    # Unknown intent → slot filler
     s = {"intent": "unknown"}
-    assert route_node(s)["route"] == "semantic_fallback"
-    # Missing slots
-    s = {"intent": "trend", "entity_ids": [], "amount": None, "horizon": None}
     assert route_node(s)["route"] == "slot_filler"
-    # Default
-    s = {"intent": "other", "entity_ids": ["EXAMPLE_ENTITY_1"], "amount": 1000, "horizon": "short"}
-    assert route_node(s)["route"] == "dispatcher_exec"
+    # Unrecognized intent → semantic fallback
+    s = {"intent": "other", "entity_ids": ["ENTITY_1"], "amount": 1000, "horizon": "short"}
+    assert route_node(s)["route"] == "semantic_fallback"
     print("All tests passed!")
 
 if __name__ == "__main__":

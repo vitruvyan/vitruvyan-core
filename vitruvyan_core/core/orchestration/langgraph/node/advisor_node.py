@@ -1,21 +1,14 @@
 """
 🎯 Advisor Node (Sacred Order: DISCOURSE)
-Decision-making layer that interprets technical signals and produces actionable recommendations.
+Domain-agnostic decision advisory layer.
 
 Architecture:
-- Reads: numerical_panel, final_verdict, screening_data, comparison_matrix, portfolio_data
+- Reads: numerical_panel, screening_data, comparison_matrix, collection_data
 - Produces: advisor_recommendation (action, confidence, rationale, factors_considered)
-- Activates: Only when user requests action ("cosa fare?", "comprare?", "vendere?")
+- Activates: Only when user explicitly requests action
 
-Decision Rules:
-1. Composite Score: >1.0=BUY, 0.5-1.0=BUY_cautious, -0.3-0.5=HOLD, <-0.3=SELL/AVOID
-2. Divergences: Momentum↑+Sentiment↓ → Caution
-3. Volatility: High volatility → Reduce confidence
-4. Comparison: Prefer entity_id with highest composite
-5. Collection: Sector concentration → Rebalancing advice
-
-Author: Vitruvyan Sacred Orders
-Date: December 26, 2025
+Status: STUB — requires domain plugin for actionable recommendations.
+Domain plugins implement scoring rules, divergence logic, and confidence thresholds.
 """
 
 import logging
@@ -26,7 +19,7 @@ def advisor_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     [PHASE 1D - NOT_IMPLEMENTED]
     This node would generate actionable recommendations based on multi-factor analysis.
-    Finance-specific logic (BUY/SELL recommendations, composite scores) has been stripped.
+    Domain-specific logic has been stripped — requires domain plugin.
     
     Original architecture preserved:
     - Multi-source data integration (numerical panel, comparisons, collections)

@@ -1,4 +1,5 @@
 from typing import Dict, Any
+import os
 import httpx
 from core.foundation.persistence.qdrant_agent import QdrantAgent
 
@@ -20,11 +21,11 @@ def _get_embedding(text: str):
 
 def qdrant_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Semantic search node with smart filtering (eliminates Reddit/GNews noise).
+    Semantic search node with configurable domain filtering.
     
     Strategy:
     1. Try conversations_embeddings first (user chat history)
-    2. Fallback to phrases_embeddings with FINANCIAL FILTERING
+    2. Fallback to phrases_embeddings with domain filtering (QDRANT_FILTER_DOMAIN env)
     3. Save results in state["result"]["hits"]
     """
     text = (state.get("input_text") or "").strip()
@@ -45,7 +46,7 @@ def qdrant_node(state: Dict[str, Any]) -> Dict[str, Any]:
             res = _agent.search_phrases(
                 query_vector=vec,
                 top_k=5,
-                filter_financial_only=True  # 🔒 Smart filtering ON (elimina Reddit/GNews noise)
+                filter_financial_only=bool(int(os.getenv("QDRANT_FILTER_DOMAIN", "1")))  # Configurable domain filtering
             )
             
             # Convert search_phrases format to legacy format (for backwards compatibility)
