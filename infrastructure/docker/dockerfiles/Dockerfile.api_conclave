@@ -9,6 +9,7 @@ RUN groupadd -g 1000 vitruvyan && \
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    procps \
     # Add any other system dependencies if needed
     && rm -rf /var/lib/apt/lists/*
 

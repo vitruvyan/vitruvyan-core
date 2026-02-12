@@ -1,0 +1,20 @@
+# ============================================================================
+# MkDocs Documentation Server — Dependencies
+# ============================================================================
+# Last Updated: February 12, 2026
+# ============================================================================
+
+# Core
+mkdocs==1.5.3
+
+# Theme (Material Design)
+mkdocs-material==9.5.3
+
+# Plugins
+mkdocs-mermaid2-plugin==1.1.1      # Mermaid diagrams
+mkdocs-redirects==1.2.1            # URL redirects
+mkdocs-minify-plugin==0.8.0        # HTML/CSS minification
+pymdown-extensions==10.7           # Markdown extensions (admonitions, tabs, etc.)
+
+# Search
+mkdocs-git-revision-date-localized-plugin==1.2.4  # Show last update date

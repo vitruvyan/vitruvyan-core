@@ -413,10 +413,12 @@ This rule generalizes beyond finance. Replace “ticker” with any domain entit
 **Guidelines for Copilot**:
 
 1. **When working in vitruvyan-core (this repo)**:
+  
    - ✅ Slot-filling is a **valid architecture pattern** for missing parameter collection
    - ✅ `route_node.py` routing to `slot_filler` is **intentional design**
    - ✅ Use slot-filling when building **generic OS primitives** (domain-neutral)
    - ⚠️ Document UX trade-offs (latency, multi-turn flow)
+   - always read the "README.md" file included into subfolder/branch you are working on
 
 2. **When working in verticals/services** (finance, etc.):
    - Consider if **LLM-first approach** (CAN + MCP) is more appropriate

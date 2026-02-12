@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y \
     g++ \
     curl \
     git \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 # ===========================
@@ -53,6 +54,10 @@ WORKDIR /app
 # STAGE 4: Application
 # ===========================
 FROM dependencies as final
+
+# Install procps for health check (pgrep)
+USER root
+RUN apt-get update && apt-get install -y procps && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app

@@ -3,7 +3,7 @@
 
 set -e
 
-DOMAINS=("dashboard.vitruvyan.com" "metrics.vitruvyan.com")
+DOMAINS=("dashboard.vitruvyan.com" "metrics.vitruvyan.com" "kb.vitruvyan.com")
 EMAIL="admin@vitruvyan.com"  # Cambia con la tua email
 STAGING=0  # Imposta a 1 per test con staging server
 

@@ -891,6 +891,30 @@ services:
       timeout: 10s
       retries: 3
 
+  mkdocs:
+    image: vitruvyan/mkdocs:latest
+    container_name: core_mkdocs
+    build:
+      context: ./mkdocs
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "9800:8000"
+    volumes:
+      - ../../docs:/docs:ro
+      - ../../vitruvyan_core:/vitruvyan_core:ro
+      - ../../services:/services:ro
+      - ./mkdocs/mkdocs.yml:/app/mkdocs.yml:ro
+    working_dir: /app
+    command: mkdocs serve -a 0.0.0.0:8000 --config-file mkdocs.yml --dev-addr 0.0.0.0:8000
+    networks:
+      - core-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 
 # ══════════════════════════════════════════════════════════════════════════
 #  VOLUMES & NETWORK

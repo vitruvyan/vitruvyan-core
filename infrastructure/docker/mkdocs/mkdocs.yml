@@ -1,0 +1,146 @@
+# ============================================================================
+# MkDocs Configuration — Vitruvyan Core Knowledge Base
+# ============================================================================
+# Last Updated: February 12, 2026
+# Purpose: User & administrator documentation (domain-agnostic epistemic OS)
+# Deploy: docker compose up -d mkdocs → http://localhost:9800
+# Build:  mkdocs build → site/ (static HTML)
+# ============================================================================
+
+site_name: Vitruvyan Core Documentation
+site_description: Domain-agnostic epistemic operating system
+site_author: Vitruvyan Team
+site_url: https://vitruvyan.dev  # Update with actual URL
+
+repo_name: vitruvyan-core
+repo_url: https://github.com/vitruvyan/vitruvyan-core  # Update with actual repo
+
+# Theme configuration
+theme:
+  name: material
+  language: en
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  
+  features:
+    - navigation.instant      # Instant loading (SPA-like)
+    - navigation.tracking     # URL updates with scroll
+    - navigation.tabs         # Top-level sections as tabs
+    - navigation.sections     # Group sections
+    - navigation.expand       # Expand all sections by default
+    - navigation.top          # Back to top button
+    - search.suggest          # Search suggestions
+    - search.highlight        # Highlight search terms
+    - content.code.copy       # Copy button for code blocks
+    - content.tabs.link       # Link tabs across pages
+
+  icon:
+    repo: fontawesome/brands/github
+
+# Plugins
+plugins:
+  - search:
+      lang: en
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+  - mermaid2
+  - minify:
+      minify_html: true
+
+# Markdown extensions
+markdown_extensions:
+  - admonition              # Callouts (notes, warnings, etc.)
+  - pymdownx.details        # Collapsible admonitions
+  - pymdownx.superfences:   # Code blocks, Mermaid diagrams
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid_custom
+  - pymdownx.tabbed:        # Content tabs
+      alternate_style: true
+  - pymdownx.highlight:     # Syntax highlighting
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite   # Inline code highlighting
+  - pymdownx.snippets       # Include external files
+  - pymdownx.tasklist:      # Task lists
+      custom_checkbox: true
+  - tables                  # Tables support
+  - footnotes               # Footnotes
+  - attr_list               # Add attributes to elements
+  - md_in_html              # Markdown in HTML
+  - toc:                    # Table of contents
+      permalink: true
+      toc_depth: 3
+
+# Navigation structure
+nav:
+  - Home: index.md
+  
+  - Getting Started:
+    - Overview: foundational/VITRUVYAN_OVERVIEW.md
+    - Quick Start: foundational/QUICK_START.md
+    - Charter: foundational/VITRUVYAN_CHARTER.md
+    
+  - Architecture:
+    - Overview: architecture/README.md
+    - Sacred Orders Pattern: architecture/SACRED_ORDER_PATTERN.md
+    - Cognitive Bus: architecture/COGNITIVE_BUS_ARCHITECTURE_SEPARATION.md
+    - Technical Debt: architecture/TECHNICAL_DEBT_REPORT_FEB12.md
+    
+  - Sacred Orders:
+    - Memory Orders: vitruvyan_core/governance/memory_orders/README.md
+    - Vault Keepers: vitruvyan_core/governance/vault_keepers/README.md
+    - Orthodoxy Wardens: vitruvyan_core/governance/orthodoxy_wardens/README.md
+    - Babel Gardens: vitruvyan_core/governance/babel_gardens/README.md
+    - Codex Hunters: vitruvyan_core/governance/codex_hunters/README.md
+    - Pattern Weavers: vitruvyan_core/governance/pattern_weavers/README.md
+    
+  - Services:
+    - Overview: services/README_SERVICES.md
+    - API Graph: services/api_graph/README.md
+    - API MCP: services/api_mcp/README.md
+    
+  - Infrastructure:
+    - Overview: infrastructure/README_INFRASTRUCTURE.md
+    - Docker Setup: infrastructure/docker/README.md
+    - Monitoring: infrastructure/docker/monitoring/README.md
+    
+  - Development:
+    - Testing: tests/README_TESTS.md
+    - Examples: examples/README_EXAMPLES.md
+    - Configuration: config/README_CONFIG.md
+    - Scripts: scripts/README_SCRIPTS.md
+    
+  - Planning:
+    - Roadmap: planning/ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md
+    - Refactoring Plan: planning/SACRED_ORDERS_REFACTORING_PLAN.md
+
+# Extra
+extra:
+  version:
+    provider: mike  # Versioning provider (optional)
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/vitruvyan
+      name: Vitruvyan on GitHub
+
+# Copyright
+copyright: Copyright &copy; 2026 Vitruvyan Team

@@ -3,11 +3,13 @@ FROM python:3.11-slim
 
 # Create a non-root user
 RUN groupadd -g 1000 vitruvyan && \
-    useradd -u 1000 -g vitruvyan -m -s /bin/bash vitruvyan
+    useradd -u 1000 -g vitruvyan -m -s /bin/bash vitruvyan && \
+    mkdir -p /app && chown vitruvyan:vitruvyan /app
 
 # Install necessary system packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    procps \
     # Add any other system dependencies if needed, e.g., git for some python packages
     && rm -rf /var/lib/apt/lists/*
 
@@ -36,6 +38,9 @@ USER vitruvyan
 # Copy the application code
 # Copy the entire vitruvyan_core package (our core library)
 COPY --chown=vitruvyan:vitruvyan vitruvyan_core /app/vitruvyan_core
+
+# Backward compat: legacy imports use `core.` (main.py uses this)
+RUN ln -s /app/vitruvyan_core/core /app/core
 
 # Copy config module (needed by pattern_weavers)
 COPY --chown=vitruvyan:vitruvyan config /app/config
