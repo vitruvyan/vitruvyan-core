@@ -8,6 +8,12 @@
 
 FROM python:3.11-slim
 
+# Install system dependencies (git for git-revision-date-localized plugin)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Install MkDocs and plugins

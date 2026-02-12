@@ -18,8 +18,7 @@ from core.orchestration.langgraph.memory_utils import merge_slots
 # 🧠 PHASE 2.1 - Consolidated Intent Detection (babel + intent_llm + intent_mapper)
 from core.orchestration.langgraph.node.intent_detection_node import intent_detection_node
 
-# 🔍 PHASE 2.2 - Consolidated Quality Check (fallback + validation)
-from core.orchestration.langgraph.node.quality_check_node import quality_check_node
+# 🔍 PHASE 2.2 - Quality Check (ARCHIVED → _legacy/quality_check_node.py)
 
 # ⚙️ PHASE 2.3 - Consolidated Parameter Extraction (horizon_parser + topk_parser)
 from core.orchestration.langgraph.node.params_extraction_node import params_extraction_node
@@ -36,8 +35,7 @@ from core.orchestration.langgraph.node.vault_node import vault_node
 # 🗝️ Codex Hunters Integration
 from core.orchestration.langgraph.node.codex_hunters_node import codex_hunters_node
 
-# 💡 Proactive Intelligence - Phase 2.1
-from core.orchestration.langgraph.node.proactive_suggestions_node import proactive_suggestions_node
+# 💡 Proactive Suggestions (ARCHIVED → _legacy/proactive_suggestions_node.py)
 
 # 🔌 MCP Integration - Phase 4 (Model Context Protocol + OpenAI Function Calling)
 from core.orchestration.langgraph.node.llm_mcp_node import llm_mcp_node
@@ -66,7 +64,7 @@ class GraphState(TypedDict, total=False):
     intent: Optional[str]
     raw_output: Optional[Dict[str, Any]]
     final_response: Optional[str]            # 🎯 Formatted narrative for user display
-    proactive_suggestions: Optional[List[Dict[str, Any]]]  # 💡 Phase 2.1 - Proactive suggestions
+    # proactive_suggestions: ARCHIVED (was domain-specific finance feature)
     
     # Domain-agnostic entity/signal fields (replaces budget/horizon/entity_ids)
     entities: Optional[List[Dict[str, Any]]]  # Generic entities (id, type, attributes)
@@ -243,16 +241,14 @@ def build_graph():
     g.add_node("semantic_grounding", semantic_grounding_node)
     g.add_node("exec", exec_node)
     
-    # 🔍 PHASE 2.2 - Consolidated Quality Check (fallback + validation)
-    g.add_node("quality_check", quality_check_node)
+    # 🔍 quality_check: ARCHIVED (domain-specific validation)
     g.add_node("qdrant", qdrant_node)
     # 💡 UX Quick Win 2: Enhanced LLM with Emotional Intelligence (Oct 29, 2025)
     g.add_node("llm_soft", cached_llm_node)
     g.add_node("output_normalizer", output_normalizer_node)
     g.add_node("compose", compose_node)
     
-    # 💡 Phase 2.1: Proactive Intelligence
-    g.add_node("proactive_suggestions", proactive_suggestions_node)
+    # 💡 proactive_suggestions: ARCHIVED (domain-specific)
     
     # 🎯 Advisor Node - Decision-making layer (Dec 27, 2025)
     g.add_node("advisor", advisor_node)
@@ -333,34 +329,25 @@ def build_graph():
         },
     )
 
-    # 🔍 PHASE 2.2: Consolidated quality check pipeline
-    # exec → quality_check → output_normalizer
-    g.add_edge("exec", "quality_check")
-    g.add_edge("quality_check", "output_normalizer")
+    # exec → output_normalizer (quality_check archived)
+    g.add_edge("exec", "output_normalizer")
     
-    # 🔌 Phase 4: MCP → quality_check (Sacred Orders results validation)
-    g.add_edge("llm_mcp", "quality_check")
+    # 🔌 Phase 4: MCP → output_normalizer
+    g.add_edge("llm_mcp", "output_normalizer")
     
     # Other routes to normalizer
     g.add_edge("qdrant", "output_normalizer")
     g.add_edge("llm_soft", "output_normalizer")
     
-    # 🗝️ Codex Hunters routing (Fixed Dec 27, 2025)
-    # Codex is a MAINTENANCE system, NOT financial analysis.
-    # It bypasses Sacred Flow (normalizer→orthodoxy→vault→compose→CAN) 
-    # and returns directly to END with formatted response.
-    #
-    # Routes set by codex_hunters_node.py:
-    #   - full_audit → codex_complete (direct END)
-    #   - healing → codex_complete (direct END)
-    #   - discovery → codex_complete (direct END)
-    #   - error → quality_check (for error handling)
+    # 🗝️ Codex Hunters routing
+    # Codex is a MAINTENANCE system. Bypasses Sacred Flow.
+    # Success → direct END, errors → output_normalizer for graceful handling
     g.add_conditional_edges(
         "codex_hunters",
-        lambda state: "quality_check" if state.get("route") == "error_handling" else END,
+        lambda state: "output_normalizer" if state.get("route") == "error_handling" else END,
         {
-            "quality_check": "quality_check",  # Expedition failed → quality check
-            END: END,                          # Success → direct END (response already formatted)
+            "output_normalizer": "output_normalizer",  # Error → normalize
+            END: END,                                    # Success → direct END
         }
     )
 
@@ -373,15 +360,14 @@ def build_graph():
     # 🧠 CAN v2 → Advisor (conditional: only if user_requests_action=True or can_mode='urgent')
     g.add_conditional_edges(
         "can",
-        lambda state: "advisor" if (state.get("user_requests_action", False) or state.get("can_mode") == "urgent") else "proactive_suggestions",
+        lambda state: "advisor" if (state.get("user_requests_action", False) or state.get("can_mode") == "urgent") else END,
         {
             "advisor": "advisor",
-            "proactive_suggestions": "proactive_suggestions",
+            END: END,
         }
     )
     
-    g.add_edge("advisor", "proactive_suggestions")
-    g.add_edge("proactive_suggestions", END)
+    g.add_edge("advisor", END)
     
     # ❌ REMOVED (Dec 27, 2025): Direct edge codex_hunters → END
     # This was overriding the conditional edges above.

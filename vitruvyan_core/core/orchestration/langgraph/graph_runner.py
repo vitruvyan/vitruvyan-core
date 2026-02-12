@@ -5,7 +5,7 @@ import json
 from typing import Dict, Any
 from core.orchestration.langgraph.graph_flow import build_graph, build_minimal_graph
 from core.orchestration.langgraph.memory_utils import merge_slots
-from core.orchestration.langgraph.node.proactive_suggestions_node import format_suggestions_for_response
+# proactive_suggestions: ARCHIVED (was domain-specific finance feature)
 # from core.logging.audit import  # TODO: audit module not available generate_trace_id  # 🆕 VSGS trace_id generation
 
 # Stub for generate_trace_id
@@ -119,9 +119,7 @@ def run_graph_once(input_text: str, user_id: str = "demo", return_full: bool = F
     # Handle both nested and flattened response structures
     response = final_state.get("response") if isinstance(final_state, dict) else None
     
-    # 💡 Phase 2.1: Append proactive suggestions if present
-    proactive_suggestions = final_state.get("proactive_suggestions", [])
-    suggestions_text = format_suggestions_for_response(proactive_suggestions) if proactive_suggestions else ""
+    # proactive_suggestions: ARCHIVED (domain-specific)
     
     # CASE 1: Valid nested response dict from compose_node
     if isinstance(response, dict) and "action" in response:
@@ -156,19 +154,6 @@ def run_graph_once(input_text: str, user_id: str = "demo", return_full: bool = F
         if final_state.get("vault_blessing"):
             response["vault_blessing"] = final_state.get("vault_blessing")
             response["vault_status"] = final_state.get("vault_status")
-        
-        # �💡 Phase 2.1: Append proactive suggestions (for all actions, not just answer)
-        if suggestions_text:
-            if response.get("action") == "answer" and "raw_output" in response and isinstance(response["raw_output"], dict):
-                # Append to notes for answer responses
-                notes = response["raw_output"].get("notes", {})
-                if not isinstance(notes, dict):
-                    notes = {}
-                notes["proactive_suggestions"] = suggestions_text
-                response["raw_output"]["notes"] = notes
-            # Always add suggestions fields to response
-            response["proactive_suggestions_text"] = suggestions_text
-            response["proactive_suggestions"] = proactive_suggestions
         
         # ✅ FIX (Nov 2, 2025): Add intent, route, entity_ids, horizon to API response
         response["intent"] = final_state.get("intent")
@@ -251,11 +236,6 @@ def run_graph_once(input_text: str, user_id: str = "demo", return_full: bool = F
             "advisor_recommendation": final_state.get("advisor_recommendation"),
             "user_requests_action": final_state.get("user_requests_action"),
         }
-        
-        # 💡 Phase 2.1: Include proactive suggestions
-        if suggestions_text:
-            result["proactive_suggestions_text"] = suggestions_text
-            result["proactive_suggestions"] = proactive_suggestions
         
         return result
     

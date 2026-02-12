@@ -15,6 +15,10 @@ site_url: https://vitruvyan.dev  # Update with actual URL
 repo_name: vitruvyan-core
 repo_url: https://github.com/vitruvyan/vitruvyan-core  # Update with actual repo
 
+# Docs directory (app root with mounted volumes)
+docs_dir: /app
+site_dir: /tmp/mkdocs_site
+
 # Theme configuration
 theme:
   name: material
@@ -56,9 +60,10 @@ theme:
 plugins:
   - search:
       lang: en
-  - git-revision-date-localized:
-      enable_creation_date: true
-      type: timeago
+  # git-revision-date-localized disabled (requires git repo in mounted volumes)
+  # - git-revision-date-localized:
+  #     enable_creation_date: true
+  #     type: timeago
   - mermaid2
   - minify:
       minify_html: true
@@ -92,18 +97,18 @@ markdown_extensions:
 
 # Navigation structure
 nav:
-  - Home: index.md
+  - Home: docs/index.md
   
   - Getting Started:
-    - Overview: foundational/VITRUVYAN_OVERVIEW.md
-    - Quick Start: foundational/QUICK_START.md
-    - Charter: foundational/VITRUVYAN_CHARTER.md
+    - Overview: docs/foundational/VITRUVYAN_OVERVIEW.md
+    - Quick Start: docs/foundational/QUICK_START.md
+    - Charter: docs/foundational/VITRUVYAN_CHARTER.md
     
   - Architecture:
-    - Overview: architecture/README.md
-    - Sacred Orders Pattern: architecture/SACRED_ORDER_PATTERN.md
-    - Cognitive Bus: architecture/COGNITIVE_BUS_ARCHITECTURE_SEPARATION.md
-    - Technical Debt: architecture/TECHNICAL_DEBT_REPORT_FEB12.md
+    - Overview: docs/architecture/README.md
+    - Sacred Orders Pattern: docs/architecture/SACRED_ORDER_PATTERN.md
+    - Cognitive Bus: docs/architecture/COGNITIVE_BUS_ARCHITECTURE_SEPARATION.md
+    - Technical Debt: docs/architecture/TECHNICAL_DEBT_REPORT_FEB12.md
     
   - Sacred Orders:
     - Memory Orders: vitruvyan_core/governance/memory_orders/README.md
@@ -130,8 +135,8 @@ nav:
     - Scripts: scripts/README_SCRIPTS.md
     
   - Planning:
-    - Roadmap: planning/ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md
-    - Refactoring Plan: planning/SACRED_ORDERS_REFACTORING_PLAN.md
+    - Roadmap: docs/planning/ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md
+    - Refactoring Plan: docs/planning/SACRED_ORDERS_REFACTORING_PLAN.md
 
 # Extra
 extra:
