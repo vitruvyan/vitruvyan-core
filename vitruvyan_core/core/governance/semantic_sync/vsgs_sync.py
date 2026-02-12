@@ -37,10 +37,9 @@ def audit(action: str, data: Dict[str, Any], trace_id: str = None, user_id: str 
     """Stub for audit logging - logs to standard logger"""
     logger.info(f"[AUDIT] {action} | trace={trace_id} | user={user_id} | data={data}")
 
-# Import from vitruvyan_os structure (not core.leo)
-from core.foundation.persistence.postgres_agent import PostgresAgent
-from core.foundation.persistence.qdrant_agent import QdrantAgent
-import psycopg2
+# Import agents (correct vitruvyan-core paths)
+from core.agents.postgres_agent import PostgresAgent
+from core.agents.qdrant_agent import QdrantAgent
 import psycopg2
 from dotenv import load_dotenv
 
@@ -178,7 +177,7 @@ def sync_semantic_states(limit: int = 100, collection: str = "semantic_states") 
     
     try:
         # Initialize agents
-        conn = psycopg2.connect(**DB_PARAMS)
+        conn = psycopg2.connect(**DB_PARAMS)  # Raw conn for cursor-level sync ops
         qdrant = QdrantAgent()
         
         # Fetch unsynced events
@@ -322,7 +321,7 @@ def check_sync_health() -> Dict[str, Any]:
         
         # Count unsynced events
         with conn.cursor() as cur:
-            cur.execute("SELECT COUNT(*) FROM semantic_grounding_events WHERE qdrant_synced = false;")
+            cur.execute("SELECT COUNT(*) FROM semantic_states WHERE qdrant_synced = false;")
             unsynced_count = cur.fetchone()[0]
         
         # Count total events

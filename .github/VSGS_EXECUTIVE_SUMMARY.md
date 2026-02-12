@@ -1,8 +1,14 @@
 # 🧠 VSGS (Vitruvyan Semantic Grounding System)
 **Executive Summary & Technical Architecture**  
-**Version**: 1.0 Production Ready  
-**Date**: November 4, 2025  
+**Version**: 2.0 Refactored  
+**Date**: February 12, 2026 (original: November 4, 2025)  
 **Status**: ✅ ACTIVE - Deployed in Production
+
+> **v2.0 Refactoring (Feb 12, 2026)**: VSGS engine extracted from 432-line fat node into
+> reusable `core/vpar/vsgs/VSGSEngine` class (184 lines). Node reduced to 99-line thin adapter.
+> Typed dataclasses (`GroundingConfig`, `SemanticMatch`, `GroundingResult`), configurable
+> thresholds, lazy-loaded infrastructure, graceful error handling. Broken imports fixed
+> (`core.foundation.persistence` → `core.agents`). See `vitruvyan_core/core/vpar/vsgs/README.md`.
 
 ---
 
@@ -913,12 +919,19 @@ System: ❌ Incorrectly infers "PLTR sentiment" (should ask for ticker)
 - [x] Production deployment (Nov 4, 2025)
 - [x] Zero-downtime migration (VSGS_ENABLED=1)
 
-### Phase 2: Optimization (Dec 2025 - Jan 2026)
+### Phase 2: Optimization (Dec 2025 - Feb 2026) — PARTIALLY COMPLETE
 - [ ] GPU acceleration for MiniLM (5x speedup → 3ms latency)
 - [ ] Qdrant horizontal sharding (support 10M+ vectors)
 - [ ] Async PostgreSQL writes (non-blocking audit logs)
 - [ ] Redis clustering (high availability for cache)
 - [ ] Prometheus metrics dashboard (Grafana integration)
+- [x] **Engine extraction**: VSGSEngine in `core/vpar/vsgs/` (184 lines, reusable from any context)
+- [x] **Node thinning**: `semantic_grounding_node.py` 432 → 99 lines (thin adapter)
+- [x] **Typed API**: `GroundingConfig`, `SemanticMatch`, `GroundingResult` dataclasses
+- [x] **Configurable thresholds**: High/medium/low quality via `GroundingConfig` (no hardcoded 0.8/0.6)
+- [x] **Import fixes**: `core.foundation.persistence` → `core.agents` (dead path eliminated)
+- [x] **vsgs_sync.py fix**: Raw `psycopg2.connect()` replaced with `PostgresAgent`
+- [x] **Graceful degradation**: All errors return `GroundingResult(status="error")`, never crash pipeline
 
 ### Phase 3: Intelligence (Feb - Apr 2026)
 - [ ] **Adaptive Context Windows**: Auto-tune top-k based on query complexity
@@ -944,7 +957,7 @@ System: ❌ Incorrectly infers "PLTR sentiment" (should ask for ticker)
 
 ## 📚 Appendix Updates
 
-### Related Documentation (Updated Nov 4, 2025)
+### Related Documentation (Updated Feb 12, 2026)
 
 1. **Appendix G — Conversational Architecture V1**
    - Added VSGS as Truth Layer (anti-hallucination via PostgreSQL validation)
@@ -956,7 +969,12 @@ System: ❌ Incorrectly infers "PLTR sentiment" (should ask for ticker)
    - VSGS data flow: Embedding → Qdrant → State enrichment
    - Dual-write pattern: PostgreSQL audit + Qdrant semantic storage
 
-3. **copilot-instructions.md**
+3. **VSGS README** (NEW — Feb 12, 2026)
+   - Location: `vitruvyan_core/core/vpar/vsgs/README.md`
+   - Full API documentation, usage examples, configuration reference
+   - v1.0 → v2.0 comparison table
+
+4. **copilot-instructions.md**
    - MANDATORY: Always use `PostgresAgent()` (never direct psycopg2)
    - MANDATORY: Always use `QdrantAgent()` (never direct qdrant_client)
    - VSGS environment variables: VSGS_ENABLED, VSGS_GROUNDING_TOPK, VSGS_COLLECTION_NAME

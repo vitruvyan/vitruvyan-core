@@ -12,7 +12,22 @@
 - **14 servizi** in `services/`
 - **6 Sacred Orders** al 100% SACRED_ORDER_PATTERN conformance
 - **33 file .md** alla root del repo (work logs, audit, debug)
-- **40+ file finance-leaky** nel core attivo → **CORRETTO: ~30 file** (4 file orchestration/ erano falsi positivi da grep, codice effettivamente refactorizzato Feb 10)
+- **40+ file finance-leaky** nel core attivo → **CORRETTO dopo verifica codice: ~20 file reali** (molti falsi positivi da grep — docstring/commenti vs codice eseguibile)
+
+### Riepilogo verifiche codice (Feb 12, 2026 — seconda passata)
+| Area | File verificati | ✅ Agnostici | ⚠️ Misti | ❌ Finance-specific |
+|------|----------------:|-------------:|---------:|-------------------:|
+| orchestration/ (ABC) | 9 | **9** | 0 | 0 |
+| orchestration/ (runners) | 2 | 0 | **2** | 0 |
+| LangGraph nodes | 20 | **10** | **5** | **5** |
+| synaptic_conclave/ | 6 | **1** | **2** | **3** |
+| governance/ Sacred Orders | 7 | **5** | **2** | 0 |
+| llm/ | 3 | **1** | **2** | 0 |
+| cognitive/ | 1 | **1** | 0 | 0 |
+| monitoring/ | 1 | 0 | 0 | **1** |
+| foundation/ | 3 | 0 | 0 | 0 (morto) |
+| domains/ contracts | 3 | **3** | 0 | 0 |
+| **TOTALE** | **55** | **30** | **13** | **9** |
 
 ---
 
@@ -34,11 +49,11 @@ vitruvyan-core/
 │   │   │   │   ├── vmfl/            2 engine files (multi-factor learning)
 │   │   │   │   ├── vsgs/            1 __init__.py only (signal generation)
 │   │   │   │   └── vwre/            2 engine files (weighted ranking)
-│   │   │   └── semantic_engine.py     ⚠️ STUB orfano (109 lines, passthrough)
-│   │   ├── foundation/                ⚠️ DUPLICATO MORTO
-│   │   │   ├── cognitive_bus/         VUOTO (0 files)
-│   │   │   ├── persistence/           RE-EXPORT di core/agents/ (postgres_agent, qdrant_agent)
-│   │   │   └── semantic_sync/         VUOTO
+│   │   │   └── semantic_engine.py     ✅ STUB AGNOSTICO — 110 righe, passthrough puro. Finance menzionato solo in docstring/commenti come esempio. Codice restituisce struttura generica.
+│   │   ├── foundation/                ⚠️ CONFERMATO DUPLICATO MORTO
+│   │   │   ├── cognitive_bus/         VUOTO (confermato: cartella vuota)
+│   │   │   ├── persistence/           RE-EXPORT confermato: postgres_agent.py + qdrant_agent.py (re-import di core.agents)
+│   │   │   └── semantic_sync/         VUOTO (confermato: cartella vuota)
 │   │   ├── governance/
 │   │   │   ├── codex_hunters/         ✅ Sacred Order (10/10 dirs) — Perception
 │   │   │   ├── memory_orders/         ✅ Sacred Order (9/10 dirs, manca docs/) — Memory
@@ -48,16 +63,16 @@ vitruvyan-core/
 │   │   ├── llm/
 │   │   │   ├── __init__.py
 │   │   │   ├── llm_interface.py       ✅ CORE — ABC per LLM
-│   │   │   ├── conversational_llm.py  ⚠️ Ha riferimenti "sentiment"
+│   │   │   ├── conversational_llm.py  ⚠️ MISTO — Ha docstring che dichiara "LEGACY Finance-specific" (generate_portfolio_reasoning, generate_vee_narrative). Usa httpx→Babel, OpenAI. 734 righe.
 │   │   │   ├── cache_api.py           ✅ CORE
-│   │   │   ├── cache_manager.py       ⚠️ Ha riferimenti "ticker/stock"
+│   │   │   ├── cache_manager.py       ✅ CORE — LLMCacheManager generico. Usa entity_ids/horizon come chiavi opache (nessuna logica finance). 445 righe.
 │   │   │   ├── gemma_client.py        ✅ CORE — Wrapper Gemma
 │   │   │   └── prompts/
 │   │   │       ├── registry.py        ✅ CORE — Prompt registry
 │   │   │       ├── version.py         ✅ CORE
 │   │   │       └── _legacy/           3 files (base_prompts, scenario_prompts)
 │   │   ├── monitoring/
-│   │   │   └── vsgs_metrics.py        ⚠️ FINANCE-SPECIFIC (VSGS = algoritmo proprietario)
+│   │   │   └── vsgs_metrics.py        ⚠️ CONFERMATO FINANCE-SPECIFIC — 181 righe, Counter Prometheus per VSGS + VEE (vee_generation, entity_id labels). Dipende da prometheus_client.
 │   │   ├── neural_engine/             ✅ CORE — Scoring generico con contracts
 │   │   │   ├── engine.py             Engine principale
 │   │   │   ├── scoring.py            Scoring framework
@@ -85,15 +100,15 @@ vitruvyan-core/
 │   │       │   └── redis_client.py    ✅ Redis wrapper
 │   │       ├── events/
 │   │       │   ├── event_envelope.py  ✅ TransportEvent, CognitiveEvent
-│   │       │   └── event_schema.py    ⚠️ Ha "sentiment/ticker"
+│   │       │   └── event_schema.py    ⚠️ MISTO — 797 righe. Enums EventDomain/Intents sono generici (audit, vault, orthodoxy, babel). Ma _create_default_schemas() ha payload: "ticker", "sentiment.requested", "sentiment.fused" nei template Babel. Struttura è schema-driven (potenzialmente refactorabile).
 │   │       ├── consumers/
 │   │       │   ├── risk_guardian.py    ⚠️ VERTICALE — Risk logic in bus layer
 │   │       │   ├── narrative_engine.py ⚠️ VERTICALE — Narrative in bus layer
 │   │       │   └── working_memory.py   ⚠️ Ha "sentiment"
 │   │       ├── listeners/
-│   │       │   └── langgraph.py       ⚠️ Ha "sentiment/trading"
+│   │       │   └── langgraph.py       ❌ CONFERMATO FINANCE-SPECIFIC — 182 righe. Canali: "portfolio:snapshot_created", "portfolio:manual_check". Payload: "controlla il mio portfolio", validated_tickers. Import: core.leo.postgres_agent (path legacy).
 │   │       ├── utils/
-│   │       │   └── lexicon.py         ⚠️ Ha "sentiment/stock"
+│   │       │   └── lexicon.py         ⚠️ MISTO — 439 righe. SacredLexicon con DomainSchema è struttura generica. Ma _create_default_schemas() ha payload templates con "ticker", "sentiment.requested" nei campi Babel. Caricabile da JSON (scroll_of_bonds.json), quindi potenzialmente config-driven.
 │   │       ├── orthodoxy/             Validation layer
 │   │       ├── governance/            Bus governance
 │   │       └── philosophy/            charter.md
@@ -103,7 +118,7 @@ vitruvyan-core/
 │   │   ├── scoring_strategy.py        IScoringStrategy (ABC)
 │   │   ├── aggregation_contract.py    Aggregation ABC
 │   │   ├── explainability_contract.py Explainability ABC
-│   │   └── risk_contract.py           ⚠️ "risk" è finance-specifico?
+│   │   └── risk_contract.py           ✅ NON ESISTE QUI — audit errato. I 3 contracts (risk, aggregation, explainability) sono SOLO in vitruvyan_core/domains/
 │   │
 │   ├── domains/
 │   │   ├── base_domain.py             ✅ CORE — Domain contract ABC
@@ -113,9 +128,9 @@ vitruvyan-core/
 │   │   │   ├── response_formatter.py  Finance-specific formatter
 │   │   │   ├── slot_filler.py         Finance-specific slot filler
 │   │   │   └── prompts/              Finance prompt templates
-│   │   ├── aggregation_contract.py    ⚠️ DUPLICATO di contracts/?
-│   │   ├── explainability_contract.py ⚠️ DUPLICATO di contracts/?
-│   │   └── risk_contract.py           ⚠️ DUPLICATO di contracts/?
+│   │   ├── aggregation_contract.py    ✅ ABC GENERICO — NON duplicato (contracts/ contiene solo data_provider.py e scoring_strategy.py). Fornisce AggregationProvider ABC per VWRE. 118 righe.
+│   │   ├── explainability_contract.py ✅ ABC GENERICO — ExplainabilityProvider v2.0 per VEE. Puro domain-agnostic con NormalizationRule, AnalysisDimension, PatternRule. 195 righe.
+│   │   └── risk_contract.py           ✅ ABC GENERICO — RiskProvider per VARE. RiskDimension + RiskProfile dataclasses. 136 righe.
 │   │
 │   ├── services/                      ⚠️ VUOTO — solo __init__.py
 │   └── verticals/                     ⚠️ VUOTO — solo README.md
@@ -149,46 +164,49 @@ vitruvyan-core/
 
 ---
 
-## 🔴 Dettaglio: Nodi LangGraph (40+ files)
+## 🔴 Dettaglio: Nodi LangGraph (20 files verificati — codice letto)
 
 **Path**: `vitruvyan_core/core/orchestration/langgraph/node/`
 
-### Nodi GENERICI (possono restare nel core)
-| File | Righe | Ruolo |
-|------|-------|-------|
-| `base_node.py` | - | ABC base per tutti i nodi |
-| `parse_node.py` | - | Input parsing |
-| `intent_detection_node.py` | - | Intent detection (ma ha "sentiment") |
-| `route_node.py` | - | Routing (ma ha "ticker") |
-| `compose_node.py` | - | Response composition |
-| `output_normalizer_node.py` | - | Output normalization |
-| `mnemosyne_node.py` | - | Memory recall |
-| `orthodoxy_node.py` | - | Governance validation |
-| `audit_node_simple.py` | - | Audit logging |
-| `quality_check_node.py` | - | Quality validation |
-| `can_node.py` | - | CAN (Conversational Analysis) |
-| `llm_mcp_node.py` | - | MCP tool calling |
+### ✅ Nodi AGNOSTICI (confermati dal codice — possono restare nel core)
+| File | Righe | Verdetto | Ruolo |
+|------|------:|----------|-------|
+| `base_node.py` | - | ✅ CORE | ABC base per tutti i nodi |
+| `entity_resolver_node.py` | 50 | ✅ AGNOSTIC | Stub passthrough. `flow = "direct"`. Finance solo in docstring. |
+| `semantic_grounding_node.py` | 433 | ✅ AGNOSTIC | Genera embedding, query Qdrant. Pura infrastruttura. |
+| `babel_gardens_node.py` | 140 | ✅ AGNOSTIC | HTTP adapter v2.0 verso Babel Gardens API. Zero business logic. |
+| `pattern_weavers_node.py` | 127 | ✅ AGNOSTIC | HTTP adapter v2.0 verso Pattern Weavers API. Zero finance. |
+| `codex_hunters_node.py` | 470 | ✅ AGNOSTIC | API calls, Redis events, expedition polling. Pura infrastruttura. |
+| `archivarium_node.py` | 376 | ✅ AGNOSTIC | Processa memory.read/write events. Formatta narrative memoria. |
+| `exec_node.py` | 25 | ✅ AGNOSTIC | Stub neutralizzato PHASE 1D: `domain_neutral: True`, ranking vuoto. |
+| `gemma_node.py` | 34 | ✅ AGNOSTIC | Thin wrapper su `gemma_predict()`. Estrae intent/entity_ids generici. |
+| `emotion_detector.py` | 128 | ✅ AGNOSTIC | HTTP adapter verso Babel Gardens emotion endpoint. |
+| `compose_node.py` | - | ✅ CORE | Response composition |
+| `output_normalizer_node.py` | - | ✅ CORE | Output normalization |
+| `orthodoxy_node.py` | - | ✅ CORE | Governance validation |
+| `audit_node_simple.py` | - | ✅ CORE | Audit logging |
+| `quality_check_node.py` | - | ✅ CORE | Quality validation |
+| `can_node.py` | - | ✅ CORE | CAN (Conversational Analysis) |
+| `llm_mcp_node.py` | - | ✅ CORE | MCP tool calling |
 
-### Nodi FINANCE-LEAKY (contengono "ticker/portfolio/sentiment/trading")
-| File | Problema |
-|------|----------|
-| `advisor_node.py` | Ha "portfolio/sentiment/trading" |
-| `proactive_suggestions_node.py` | Ha "sentiment/trading" |
-| `entity_resolver_node.py` | Ha "ticker/stock" |
-| `params_extraction_node.py` | Ha "ticker/portfolio" |
-| `semantic_grounding_node.py` | Ha "ticker/sentiment" |
-| `enhanced_llm_node.py` | Ha "ticker/sentiment" |
-| `cached_llm_node.py` | Ha "ticker/sentiment" |
-| `llm_soft_node.py` | Ha "sentiment" |
-| `babel_gardens_node.py` | Signal extraction |
-| `pattern_weavers_node.py` | Ontology resolution |
-| `codex_hunters_node.py` | Data acquisition |
-| `codex_node.py` | Data acquisition |
-| `vault_node.py` | Archival |
-| `archivarium_node.py` | Archival |
-| `exec_node.py` | Execution |
-| `gemma_node.py` | Gemma LLM |
-| `emotion_detector.py` | Emotion detection |
+### ⚠️ Nodi MISTI (meccanismo generico, ma con residui finance configurabili)
+| File | Righe | Problema Reale | Fix Stimato |
+|------|------:|----------------|-------------|
+| `advisor_node.py` | 118 | State keys `portfolio_data`, `allocation_data`. MA tutto stubbed a `NO_ACTION`/`domain_neutral: True`. | Facile: rinominare chiavi a generiche |
+| `params_extraction_node.py` | 340 | Regex ha `titoli\|acciones\|etfs`. LLM prompt: "financial horizon classifier". Core logic è generica. | Medio: estrarre prompt/regex in config |
+| `llm_soft_node.py` | 174 | Guardrails: "NEVER output BUY/SELL", "investment risk disclaimer". Persona "Leonardo" finance advisor. | Medio: parametrizzare guardrails |
+| `route_node.py` | 77 | `TECHNICAL_INTENTS = ["trend","momentum","volatility","risk","backtest","allocate","collection","sentiment"]` hardcoded. | Facile: rendere lista configurabile da state/config |
+| `vault_node.py` | 356 | Un singolo `"financial_guardian"` string literal. Resto usa domain-plugin pattern. | Banale: rimuovere 1 stringa |
+| `codex_node.py` | 511 | `__main__` test block ha `"yfinance","reddit"`. Core logic generica. | Banale: pulire test fixtures |
+
+### ❌ Nodi FINANCE-SPECIFIC (hardcoded, da spostare in domains/finance/nodes/)
+| File | Righe | Problema Reale |
+|------|------:|----------------|
+| `intent_detection_node.py` | 603 | **Peggiore.** INTENT_LABELS: trend/momentum/volatility/risk/allocate/sentiment. INTENT_SYNONYMS: "buy"→"allocate", "comprare"→"allocate". GPT prompt: "financial query". Screening filters: risk_tolerance, momentum_breakout. |
+| `parse_node.py` | 327 | **Company→ticker map hardcoded**: "nvidia":"EXAMPLE_ENTITY_2", "amazon":"AMZN". Budget extraction: €/$/eur/usd. Fallback intent: "portafoglio"→"collection". |
+| `proactive_suggestions_node.py` | 214 | **Dict correlazione ticker hardcoded**: "JPM":["BAC","WFC","C"]. Calendario earnings. Smart money detection. Hedging italiano: "put protettive, stop loss". |
+| `cached_llm_node.py` | 540 | **Prompt BUY/HOLD/SELL**: "consulente finanziario AI istituzionale", "RACCOMANDAZIONE: [BUY/HOLD/SELL]", composite_score/momentum_score/risk_score. |
+| `enhanced_llm_node.py` | 181 | **Persona hardcoded**: "senior financial advisor 20+ years", "former sell-side analyst". Keywords: "bullish/rialzista/alcista". Market context baked in. |
 
 ### Nodi ARCHIVED (legacy, non attivi)
 | File | Stato |
@@ -225,15 +243,22 @@ vitruvyan-core/
 - `vitruvyan_proprietary/vmfl/vmfl_engine.py`
 - `vitruvyan_proprietary/vwre/vwre_engine.py`
 
-### Area: governance/ (7 files — Sacred Orders)
-- `vault_keepers/domain/signal_archive.py`, `consumers/signal_archivist.py`
-- `orthodoxy_wardens/governance/verdict_engine.py`, `governance/rule.py`, `governance/classifier.py`
-- `orthodoxy_wardens/consumers/penitent_agent.py`, `consumers/inquisitor_agent.py`
+### Area: governance/ (7 files — Sacred Orders) — VERIFICATI DAL CODICE
+- `vault_keepers/domain/signal_archive.py` — ✅ AGNOSTICO. Domain-agnostic dataclass con `vertical` campo configurabile ("finance", "cybersecurity", "healthcare"). Usa tuple frozen per immutabilità.
+- `vault_keepers/consumers/signal_archivist.py` — ✅ AGNOSTICO. VaultRole ABC, pianifica archiviazione timeseries da Babel Gardens. entity_id è generico.
+- `orthodoxy_wardens/governance/verdict_engine.py` — ✅ AGNOSTICO. Pure scoring: (findings, ruleset) → Verdict. Zero domini, zero I/O. 299 righe.
+- `orthodoxy_wardens/governance/rule.py` — ✅ AGNOSTICO. Dataclass Rule + RuleSet. Pattern matching generico (compliance, security, quality, hallucination). 337 righe.
+- `orthodoxy_wardens/governance/classifier.py` — ✅ AGNOSTICO. PatternClassifier: (text, ruleset) → Findings. Regex puro, stateless. 308 righe.
+- `orthodoxy_wardens/consumers/penitent_agent.py` — ⚠️ MISTO. AutoCorrector generico (container restart, disk cleanup, config updates). Ha 1 esempio finance in docstring: "Buy AAPL now!" → "AAPL shows buy signal". Codice eseguibile è domain-agnostic. 823 righe.
+- `orthodoxy_wardens/consumers/inquisitor_agent.py` — ⚠️ MISTO. ComplianceValidator con regex patterns + LLM semantic check. Ha categorie `prescriptive_language` e esempi finance in docstring ("NVDA shows strong momentum"). Pattern stage è generico, ma prompts LLM stage referenziano "financial advice". 618 righe.
 
-### Area: altri (6 files)
-- `monitoring/vsgs_metrics.py`, `llm/conversational_llm.py`, `llm/cache_manager.py`
-- `agents/llm_agent.py`, `agents/qdrant_agent.py`
-- `cognitive/semantic_engine.py` (stub con commenti finance)
+### Area: altri (6 files) — VERIFICATI DAL CODICE
+- `monitoring/vsgs_metrics.py` — ❌ CONFERMATO FINANCE: Counter Prometheus VSGS + VEE (entity_id labels). 181 righe.
+- `llm/conversational_llm.py` — ⚠️ MISTO: La classe stessa dichiara "LEGACY Finance-specific" per generate_portfolio_reasoning, generate_vee_narrative. 734 righe.
+- `llm/cache_manager.py` — ✅ CORRETTO A AGNOSTICO: Usa entity_ids/horizon come chiavi opache per hash, nessuna logica finance. 445 righe.
+- `agents/llm_agent.py` — ⚠️ MISTO: 1 esempio "Analyze AAPL stock" in docstring. Codice è pattern generico. 666 righe.
+- `agents/qdrant_agent.py` — DA VERIFICARE
+- `cognitive/semantic_engine.py` — ✅ CORRETTO A AGNOSTICO: Stub puro 110 righe. Finance solo in commenti come esempio verticale.
 
 ---
 
@@ -367,28 +392,41 @@ vitruvyan-core/
 
 **Target**: `algorithms/vsgs/sync.py`
 
-### 5. 40+ nodi LangGraph mescolano core e finance (P3)
+### 5. 40+ nodi LangGraph mescolano core e finance (P3) — CORRETTO: 5 nodi finance-specific
 
-**Attuale**: 40 file in `orchestration/langgraph/node/`, 15+ con hardcoded finance terms
+**Attuale**: 20 nodi verificati in `orchestration/langgraph/node/`, di cui 10 agnostici, 5 misti (fix facile), 5 finance-hardcoded
 
-**Problema**:
-- Nodi generici (parse, route, compose) mescolati con nodi domain-specific (advisor, proactive_suggestions)
-- Difficile capire quali nodi servono per un dominio healthcare
+**5 nodi ❌ FINANCE-SPECIFIC** (da spostare in `domains/finance/nodes/`):
+- `intent_detection_node.py` (603 righe) — intent taxonomy, GPT prompt, synonym dict, screening filters
+- `parse_node.py` (327 righe) — company→ticker map, budget €/$, intent fallback "portafoglio"
+- `proactive_suggestions_node.py` (214 righe) — ticker correlation dict, earnings calendar, hedging
+- `cached_llm_node.py` (540 righe) — BUY/HOLD/SELL prompts, composite scores, financial advisor persona
+- `enhanced_llm_node.py` (181 righe) — "senior financial advisor", bullish/bearish keywords
 
-**Target**:
-- Nodi generici → `engine/orchestration/nodes/`
-- Nodi finance-specific → `domains/finance/nodes/`
+**5 nodi ⚠️ MISTI** (meccanismo generico, residui configurabili):
+- `route_node.py` — lista intenti hardcoded (fix: rendere configurabile)
+- `params_extraction_node.py` — prompt "financial horizon" (fix: estrarre in config)
+- `llm_soft_node.py` — guardrails BUY/SELL (fix: parametrizzare)
+- `advisor_node.py` — stubbed ma con chiavi portfolio_data (fix: rinominare)
+- `vault_node.py` — 1 stringa "financial_guardian" (fix: rimuovere)
 
-### 6. `synaptic_conclave/consumers/` ha logica VERTICALE (P3)
+**Target**: Nodi finance-specific → `domains/finance/nodes/`; nodi misti → configurazione
+
+### 6. `synaptic_conclave/consumers/` ha logica VERTICALE (P3) — CONFERMATO + DETTAGLIO
 
 **Attuale**:
-- `risk_guardian.py` → Logica risk assessment nel layer di trasporto
-- `narrative_engine.py` → Generazione narrative nel bus
-- `working_memory.py` → Ha riferimenti "sentiment"
+- `risk_guardian.py` (613 righe) → ❌ FINANCE: Portfolio volatility, VARE integration, concentration risk >40%. **Ha già docstring "⚠️ DOMAIN MIGRATION NOTICE"** verso domains/finance/.
+- `narrative_engine.py` (571 righe) → ❌ FINANCE: VEEEngine integration, ticker analysis narratives. **Ha già docstring "⚠️ DOMAIN MIGRATION NOTICE"** verso domains/finance/. Import path legacy: `core.vpar.vee.vee_engine`.
+- `working_memory.py` (428 righe) → ✅ AGNOSTICO (corretto da audit precedente): Redis working memory generico con remember/recall/forget. ZERO finance nel codice.
 
-**Problema**: Business logic in un layer che dovrebbe essere **payload-blind** (violazione Bus Invariants)
+**Anche nel bus**:
+- `listeners/langgraph.py` (182 righe) → ❌ FINANCE: Canali "portfolio:snapshot_created", "portfolio:manual_check". Import path legacy: `core.leo.postgres_agent`.
+- `events/event_schema.py` (797 righe) → ⚠️ MISTO: Enums generici, ma default schemas hanno "ticker", "sentiment.requested" nei template Babel.
+- `utils/lexicon.py` (439 righe) → ⚠️ MISTO: SacredLexicon struttura generica, ma default schemas hanno "ticker" nei payload.
 
-**Target**: Spostare in Sacred Orders appropriati o in `domains/finance/`
+**Problema**: Business logic in un layer che dovrebbe essere **payload-blind** (violazione Bus Invariants). risk_guardian e narrative_engine hanno GIÀ la migrazione documentata nel codice stesso.
+
+**Target**: Spostare risk_guardian e narrative_engine in Sacred Orders appropriati o in `domains/finance/`. Esternalizzare default schemas in config JSON caricabile.
 
 ### 7. 33 file .md alla root = disordine (P4)
 
@@ -419,14 +457,15 @@ vitruvyan-core/
 | `core/governance/semantic_sync/` | `algorithms/vsgs/sync.py` | Spostamento | 1 | BASSO |
 | `core/cognitive/` Orders → `orders/` | Unificazione namespace | Rinominamento | ~60 | ALTO — import chain |
 | `core/governance/` Orders → `orders/` | Unificazione namespace | Rinominamento | ~100 | ALTO — import chain |
-| `contracts/` duplicati in `domains/` | Deduplicazione | Rimozione | 3 | BASSO |
 
-### Priorità P3 — Purificazione nodi e consumers
+### Priorità P3 — Purificazione nodi e consumers (NUMERI CORRETTI dopo verifica codice)
 
 | Modulo Attuale | Dove Va | Tipo | File Coinvolti | Rischio |
 |---------------|---------|------|----------------|---------|
-| Nodi finance-specific (15+) | `domains/finance/nodes/` | Spostamento | 15 | ALTO |
-| `synaptic_conclave/consumers/` (3 verticali) | Sacred Orders / domains/ | Spostamento | 3 | MEDIO |
+| Nodi finance-specific (5, non 15) | `domains/finance/nodes/` | Spostamento | 5 (1,865 righe) | ALTO |
+| Nodi misti (5, fix facile) | Stessa posizione, parametrizzati | Config refactor | 5 | MEDIO |
+| `synaptic_conclave/consumers/` (2 verticali, non 3) | Sacred Orders / domains/ | Spostamento | 2 (1,184 righe) | MEDIO |
+| `synaptic_conclave/listeners/langgraph.py` | `domains/finance/listeners/` | Spostamento | 1 (182 righe) | MEDIO |
 | `domains/` → fuori dal core | Top-level `/domains/` | Spostamento | 11 | MEDIO |
 
 ### Priorità P4 — Pulizia

@@ -1,22 +1,23 @@
 """
-VSGS — Vitruvyan Semantic Grounding System
+VSGS — Vitruvyan Semantic Grounding System v2.0
 
-Proprietary semantic context enrichment engine.
-Embedding generation → Qdrant semantic search → State enrichment → Audit logging.
+Semantic context enrichment engine.
+Embed text → Search vectors → Classify matches → Return structured results.
 
-Components:
-    - vsgs_engine.py:   Core logic (embed, search, enrich)
-    - vsgs_metrics.py:  Prometheus metric definitions
-    - vsgs_sync.py:     PostgreSQL ↔ Qdrant synchronization
+Usage:
+    from core.vpar.vsgs import VSGSEngine, GroundingConfig
+
+    engine = VSGSEngine(GroundingConfig(enabled=True), embedding_url="http://gemma:8003")
+    result = engine.ground("input text", user_id="demo")
 
 Architecture:
-    LIVELLO 1 (Pure domain): This module
+    LIVELLO 1 (This module): VSGSEngine, types, config
     LIVELLO 2 (Adapter):     orchestration/langgraph/node/semantic_grounding_node.py
-
-Status: ACTIVE — Production since Nov 2025
 """
 
-__all__ = []
+from .types import GroundingConfig, SemanticMatch, GroundingResult
+from .vsgs_engine import VSGSEngine
 
-__version__ = "1.0.0"
-__author__ = "Vitruvyan AI Team"
+__all__ = ["VSGSEngine", "GroundingConfig", "SemanticMatch", "GroundingResult"]
+
+__version__ = "2.0.0"
