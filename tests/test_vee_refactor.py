@@ -44,8 +44,8 @@ def test_vee_domain_agnostic():
 
     # Test standalone functions
     try:
-        from vitruvyan_core.core.cognitive.vitruvyan_proprietary.vee.vee_analyzer import analyze_kpi
-        from vitruvyan_core.core.cognitive.vitruvyan_proprietary.vee.vee_generator import generate_explanation
+        from vitruvyan_core.core.vpar.vee.vee_analyzer import analyze_kpi
+        from vitruvyan_core.core.vpar.vee.vee_generator import generate_explanation
 
         analysis = analyze_kpi(entity_id, test_metrics)
         print("✅ VEE Analyzer analyze_kpi: SUCCESS")

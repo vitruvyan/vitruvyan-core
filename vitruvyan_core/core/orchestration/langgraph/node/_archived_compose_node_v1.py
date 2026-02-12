@@ -1,7 +1,7 @@
 from typing import Dict, Any
 from core.orchestration.langgraph.memory_utils import merge_slots, check_slots
-from core.cognitive.vitruvyan_proprietary.vee.vee_engine import explain_entity
-from core.cognitive.vitruvyan_proprietary.vee.vee_engine import VEEEngine
+from core.vpar.vee.vee_engine import explain_entity
+from core.vpar.vee.vee_engine import VEEEngine
 from core.orchestration.langgraph.node.emotion_detector import detect_emotion, format_emotion_aware_response
 from core.foundation.persistence.postgres_agent import PostgresAgent
 from core.orchestration.langgraph.shared.state_preserv import merge_ux_into_response  # 🎭 UX injection helper

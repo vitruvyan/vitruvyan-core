@@ -34,7 +34,7 @@ FILES_WITH_CREWAI_IMPORTS = [
     "vitruvyan_core/core/governance/orthodoxy_wardens/docker_manager.py",
     "vitruvyan_core/core/governance/orthodoxy_wardens/penitent_agent.py",
     "vitruvyan_core/core/governance/orthodoxy_wardens/confessor_agent.py",
-    "vitruvyan_core/core/cognitive/vitruvyan_proprietary/vee/vee_engine.py",
+    "vitruvyan_core/core/vpar/vee/vee_engine.py",  # Updated path: moved from cognitive/vitruvyan_proprietary
     "services/core/api_portfolio_guardian/main.py",
     "services/core/api_graph/main.py",
     "services/core/api_babel_gardens/modules/cognitive_bridge.py",

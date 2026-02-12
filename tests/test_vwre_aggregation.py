@@ -79,7 +79,7 @@ def test_vwre_with_provider():
         print(f"   {result.entity_id}: {result.primary_driver} ({result.primary_contribution:.3f})")
 
     # Test convenience functions
-    from vitruvyan_core.core.cognitive.vitruvyan_proprietary.vwre_engine import explain_rank, compare_two
+    from vitruvyan_core.core.vpar.vwre.vwre_engine import explain_rank, compare_two
 
     explanation = explain_rank("EXAMPLE_ENTITY_1", 1.85, factors, provider)
     print(f"✅ Convenience function passed: {explanation}")

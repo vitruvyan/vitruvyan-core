@@ -39,9 +39,9 @@ except ImportError:
         pass  # Stub if monitoring not available
 
 # from core.cognitive.neural_engine.schemas import StrategyProfile, TickerScore  # TODO: Fix deprecated import
-# from core.cognitive.vitruvyan_proprietary.vee.vee_layers import VEELayer  # TODO: Module not found
-# from core.cognitive.vitruvyan_proprietary.vee.vee_narrative import VEENarrative  # TODO: Module not found
-# from core.cognitive.vitruvyan_proprietary.vee.vee_memory import VEEMemory  # TODO: Module not found
+# from core.vpar.vee.vee_layers import VEELayer  # TODO: Module not found
+# from core.vpar.vee.vee_narrative import VEENarrative  # TODO: Module not found
+# from core.vpar.vee.vee_memory import VEEMemory  # TODO: Module not found
 # from core.logging.audit import audit  # TODO: Fix deprecated import
 
 # Type aliases for missing imports

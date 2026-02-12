@@ -55,7 +55,7 @@ from vitruvyan_core.core.synaptic_conclave.consumers.base_consumer import (
 from vitruvyan_core.core.synaptic_conclave.transport.streams import StreamEvent
 from vitruvyan_core.core.synaptic_conclave.events.event_envelope import CognitiveEvent, TransportEvent, EventAdapter
 from vitruvyan_core.core.synaptic_conclave.consumers.working_memory import WorkingMemory
-from core.logic.vitruvyan_proprietary.vee.vee_engine import VEEEngine
+from core.vpar.vee.vee_engine import VEEEngine
 
 logger = logging.getLogger("NarrativeEngine")
 

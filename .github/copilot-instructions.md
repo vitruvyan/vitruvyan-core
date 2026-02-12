@@ -31,11 +31,11 @@ This file is the **high-signal, stable context** Copilot needs to work productiv
 | **Memory Orders** | ✅ Complete | ✅ Complete | **100%** | Template (Coherence) |
 | **Vault Keepers** | ✅ Complete | ✅ Complete | **100%** | Template (Memory/Archival) |
 | **Orthodoxy Wardens** | ✅ Complete | ✅ Complete | **95%** | Template (Truth/Governance) |
-| Babel Gardens | ⏳ Planned | ⏳ Planned | 0% | 832 lines main.py |
-| Codex Hunters | ⏳ Planned | ⏳ Planned | 0% | 987 lines main.py |
-| Pattern Weavers | ⏳ Planned | ⏳ Planned | 0% | 163 lines main.py |
+| **Babel Gardens** | ✅ 10/10 dirs | ✅ Complete | **100%** | 87 lines main.py (Appendix K) |
+| **Codex Hunters** | ✅ 10/10 dirs | ✅ Complete | **100%** | 75 lines main.py (Appendix Codex) |
+| **Pattern Weavers** | ✅ 10/10 dirs | ✅ Complete | **100%** | 62 lines main.py (Appendix I) |
 
-**Last updated**: Feb 10, 2026 (3/6 Sacred Orders conformant, 3 pending)
+**Last updated**: Feb 12, 2026 (6/6 Sacred Orders conformant — 100% COMPLETE)
 
 ---
 

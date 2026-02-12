@@ -32,11 +32,11 @@ FILES_TO_DELETE = [
     "vitruvyan_core/core/governance/codex_hunters/scholastic.py",
     "vitruvyan_core/core/governance/codex_hunters/fundamentalist.py",
     
-    # Financial proprietary engines (keep VEE)
-    "vitruvyan_core/core/cognitive/vitruvyan_proprietary/vare_engine.py",
-    "vitruvyan_core/core/cognitive/vitruvyan_proprietary/vhsw_engine.py",
-    "vitruvyan_core/core/cognitive/vitruvyan_proprietary/vmfl_engine.py",
-    "vitruvyan_core/core/cognitive/vitruvyan_proprietary/vwre_engine.py",
+    # Financial proprietary engines (OBSOLETE: moved to core/vpar/, migrated from mercator)
+    # "vitruvyan_core/core/cognitive/vitruvyan_proprietary/vare_engine.py",
+    # "vitruvyan_core/core/cognitive/vitruvyan_proprietary/vhsw_engine.py",
+    # "vitruvyan_core/core/cognitive/vitruvyan_proprietary/vmfl_engine.py",
+    # "vitruvyan_core/core/cognitive/vitruvyan_proprietary/vwre_engine.py",
     
     # Financial LangGraph nodes
     "vitruvyan_core/core/orchestration/langgraph/node/portfolio_node.py",

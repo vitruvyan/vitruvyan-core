@@ -208,7 +208,7 @@ STEP 3: Load real profiles from config/database
 STEP 4: Implement real risk adjustment (optional)
     def apply_risk_adjustment(self, df, risk_tolerance=None, risk_columns=None):
         # Finance example: integrate VARE risk engine
-        from core.logic.vitruvyan_proprietary import VAREEngine
+        from core.vpar.vare.vare_engine import VAREEngine
         vare = VAREEngine()
         risk_scores = vare.assess_risk(df['entity_id'].tolist())
         
