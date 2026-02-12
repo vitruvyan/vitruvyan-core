@@ -10,7 +10,7 @@
 site_name: Vitruvyan Core Documentation
 site_description: Domain-agnostic epistemic operating system
 site_author: Vitruvyan Team
-site_url: https://vitruvyan.dev  # Update with actual URL
+site_url: https://kb.vitruvyan.com
 
 repo_name: vitruvyan-core
 repo_url: https://github.com/vitruvyan/vitruvyan-core  # Update with actual repo
@@ -97,7 +97,7 @@ markdown_extensions:
 
 # Navigation structure
 nav:
-  - Home: docs/index.md
+  - Home: index.md
   
   - Getting Started:
     - Overview: docs/foundational/VITRUVYAN_OVERVIEW.md

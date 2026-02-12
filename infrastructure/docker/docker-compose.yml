@@ -909,6 +909,7 @@ services:
       - ../../examples:/app/examples:ro
       - ../../config:/app/config:ro
       - ../../scripts:/app/scripts:ro
+      - ../../index.md:/app/index.md:ro
       - ./mkdocs/mkdocs.yml:/app/mkdocs.yml:ro
     working_dir: /app
     command: mkdocs serve -a 0.0.0.0:8000 --config-file mkdocs.yml --dev-addr 0.0.0.0:8000
