@@ -911,8 +911,12 @@ services:
       - ../../scripts:/app/scripts:ro
       - ../../index.md:/app/index.md:ro
       - ./mkdocs/mkdocs.yml:/app/mkdocs.yml:ro
+      - ./mkdocs/mkdocs.public.yml:/app/mkdocs.public.yml:ro
+      - ./mkdocs/build-all.sh:/app/build-all.sh:ro
+      - mkdocs_site:/app/site
+      - mkdocs_site_public:/app/site_public
     working_dir: /app
-    command: mkdocs serve -a 0.0.0.0:8000 --config-file mkdocs.yml --dev-addr 0.0.0.0:8000
+    command: sh -c "/app/build-all.sh && mkdocs serve -a 0.0.0.0:8000 --config-file mkdocs.yml --dev-addr 0.0.0.0:8000"
     networks:
       - core-net
     healthcheck:
@@ -952,6 +956,8 @@ volumes:
     external: true
     name: docker_grafana_data
   portainer_data_core:
+  mkdocs_site:
+  mkdocs_site_public:
 
 networks:
   core-net:
