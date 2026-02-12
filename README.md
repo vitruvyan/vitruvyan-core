@@ -2,7 +2,21 @@
 
 **Domain-Agnostic Agentic AI Framework**
 
+> **Last Updated**: February 12, 2026  
+> **Version**: 0.1.0-alpha  
+> **Status**: Foundation Phase — Post-Refactoring (SACRED_ORDER_PATTERN 100% Conformance)
+
 Vitruvyan Core is the foundation of an epistemic AI system built around cognitive architecture principles. It provides orchestration, reasoning, memory, and governance layers that can be specialized for ANY domain through a plugin-based contract system.
+
+---
+
+## 📖 New to Vitruvyan?
+
+**Quick Orientation**:
+1. Read [🎯 What is Vitruvyan Core?](#-what-is-vitruvyan-core) to understand the philosophy
+2. Review [🗂️ Repository Structure](#-repository-structure) to navigate the codebase
+3. Check [📚 Documentation Organization](#-documentation-organization) to find relevant docs
+4. Explore [🏗️ Architecture](#-architecture) to understand the Sacred Orders pattern
 
 ---
 
@@ -109,6 +123,126 @@ It's the discomfort of taking responsibility for your domain's conceptual model.
 
 ---
 
+## 🗂️ Repository Structure
+
+Vitruvyan follows the **SACRED_ORDER_PATTERN** — a mandatory two-level architecture for all cognitive subsystems.
+
+### Root Directory Layout
+
+```
+vitruvyan-core/
+├── vitruvyan_core/          # Core library (reusable OS components)
+│   ├── core/                # Sacred Orders & cognitive primitives
+│   │   ├── agents/          # Database agents (PostgreSQL, Qdrant, Redis)
+│   │   ├── cognitive/       # Cognitive functions (Babel Gardens, Pattern Weavers)
+│   │   ├── governance/      # Sacred Orders (6 governance subsystems)
+│   │   ├── llm/             # LLM integration (OpenAI, caching, prompts)
+│   │   ├── monitoring/      # Observability (metrics, health checks)
+│   │   ├── neural_engine/   # Neural computation primitives
+│   │   ├── orchestration/   # LangGraph orchestration & state management
+│   │   └── synaptic_conclave/ # Event bus (Redis Streams transport)
+│   ├── domains/             # Domain contracts (abstract interfaces)
+│   └── utils/               # Shared utilities
+│
+├── services/                # Microservices (Docker-based APIs)
+│   ├── api_babel_gardens/   # Linguistic analysis service
+│   ├── api_codex_hunters/   # Data discovery & mapping
+│   ├── api_graph/           # LangGraph orchestration API
+│   ├── api_mcp/             # Model Context Protocol gateway
+│   ├── api_memory_orders/   # Memory & coherence service
+│   ├── api_neural/          # Neural engine API
+│   ├── api_orthodoxy_wardens/ # Governance & validation
+│   ├── api_pattern_weavers/ # Pattern analysis service
+│   └── api_vault_keepers/   # Archival & persistence
+│
+├── infrastructure/          # Deployment & ops
+│   ├── docker/              # Docker Compose configurations
+│   └── monitoring/          # Grafana dashboards, Prometheus configs
+│
+├── tests/                   # Test suite (unit + integration)
+├── docs/                    # Cross-cutting documentation (see below)
+├── config/                  # Shared configuration files
+└── scripts/                 # Deployment & maintenance scripts
+```
+
+### Sacred Orders (6 Governance Subsystems)
+
+All Sacred Orders follow the **SACRED_ORDER_PATTERN** (10-directory structure):
+
+| Sacred Order | Domain | Location (LIVELLO 1) | Service (LIVELLO 2) |
+|--------------|--------|---------------------|---------------------|
+| **Memory Orders** | Coherence & Retrieval | `core/governance/memory_orders/` | `services/api_memory_orders/` |
+| **Vault Keepers** | Archival & Persistence | `core/governance/vault_keepers/` | `services/api_vault_keepers/` |
+| **Orthodoxy Wardens** | Validation & Audit | `core/governance/orthodoxy_wardens/` | `services/api_orthodoxy_wardens/` |
+| **Babel Gardens** | Linguistic Processing | `core/cognitive/babel_gardens/` | `services/api_babel_gardens/` |
+| **Codex Hunters** | Data Discovery | `core/governance/codex_hunters/` | `services/api_codex_hunters/` |
+| **Pattern Weavers** | Temporal Patterns | `core/cognitive/pattern_weavers/` | `services/api_pattern_weavers/` |
+
+**SACRED_ORDER_PATTERN** mandates:
+- **LIVELLO 1** (Pure Domain): 10 directories (`domain/`, `consumers/`, `governance/`, `events/`, `monitoring/`, `philosophy/`, `docs/`, `examples/`, `tests/`, `_legacy/`)
+- **LIVELLO 2** (Service): I/O adapters, REST API, Docker deployment
+- **100% Conformance**: All 6 Sacred Orders refactored as of Feb 2026
+
+---
+
+## 📚 Documentation Organization
+
+Vitruvyan uses the **locality-first pattern** — documentation lives with the code it documents.
+
+### Module-Specific Documentation
+
+Each major module has its own `docs/` directory:
+
+```
+vitruvyan_core/core/
+├── orchestration/langgraph/docs/     # LangGraph refactoring, architecture
+├── synaptic_conclave/docs/           # Cognitive Bus, Redis Streams, listeners
+├── neural_engine/docs/               # Neural engine patterns, contracts
+└── governance/
+    ├── memory_orders/docs/           # Memory & coherence docs
+    ├── vault_keepers/docs/           # Archival & persistence docs
+    ├── orthodoxy_wardens/docs/       # Validation & audit docs
+    └── codex_hunters/docs/           # Data discovery docs
+
+services/
+├── api_mcp/docs/                     # MCP server refactoring, audit
+├── api_orthodoxy_wardens/docs/       # Orthodoxy service docs
+└── ...
+
+infrastructure/monitoring/docs/        # Grafana dashboards, metrics
+```
+
+### Global Documentation (`docs/`)
+
+Cross-cutting documentation organized by purpose:
+
+```
+docs/
+├── index.md                          # Documentation portal (entry point)
+├── architecture/                     # Architecture audits, refactoring plans (12 files)
+├── changelog/                        # Phase reports, checkpoints, COO approvals (21 files)
+├── foundational/                     # Core philosophy, charter, invariants (7 files)
+│   ├── Vitruvyan_Bus_Invariants.md
+│   ├── Vitruvyan_Epistemic_Charter.md
+│   ├── Vitruvyan_Vertical_Specification.md
+│   ├── VITRUVYAN_OVERVIEW.md
+│   └── Vitruvyan_Octopus_Mycelium_Architecture.md (research paper)
+├── planning/                         # Strategic blueprints (2 files)
+│   ├── _ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md  # 🎯 Reorganization blueprint
+│   └── TODO_EXAMPLES_PATTERN.md
+├── prompts/                          # Session work logs (6 files)
+├── services/                         # Service descriptions (2 files)
+└── testing/                          # Test plans, boot validation (2 files)
+```
+
+**Key Documents**:
+- **[Epistemic Charter](docs/foundational/Vitruvyan_Epistemic_Charter.md)** — Philosophy & principles
+- **[Bus Invariants](docs/foundational/Vitruvyan_Bus_Invariants.md)** — Cognitive Bus constraints
+- **[Architecture Audit](docs/planning/_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md)** — 🎯 Post-refactoring roadmap
+- **[Changelog](docs/changelog/)** — Phase-by-phase evolution history
+
+---
+
 ## 🏗️ Architecture
 
 ### Sacred Orders (Cognitive Layers)
@@ -126,16 +260,25 @@ It's the discomfort of taking responsibility for your domain's conceptual model.
 ```
 vitruvyan_core/
 ├── core/
-│   ├── foundation/          # Database, cache, event bus
-│   ├── cognitive/           # NLP, scoring, analysis
-│   ├── orchestration/       # LangGraph decision flow
-│   ├── governance/          # Validation, audit, archival
-│   └── monitoring/          # Observability
+│   ├── agents/              # PostgresAgent, QdrantAgent, Redis abstraction
+│   ├── cognitive/           # Babel Gardens, Pattern Weavers (NLP, temporal analysis)
+│   ├── governance/          # 6 Sacred Orders (Memory, Vault, Orthodoxy, Codex, etc.)
+│   ├── llm/                 # OpenAI integration, caching, prompt templates
+│   ├── monitoring/          # Metrics, health checks, observability
+│   ├── neural_engine/       # Neural computation primitives
+│   ├── orchestration/       # LangGraph state machines, node library
+│   └── synaptic_conclave/   # Cognitive Bus (Redis Streams transport)
 ├── domains/
-│   ├── base_domain.py      # Domain contract (ABSTRACT)
-│   └── example_domain.py   # Minimal placeholder
-└── services/               # API wrappers
+│   ├── base_domain.py       # Domain contract (ABSTRACT)
+│   └── finance/             # Example vertical (legacy, being abstracted)
+└── services/                # 9 microservices (Docker APIs wrapping core modules)
 ```
+
+**Key Abstractions**:
+- **Agents**: Single point of access for PostgreSQL (`PostgresAgent`), Qdrant (`QdrantAgent`), Redis (`StreamBus`)
+- **Orchestration**: LangGraph state machines with domain-agnostic nodes
+- **Governance**: Sacred Orders handle validation, archival, coherence, discovery
+- **Event Bus**: Redis Streams via `StreamBus` (payload-blind transport)
 
 ---
 
@@ -300,21 +443,38 @@ This is the clean fork from the original Vitruvyan trading system. All finance-s
 
 ## 📖 Documentation
 
-See individual component READMEs:
-- [Foundation Layer](vitruvyan_core/core/foundation/README.md)
-- [Orchestration](vitruvyan_core/core/orchestration/README.md)
-- [Domain Contract](vitruvyan_core/domains/README.md)
+### Quick Links
 
-### Build the docs site (MkDocs)
+**Getting Started**:
+- [📚 Documentation Portal](docs/index.md) — Entry point to all documentation
+- [🏛️ Epistemic Charter](docs/foundational/Vitruvyan_Epistemic_Charter.md) — Philosophy & principles
+- [🔗 Bus Invariants](docs/foundational/Vitruvyan_Bus_Invariants.md) — Cognitive Bus constraints
+- [📋 Architecture Audit](docs/planning/_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md) — Reorganization roadmap
+
+**Module Documentation** (see [📚 Documentation Organization](#-documentation-organization)):
+- **LangGraph**: [vitruvyan_core/core/orchestration/langgraph/docs/](vitruvyan_core/core/orchestration/langgraph/docs/)
+- **Synaptic Conclave**: [vitruvyan_core/core/synaptic_conclave/docs/](vitruvyan_core/core/synaptic_conclave/docs/)
+- **Sacred Orders**: Each has `docs/` in its module directory
+- **Services**: Each service has `docs/` in `services/api_*/docs/`
+
+**Cross-Cutting Docs** (`docs/`):
+- **Architecture**: [docs/architecture/](docs/architecture/) — Audits, refactoring plans, technical debt
+- **Changelog**: [docs/changelog/](docs/changelog/) — Phase reports, checkpoints, completion reports
+- **Foundational**: [docs/foundational/](docs/foundational/) — Charter, invariants, overview, research paper
+- **Planning**: [docs/planning/](docs/planning/) — Strategic blueprints, TODO patterns
+- **Testing**: [docs/testing/](docs/testing/) — Test plans, boot validation
+
+### Build the Documentation Site (MkDocs)
 
 ```bash
-# Prereqs: Python 3 + pip
-# Debian/Ubuntu: sudo apt-get install -y python3-venv python3-pip
+# Prerequisites: Python 3 + pip
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements.docs.txt
+pip install -r requirements.docs.txt
 mkdocs serve
 ```
+
+Access at **http://localhost:8000**
 
 ---
 
@@ -366,10 +526,30 @@ Key sections:
 - Domain ontology definition
 - Uncertainty model implementation
 
+### [Octopus Mycelium Architecture](docs/foundational/Vitruvyan_Octopus_Mycelium_Architecture.md)
+Research paper on the bio-inspired distributed cognitive architecture.
+
+Key contributions:
+- Socratic cognitive system (declares uncertainty vs. hallucinating confidence)
+- Autonomous local processing (octopus neurons) + resilient routing (mycelial networks)
+- Epistemic integrity for life-critical decision support
+
 ---
 
-## 🗂️ Technical Debt
+## 📊 Technical Debt & Refactoring Status
 
-See [Technical Debt Audit](docs/TECHNICAL_DEBT_AUDIT.md) for current abstraction status.
+### Current State (Feb 12, 2026)
 
-The core contains ~134 files with financial-specific terminology that needs abstraction. This is documented for incremental cleanup.
+- ✅ **SACRED_ORDER_PATTERN**: 100% conformance (6/6 Sacred Orders refactored)
+- ✅ **Documentation**: Locality-first organization (77 files reorganized, Feb 2026)
+- ⚠️ **Domain-Agnostic Refactoring**: 30/55 files verified agnostic, 13 mixed, 9 finance-specific
+
+**Active Roadmaps**:
+- [Architecture Audit](docs/planning/_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md) — Full tree reorganization plan
+- [Architecture Docs](docs/architecture/) — Refactoring plans, technical debt audits, cleanup reports
+
+**Historical Evolution**:
+- See [docs/changelog/](docs/changelog/) for phase-by-phase refactoring history (Phase 0 → Phase 6)
+- [Technical Debt Audit](docs/architecture/TECHNICAL_DEBT_AUDIT.md) (Jan 2026, historical reference)
+
+The core originally contained ~134 files with finance-specific terminology. This has been incrementally abstracted through 6 refactoring phases (Dec 2025 → Feb 2026).
