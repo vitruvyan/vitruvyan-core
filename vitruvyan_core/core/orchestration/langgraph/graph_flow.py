@@ -15,8 +15,24 @@ from core.orchestration.langgraph.node.babel_emotion_node import babel_emotion_n
 from core.orchestration.langgraph.node.cached_llm_node import cached_llm_node
 from core.orchestration.langgraph.memory_utils import merge_slots
 
-# 🧠 PHASE 2.1 - Consolidated Intent Detection (babel + intent_llm + intent_mapper)
+# 🧠 Intent Detection (domain-agnostic node + finance plugin)
 from core.orchestration.langgraph.node.intent_detection_node import intent_detection_node
+from core.orchestration.langgraph.node import intent_detection_node as _intent_mod
+
+# Configure intent detection with finance domain (domain plugin pattern)
+import os as _os
+_INTENT_DOMAIN = _os.getenv("INTENT_DOMAIN", "finance")
+if _INTENT_DOMAIN == "finance":
+    from domains.finance.intent_config import (
+        create_finance_registry,
+        CONTEXT_KEYWORDS as _CTX_KW,
+        AMBIGUOUS_PATTERNS as _AMB_PAT,
+    )
+    _intent_reg = create_finance_registry()
+    _intent_mod.configure(_intent_reg, context_keywords=_CTX_KW, ambiguous_patterns=_AMB_PAT)
+else:
+    from core.orchestration.intent_registry import create_generic_registry
+    _intent_mod.configure(create_generic_registry())
 
 # 🔍 PHASE 2.2 - Quality Check (ARCHIVED → _legacy/quality_check_node.py)
 
@@ -97,7 +113,7 @@ class GraphState(TypedDict, total=False):
     
     # 🛡️ Sentinel Order Fields
     sentinel_risk_score: Optional[float]     # Current risk assessment (0.0-1.0)
-    sentinel_portfolio_value: Optional[float] # Collection value under protection
+    sentinel_portfolio_value: Optional[float] # Collection value under protection (legacy name)
     sentinel_protection_mode: Optional[str]  # conservative, balanced, aggressive, emergency
     sentinel_alerts: Optional[List[str]]     # Active alerts
     sentinel_status: Optional[str]           # monitoring, alert_issued, emergency, recovery

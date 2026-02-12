@@ -133,38 +133,32 @@ def _extract_entity_from_vague_query(text: str) -> list[str]:
         if _is_valid_entity(potential):
             return [potential]
     
-    # Pattern 3: Company name extraction (fallback via entity_resolver logic)
-    # Try common company names
-    companies_map = {
-        "nvidia": "EXAMPLE_ENTITY_2",
-        "apple": "EXAMPLE_ENTITY_1",
-        "microsoft": "EXAMPLE_ENTITY_4",
-        "tesla": "EXAMPLE_ENTITY_3",
-        "amazon": "AMZN",
-        "google": "EXAMPLE_ENTITY_5",
-        "meta": "META",
-        "facebook": "META"
+    # Pattern 3: Entity name → ID mapping (domain-configurable)
+    # Override via ENTITY_NAME_MAP env var or domain plugin
+    _entity_name_map = {
+        # Minimal defaults — domain plugins extend this
     }
-    for company, entity_id in companies_map.items():
-        if company in text.lower():
-            if _is_valid_entity(entity_id):
-                return [entity_id]
+    for name, eid in _entity_name_map.items():
+        if name in text.lower():
+            if _is_valid_entity(eid):
+                return [eid]
     
     return []
 
 def _fallback_intent(user_input: str, entity_ids: list[str], budget: int, horizon: str) -> str:
+    """Heuristic fallback — only used if intent_detection_node has not run."""
     txt = (user_input or "").lower()
 
-    # Allocation: requires entity_id + budget
+    # Allocation: requires entity + budget
     if entity_ids and budget:
         return "allocate"
 
-    # Soft intents: fiducia, paura, preoccupazione, ecc.
+    # Soft intents: emotional / conversational
     if any(w in txt for w in ["preoccupato", "paura", "timore", "fiducia", "dubbi", "ansia",
                               "worry", "worried", "fear", "trust", "doubt", "concern"]):
         return "soft"
 
-    # Specific intents by keywords (English + Italian synonyms)
+    # Generic analysis keywords
     if "analizza" in txt or "analyze" in txt or "study" in txt:
         return "trend"
     if "trend" in txt:

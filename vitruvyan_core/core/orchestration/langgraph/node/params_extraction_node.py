@@ -1,29 +1,23 @@
 """
-⚙️ Params Extraction Node - PHASE 2.3 Consolidation
-=======================================================
+Params Extraction Node — Domain-Agnostic
+==========================================
 Sacred Order: Discourse (Parameter Parsing)
-Epistemic Layer: User Input → Parameter Extraction
 
-CONSOLIDATED FROM:
-- horizon_parser_node.py (temporal horizon: short|medium|long)
-- topk_parser_node.py (result count: 1-50)
+Extracts temporal horizon and top-k from user input via
+regex patterns (multilingual) + LLM fallback.
 
-OPTIMIZATION:
-- Single regex pass on input_text
-- Unified LLM fallback for complex expressions
-- Default values: horizon="medium", top_k=10
+Consolidated from horizon_parser_node + topk_parser_node.
 
 STATE INPUTS:
-- input_text: str - User query
-- human_input: str - Alternative input field
-- horizon: str - Previous horizon (for fallback)
-- top_k: int - Previous top_k (for fallback)
+- input_text / human_input: str
+- horizon: str (previous)
+- top_k: int (previous)
 
 STATE OUTPUTS:
-- horizon: str - "short" (days-3mo) | "medium" (3mo-2y) | "long" (2y+)
-- horizon_text: str - Original matched text
-- top_k: int - Number of results (1-50)
-- route: str - "params_extraction"
+- horizon: "short" | "medium" | "long"
+- horizon_text: str (matched text)
+- top_k: int (1-50)
+- route: "params_extraction"
 """
 
 import re
@@ -98,7 +92,7 @@ def _extract_horizon_llm(input_text: str, language: str) -> Optional[str]:
 User input: "{input_text}"
 Language: {language}
 
-Extract the investment horizon and classify it as EXACTLY one of:
+Classify the temporal horizon as EXACTLY one of:
 - short (days to 3 months)
 - medium (3 months to 2 years) 
 - long (2+ years)
@@ -178,10 +172,10 @@ def _extract_topk_llm(input_text: str, language: str) -> Optional[int]:
 User input: "{input_text}"
 Language: {language}
 
-Extract the number of items requested (top-k) from this financial query.
+Extract the number of items requested (top-k) from this query.
 Examples:
-- "top 5 entities" → 5
-- "best 3 ETFs" → 3  
+- "top 5 items" → 5
+- "best 3 results" → 3  
 - "migliori 10 titoli" → 10
 - "show me your recommendations" → 10 (default)
 
