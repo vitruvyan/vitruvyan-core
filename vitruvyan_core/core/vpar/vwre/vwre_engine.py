@@ -1,612 +1,386 @@
-# core/logic/vitruvyan_proprietary/vwre_engine.py
 """
-⚙️ VWRE - Vitruvyan Weighted Reverse Engineering (Attribution Analysis)
+VWRE Engine — Vitruvyan Weighted Reverse Engineering v2.0
+==========================================================
 
-Decompone composite_z scores in contributi espliciti dei singoli fattori.
-Risponde alla domanda: "Perché AAPL rank 1 invece di TSLA rank 5?"
+Domain-agnostic attribution analysis.
+Decomposes composite scores into weighted factor contributions.
 
-Principi:
-- Explainability: ogni rank è matematicamente verificabile
-- Transparency: attribution breakdown per ogni factor (momentum, trend, vola, sentiment, fundamentals)
-- Auditability: somma contributi ≈ composite_score (verifica coerenza)
-- Composability: funziona standalone o integrato in Neural Engine
+Answers the question: "Why did entity X score higher than entity Y?"
 
-Sacred Order: REASON (Quantitative Reasoning Layer)
-Integration: Neural Engine → VWRE → VEE (signal synthesis → attribution → narrative)
+Pipeline:
+    1. Provider supplies factor mappings and profile weights
+    2. Engine calculates contribution = z_score × weight for each factor
+    3. Engine verifies sum(contributions) ≈ composite_score
+    4. Engine identifies primary/secondary drivers
+    5. Provider generates domain-specific explanation strings
 
-Author: Vitruvyan Development Team
-Created: December 23, 2025
-Status: ✅ PRODUCTION READY
+Pure computation — no Neural Engine imports, no raw DB access.
+
+Version: 2.0.0
 """
 
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, field
-from datetime import datetime
 import logging
+from datetime import datetime
+from typing import Dict, List, Optional, Any
+
+from .types import (
+    AttributionConfig,
+    AttributionResult,
+    ComparisonResult,
+    FactorAttribution,
+)
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class VWREResult:
-    """Risultato dell'attribution analysis per un ticker"""
-    ticker: str
-    composite_score: float
-    profile: str
-    timestamp: datetime = field(default_factory=datetime.now)
-    
-    # Attribution breakdown
-    factor_contributions: Dict[str, float] = field(default_factory=dict)  # {"momentum": 0.735, "trend": 0.225, ...}
-    factor_percentages: Dict[str, float] = field(default_factory=dict)    # {"momentum": 39.7, "trend": 12.2, ...}
-    factor_ranks: Dict[str, str] = field(default_factory=dict)            # {"momentum": "primary", "trend": "secondary", ...}
-    
-    # Primary driver identification
-    primary_driver: Optional[str] = None              # "momentum"
-    primary_contribution: float = 0.0                 # 0.735
-    secondary_drivers: List[str] = field(default_factory=list)  # ["fundamentals", "trend"]
-    
-    # Composite verification (mathematical audit)
-    sum_contributions: float = 0.0                    # Should ≈ composite_score
-    residual: float = 0.0                             # composite_score - sum_contributions (risk adjustment or rounding)
-    verification_status: str = "unknown"              # "verified", "warning", "error"
-    
-    # Explainability strings (for VEE integration)
-    rank_explanation: str = ""                        # "Rank 1 driven by momentum (40%)"
-    factor_narratives: Dict[str, str] = field(default_factory=dict)  # {"momentum": "exceptional signal (z=2.1)"}
-    technical_summary: str = ""                       # Full mathematical breakdown
-
-
 class VWREEngine:
     """
-    Vitruvyan Weighted Reverse Engineering — Attribution Analysis Engine
-    
-    Reverse engineer composite_z scores into weighted factor contributions.
-    Provides mathematical transparency for Neural Engine rankings.
-    
-    Architecture:
-    1. Input: composite_score + factors dict + profile weights
-    2. Process: Calculate contribution = z_score × weight for each factor
-    3. Output: Attribution breakdown with primary drivers and verification
-    
-    Integration Points:
-    - Neural Engine: pack_rows() calls analyze_attribution()
-    - VEE Generator: Uses attribution data to enhance narratives
-    - Orthodoxy Wardens: Uses verification_status for audit
+    Vitruvyan Weighted Reverse Engineering — provider-driven attribution.
+
+    Usage:
+        provider = MyDomainAggregationProvider()
+        engine = VWREEngine(provider)
+        result = engine.analyze("entity_1", 1.85, factors, config)
     """
-    
-    def __init__(self):
-        """Initialize VWRE Engine with Neural Engine profile weights"""
-        try:
-            # Import profile weights and factor mapping from Neural Engine
-            from core.logic.neural_engine.engine_core import PROFILE_WEIGHTS, FACTOR_MAP
-            self.profile_weights = PROFILE_WEIGHTS
-            self.factor_map = FACTOR_MAP
-            logger.info("✅ VWRE Engine initialized with Neural Engine weights")
-        except ImportError as e:
-            logger.error(f"❌ Failed to import Neural Engine weights: {e}")
-            # Fallback to basic weights (should never happen in production)
-            self.profile_weights = {"short_spec": {"momentum": 0.35, "trend": 0.15, "vola": 0.08, "sent": 0.10}}
-            self.factor_map = {"momentum_z": "momentum", "trend_z": "trend", "vola_z": "vola", "sentiment_z": "sent"}
-    
-    def analyze_attribution(
+
+    def __init__(self, provider, *, domain_tag: Optional[str] = None):
+        """
+        Args:
+            provider: Object implementing AggregationProvider contract
+                      (from vitruvyan_core/domains/aggregation_contract.py)
+            domain_tag: Optional safety marker
+        """
+        self.provider = provider
+        self.domain_tag = domain_tag
+
+    # ------------------------------------------------------------------
+    # PUBLIC API
+    # ------------------------------------------------------------------
+
+    def analyze(
         self,
-        ticker: str,
+        entity_id: str,
         composite_score: float,
         factors: Dict[str, float],
-        profile: str = "short_spec"
-    ) -> VWREResult:
+        config: Optional[AttributionConfig] = None,
+    ) -> AttributionResult:
         """
-        Reverse engineer composite_score into factor contributions.
-        
+        Reverse-engineer a composite score into factor contributions.
+
         Args:
-            ticker: Symbol (e.g., "AAPL")
-            composite_score: Final composite z-score from Neural Engine
-            factors: Dict with z-scores (momentum_z, trend_z, vola_z, sentiment_z, etc.)
-            profile: Screening profile determining weights (short_spec, balanced_mid, etc.)
-        
+            entity_id: Entity identifier
+            composite_score: Final composite score to decompose
+            factors: Dict of raw factor values (z-scores, normalized, etc.)
+            config: Optional attribution configuration
+
         Returns:
-            VWREResult with complete attribution breakdown
-        
-        Example:
-            >>> vwre = VWREEngine()
-            >>> attribution = vwre.analyze_attribution(
-            ...     ticker="AAPL",
-            ...     composite_score=1.85,
-            ...     factors={"momentum_z": 2.1, "trend_z": 1.5, "vola_z": -0.3, "sentiment_z": 0.8, "fundamentals_z": 1.2},
-            ...     profile="short_spec"
-            ... )
-            >>> print(attribution.rank_explanation)
-            "Rank driven by momentum (39.7% weight, +0.735 contribution)"
+            AttributionResult with full breakdown and verification.
         """
-        logger.info(f"[VWRE] Analyzing attribution for {ticker} (composite={composite_score:.3f}, profile={profile})")
-        
-        # Get profile weights
-        weights = self.profile_weights.get(profile, self.profile_weights.get("short_spec", {}))
-        
-        if not weights:
-            logger.warning(f"⚠️ No weights found for profile '{profile}', using short_spec")
-            weights = self.profile_weights["short_spec"]
-        
-        # Calculate raw contributions (factor_z × weight)
-        contributions = {}
-        raw_factors_used = {}  # Track which z-scores were actually used
-        
-        for factor_col, weight_key in self.factor_map.items():
-            if factor_col in factors:
-                z_score = factors[factor_col]
-                
-                # Skip null/nan values
-                if z_score is None or (isinstance(z_score, float) and np.isnan(z_score)):
-                    continue
-                
-                weight = weights.get(weight_key, 0.0)
-                
-                if weight > 0:  # Only include factors with non-zero weight
-                    contribution = z_score * weight
-                    contributions[weight_key] = contribution
-                    raw_factors_used[weight_key] = {"z_score": z_score, "weight": weight}
-        
-        # Handle case with no valid factors
-        if not contributions:
-            logger.warning(f"⚠️ No valid factors found for {ticker}")
-            return VWREResult(
-                ticker=ticker,
-                composite_score=composite_score,
-                profile=profile,
-                verification_status="error",
-                rank_explanation="No valid factors available for attribution analysis"
-            )
-        
-        # Calculate total contribution (should ≈ composite_score before risk adjustment)
-        total_contribution = sum(contributions.values())
-        
-        # Calculate percentages (normalized to 100%)
-        percentages = {}
-        if total_contribution != 0:
-            percentages = {
-                k: (v / total_contribution * 100) for k, v in contributions.items()
+        config = config or AttributionConfig()
+
+        # 1. Validate factors via provider
+        validation = self.provider.validate_factors(factors)
+        clean_factors = validation.get("cleaned_factors", factors)
+
+        # 2. Get profile weights + factor mappings from provider
+        profiles = self.provider.get_aggregation_profiles()
+        profile = profiles.get(config.profile)
+        if not profile:
+            # Fallback to first available profile
+            profile = next(iter(profiles.values())) if profiles else None
+
+        if not profile:
+            logger.warning(f"VWRE: no profile found for '{config.profile}'")
+            return self._error_result(entity_id, composite_score, config,
+                                      "No aggregation profile available")
+
+        factor_map = self.provider.get_factor_mappings()
+
+        # 3. Calculate contributions
+        contributions: Dict[str, Dict] = {}
+        for raw_key, weight_key in factor_map.items():
+            if raw_key not in clean_factors:
+                continue
+            value = clean_factors[raw_key]
+            if value is None:
+                continue
+            weight = profile.factor_weights.get(weight_key, 0.0)
+            if weight <= 0:
+                continue
+            contribution = self.provider.calculate_contribution(value, weight, profile)
+            contributions[weight_key] = {
+                "z_score": value,
+                "weight": weight,
+                "contribution": contribution,
             }
-        else:
-            # Edge case: all contributions cancel out to zero
-            percentages = {k: 0.0 for k in contributions}
-        
-        # Rank factors by absolute contribution (primary, secondary, tertiary)
-        factor_ranks = self._assign_ranks(contributions)
-        
-        # Identify primary and secondary drivers
-        sorted_factors = sorted(contributions.items(), key=lambda x: abs(x[1]), reverse=True)
-        primary_driver = sorted_factors[0][0] if sorted_factors else None
-        primary_contribution = contributions.get(primary_driver, 0.0) if primary_driver else 0.0
-        secondary_drivers = [f[0] for f in sorted_factors[1:3] if abs(f[1]) > 0.05]  # Top 2-3 supporting factors
-        
-        # Composite verification (residual = risk adjustment + rounding)
-        residual = composite_score - total_contribution
-        verification_status = self._verify_composite(composite_score, total_contribution, residual)
-        
-        # Generate explainability strings (for VEE integration)
-        rank_explanation = self._generate_rank_explanation(primary_driver, percentages, primary_contribution)
-        factor_narratives = self._generate_factor_narratives(raw_factors_used, contributions)
-        technical_summary = self._generate_technical_summary(ticker, composite_score, contributions, residual, profile)
-        
-        result = VWREResult(
-            ticker=ticker,
-            composite_score=composite_score,
-            profile=profile,
-            factor_contributions=contributions,
-            factor_percentages=percentages,
-            factor_ranks=factor_ranks,
-            primary_driver=primary_driver,
-            primary_contribution=primary_contribution,
-            secondary_drivers=secondary_drivers,
-            sum_contributions=total_contribution,
-            residual=residual,
-            verification_status=verification_status,
-            rank_explanation=rank_explanation,
-            factor_narratives=factor_narratives,
-            technical_summary=technical_summary
+
+        if not contributions:
+            return self._error_result(entity_id, composite_score, config,
+                                      "No valid factors for attribution")
+
+        # 4. Percentages
+        total = sum(c["contribution"] for c in contributions.values())
+        for key, data in contributions.items():
+            data["percentage"] = (
+                (data["contribution"] / total * 100.0) if total != 0 else 0.0
+            )
+
+        # 5. Ranks
+        sorted_factors = sorted(
+            contributions.items(), key=lambda x: abs(x[1]["contribution"]), reverse=True
         )
-        
-        logger.info(f"✅ [VWRE] {ticker}: primary_driver={primary_driver}, contribution={primary_contribution:.3f}, residual={residual:.3f}")
-        
-        return result
-    
-    def compare_tickers(
-        self,
-        ticker_a: str,
-        ticker_b: str,
-        attribution_a: VWREResult,
-        attribution_b: VWREResult
-    ) -> Dict[str, Any]:
-        """
-        Contrastive analysis: "Why AAPL rank 1 vs TSLA rank 5?"
-        
-        Identifies which factor most differentiates the two tickers.
-        
-        Args:
-            ticker_a: First ticker (typically higher rank)
-            ticker_b: Second ticker (typically lower rank)
-            attribution_a: VWRE result for ticker_a
-            attribution_b: VWRE result for ticker_b
-        
-        Returns:
-            Dict with comparative analysis including:
-            - delta_composite: Composite score difference
-            - primary_difference: Factor with largest delta
-            - all_deltas: Full factor-by-factor comparison
-            - explanation: Human-readable contrastive narrative
-        
-        Example:
-            >>> comparison = vwre.compare_tickers("AAPL", "TSLA", attr_aapl, attr_tsla)
-            >>> print(comparison["explanation"])
-            "AAPL ranks higher primarily due to superior momentum (+0.8), despite weaker sentiment (-0.3)"
-        """
-        delta_composite = attribution_a.composite_score - attribution_b.composite_score
-        
-        # Calculate factor deltas (only for common factors)
-        factor_deltas = {}
-        for factor in attribution_a.factor_contributions:
-            if factor in attribution_b.factor_contributions:
-                delta = attribution_a.factor_contributions[factor] - attribution_b.factor_contributions[factor]
-                factor_deltas[factor] = delta
-        
-        # Find largest absolute delta (primary differentiator)
-        if factor_deltas:
-            primary_diff = max(factor_deltas.items(), key=lambda x: abs(x[1]))
-            primary_factor = primary_diff[0]
-            primary_delta = primary_diff[1]
-        else:
-            primary_factor = "unknown"
-            primary_delta = 0.0
-        
-        # Generate contrastive explanation
-        if primary_delta > 0:
-            explanation = (
-                f"{ticker_a} ranks higher than {ticker_b} primarily due to superior "
-                f"{primary_factor} (+{primary_delta:.3f}). "
-            )
-        else:
-            explanation = (
-                f"{ticker_a} ranks higher than {ticker_b} despite weaker "
-                f"{primary_factor} ({primary_delta:.3f}). "
-            )
-        
-        # Add supporting factors (top 2 other deltas)
-        sorted_deltas = sorted(factor_deltas.items(), key=lambda x: abs(x[1]), reverse=True)
-        supporting = [f for f in sorted_deltas[1:3] if abs(f[1]) > 0.05]
-        
-        if supporting:
-            support_text = ", ".join([f"{f[0]} ({f[1]:+.3f})" for f in supporting])
-            explanation += f"Supporting factors: {support_text}."
-        
-        comparison = {
-            "ticker_a": ticker_a,
-            "ticker_b": ticker_b,
-            "delta_composite": delta_composite,
-            "primary_difference": primary_factor,
-            f"{primary_factor}_delta": primary_delta,
-            "all_deltas": factor_deltas,
-            "explanation": explanation,
-            "attribution_a_primary": attribution_a.primary_driver,
-            "attribution_b_primary": attribution_b.primary_driver
-        }
-        
-        logger.info(f"[VWRE] Comparison {ticker_a} vs {ticker_b}: primary_diff={primary_factor} ({primary_delta:+.3f})")
-        
-        return comparison
-    
-    def _assign_ranks(self, contributions: Dict[str, float]) -> Dict[str, str]:
-        """
-        Assign qualitative ranks to factors based on contribution magnitude.
-        
-        Ranks:
-        - "primary driver": Largest absolute contribution
-        - "secondary support": Top 2-3 contributors
-        - "minor contribution": Small but non-negligible
-        - "negligible": Very small contribution
-        """
-        sorted_factors = sorted(contributions.items(), key=lambda x: abs(x[1]), reverse=True)
-        ranks = {}
-        
-        for i, (factor, contrib) in enumerate(sorted_factors):
-            abs_contrib = abs(contrib)
-            
+        for i, (key, data) in enumerate(sorted_factors):
             if i == 0:
-                ranks[factor] = "primary driver"
-            elif i < 3 and abs_contrib > 0.05:
-                ranks[factor] = "secondary support"
-            elif abs_contrib > 0.01:
-                ranks[factor] = "minor contribution"
+                data["rank"] = "primary driver"
+            elif i < 3 and abs(data["contribution"]) > config.min_contribution:
+                data["rank"] = "secondary support"
+            elif abs(data["contribution"]) > 0.01:
+                data["rank"] = "minor contribution"
             else:
-                ranks[factor] = "negligible"
-        
-        return ranks
-    
-    def _generate_factor_narratives(
-        self, 
-        raw_factors: Dict[str, Dict[str, float]], 
-        contributions: Dict[str, float]
-    ) -> Dict[str, str]:
-        """
-        Generate human-readable narratives for each factor.
-        
-        Uses z-score thresholds to assign qualitative labels:
-        - z > 1.5: "exceptional"
-        - z > 1.0: "strong"
-        - z > 0.5: "above average"
-        - z > 0.0: "slightly positive"
-        - z < -1.0: "weak"
-        - z < -0.5: "below average"
-        - else: "neutral"
-        """
-        narratives = {}
-        
-        for factor_name, factor_data in raw_factors.items():
-            z_score = factor_data["z_score"]
-            weight = factor_data["weight"]
-            contribution = contributions.get(factor_name, 0.0)
-            
-            # Qualitative z-score labels
-            if z_score > 1.5:
-                strength = "exceptional signal"
-            elif z_score > 1.0:
-                strength = "strong signal"
-            elif z_score > 0.5:
-                strength = "above-average signal"
-            elif z_score > 0.0:
-                strength = "slightly positive signal"
-            elif z_score < -1.0:
-                strength = "weak signal"
-            elif z_score < -0.5:
-                strength = "below-average signal"
-            else:
-                strength = "neutral signal"
-            
-            narratives[factor_name] = (
-                f"{strength} (z={z_score:.2f}, weight={weight:.2%}, "
-                f"contribution={contribution:+.3f})"
+                data["rank"] = "negligible"
+
+        # 6. Primary / secondary drivers
+        primary_key = sorted_factors[0][0] if sorted_factors else None
+        primary_contrib = contributions[primary_key]["contribution"] if primary_key else 0.0
+        secondary = [
+            k for k, d in sorted_factors[1:3]
+            if abs(d["contribution"]) > config.min_contribution
+        ]
+
+        # 7. Verification
+        residual = composite_score - total
+        verification = self._verify(residual, config)
+
+        # 8. Narratives (z-score → qualitative label)
+        factor_attrs: Dict[str, FactorAttribution] = {}
+        for key, data in contributions.items():
+            narrative = self._z_narrative(key, data["z_score"], data["weight"], data["contribution"])
+            factor_attrs[key] = FactorAttribution(
+                name=key,
+                z_score=data["z_score"],
+                weight=data["weight"],
+                contribution=data["contribution"],
+                percentage=data["percentage"],
+                rank=data["rank"],
+                narrative=narrative,
             )
-        
-        return narratives
-    
-    def _generate_rank_explanation(
-        self, 
-        primary_driver: Optional[str], 
-        percentages: Dict[str, float],
-        primary_contribution: float
-    ) -> str:
-        """Generate concise rank explanation string for VEE integration"""
-        if not primary_driver:
-            return "Ranking based on available factors with recalibrated weights"
-        
-        pct = percentages.get(primary_driver, 0)
-        return (
-            f"Rank driven by {primary_driver} "
-            f"({pct:.1f}% weight, {primary_contribution:+.3f} contribution)"
+
+        # 9. Explanation strings via provider
+        contrib_dict = {k: d["contribution"] for k, d in contributions.items()}
+        expl = self.provider.format_attribution_explanation(
+            contrib_dict, primary_key or "unknown", composite_score
         )
-    
-    def _generate_technical_summary(
+        rank_explanation = expl.get("summary", self._default_rank_explanation(
+            primary_key, contributions, primary_contrib
+        ))
+        technical_summary = expl.get("technical", self._technical_summary(
+            entity_id, composite_score, contrib_dict, residual, config.profile
+        ))
+
+        result = AttributionResult(
+            entity_id=entity_id,
+            composite_score=composite_score,
+            profile=config.profile,
+            timestamp=datetime.utcnow(),
+            factors=factor_attrs,
+            primary_driver=primary_key,
+            primary_contribution=primary_contrib,
+            secondary_drivers=secondary,
+            sum_contributions=total,
+            residual=residual,
+            verification_status=verification,
+            rank_explanation=rank_explanation,
+            technical_summary=technical_summary,
+            domain_tag=self.domain_tag,
+        )
+
+        logger.info(
+            f"VWRE: {entity_id} → primary={primary_key} "
+            f"({primary_contrib:+.3f}), residual={residual:.3f} [{verification}]"
+        )
+        return result
+
+    def compare(
         self,
-        ticker: str,
-        composite_score: float,
-        contributions: Dict[str, float],
-        residual: float,
-        profile: str
-    ) -> str:
+        result_a: AttributionResult,
+        result_b: AttributionResult,
+    ) -> ComparisonResult:
         """
-        Generate technical mathematical breakdown for audit/documentation.
-        
-        Format:
-        AAPL composite_score=1.85 (profile=short_spec)
-        = momentum(0.735) + fundamentals(0.288) + trend(0.225) + sentiment(0.080) + vola(-0.024)
-        = 1.304 base + 0.546 risk_adjustment = 1.85 final
-        """
-        contrib_parts = " + ".join([
-            f"{k}({v:+.3f})" for k, v in sorted(contributions.items(), key=lambda x: abs(x[1]), reverse=True)
-        ])
-        
-        sum_contrib = sum(contributions.values())
-        
-        summary = (
-            f"{ticker} composite_score={composite_score:.3f} (profile={profile})\n"
-            f"= {contrib_parts}\n"
-            f"= {sum_contrib:.3f} base"
-        )
-        
-        if abs(residual) > 0.01:
-            summary += f" + {residual:+.3f} adjustment = {composite_score:.3f} final"
-        
-        return summary
-    
-    def _verify_composite(
-        self, 
-        composite_score: float, 
-        sum_contributions: float, 
-        residual: float
-    ) -> str:
-        """
-        Verify mathematical consistency between composite and sum of contributions.
-        
+        Contrastive analysis: why did entity A score higher than B?
+
+        Args:
+            result_a: Attribution result for entity A (typically higher score)
+            result_b: Attribution result for entity B
+
         Returns:
-        - "verified": residual < 0.1 (acceptable due to risk adjustment)
-        - "warning": residual 0.1-0.5 (investigate potential issue)
-        - "error": residual > 0.5 (mathematical inconsistency)
+            ComparisonResult with deltas and explanation.
         """
-        abs_residual = abs(residual)
-        
-        if abs_residual < 0.1:
-            return "verified"
-        elif abs_residual < 0.5:
-            logger.warning(f"⚠️ [VWRE] Verification warning: residual={residual:.3f} (expected <0.1)")
-            return "warning"
+        delta_composite = result_a.composite_score - result_b.composite_score
+
+        # Factor deltas (common factors only)
+        deltas: Dict[str, float] = {}
+        for key, fa in result_a.factors.items():
+            if key in result_b.factors:
+                deltas[key] = fa.contribution - result_b.factors[key].contribution
+
+        # Primary differentiator
+        if deltas:
+            primary_key = max(deltas, key=lambda k: abs(deltas[k]))
+            primary_delta = deltas[primary_key]
         else:
-            logger.error(f"❌ [VWRE] Verification error: residual={residual:.3f} (expected <0.5)")
-            return "error"
-    
+            primary_key = "unknown"
+            primary_delta = 0.0
+
+        # Explanation
+        direction = "superior" if primary_delta > 0 else "weaker"
+        explanation = (
+            f"{result_a.entity_id} scores higher than {result_b.entity_id} "
+            f"primarily due to {direction} {primary_key} ({primary_delta:+.3f})."
+        )
+        supporting = sorted(
+            [(k, v) for k, v in deltas.items() if k != primary_key],
+            key=lambda x: abs(x[1]), reverse=True
+        )[:2]
+        if supporting:
+            parts = [f"{k} ({v:+.3f})" for k, v in supporting if abs(v) > 0.05]
+            if parts:
+                explanation += f" Supporting: {', '.join(parts)}."
+
+        return ComparisonResult(
+            entity_a=result_a.entity_id,
+            entity_b=result_b.entity_id,
+            delta_composite=delta_composite,
+            primary_difference=primary_key,
+            primary_delta=primary_delta,
+            all_deltas=deltas,
+            explanation=explanation,
+        )
+
     def batch_analyze(
         self,
-        tickers_data: List[Dict[str, Any]],
-        profile: str = "short_spec"
-    ) -> List[VWREResult]:
+        entries: List[Dict[str, Any]],
+        config: Optional[AttributionConfig] = None,
+    ) -> List[AttributionResult]:
         """
-        Batch attribution analysis for multiple tickers.
-        
-        Optimized for Neural Engine integration where multiple tickers
-        are ranked simultaneously.
-        
+        Batch attribution for multiple entities.
+
         Args:
-            tickers_data: List of dicts with ticker, composite_score, factors
-            profile: Screening profile
-        
+            entries: List of {"entity_id", "composite_score", "factors"}
+            config: Shared attribution configuration
+
         Returns:
-            List of VWREResult objects (same order as input)
+            List[AttributionResult] in same order.
         """
         results = []
-        
-        for ticker_data in tickers_data:
+        for entry in entries:
             try:
-                result = self.analyze_attribution(
-                    ticker=ticker_data["ticker"],
-                    composite_score=ticker_data["composite_score"],
-                    factors=ticker_data.get("factors", {}),
-                    profile=profile
+                r = self.analyze(
+                    entry["entity_id"],
+                    entry["composite_score"],
+                    entry.get("factors", {}),
+                    config,
                 )
-                results.append(result)
+                results.append(r)
             except Exception as e:
-                logger.error(f"❌ [VWRE] Failed to analyze {ticker_data.get('ticker', 'UNKNOWN')}: {e}")
-                # Append error result to maintain list consistency
-                results.append(VWREResult(
-                    ticker=ticker_data.get("ticker", "UNKNOWN"),
-                    composite_score=ticker_data.get("composite_score", 0.0),
-                    profile=profile,
-                    verification_status="error",
-                    rank_explanation=f"Attribution analysis failed: {str(e)}"
+                logger.error(f"VWRE batch: {entry.get('entity_id')} failed: {e}")
+                results.append(self._error_result(
+                    entry.get("entity_id", "unknown"),
+                    entry.get("composite_score", 0.0),
+                    config, str(e),
                 ))
-        
-        logger.info(f"✅ [VWRE] Batch analysis complete: {len(results)} tickers processed")
-        
         return results
 
+    # ------------------------------------------------------------------
+    # INTERNALS
+    # ------------------------------------------------------------------
 
-# ============================================================
-# CONVENIENCE FUNCTIONS
-# ============================================================
+    @staticmethod
+    def _verify(residual: float, config: AttributionConfig) -> str:
+        """Verify mathematical consistency."""
+        abs_r = abs(residual)
+        if abs_r < config.residual_tolerance:
+            return "verified"
+        elif abs_r < config.residual_warning:
+            logger.warning(f"VWRE verification warning: residual={residual:.3f}")
+            return "warning"
+        else:
+            logger.error(f"VWRE verification error: residual={residual:.3f}")
+            return "error"
 
-def explain_rank(ticker: str, composite_score: float, factors: Dict[str, float], profile: str = "short_spec") -> str:
-    """
-    Quick utility: Generate rank explanation string.
-    
-    Example:
-        >>> explanation = explain_rank("AAPL", 1.85, {"momentum_z": 2.1, "trend_z": 1.5})
-        >>> print(explanation)
-        "Rank driven by momentum (39.7% weight, +0.735 contribution)"
-    """
-    vwre = VWREEngine()
-    result = vwre.analyze_attribution(ticker, composite_score, factors, profile)
-    return result.rank_explanation
+    @staticmethod
+    def _z_narrative(name: str, z: float, weight: float, contribution: float) -> str:
+        """Human-readable narrative for a factor based on z-score."""
+        if z > 1.5:
+            strength = "exceptional signal"
+        elif z > 1.0:
+            strength = "strong signal"
+        elif z > 0.5:
+            strength = "above-average signal"
+        elif z > 0.0:
+            strength = "slightly positive"
+        elif z > -0.5:
+            strength = "neutral"
+        elif z > -1.0:
+            strength = "below-average signal"
+        else:
+            strength = "weak signal"
+        return (
+            f"{strength} (z={z:.2f}, weight={weight:.2%}, "
+            f"contribution={contribution:+.3f})"
+        )
 
+    @staticmethod
+    def _default_rank_explanation(
+        primary: Optional[str],
+        contributions: Dict[str, Dict],
+        primary_contrib: float,
+    ) -> str:
+        if not primary:
+            return "Ranking based on available factors"
+        pct = contributions[primary]["percentage"]
+        return (
+            f"Score driven by {primary} "
+            f"({pct:.1f}% weight, {primary_contrib:+.3f} contribution)"
+        )
 
-def compare_two(
-    ticker_a: str, 
-    composite_a: float, 
-    factors_a: Dict[str, float],
-    ticker_b: str,
-    composite_b: float,
-    factors_b: Dict[str, float],
-    profile: str = "short_spec"
-) -> str:
-    """
-    Quick utility: Generate comparison explanation.
-    
-    Example:
-        >>> comparison = compare_two("AAPL", 1.85, {...}, "TSLA", 0.95, {...})
-        >>> print(comparison)
-        "AAPL ranks higher primarily due to superior momentum (+0.8)"
-    """
-    vwre = VWREEngine()
-    attr_a = vwre.analyze_attribution(ticker_a, composite_a, factors_a, profile)
-    attr_b = vwre.analyze_attribution(ticker_b, composite_b, factors_b, profile)
-    comparison = vwre.compare_tickers(ticker_a, ticker_b, attr_a, attr_b)
-    return comparison["explanation"]
+    @staticmethod
+    def _technical_summary(
+        entity_id: str,
+        composite: float,
+        contributions: Dict[str, float],
+        residual: float,
+        profile: str,
+    ) -> str:
+        parts = " + ".join(
+            f"{k}({v:+.3f})"
+            for k, v in sorted(contributions.items(), key=lambda x: abs(x[1]), reverse=True)
+        )
+        total = sum(contributions.values())
+        summary = f"{entity_id} composite={composite:.3f} (profile={profile})\n= {parts}\n= {total:.3f} base"
+        if abs(residual) > 0.01:
+            summary += f" + {residual:+.3f} adjustment = {composite:.3f} final"
+        return summary
 
-
-# ============================================================
-# POSTGRESQL INTEGRATION (Optional)
-# ============================================================
-
-def store_attribution(result: VWREResult, connection) -> bool:
-    """
-    Store VWRE attribution result in PostgreSQL for audit trail.
-    
-    Table schema (create if needed):
-    CREATE TABLE vwre_attributions (
-        id SERIAL PRIMARY KEY,
-        ticker VARCHAR(10),
-        composite_score FLOAT,
-        profile VARCHAR(50),
-        primary_driver VARCHAR(50),
-        primary_contribution FLOAT,
-        sum_contributions FLOAT,
-        residual FLOAT,
-        verification_status VARCHAR(20),
-        rank_explanation TEXT,
-        technical_summary TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-    );
-    """
-    try:
-        with connection.cursor() as cur:
-            cur.execute("""
-                INSERT INTO vwre_attributions (
-                    ticker, composite_score, profile, primary_driver, 
-                    primary_contribution, sum_contributions, residual,
-                    verification_status, rank_explanation, technical_summary
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                result.ticker,
-                result.composite_score,
-                result.profile,
-                result.primary_driver,
-                result.primary_contribution,
-                result.sum_contributions,
-                result.residual,
-                result.verification_status,
-                result.rank_explanation,
-                result.technical_summary
-            ))
-            connection.commit()
-            logger.info(f"✅ [VWRE] Attribution stored for {result.ticker}")
-            return True
-    except Exception as e:
-        logger.error(f"❌ [VWRE] Failed to store attribution: {e}")
-        return False
-
-
-if __name__ == "__main__":
-    # Self-test example
-    print("🧪 VWRE Engine Self-Test\n")
-    
-    vwre = VWREEngine()
-    
-    # Example: AAPL attribution
-    result = vwre.analyze_attribution(
-        ticker="AAPL",
-        composite_score=1.85,
-        factors={
-            "momentum_z": 2.1,
-            "trend_z": 1.5,
-            "vola_z": -0.3,
-            "sentiment_z": 0.8,
-            "fundamentals_z": 1.2
-        },
-        profile="short_spec"
-    )
-    
-    print(f"✅ {result.ticker}: {result.rank_explanation}")
-    print(f"   Primary: {result.primary_driver} ({result.primary_contribution:.3f})")
-    print(f"   Verification: {result.verification_status} (residual={result.residual:.3f})")
-    print(f"\n📊 Technical Summary:\n{result.technical_summary}")
-    print(f"\n💬 Factor Narratives:")
-    for factor, narrative in result.factor_narratives.items():
-        print(f"   • {factor}: {narrative}")
+    def _error_result(
+        self,
+        entity_id: str,
+        composite_score: float,
+        config: Optional[AttributionConfig],
+        error_msg: str,
+    ) -> AttributionResult:
+        return AttributionResult(
+            entity_id=entity_id,
+            composite_score=composite_score,
+            profile=config.profile if config else "balanced",
+            timestamp=datetime.utcnow(),
+            factors={},
+            primary_driver=None,
+            primary_contribution=0.0,
+            secondary_drivers=[],
+            sum_contributions=0.0,
+            residual=composite_score,
+            verification_status="error",
+            rank_explanation=f"Attribution failed: {error_msg}",
+            technical_summary=error_msg,
+            domain_tag=self.domain_tag,
+        )

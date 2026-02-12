@@ -7,21 +7,23 @@ algorithm with its own engine, analyzer, and memory adapter.
 Location: vitruvyan_core/core/vpar/ (same level as agents/, governance/, orchestration/)
 
 Active modules:
-    - VEE:  Vitruvyan Explainability Engine (narrative generation)
-    - VSGS: Vitruvyan Semantic Grounding System (semantic context enrichment)
+    - VEE:  Vitruvyan Explainability Engine v3.0 (narrative generation)
+    - VSGS: Vitruvyan Semantic Grounding System v2.0 (semantic context enrichment)
+    - VARE: Vitruvyan Adaptive Risk Engine v2.0 (multi-dimensional risk profiling)
+    - VWRE: Vitruvyan Weighted Reverse Engineering v2.0 (attribution analysis)
 
-Pending migration (from mercator VPS):
-    - VWRE: Vitruvyan Weighted Reverse Engineering
-    - VARE: Vitruvyan Adaptive Risk Engine
-    - VMFL: Vitruvyan Memory Feedback Loop
-    - VHSW: Vitruvyan Human Sentiment Weighting
+Deprecated (archived to _legacy/):
+    - VMFL: Absorbed by VWRE + vertical AggregationProviders
+    - VHSW: Trivial windowed statistics, not a proprietary algorithm
 
 Archived:
-    - _legacy/orchestrator.py: Pre-refactoring composite scorer (broken imports)
+    - _legacy/orchestrator.py: Pre-refactoring composite scorer
     - _legacy/algorithm_memory_adapter.py: Orphaned persistence adapter
+    - _legacy/vmfl/: Finance-specific multi-factor scoring (deprecated)
+    - _legacy/vhsw/: Historical sliding window (deprecated)
 """
 
 __all__ = []
 
-__version__ = "3.0.0"  # Restructured: moved to core/vpar/, VSGS added, VWRE/VARE/VMFL/VHSW migrated
+__version__ = "4.0.0"  # VARE+VWRE refactored, VMFL+VHSW deprecated
 __author__ = "Vitruvyan AI Team"

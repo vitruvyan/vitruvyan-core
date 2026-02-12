@@ -1,21 +1,29 @@
 """
-VWRE — Vitruvyan Weighted Reverse Engineering
+VWRE — Vitruvyan Weighted Reverse Engineering v2.0
 
-Proprietary reverse-engineering engine for weighted factor decomposition.
-Decomposes composite scores into constituent weighted factors.
+Domain-agnostic attribution analysis.
+Decomposes composite scores into weighted factor contributions.
 
 Components:
-    - vwre_engine.py:   Core decomposition logic
-    - vwre_analyzer.py: Factor analysis and weight attribution
+    - types.py:        AttributionConfig, FactorAttribution, AttributionResult, ComparisonResult
+    - vwre_engine.py:  VWREEngine — provider-driven attribution analysis
+    - _legacy_vwre_engine.py: Pre-refactoring finance-coupled version (archived)
+
+Contract: vitruvyan_core/domains/aggregation_contract.py (AggregationProvider)
 
 Architecture:
-    LIVELLO 1 (Pure domain): This module
-    LIVELLO 2 (Adapter):     TBD (service-level integration)
-
-Status: PENDING — Code exists on mercator VPS, awaiting migration
+    LIVELLO 1 (Pure domain): This module — zero I/O, zero Neural Engine imports
+    LIVELLO 2 (Adapter):     LangGraph node or service-level integration
 """
 
-__all__ = []
+from .types import AttributionConfig, AttributionResult, ComparisonResult, FactorAttribution
+from .vwre_engine import VWREEngine
 
-__version__ = "0.1.0"
+__all__ = [
+    "VWREEngine",
+    "AttributionConfig", "AttributionResult",
+    "ComparisonResult", "FactorAttribution",
+]
+
+__version__ = "2.0.0"
 __author__ = "Vitruvyan AI Team"
