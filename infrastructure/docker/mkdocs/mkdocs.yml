@@ -15,9 +15,9 @@ site_url: https://kb.vitruvyan.com
 repo_name: vitruvyan-core
 repo_url: https://github.com/vitruvyan/vitruvyan-core  # Update with actual repo
 
-# Docs directory (app root with mounted volumes)
-docs_dir: /app
-site_dir: /tmp/mkdocs_site
+# Docs directory (symlinked docs root)
+docs_dir: /app/docs_root
+site_dir: /app/site
 
 # Theme configuration
 theme:

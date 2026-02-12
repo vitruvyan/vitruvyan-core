@@ -295,6 +295,54 @@ docker ps --filter "name=core_<order>" --format "{{.Status}}"
 
 ---
 
+## LangGraph Orchestration — Domain-Agnostic Graph (Feb 12, 2026)
+
+The LangGraph pipeline is the cognitive kernel. It is **100% domain-agnostic** after the Feb 2026 refactoring.
+
+### Pipeline flow
+```
+parse → intent_detection → weaver → entity_resolver → babel_emotion
+  → semantic_grounding → params_extraction → decide → [route branches]
+  → output_normalizer → orthodoxy → vault → compose → can → [advisor] → END
+```
+
+### Route branches (from `decide`)
+| Route | Target node | Description |
+|-------|-------------|-------------|
+| `dispatcher_exec` | `exec` | Direct execution |
+| `semantic_fallback` | `qdrant` | Semantic search |
+| `llm_soft` | `cached_llm` | Conversational LLM |
+| `slot_filler` | `compose` | Missing params |
+| `codex_expedition` | `codex_hunters` | System maintenance |
+| `llm_mcp` | `llm_mcp` | MCP tools (when `USE_MCP=1`) |
+
+### Intent Detection — Domain Plugin Pattern
+- **Node**: `core/orchestration/langgraph/node/intent_detection_node.py` (314L, agnostic)
+- **Registry**: `core/orchestration/intent_registry.py` (370L) — `IntentRegistry`, `IntentDefinition`, `ScreeningFilter`
+- **Finance plugin**: `domains/finance/intent_config.py` (265L) — all finance intents, filters, context keywords
+- **Boot**: `graph_flow.py` reads `INTENT_DOMAIN` env var (default `"finance"`) and calls `intent_detection_node.configure(registry)`
+- **Adding a new domain**: Create `domains/<domain>/intent_config.py` with `create_<domain>_registry()`, add case in `graph_flow.py`
+
+### Archived nodes (`node/_legacy/`)
+| Node | Reason | Date |
+|------|--------|------|
+| `intent_detection_node.py` | Rewritten from zero (was 600L finance-specific) | Feb 12, 2026 |
+| `proactive_suggestions_node.py` | Domain-specific finance feature | Feb 12, 2026 |
+| `quality_check_node.py` | Domain-specific validation | Feb 12, 2026 |
+| `llm_soft_node.py` | Dead code (replaced by `cached_llm_node`) | Feb 12, 2026 |
+| `enhanced_llm_node.py` | Dead code | Feb 12, 2026 |
+| `gemma_node.py` | Never wired | Feb 12, 2026 |
+
+### Key environment variables
+| Var | Default | Effect |
+|-----|---------|--------|
+| `INTENT_DOMAIN` | `"finance"` | Which domain plugin to load for intent detection |
+| `QDRANT_FILTER_DOMAIN` | `"1"` | Enable domain-specific Qdrant filtering |
+| `USE_MCP` | `"0"` | Route `dispatcher_exec` to MCP node |
+| `ENABLE_MINIMAL_GRAPH` | `"false"` | Use 4-node minimal graph |
+
+---
+
 ## Repo layout (what exists here)
 - `vitruvyan_core/`: the reusable OS core (agents, bus, governance primitives, contracts)
 - `services/`: reference microservices (examples of how to wire the core in a running system)
@@ -384,7 +432,38 @@ This rule generalizes beyond finance. Replace “ticker” with any domain entit
 ### 6) Testing bias guardrail
 - Avoid biased, repetitive fixtures (e.g., the same few “top entities” in every test).
 - Prefer generating diverse test inputs when possible (see `tests/` helpers and guidelines).
-### 7) Slot-Filling Architecture Status (⚠️ CRITICAL - Feb 10, 2026)
+### 7) LLM Access — Centralized via LLMAgent (Feb 12, 2026)
+
+**ALL LLM calls MUST go through the singleton gateway:**
+- `core.agents.llm_agent.LLMAgent` (`vitruvyan_core/core/agents/llm_agent.py`, 844L)
+- Factory: `from core.agents.llm_agent import get_llm_agent`
+
+**Methods** (use the right one):
+| Method | Use case |
+|--------|----------|
+| `complete(prompt, system_prompt)` | Single-turn text completion |
+| `complete_json(prompt, system_prompt)` | JSON-structured output |
+| `complete_with_tools(messages, tools)` | OpenAI Function Calling |
+| `complete_with_messages(messages)` | Multi-turn conversation |
+| `acomplete(prompt)` | Async completion |
+
+**Model resolution** (env var chain, first non-empty wins):
+`VITRUVYAN_LLM_MODEL` → `GRAPH_LLM_MODEL` → `OPENAI_MODEL` → `"gpt-4o-mini"`
+
+**Forbidden**:
+- ❌ `from openai import OpenAI` in any node or service
+- ❌ `OpenAI()` instantiation outside `llm_agent.py`
+- ❌ Scattered `os.getenv("OPENAI_MODEL")` reads — use `llm.default_model`
+- ❌ Archived wrappers: `core/llm/_legacy/llm_interface.py`, `conversational_llm.py`
+
+**PromptRegistry** (`core/llm/prompts/registry.py`, 330L):
+- Domain-aware prompt management: `register_domain()`, `get_identity()`, `get_scenario()`
+- "generic" domain auto-registered at boot for domain-agnostic prompts
+- Finance prompts registered via `domains/finance/prompts/`
+
+---
+
+### 8) Slot-Filling Architecture Status (⚠️ CRITICAL - Feb 10, 2026)
 
 **IMPORTANT**: There is an **architectural divergence** between repositories:
 
