@@ -1,88 +1,124 @@
 #!/usr/bin/env python3
 """
-⚖️ Orthodoxy Wardens - Redis Streams Listener (Phase 2 Migration)
-
-ZERO-CODE-CHANGE wrapper for OrthodoxyWardensCognitiveBusListener using ListenerAdapter.
-
-Sacred Order: TRUTH (Orthodoxy Wardens - Epistemic Integrity)
-
-Sacred Channels (7 total):
-  1. orthodoxy.audit.requested - Audit initiation requests
-  2. orthodoxy.validation.requested - Validation requests
-  3. neural_engine.screening.completed - Validate screening results
-  4. babel.sentiment.completed - Validate sentiment scores
-  5. memory.write.completed - Audit memory writes
-  6. vee.explanation.completed - Validate VEE outputs
-  7. langgraph.response.completed - Audit final responses
-
-Purpose:
-  Ensure epistemic integrity and divine compliance.
-  Sacred guardians of truth and validation.
-
-Migration: Phase 2 (Listener #3 of 7)
-Pattern: wrap_legacy_listener (from listener_adapter.py)
-Status: Production-ready (Feb 6, 2026)
+⚖️ Orthodoxy Wardens — Streams Listener (No Pub/Sub)
 """
 
 import asyncio
 import logging
 import sys
 import os
+import json
+from typing import Any, Dict
 
-# Add parent directories to path for imports
-# CRITICAL: /app MUST be first so global core/ (symlink → vitruvyan_core/core)
-# takes priority over the local api_orthodoxy_wardens/core/ package.
 sys.path.insert(0, '/app/api_orthodoxy_wardens')
 sys.path.insert(0, '/app')
 
-from redis_listener import OrthodoxyWardensCognitiveBusListener
-from vitruvyan_core.core.synaptic_conclave.consumers import wrap_legacy_listener
+from core.synaptic_conclave.transport.streams import StreamBus
+from api_orthodoxy_wardens.adapters.bus_adapter import OrthodoxyBusAdapter
+from api_orthodoxy_wardens.adapters.persistence import PersistenceAdapter
+from api_orthodoxy_wardens.config import settings
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, settings.LOG_LEVEL, logging.INFO),
     format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
 )
-logger = logging.getLogger("OrthodoxyWardensStreamsWrapper")
+logger = logging.getLogger("OrthodoxyWardensStreamsListener")
 
-async def main():
-    """⚖️ Start Orthodoxy Wardens Streams listener with zero-code-change adapter"""
-    
-    logger.info("⚖️ Orthodoxy Wardens Listener Sacred Streams Bridge starting...")
-    
-    # Step 1: Instantiate existing legacy listener (NO MODIFICATIONS)
-    legacy_listener = OrthodoxyWardensCognitiveBusListener()
-    
-    # Step 2: Define sacred channels (must match legacy listener)
-    sacred_channels = [
-        "orthodoxy.audit.requested",
-        "orthodoxy.validation.requested",
-        "neural_engine.screening.completed",
-        "babel.sentiment.completed",
-        "memory.write.completed",
-        "vee.explanation.completed",
-        "langgraph.response.completed"
-    ]
-    
-    logger.info(f"⚖️ Orthodoxy Wardens subscribed to {len(sacred_channels)} streams")
-    
-    # Step 3: Wrap with ListenerAdapter (handles all Streams logic)
-    adapter = wrap_legacy_listener(
-        listener_instance=legacy_listener,
-        name="orthodoxy_wardens",
-        sacred_channels=sacred_channels,
-        handler_method="handle_sacred_message"  # Legacy method name
-    )
-    
-    logger.info("⚖️ Orthodoxy Wardens adapter initialized, starting consumption...")
-    
-    # Step 4: Start adapter (blocking)
-    await adapter.start()
+def _ensure_group_prefix(group: str) -> str:
+    return group if group.startswith("group:") else f"group:{group}"
+
+
+def _channel_from_stream(stream: str) -> str:
+    return stream.replace("vitruvyan:", "", 1)
+
+
+def _build_orthodoxy_input(channel: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    # Domain-agnostic: treat payload as text for validation
+    return {
+        "trigger_type": channel,
+        "source": payload.get("source") or payload.get("emitter") or "synaptic_conclave",
+        "scope": payload.get("scope") or "event",
+        "text": payload.get("text") or json.dumps(payload, ensure_ascii=False),
+        "code": payload.get("code") or "",
+    }
+
+
+async def _consume_one_stream(
+    bus: StreamBus,
+    adapter: OrthodoxyBusAdapter,
+    persistence: PersistenceAdapter,
+    channel: str,
+    group: str,
+    consumer: str,
+) -> None:
+    bus.create_consumer_group(channel=channel, group=group, start_id="0")
+    gen = bus.consume(channel=channel, group=group, consumer=consumer, count=10, block_ms=1000)
+
+    while True:
+        event = await asyncio.to_thread(next, gen, None)
+        if event is None:
+            continue
+
+        observed_channel = _channel_from_stream(event.stream)
+        payload_any: Any = event.payload
+        payload: Dict[str, Any] = payload_any if isinstance(payload_any, dict) else {}
+        correlation_id = getattr(event, "correlation_id", None) or payload.get("correlation_id") or event.event_id
+
+        try:
+            orthodoxy_input = _build_orthodoxy_input(observed_channel, payload)
+
+            if observed_channel == "orthodoxy.audit.requested":
+                result = adapter.handle_event(orthodoxy_input)
+                persistence.save_verdict(result)
+                persistence.save_chronicle(result)
+                bus.emit(
+                    channel="orthodoxy.audit.completed",
+                    payload={"correlation_id": correlation_id, "result": result},
+                    emitter="orthodoxy_wardens.listener",
+                    correlation_id=correlation_id,
+                )
+
+            else:
+                # All other observed channels are validated via quick validation.
+                result = adapter.handle_quick_validation(orthodoxy_input)
+                persistence.save_verdict(result)
+                bus.emit(
+                    channel="orthodoxy.validation.completed",
+                    payload={
+                        "correlation_id": correlation_id,
+                        "validated_channel": observed_channel,
+                        "result": result,
+                    },
+                    emitter="orthodoxy_wardens.listener",
+                    correlation_id=correlation_id,
+                )
+
+            bus.ack(event, group=group)
+
+        except Exception as exc:
+            logger.error("Failed orthodoxy handling channel=%s event_id=%s: %s", observed_channel, event.event_id, exc, exc_info=True)
+            # no ACK
+
+
+async def main() -> None:
+    logger.info("⚖️ Starting Orthodoxy Wardens listener (Streams-only)")
+
+    bus = StreamBus(host=os.getenv("REDIS_HOST", "core_redis"), port=int(os.getenv("REDIS_PORT", "6379")))
+    adapter = OrthodoxyBusAdapter()
+    persistence = PersistenceAdapter()
+
+    group = _ensure_group_prefix(os.getenv("CONSUMER_GROUP", "orthodoxy_wardens"))
+    consumer = os.getenv("CONSUMER_NAME", "orthodoxy_wardens:worker")
+    channels = list(settings.SACRED_CHANNELS)
+
+    logger.info("⚖️ group=%s consumer=%s streams=%d", group, consumer, len(channels))
+    await asyncio.gather(*[_consume_one_stream(bus, adapter, persistence, c, group, consumer) for c in channels])
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("⚖️ Orthodoxy Wardens Listener stopped by user")
+        logger.info("⚖️ Orthodoxy Wardens listener stopped by user")
     except Exception as e:
-        logger.error(f"⚖️ Orthodoxy Wardens Listener error: {e}", exc_info=True)
+        logger.error(f"⚖️ Orthodoxy Wardens listener error: {e}", exc_info=True)
         raise

@@ -1,19 +1,24 @@
-# core/algorithms/__init__.py
 """
-🧠 Vitruvyan Core Algorithms - Linea Proprietaria
+Vitruvyan Proprietary Algorithms
 
-Moduli componibili per analisi explainable, safe e composable:
+Domain-agnostic epistemic engines. Each sub-package is a self-contained
+algorithm with its own engine, analyzer, and memory adapter.
 
-- VEE: Vitruvyan Explainability Engine (domain-agnostic narrative generation)
+Active modules:
+    - VEE:  Vitruvyan Explainability Engine (narrative generation)
+    - VSGS: Vitruvyan Semantic Grounding System (semantic context enrichment)
 
-NOTE (Feb 2026): Domain-specific engines (VHSW, VARE, VMFL) have been 
-moved to vitruvyan (finance vertical). Only domain-agnostic VEE remains.
+Pending migration (from mercator VPS):
+    - VWRE: Vitruvyan Weighted Reverse Engineering
+    - VARE: Vitruvyan Adaptive Risk Engine
+    - VMFL: Vitruvyan Memory Feedback Loop
+
+Archived:
+    - _legacy/orchestrator.py: Pre-refactoring composite scorer (broken imports)
+    - _legacy/algorithm_memory_adapter.py: Orphaned persistence adapter
 """
-
-# Domain-agnostic imports only
-# VHSWEngine, VAREEngine, VMFLEngine are finance-specific and live in vitruvyan
 
 __all__ = []
 
-__version__ = "2.0.0"  # Breaking change: removed finance-specific engines
+__version__ = "3.0.0"  # Restructured: VSGS added, VWRE/VARE/VMFL placeholders
 __author__ = "Vitruvyan AI Team"

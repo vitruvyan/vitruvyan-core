@@ -91,8 +91,8 @@ class MemoryStreamsListener:
                         await self.handle_event(event)
                         
                         # Acknowledge after successful handling
-                        self.bus.acknowledge(event.stream, self.group, event.event_id)
-                        logger.info(f"✅ Acknowledged event {event.event_id} from {event.stream}")
+                        self.bus.ack(event, group=self.group)
+                        logger.info(f"✅ ACK {event.event_id} from {event.stream}")
                 
                 # Small delay to prevent tight loop
                 await asyncio.sleep(0.1)

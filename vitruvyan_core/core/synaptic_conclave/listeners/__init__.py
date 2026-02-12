@@ -19,11 +19,6 @@ Rationale: Separation of concerns - docker for deployment, synaptic_conclave for
 
 Listeners:
 ----------
-- CodexHuntersCognitiveBusListener: Data collection expeditions
-- BabelGardensCognitiveBusListener: Multilingual sentiment/emotion analysis
-- ShadowTradersCognitiveBusListener: Shadow trading execution
-- VaultKeepersCognitiveBusListener: Knowledge preservation and versioning
-- MCPListener: Model Context Protocol bridge
 - LangGraphStreamsListener: Portfolio monitoring workflows (native streams)
 """
 
@@ -32,18 +27,6 @@ Listeners:
 # This avoids loading all listener dependencies (e.g., aiohttp) when only one listener is needed.
 
 # Available listeners (import directly from submodules):
-# - codex_hunters.CodexHuntersCognitiveBusListener
-# - babel_gardens.BabelGardensCognitiveBusListener
-# - shadow_traders.ShadowTradersCognitiveBusListener
-# - vault_keepers.VaultKeepersCognitiveBusListener
-# - mcp.MCPListener
 # - langgraph.LangGraphStreamsListener
 
-__all__ = [
-    'CodexHuntersCognitiveBusListener',
-    'BabelGardensCognitiveBusListener',
-    'ShadowTradersCognitiveBusListener',
-    'VaultKeepersCognitiveBusListener',
-    'MCPListener',
-    'LangGraphStreamsListener',
-]
+__all__ = ["LangGraphStreamsListener"]

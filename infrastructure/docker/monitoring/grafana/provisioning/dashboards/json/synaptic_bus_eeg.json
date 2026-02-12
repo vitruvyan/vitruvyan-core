@@ -252,10 +252,16 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(cognitive_bus_events_total[1m])) by (service, channel)",
+          "expr": "sacred_order_activity",
           "format": "table",
           "instant": true,
-          "refId": "A"
+          "refId": "nodes"
+        },
+        {
+          "expr": "stream_connection > 0",
+          "format": "table",
+          "instant": true,
+          "refId": "edges"
         }
       ]
     },

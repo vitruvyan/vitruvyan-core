@@ -1,80 +1,74 @@
 #!/usr/bin/env python3
 """
-🌿 Babel Gardens - Redis Streams Listener (Phase 2 Migration)
+🌿 Babel Gardens — Streams Listener (No Pub/Sub)
 
-ZERO-CODE-CHANGE wrapper for BabelGardensCognitiveBusListener using ListenerAdapter.
-
-Sacred Order: DISCOURSE (Babel Gardens - Linguistic Unification)
-
-Sacred Channels (4 total):
-  1. codex.discovery.mapped - Process discovery events
-  2. babel.linguistic.synthesis - Synthesize multilingual content
-  3. babel.multilingual.bridge - Cross-language bridging
-  4. babel.knowledge.cultivation - Knowledge garden cultivation
-
-Purpose:
-  Babel Gardens is the linguistic unification layer that processes multilingual content,
-  synthesizes knowledge across languages, and cultivates the sacred gardens of understanding.
-
-Migration: Phase 2 (Listener #3 of 7)
-Pattern: wrap_legacy_listener (from listener_adapter.py)
-Status: Production-ready (Feb 7, 2026)
+This listener currently ACKs and logs inbound streams for the Discourse layer.
+Processing is performed via HTTP APIs (Pattern Weavers / LangGraph integration).
 """
 
 import asyncio
 import logging
 import sys
 import os
+from typing import Any
 
-# Add parent directories to path for imports
 sys.path.insert(0, '/app')
 sys.path.insert(0, '/app/api_babel_gardens')
 
-from core.synaptic_conclave.listeners.babel_gardens import BabelGardensCognitiveBusListener
-from core.synaptic_conclave.consumers import wrap_legacy_listener
+from core.synaptic_conclave.transport.streams import StreamBus
+from api_babel_gardens.config import get_config
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
 )
-logger = logging.getLogger("BabelGardensStreamsWrapper")
+logger = logging.getLogger("BabelGardensStreamsListener")
 
-async def main():
-    """🌿 Start Babel Gardens Streams listener with zero-code-change adapter"""
-    
-    logger.info("🌿 Babel Gardens Listener Sacred Streams Bridge starting...")
-    
-    # Step 1: Instantiate existing legacy listener (NO MODIFICATIONS)
-    legacy_listener = BabelGardensCognitiveBusListener()
-    
-    # Step 2: Define sacred channels (must match legacy listener)
-    sacred_channels = [
+def _ensure_group_prefix(group: str) -> str:
+    return group if group.startswith("group:") else f"group:{group}"
+
+
+def _channel_from_stream(stream: str) -> str:
+    return stream.replace("vitruvyan:", "", 1)
+
+
+async def _consume_one_stream(bus: StreamBus, channel: str, group: str, consumer: str) -> None:
+    bus.create_consumer_group(channel=channel, group=group, start_id="0")
+    gen = bus.consume(channel=channel, group=group, consumer=consumer, count=10, block_ms=1000)
+
+    while True:
+        event = await asyncio.to_thread(next, gen, None)
+        if event is None:
+            continue
+
+        observed_channel = _channel_from_stream(event.stream)
+        payload: Any = event.payload
+        logger.info("🌿 received=%s event_id=%s", observed_channel, event.event_id)
+        logger.debug("🌿 payload=%s", str(payload)[:240])
+        bus.ack(event, group=group)
+
+
+async def main() -> None:
+    config = get_config()
+    bus = StreamBus(host=config.redis.host, port=config.redis.port)
+
+    group = _ensure_group_prefix(os.getenv("CONSUMER_GROUP", "babel_gardens"))
+    consumer = os.getenv("CONSUMER_NAME", "babel_gardens:worker")
+    channels = [
         "codex.discovery.mapped",
         "babel.linguistic.synthesis",
         "babel.multilingual.bridge",
-        "babel.knowledge.cultivation"
+        "babel.knowledge.cultivation",
     ]
-    
-    logger.info(f"🌿 Babel Gardens subscribed to {len(sacred_channels)} streams")
-    
-    # Step 3: Wrap with ListenerAdapter (handles all Streams logic)
-    adapter = wrap_legacy_listener(
-        listener_instance=legacy_listener,
-        name="babel_gardens",
-        sacred_channels=sacred_channels,
-        handler_method="handle_sacred_message"  # Legacy method name
-    )
-    
-    logger.info("🌿 Babel Gardens adapter initialized, starting consumption...")
-    
-    # Step 4: Start adapter (blocking)
-    await adapter.start()
+
+    logger.info("🌿 Starting Babel Gardens listener (Streams-only) group=%s streams=%d", group, len(channels))
+    await asyncio.gather(*[_consume_one_stream(bus, c, group, consumer) for c in channels])
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("🌿 Babel Gardens Listener stopped by user")
+        logger.info("🌿 Babel Gardens listener stopped by user")
     except Exception as e:
-        logger.error(f"🌿 Babel Gardens Listener error: {e}", exc_info=True)
+        logger.error(f"🌿 Babel Gardens listener error: {e}", exc_info=True)
         raise

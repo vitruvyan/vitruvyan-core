@@ -55,17 +55,17 @@ scrape_configs:
     metrics_path: /metrics
   - job_name: 'embedding'
     static_configs:
-      - targets: ['embedding:8000']
+      - targets: ['embedding:8010']
     metrics_path: /metrics
   - job_name: 'graph'
     static_configs:
-      - targets: ['graph:8000']
+      - targets: ['graph:8004']
     metrics_path: /metrics
   - job_name: 'neural_engine'
     static_configs:
-      - targets: ['neural_engine:8000']
+      - targets: ['neural_engine:8003']
     metrics_path: /metrics
   - job_name: 'conclave'
     static_configs:
-      - targets: ['conclave:8000']
+      - targets: ['conclave:8012']
     metrics_path: /metrics
