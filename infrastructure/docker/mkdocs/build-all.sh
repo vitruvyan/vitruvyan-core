@@ -12,6 +12,12 @@ set -e  # Exit on error
 echo "🏗️  Building Vitruvyan Knowledge Base (Multi-Build)..."
 echo ""
 
+# Prepare public landing page (single file only)
+echo "📄 Preparing public landing page..."
+cp /app/docs/public/landing.md /app/docs_root_public/index.md
+echo "✅ Copied landing.md → docs_root_public/index.md"
+echo ""
+
 # Build 1: Public documentation (no authentication required)
 echo "📚 [1/2] Building PUBLIC documentation..."
 mkdocs build \

@@ -24,8 +24,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY build-all.sh /app/build-all.sh
 RUN chmod +x /app/build-all.sh
 
-# Create site directories + docs_root with symlinks
-RUN mkdir -p /app/site /app/site_public /app/docs_root && \
+# Create output directories and symlinked docs_root (for full site)
+# Create separate docs_root_public (for public landing page only)
+RUN mkdir -p /app/site /app/site_public /app/docs_root /app/docs_root_public && \
     ln -s /app/docs /app/docs_root/docs && \
     ln -s /app/vitruvyan_core /app/docs_root/vitruvyan_core && \
     ln -s /app/services /app/docs_root/services && \

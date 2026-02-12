@@ -1,25 +1,25 @@
 # ============================================================================
-# MkDocs Configuration — PUBLIC ACCESS (No Authentication)
+# MkDocs Configuration — PUBLIC LANDING PAGE (No Authentication)
 # ============================================================================
 # Last Updated: February 12, 2026
-# Purpose: Public-facing documentation (getting started, overview, basic concepts)
+# Purpose: Single landing page explaining Vitruvyan + access request instructions
 # Deploy: docker compose exec mkdocs mkdocs build -f mkdocs.public.yml -d site_public
-# Access: https://kb.vitruvyan.com/public/
+# Access: https://kb.vitruvyan.com/ (root path, no authentication)
 # ============================================================================
 
-site_name: Vitruvyan Core Documentation (Public)
-site_description: Domain-agnostic epistemic operating system - Public Documentation
+site_name: Vitruvyan Core
+site_description: Domain-agnostic epistemic operating system — Request knowledge base access
 site_author: Vitruvyan Team
-site_url: https://kb.vitruvyan.com/public
+site_url: https://kb.vitruvyan.com
 
 repo_name: vitruvyan-core
 repo_url: https://github.com/vitruvyan/vitruvyan-core
 
-# Docs directory (symlinked docs root)
-docs_dir: /app/docs_root
+# Docs directory (dedicated public directory with landing page only)
+docs_dir: /app/docs_root_public
 site_dir: /app/site_public
 
-# Theme configuration
+# Theme configuration (minimal)
 theme:
   name: material
   language: en
@@ -28,92 +28,41 @@ theme:
       scheme: default
       primary: indigo
       accent: deep purple
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: indigo
       accent: deep purple
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
-  
   features:
     - navigation.instant
-    - navigation.tracking
-    - navigation.tabs
-    - navigation.sections
-    - navigation.top
-    - search.suggest
-    - search.highlight
     - content.code.copy
-
   icon:
     repo: fontawesome/brands/github
 
-# Plugins
+# Plugins (minimal)
 plugins:
   - search:
       lang: en
-  - mermaid2
-  - minify:
-      minify_html: true
 
-# Markdown extensions (same as full version for consistency)
+# Markdown extensions (minimal)
 markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
   - admonition
-  - pymdownx.details
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:mermaid2.fence_mermaid_custom
-  - pymdownx.tabbed:
-      alternate_style: true
-  - pymdownx.highlight:
-      anchor_linenums: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-  - pymdownx.tasklist:
-      custom_checkbox: true
-  - tables
-  - footnotes
   - attr_list
-  - md_in_html
+  - tables
   - toc:
       permalink: true
-      toc_depth: 3
 
-# PUBLIC NAVIGATION (Limited access)
+# Site navigation (SINGLE PAGE ONLY)
 nav:
-  - Welcome: index.md
-  
-  - Getting Started:
-    - Overview: docs/foundational/VITRUVYAN_OVERVIEW.md
-    - Charter: docs/foundational/VITRUVYAN_CHARTER.md
-  
-  - Architecture Basics:
-    - Sacred Orders Pattern: docs/foundational/SACRED_ORDER_PATTERN_INTRO.md
-  
-  - Core Concepts:
-    - What is Vitruvyan?: docs/foundational/VITRUVYAN_OVERVIEW.md
-    - Design Philosophy: docs/foundational/VITRUVYAN_CHARTER.md
-  
-  - Community:
-    - GitHub: https://github.com/vitruvyan/vitruvyan-core
-    - Knowledge Base (Full): https://kb.vitruvyan.com
+  - Home: index.md
 
-# Extra
+# Footer
 extra:
-  version:
-    provider: mike
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/vitruvyan
-      name: Vitruvyan on GitHub
-  announcement:
-    text: "📚 This is the public documentation. <a href='/'>Sign in</a> for full access."
+      link: https://github.com/vitruvyan/vitruvyan-core
+      name: GitHub Repository
 
 # Copyright
 copyright: Copyright &copy; 2026 Vitruvyan Team
