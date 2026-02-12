@@ -1,7 +1,7 @@
 import re
-import os
 import logging
 from core.cognitive.semantic_engine import parse_user_input
+from core.agents.llm_agent import get_llm_agent
 
 # Phase 2 Migration (Nov 5, 2025): COMPLETED
 # Migrated to VSGS semantic_matches from semantic_grounding_node
@@ -73,8 +73,7 @@ def _detect_contextual_reference(text: str) -> bool:
     
     # Use GPT-3.5 for semantic detection (fast + accurate)
     try:
-        from openai import OpenAI
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        llm = get_llm_agent()
         
         prompt = f"""Does this query refer to previous context or is it a follow-up question?
 
@@ -92,14 +91,11 @@ Examples:
 
 Answer:"""
         
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=5,
-            temperature=0.0
-        )
-        
-        answer = response.choices[0].message.content.strip().lower()
+        answer = llm.complete(
+            prompt=prompt,
+            temperature=0.0,
+            max_tokens=5
+        ).strip().lower()
         is_contextual = answer.startswith("yes") or answer.startswith("sì") or answer.startswith("si")
         
         logger.info(f"🤖 [LLM Contextual Detection] Query: '{text[:50]}...' → {answer} (contextual={is_contextual})")

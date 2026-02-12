@@ -25,7 +25,7 @@ import asyncio  # 🔧 For event loop access in sync context (Phase 4)
 import nest_asyncio  # 🔧 Allow nested event loops (Phase 4 fix)
 from typing import Dict, Any, List, Optional
 import httpx
-from openai import OpenAI
+from core.agents.llm_agent import get_llm_agent
 
 logger = logging.getLogger(__name__)
 
@@ -48,21 +48,6 @@ def _ensure_nest_asyncio():
 # Environment configuration
 USE_MCP = os.getenv("USE_MCP", "0") == "1"  # Master switch for MCP integration
 MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://omni_mcp:8020")  # FIXED: Correct port 8020 (was 8021)
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")  # Cost-optimized for tool calling
-
-# OpenAI client (lazy init)
-_openai_client: Optional[OpenAI] = None
-
-
-def get_openai_client() -> OpenAI:
-    """Get or initialize OpenAI client."""
-    global _openai_client
-    if _openai_client is None:
-        if not OPENAI_API_KEY:
-            raise ValueError("OPENAI_API_KEY environment variable not set")
-        _openai_client = OpenAI(api_key=OPENAI_API_KEY)
-    return _openai_client
 
 
 async def get_mcp_tools() -> List[Dict[str, Any]]:
@@ -208,7 +193,7 @@ def llm_mcp_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     # Step 2: OpenAI Function Calling to select tool
     try:
-        client = get_openai_client()
+        llm = get_llm_agent()
         
         # Construct system prompt with context (domain-agnostic)
         system_prompt = f"""You are Vitruvyan AI, an epistemic reasoning assistant.
@@ -225,30 +210,28 @@ Note: Entity type and domain are deployment-configured (finance, documents, user
             {"role": "user", "content": user_input}
         ]
         
-        response = client.chat.completions.create(
-            model=OPENAI_MODEL,
+        # Nuclear Option: LLM decides which tool to call via semantic understanding
+        result = llm.complete_with_tools(
             messages=messages,
             tools=mcp_tools,
-            tool_choice="auto",  # Let OpenAI decide if tool needed
-            temperature=0.0  # Deterministic for tool selection
+            tool_choice="auto",
+            temperature=0.0,
         )
         
-        message = response.choices[0].message
-        
         # Check if tool was called
-        if not message.tool_calls:
-            logger.info("🤷 OpenAI chose not to call any tool (direct response)")
+        if not result["tool_calls"]:
+            logger.info("🤷 LLM chose not to call any tool (direct response)")
             return {
                 **state,
                 "mcp_tool_used": None,
                 "mcp_result": None,
-                "response": {"narrative": message.content or "No response generated"}
+                "response": {"narrative": result["content"] or "No response generated"}
             }
         
         # Step 3: Execute tool via MCP (using existing event loop)
-        tool_call = message.tool_calls[0]
-        tool_name = tool_call.function.name
-        tool_args = json.loads(tool_call.function.arguments)
+        tool_call = result["tool_calls"][0]
+        tool_name = tool_call["function"]["name"]
+        tool_args = json.loads(tool_call["function"]["arguments"])
         
         logger.info(f"🔧 OpenAI selected tool: {tool_name} with args: {tool_args}")
         

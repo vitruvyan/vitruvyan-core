@@ -34,7 +34,7 @@ import httpx
 import logging
 from typing import Dict, Any, Tuple
 from datetime import datetime
-from openai import OpenAI
+from core.agents.llm_agent import get_llm_agent
 from dotenv import load_dotenv
 from prometheus_client import Counter
 
@@ -47,9 +47,6 @@ intent_override_counter = Counter(
     'vitruvyan_intent_override_total',
     'Professional boundaries enforced - ambiguous queries rejected'
 )
-
-# OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Babel Gardens API URL
 BABEL_API_URL = os.getenv("SENTIMENT_API_URL", "http://vitruvyan_babel_gardens:8009")
@@ -203,19 +200,19 @@ async def _call_gpt_intent(input_text: str, timeout: float = 10.0) -> Dict[str, 
     prompt = INTENT_PROMPT_TEMPLATE.format(user_input=input_text)
     
     try:
-        # OpenAI client is synchronous, run in executor
+        # LLMAgent is sync, run in executor for async context
+        llm = get_llm_agent()
         loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(
+        raw_content = await loop.run_in_executor(
             None,
-            lambda: client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=200,
-                temperature=0.0
+            lambda: llm.complete(
+                prompt=prompt,
+                temperature=0.0,
+                max_tokens=200
             )
         )
         
-        raw_content = response.choices[0].message.content.strip()
+        raw_content = raw_content.strip()
         logger.debug(f"🔍 [INTENT_DETECTION] GPT raw response: {repr(raw_content)}")
         
         # Clean markdown formatting

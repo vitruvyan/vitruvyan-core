@@ -18,7 +18,7 @@ Sacred Order: Discourse
 """
 
 from typing import Dict, Any, List
-from openai import OpenAI
+from core.agents.llm_agent import get_llm_agent
 import os
 from dotenv import load_dotenv
 
@@ -178,16 +178,14 @@ def llm_soft_node(state: Dict[str, Any]) -> Dict[str, Any]:
     - Technical narration if intent=trend/momentum/risk/... etc.
     - Integrates grounding from Qdrant
     """
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    llm = get_llm_agent()
     try:
         messages = build_prompt(state)
-        resp = client.chat.completions.create(
-            model=os.getenv("GRAPH_LLM_MODEL", "gpt-4o-mini"),
+        answer = llm.complete_with_messages(
             messages=messages,
             temperature=0.6,
             max_tokens=400,
         )
-        answer = resp.choices[0].message.content.strip()
     except Exception as e:
         answer = f"(Soft node error: {e})"
 

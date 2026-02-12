@@ -5,12 +5,13 @@ import json
 import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
-import openai
 import os
 from dotenv import load_dotenv
 
 # Import our cache manager
 from core.llm.cache_manager import get_cache_manager, CacheEntry
+# Import LLMAgent
+from core.agents.llm_agent import get_llm_agent
 # 🆕 Import emotion detection
 from core.orchestration.langgraph.node.emotion_detector import detect_emotion, get_emotion_system_prompt_fragment
 
@@ -45,11 +46,10 @@ class CachedLLMOrchestrator:
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.llm = get_llm_agent()
         self.cache_manager = get_cache_manager()
         
-        # Model configuration
-        self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        # Model configuration (resolved via LLMAgent env var chain)
         self.max_tokens = int(os.getenv("LLM_MAX_TOKENS", "1500"))
         self.temperature = float(os.getenv("LLM_TEMPERATURE", "0.7"))
         
@@ -275,23 +275,19 @@ class CachedLLMOrchestrator:
             # Track token usage
             start_time = datetime.now()
             
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
+            llm_response = self.llm.complete(
+                prompt=user_prompt,
+                system_prompt=system_prompt,
                 max_tokens=self.max_tokens,
-                temperature=self.temperature
+                temperature=self.temperature,
             )
             
-            # Extract response and token usage
-            llm_response = response.choices[0].message.content
-            tokens_used = response.usage.total_tokens
+            # Estimate tokens (LLMAgent tracks internally via metrics)
+            tokens_used = len(system_prompt.split()) + len(user_prompt.split()) + len(llm_response.split())
             
             processing_time = (datetime.now() - start_time).total_seconds()
             
-            self.logger.info(f"Fresh LLM response: {tokens_used} tokens, {processing_time:.2f}s")
+            self.logger.info(f"Fresh LLM response: ~{tokens_used} tokens, {processing_time:.2f}s")
             
             # Cache the response
             self.cache_manager.cache_response(
@@ -305,7 +301,7 @@ class CachedLLMOrchestrator:
                 "cache_hit": False,
                 "tokens_used": tokens_used,
                 "processing_time": processing_time,
-                "model": self.model
+                "model": self.llm.default_model
             }
             
             return state

@@ -28,18 +28,13 @@ STATE OUTPUTS:
 
 import re
 import logging
-import os
 from typing import Dict, Any, Optional
 from datetime import datetime
-from openai import OpenAI
+from core.agents.llm_agent import get_llm_agent
 from dotenv import load_dotenv
 
 load_dotenv()
 logger = logging.getLogger(__name__)
-
-# OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-LLM_MODEL = os.getenv("GRAPH_LLM_MODEL", "gpt-4o-mini")
 
 # Default values
 DEFAULT_HORIZON = "medium"
@@ -111,17 +106,15 @@ Extract the investment horizon and classify it as EXACTLY one of:
 Reply with just the classification word: short, medium, or long
 """
         
-        resp = client.chat.completions.create(
-            model=LLM_MODEL,
-            messages=[
-                {"role": "system", "content": "You are a financial horizon classifier. Reply with only one word."},
-                {"role": "user", "content": prompt}
-            ],
+        llm = get_llm_agent()
+        result = llm.complete(
+            prompt=prompt,
+            system_prompt="You are a horizon classifier. Reply with only one word.",
             temperature=0.1,
             max_tokens=10
         )
         
-        llm_horizon = resp.choices[0].message.content.strip().lower()
+        llm_horizon = result.strip().lower()
         if llm_horizon in ["short", "medium", "long"]:
             logger.info(f"⚙️ [PARAMS] Horizon LLM: {llm_horizon}")
             return llm_horizon
@@ -195,17 +188,15 @@ Examples:
 Reply with just the number (1-50), or "default" if no specific number is mentioned.
 """
         
-        resp = client.chat.completions.create(
-            model=LLM_MODEL,
-            messages=[
-                {"role": "system", "content": "You are a number extractor. Reply with just a number or 'default'."},
-                {"role": "user", "content": prompt}
-            ],
+        llm = get_llm_agent()
+        result = llm.complete(
+            prompt=prompt,
+            system_prompt="You are a number extractor. Reply with just a number or 'default'.",
             temperature=0.1,
             max_tokens=10
         )
         
-        llm_response = resp.choices[0].message.content.strip().lower()
+        llm_response = result.strip().lower()
         
         if llm_response == "default":
             logger.info(f"⚙️ [PARAMS] Top-k LLM: default → {DEFAULT_TOP_K}")

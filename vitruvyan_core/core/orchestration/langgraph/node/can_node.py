@@ -27,7 +27,7 @@ Contract Compliance:
 from typing import Dict, Any, List, Optional
 import os
 import logging
-from openai import OpenAI
+from core.agents.llm_agent import get_llm_agent
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -200,7 +200,7 @@ def _generate_conversational_narrative(
         Natural language narrative string
     """
     try:
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        llm = get_llm_agent()
         
         # Build context summary (no semantic interpretation)
         context_summary = []
@@ -243,17 +243,13 @@ def _generate_conversational_narrative(
             f"Generate a natural, helpful conversational response."
         )
         
-        response = client.chat.completions.create(
-            model=os.getenv("GRAPH_LLM_MODEL", "gpt-4o-mini"),
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
+        narrative = llm.complete(
+            prompt=user_prompt,
+            system_prompt=system_prompt,
             temperature=0.7,
-            max_tokens=400
+            max_tokens=400,
         )
         
-        narrative = response.choices[0].message.content.strip()
         logger.info(f"🧠 [can_node] LLM narrative: {narrative[:80]}...")
         return narrative
         
@@ -287,7 +283,7 @@ def _generate_follow_ups(
         List of follow-up question strings
     """
     try:
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        llm = get_llm_agent()
         
         context_hint = ""
         if vsgs_context:
@@ -299,14 +295,11 @@ def _generate_follow_ups(
             f"Return only the questions, one per line."
         )
         
-        response = client.chat.completions.create(
-            model=os.getenv("GRAPH_LLM_MODEL", "gpt-4o-mini"),
-            messages=[{"role": "user", "content": prompt}],
+        text = llm.complete(
+            prompt=prompt,
             temperature=0.8,
-            max_tokens=150
+            max_tokens=150,
         )
-        
-        text = response.choices[0].message.content.strip()
         follow_ups = [q.strip().lstrip("-•").strip() for q in text.split("\n") if q.strip()][:3]
         
         logger.info(f"🧠 [can_node] Generated {len(follow_ups)} follow-ups")

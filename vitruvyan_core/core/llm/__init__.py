@@ -1,20 +1,24 @@
 """
-LLM — Foundation Tier 0
-Language Model Interface & Conversational Layer
+LLM — Prompt System & Cache Utilities
+======================================
 
-Provides unified interface to multiple LLM providers (OpenAI, Anthropic, Gemini)
-with built-in caching, conversation management, and prompt engineering.
+Provides prompt registry, caching, and utilities for LLM operations.
+The canonical LLM gateway is LLMAgent (core/agents/llm_agent.py).
 
 Core Components:
-- LLMInterface: Unified API for all LLM providers
-- ConversationalLLM: Multi-turn conversation management
-- LLMCacheManager: LRU caching for LLM responses
+- LLMCacheManager: Redis-backed LRU caching for LLM responses
 - cache_api: REST API module for cache operations
-- prompts: Prompt engineering & versioning (sub-module)
+- prompts: Domain-agnostic prompt registry & versioning (sub-module)
+- gemma_client: Gemma HTTP proxy bridge
+
+Legacy (in _legacy/):
+- LLMInterface: Superseded by LLMAgent (Feb 12, 2026)
+- ConversationalLLM: Superseded by LLMAgent + PromptRegistry (Feb 12, 2026)
 """
 
-from .llm_interface import LLMInterface
-from .conversational_llm import ConversationalLLM
+# Backward compatibility — redirect to _legacy/
+from ._legacy.llm_interface import LLMInterface
+from ._legacy.conversational_llm import ConversationalLLM
 from .cache_manager import (
     get_cache_manager,
     CacheEntry,

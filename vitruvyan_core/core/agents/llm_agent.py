@@ -2,59 +2,54 @@
 LLMAgent — Centralized LLM Gateway
 ===================================
 
-This is the CORE LLM agent following the PostgresAgent pattern.
-All LLM access in the system should go through this agent.
+The canonical LLM agent following the PostgresAgent/QdrantAgent pattern.
+All LLM access in the system MUST go through this agent.
+
+Nuclear Option Philosophy (Appendix G):
+    "LLM is PRIMARY, validation is MANDATORY, cache is OPTIMIZATION"
+
+    Vitruvyan replaces rigid regex patterns with LLM-based natural
+    language understanding, while maintaining epistemic integrity
+    through structured validation layers.
 
 Features:
----------
-- Centralized access point (replaces 8+ scattered OpenAI clients)
-- Caching via LLMCacheManager (Redis-backed)
-- Rate limiting (prevents 429 from OpenAI)
-- Circuit breaker (graceful degradation)
-- Provider abstraction (swap OpenAI for Anthropic/local)
-- Metrics (latency, token usage, cache hit rate)
-- Both sync and async interfaces (async-ready design)
+    - Centralized access (singleton, one OpenAI client for all nodes)
+    - Redis-backed caching via LLMCacheManager
+    - Rate limiting (prevents 429 errors from provider)
+    - Circuit breaker (graceful degradation on failures)
+    - Provider abstraction (swap OpenAI for Anthropic/local/Gemma)
+    - Function calling / tool use (complete_with_tools)
+    - Metrics (latency, token usage, cache hit rate)
+    - Both sync and async interfaces
+
+Model Resolution (env var chain):
+    VITRUVYAN_LLM_MODEL → GRAPH_LLM_MODEL → OPENAI_MODEL → "gpt-4o-mini"
 
 Usage:
-    from core.agents.llm_agent import LLMAgent
-    
-    llm = LLMAgent()
-    
-    # Sync usage (current LangGraph pattern)
-    response = llm.complete("Analyze AAPL stock")
-    
-    # With system prompt
-    response = llm.complete(
-        prompt="Analyze AAPL stock",
-        system_prompt="You are a financial analyst.",
-        model="gpt-4o-mini",
-    )
-    
-    # Future async usage (when LangGraph migrates to ainvoke)
-    response = await llm.acomplete("Analyze AAPL stock")
+    from core.agents.llm_agent import get_llm_agent
 
-Architecture Decision (Feb 10, 2026):
-    The LangGraph pipeline has LLM calls scattered across 8+ nodes:
-    - intent_detection_node.py
-    - parse_node.py 
-    - enhanced_llm_node.py
-    - llm_mcp_node.py
-    - can_node.py
-    - compose_node.py
-    - entity_resolver_node.py
-    - proactive_advisor_node.py
-    
-    This causes:
-    - Redundant OpenAI client instantiation
-    - No centralized rate limiting (429 errors)
-    - No shared caching (wasted tokens)
-    - Hard to swap providers
-    
-    Solution: All nodes should use LLMAgent.complete() instead of
-    direct OpenAI calls.
+    llm = get_llm_agent()  # singleton
+
+    # Simple completion
+    response = llm.complete("Classify this intent", system_prompt="You are...")
+
+    # JSON mode
+    data = llm.complete_json(prompt, system_prompt)
+
+    # Function calling / MCP tools
+    result = llm.complete_with_tools(messages, tools=[...])
+
+    # Raw messages (full control)
+    result = llm.complete_with_messages(messages, model="gpt-4o-mini")
+
+Sacred Orders Alignment:
+    - Discourse: LLM-first conversational layer
+    - Truth: Validation layers post-LLM
+    - Memory: Cache as optimization layer
 
 Author: Vitruvyan Core Team
 Created: February 10, 2026
+Refactored: February 12, 2026 (v2.0 — domain-agnostic, tools support)
 Status: PRODUCTION
 """
 
@@ -290,12 +285,31 @@ class LLMMetrics:
 # LLM AGENT
 # ===========================================================================
 
+# ===========================================================================
+# MODEL RESOLUTION — unified env var chain
+# ===========================================================================
+
+def _resolve_default_model() -> str:
+    """Resolve default LLM model from env var chain.
+    
+    Priority: VITRUVYAN_LLM_MODEL → GRAPH_LLM_MODEL → OPENAI_MODEL → gpt-4o-mini
+    """
+    return (
+        os.getenv("VITRUVYAN_LLM_MODEL")
+        or os.getenv("GRAPH_LLM_MODEL")
+        or os.getenv("OPENAI_MODEL")
+        or "gpt-4o-mini"
+    )
+
+
 class LLMAgent:
     """
-    Centralized LLM gateway following PostgresAgent pattern.
+    Centralized LLM gateway following PostgresAgent/QdrantAgent pattern.
     
-    Provides single point of access for all LLM calls in the system.
-    Handles caching, rate limiting, circuit breaking, and metrics.
+    Provides single point of access for ALL LLM calls in the system.
+    Handles caching, rate limiting, circuit breaking, metrics, and tool use.
+    
+    Nuclear Option: "LLM is PRIMARY, validation is MANDATORY, cache is OPTIMIZATION"
     """
     
     # Singleton instance
@@ -313,7 +327,7 @@ class LLMAgent:
     def __init__(
         self,
         api_key: str = None,
-        default_model: str = "gpt-4o-mini",
+        default_model: str = None,
         enable_cache: bool = True,
         enable_rate_limiting: bool = True,
         enable_circuit_breaker: bool = True,
@@ -322,9 +336,9 @@ class LLMAgent:
         Initialize LLM agent.
         
         Args:
-            api_key: OpenAI API key (fallback to OPENAI_API_KEY env)
-            default_model: Default model for completions
-            enable_cache: Enable Redis-based response caching
+            api_key: Provider API key (fallback to OPENAI_API_KEY env)
+            default_model: Default model (fallback to env var chain)
+            enable_cache: Enable Redis-backed response caching
             enable_rate_limiting: Enable rate limiting
             enable_circuit_breaker: Enable circuit breaker
         """
@@ -332,7 +346,7 @@ class LLMAgent:
         if hasattr(self, '_initialized') and self._initialized:
             return
         
-        # Check OpenAI availability (COO fix: Feb 10, 2026)
+        # Check OpenAI availability (lazy import guard)
         if not OPENAI_AVAILABLE:
             raise ImportError(
                 "❌ LLMAgent requires 'openai' package. "
@@ -342,7 +356,7 @@ class LLMAgent:
             )
         
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.default_model = default_model
+        self.default_model = default_model or _resolve_default_model()
         
         # Initialize OpenAI client
         self._client = OpenAI(api_key=self.api_key)
@@ -571,6 +585,171 @@ class LLMAgent:
                 return json.loads(json_content)
             raise LLMError(f"Failed to parse JSON response: {e}")
     
+    def complete_with_tools(
+        self,
+        messages: List[Dict[str, Any]],
+        tools: List[Dict[str, Any]],
+        model: str = None,
+        temperature: float = 0.0,
+        max_tokens: int = 1000,
+        tool_choice: str = "auto",
+    ) -> Dict[str, Any]:
+        """
+        Complete with function calling / tool use (MCP, OpenAI functions).
+        
+        Nuclear Option: LLM decides which tools to call based on semantic
+        understanding — no regex routing.
+        
+        Args:
+            messages: Full message array [{"role": ..., "content": ...}]
+            tools: OpenAI-format tool definitions
+            model: Model to use (default: env var chain)
+            temperature: Sampling temperature
+            max_tokens: Max tokens in response
+            tool_choice: "auto", "none", or {"type": "function", ...}
+            
+        Returns:
+            Dict with "content", "tool_calls", "role" keys
+        """
+        start_time = time.time()
+        model = model or self.default_model
+        self._metrics.total_requests += 1
+        
+        # Circuit breaker check
+        if self._circuit_breaker and not self._circuit_breaker.can_execute():
+            self._metrics.circuit_breaker_rejected += 1
+            raise LLMCircuitOpenError("Circuit breaker is open")
+        
+        # Rate limiter check
+        estimated_tokens = sum(len(str(m.get("content", "")).split()) for m in messages) * 2 + max_tokens
+        if self._rate_limiter and not self._rate_limiter.acquire(estimated_tokens):
+            self._metrics.rate_limited += 1
+            raise LLMRateLimitError("Rate limited")
+        
+        try:
+            response = self._client.chat.completions.create(
+                model=model,
+                messages=messages,
+                tools=tools,
+                tool_choice=tool_choice,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            
+            if self._circuit_breaker:
+                self._circuit_breaker.record_success()
+            
+            actual_tokens = response.usage.total_tokens if response.usage else estimated_tokens
+            if self._rate_limiter:
+                self._rate_limiter.record_actual_tokens(actual_tokens)
+            self._metrics.total_tokens += actual_tokens
+            
+            latency = (time.time() - start_time) * 1000
+            self._metrics.total_latency_ms += latency
+            
+            message = response.choices[0].message
+            logger.debug(f"✅ LLM tools (model={model}, tokens={actual_tokens}, latency={latency:.1f}ms)")
+            
+            return {
+                "content": message.content,
+                "tool_calls": [
+                    {
+                        "id": tc.id,
+                        "type": tc.type,
+                        "function": {
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments,
+                        }
+                    }
+                    for tc in (message.tool_calls or [])
+                ],
+                "role": message.role,
+            }
+            
+        except Exception as e:
+            if self._circuit_breaker:
+                self._circuit_breaker.record_failure()
+            self._metrics.errors += 1
+            logger.error(f"❌ LLM tools error: {e}")
+            raise LLMError(f"LLM tool call failed: {e}") from e
+    
+    def complete_with_messages(
+        self,
+        messages: List[Dict[str, Any]],
+        model: str = None,
+        temperature: float = 0.0,
+        max_tokens: int = 500,
+        json_mode: bool = False,
+        skip_cache: bool = False,
+    ) -> str:
+        """
+        Complete with a raw messages array (full control over conversation).
+        
+        Use this when nodes need multi-turn messages or tool result injection.
+        Standard complete() builds messages internally; this method gives
+        full control.
+        
+        Args:
+            messages: Full message array [{"role": ..., "content": ...}]
+            model: Model to use
+            temperature: Sampling temperature
+            max_tokens: Max tokens
+            json_mode: Enable JSON response format
+            skip_cache: Bypass cache
+            
+        Returns:
+            LLM response text
+        """
+        start_time = time.time()
+        model = model or self.default_model
+        self._metrics.total_requests += 1
+        
+        # Circuit breaker check
+        if self._circuit_breaker and not self._circuit_breaker.can_execute():
+            self._metrics.circuit_breaker_rejected += 1
+            raise LLMCircuitOpenError("Circuit breaker is open")
+        
+        # Rate limiter check
+        estimated_tokens = sum(len(str(m.get("content", "")).split()) for m in messages) * 2 + max_tokens
+        if self._rate_limiter and not self._rate_limiter.acquire(estimated_tokens):
+            self._metrics.rate_limited += 1
+            raise LLMRateLimitError("Rate limited")
+        
+        try:
+            kwargs = {
+                "model": model,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+            if json_mode:
+                kwargs["response_format"] = {"type": "json_object"}
+            
+            response = self._client.chat.completions.create(**kwargs)
+            
+            if self._circuit_breaker:
+                self._circuit_breaker.record_success()
+            
+            actual_tokens = response.usage.total_tokens if response.usage else estimated_tokens
+            if self._rate_limiter:
+                self._rate_limiter.record_actual_tokens(actual_tokens)
+            self._metrics.total_tokens += actual_tokens
+            
+            result = response.choices[0].message.content.strip()
+            
+            latency = (time.time() - start_time) * 1000
+            self._metrics.total_latency_ms += latency
+            
+            logger.debug(f"✅ LLM messages (model={model}, tokens={actual_tokens}, latency={latency:.1f}ms)")
+            return result
+            
+        except Exception as e:
+            if self._circuit_breaker:
+                self._circuit_breaker.record_failure()
+            self._metrics.errors += 1
+            logger.error(f"❌ LLM messages error: {e}")
+            raise LLMError(f"LLM call failed: {e}") from e
+    
     def get_metrics(self) -> Dict[str, Any]:
         """Get current metrics."""
         return self._metrics.to_dict()
@@ -644,7 +823,7 @@ def get_llm_agent() -> LLMAgent:
         from core.agents.llm_agent import get_llm_agent
         
         llm = get_llm_agent()
-        response = llm.complete("Analyze AAPL")
+        response = llm.complete(prompt="Classify intent", system_prompt="...")
     """
     return LLMAgent()
 

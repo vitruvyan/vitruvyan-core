@@ -2,12 +2,8 @@
 # core/langgraph/node/enhanced_llm_node.py
 
 from typing import Dict, Any, List
-from openai import OpenAI
-import os
-from dotenv import load_dotenv
+from core.agents.llm_agent import get_llm_agent
 from datetime import datetime
-
-load_dotenv()
 
 class VitruvyanLLMOrchestrator:
     """
@@ -15,8 +11,7 @@ class VitruvyanLLMOrchestrator:
     """
     
     def __init__(self):
-        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        self.model = os.getenv("GRAPH_LLM_MODEL", "gpt-4o-mini")
+        self.llm = get_llm_agent()
         
     def build_advanced_prompt(self, state: Dict[str, Any]) -> List[Dict[str, str]]:
         """Advanced prompt engineering per conversational excellence"""
@@ -172,16 +167,13 @@ Tu enfoque: Basado en datos pero centrado en humanos. Entiendes que invertir es 
         try:
             messages = self.build_advanced_prompt(state)
             
-            response = self.client.chat.completions.create(
-                model=self.model,
+            result = self.llm.complete_with_messages(
                 messages=messages,
-                temperature=0.7,  # Higher for more creativity
-                max_tokens=600,   # Longer for detailed responses
-                presence_penalty=0.1,  # Reduce repetition
-                frequency_penalty=0.1   # Encourage variety
+                temperature=0.7,
+                max_tokens=600
             )
             
-            return response.choices[0].message.content.strip()
+            return result["content"].strip()
             
         except Exception as e:
             lang = state.get("language", "en")

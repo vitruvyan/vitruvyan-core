@@ -27,7 +27,7 @@ Contract Compliance:
 
 from typing import Dict, Any
 import os
-from openai import OpenAI
+from core.agents.llm_agent import get_llm_agent
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -112,7 +112,7 @@ def _generate_conversational_response(
         Natural language response string
     """
     try:
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        llm = get_llm_agent()
         
         # Build language-aware system prompt (domain-agnostic)
         system_prompts = {
@@ -134,17 +134,13 @@ def _generate_conversational_response(
             }
             system_prompt += f" {emotion_hints.get(language, emotion_hints['en'])}"
         
-        response = client.chat.completions.create(
-            model=os.getenv("GRAPH_LLM_MODEL", "gpt-4o-mini"),
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_input}
-            ],
+        narrative = llm.complete(
+            prompt=user_input,
+            system_prompt=system_prompt,
             temperature=0.7,
-            max_tokens=300
+            max_tokens=300,
         )
         
-        narrative = response.choices[0].message.content.strip()
         print(f"🧠 [compose_node] LLM conversational response: {narrative[:80]}...")
         return narrative
         
@@ -186,7 +182,7 @@ def _synthesize_from_results(
         Synthesized natural language narrative
     """
     try:
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        llm = get_llm_agent()
         
         # Build context from pre-calculated results (no computation)
         context_parts = []
@@ -229,17 +225,13 @@ def _synthesize_from_results(
             f"Synthesize a natural, helpful response explaining these results."
         )
         
-        response = client.chat.completions.create(
-            model=os.getenv("GRAPH_LLM_MODEL", "gpt-4o-mini"),
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
+        narrative = llm.complete(
+            prompt=user_prompt,
+            system_prompt=system_prompt,
             temperature=0.7,
-            max_tokens=400
+            max_tokens=400,
         )
         
-        narrative = response.choices[0].message.content.strip()
         print(f"🧠 [compose_node] LLM synthesis: {narrative[:80]}...")
         return narrative
         

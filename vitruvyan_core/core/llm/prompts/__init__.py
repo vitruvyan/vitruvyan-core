@@ -31,6 +31,9 @@ Legacy usage (backward compatible):
 from .registry import PromptRegistry, register_generic_domain, GENERIC_IDENTITY, GENERIC_SCENARIOS
 from .version import ACTIVE_PROMPT_VERSION, get_prompt_version, list_available_versions
 
+# Auto-register generic OS prompts as fallback domain
+register_generic_domain()
+
 # Backward-compatible imports from legacy
 try:
     from ._legacy import (
