@@ -27,8 +27,8 @@ for FILE in "$NODE_DIR"/*.py; do
     continue
   fi
   
-  # Skip _legacy files
-  if [[ "$(basename "$FILE")" == _legacy* ]]; then
+  # Skip _legacy and _archived files
+  if [[ "$(basename "$FILE")" == _legacy* ]] || [[ "$(basename "$FILE")" == _archived* ]]; then
     continue
   fi
   
@@ -57,8 +57,8 @@ for FILE in "$NODE_DIR"/*.py; do
     continue
   fi
   
-  # Skip _legacy files
-  if [[ "$(basename "$FILE")" == _legacy* ]]; then
+  # Skip _legacy and _archived files
+  if [[ "$(basename "$FILE")" == _legacy* ]] || [[ "$(basename "$FILE")" == _archived* ]]; then
     continue
   fi
   
@@ -84,8 +84,8 @@ for FILE in "$NODE_DIR"/*.py; do
     continue
   fi
   
-  # Skip _legacy files
-  if [[ "$(basename "$FILE")" == _legacy* ]]; then
+  # Skip _legacy and _archived files
+  if [[ "$(basename "$FILE")" == _legacy* ]] || [[ "$(basename "$FILE")" == _archived* ]]; then
     continue
   fi
   
@@ -111,8 +111,8 @@ for FILE in "$NODE_DIR"/*.py; do
     continue
   fi
   
-  # Skip _legacy files
-  if [[ "$(basename "$FILE")" == _legacy* ]]; then
+  # Skip _legacy and _archived files
+  if [[ "$(basename "$FILE")" == _legacy* ]] || [[ "$(basename "$FILE")" == _archived* ]]; then
     continue
   fi
   
@@ -138,8 +138,8 @@ for FILE in "$NODE_DIR"/*.py; do
     continue
   fi
   
-  # Skip _legacy files
-  if [[ "$(basename "$FILE")" == _legacy* ]]; then
+  # Skip _legacy and _archived files
+  if [[ "$(basename "$FILE")" == _legacy* ]] || [[ "$(basename "$FILE")" == _archived* ]]; then
     continue
   fi
   
