@@ -14,6 +14,8 @@ from .modules.profile_processor import ProfileProcessorModule
 from .modules.cognitive_bridge import CognitiveBridgeModule
 from .shared.model_manager import model_manager
 from .shared.vector_cache import vector_cache
+from .api.routes_embeddings import router as embedding_router
+from .api.routes_admin import router as admin_router
 
 logger = logging.getLogger(__name__)
 
@@ -73,14 +75,9 @@ async def root():
     return {"service": "Babel Gardens", "version": "2.0.0", "sacred_order": "#2", "docs": "/docs"}
 
 
-# Include legacy routes for backward compatibility
-try:
-    from ._legacy.main_legacy import app as legacy_app
-    for route in legacy_app.routes:
-        if hasattr(route, "path") and route.path not in ["/", "/health", "/metrics", "/docs", "/openapi.json"]:
-            app.routes.append(route)
-except ImportError:
-    logger.warning("Legacy routes not available")
+# ── Route layer (thin HTTP adapters → modules) ──
+app.include_router(embedding_router)
+app.include_router(admin_router)
 
 
 if __name__ == "__main__":
