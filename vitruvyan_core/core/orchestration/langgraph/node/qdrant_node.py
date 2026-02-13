@@ -1,7 +1,7 @@
 from typing import Dict, Any
 import os
 import httpx
-from core.foundation.persistence.qdrant_agent import QdrantAgent
+from core.agents.qdrant_agent import QdrantAgent
 
 # Init Qdrant agent once
 _agent = QdrantAgent()

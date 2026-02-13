@@ -7,7 +7,7 @@ Transparent caching layer for QdrantAgent operations.
 Drop-in replacement that adds intelligent caching without modifying QdrantAgent.
 
 Usage:
-    from core.foundation.cache.cached_qdrant_agent import CachedQdrantAgent
+    from core.cache.cached_qdrant_agent import CachedQdrantAgent
     
     # Use exactly like QdrantAgent, but with automatic caching
     agent = CachedQdrantAgent()
@@ -25,8 +25,8 @@ import logging
 from typing import List, Optional, Dict, Any
 from qdrant_client.http.models import Filter
 
-from core.foundation.persistence.qdrant_agent import QdrantAgent
-from core.foundation.cache.mnemosyne_cache import get_mnemosyne_cache_manager
+from core.agents.qdrant_agent import QdrantAgent
+from .mnemosyne_cache import get_mnemosyne_cache_manager
 
 logger = logging.getLogger(__name__)
 

@@ -5,4 +5,4 @@ Quantitative Multi-Factor Ranking System and Semantic Engines
 """
 
 # Import modules only when explicitly accessed to avoid circular imports
-__all__ = ["neural_engine", "semantic_engine", "vitruvyan_proprietary", "babel_gardens", "pattern_weavers"]
+__all__ = ["neural_engine", "semantic_engine", "babel_gardens", "pattern_weavers"]

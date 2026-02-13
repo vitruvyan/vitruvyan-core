@@ -6,7 +6,7 @@ and query capabilities. Each vertical defines its own schema and
 domain-specific methods.
 
 Usage:
-    from core.foundation.persistence import PostgresAgent
+    from core.agents.postgres_agent import PostgresAgent
     
     pg = PostgresAgent()
     

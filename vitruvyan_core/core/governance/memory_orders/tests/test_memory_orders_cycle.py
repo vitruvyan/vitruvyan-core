@@ -33,8 +33,8 @@ from core.synaptic_conclave.event_schema import (
     MemoryIntent,
     EventSchemaValidator
 )
-from core.foundation.persistence.postgres_agent import PostgresAgent
-from core.foundation.persistence.qdrant_agent import QdrantAgent
+from core.agents.postgres_agent import PostgresAgent
+from core.agents.qdrant_agent import QdrantAgent
 
 
 @pytest.mark.asyncio
