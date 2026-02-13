@@ -13,11 +13,13 @@ from .modules.embedding_engine import EmbeddingEngineModule
 from .modules.profile_processor import ProfileProcessorModule
 from .modules.cognitive_bridge import CognitiveBridgeModule
 from .modules.emotion_detector import EmotionDetectorModule
+from .modules.sentiment_fusion import SentimentFusionModule
 from .shared.model_manager import model_manager
 from .shared.vector_cache import vector_cache
 from .api.routes_embeddings import router as embedding_router
 from .api.routes_admin import router as admin_router
 from .api.routes_emotion import router as emotion_router
+from .api.routes_sentiment import router as sentiment_router
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +31,7 @@ class BabelGardensService:
         self.profile_processor = ProfileProcessorModule()
         self.cognitive_bridge = CognitiveBridgeModule()
         self.emotion_detector = EmotionDetectorModule()
+        self.sentiment_fusion = SentimentFusionModule()
 
 service: BabelGardensService = None
 
@@ -82,6 +85,7 @@ async def root():
 app.include_router(embedding_router)
 app.include_router(admin_router)
 app.include_router(emotion_router)
+app.include_router(sentiment_router)
 
 
 if __name__ == "__main__":
