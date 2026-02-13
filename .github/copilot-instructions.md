@@ -526,7 +526,7 @@ Use these as the “quick mental checklist” while coding. If a change violates
 
 - **Core stays generic**: put domain logic in verticals/services, not in `vitruvyan_core/core/`.
 - **No cross-service imports**: services talk via **REST** or **StreamBus** events.
-- **Agents only for persistence**: use `PostgresAgent` / `QdrantAgent`; no raw DB/vector clients in business logic.
+- **Agents for all external access**: use `PostgresAgent` / `QdrantAgent` / `LLMAgent`; no raw DB/vector/OpenAI clients in business logic. LLM calls go through `get_llm_agent()` — never `from openai import OpenAI`.
 - **No secrets in repo text**: commands/docs must use env vars/placeholders (never real passwords/hosts/tokens).
 - **Streams, not Pub/Sub**: Redis Streams is the canonical transport; acknowledge after handling; generator consumption.
 - **Bus is payload-blind**: transport never inspects/correlates/routes semantically/synthesizes events.
