@@ -41,6 +41,10 @@ from .domain import (
     ExpeditionStatus,
     EntityStatus,
     Severity,
+    ConsistencyStatus,
+    CollectionPairInput,
+    CollectionConsistency,
+    InspectionReport,
     HealthStatus,
 )
 
@@ -51,6 +55,7 @@ from .consumers import (
     TrackerConsumer,
     RestorerConsumer,
     BinderConsumer,
+    InspectorConsumer,
 )
 
 # Events
@@ -86,6 +91,10 @@ __all__ = [
     "ExpeditionStatus",
     "EntityStatus",
     "Severity",
+    "ConsistencyStatus",
+    "CollectionPairInput",
+    "CollectionConsistency",
+    "InspectionReport",
     "HealthStatus",
     # Consumers
     "BaseConsumer",
@@ -93,6 +102,7 @@ __all__ = [
     "TrackerConsumer",
     "RestorerConsumer",
     "BinderConsumer",
+    "InspectorConsumer",
     # Events
     "Channels",
     "EventEnvelope",

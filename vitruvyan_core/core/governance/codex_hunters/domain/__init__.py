@@ -25,6 +25,10 @@ from .entities import (
     ExpeditionStatus,
     EntityStatus,
     Severity,
+    ConsistencyStatus,
+    CollectionPairInput,
+    CollectionConsistency,
+    InspectionReport,
     HealthStatus,
 )
 
@@ -47,5 +51,9 @@ __all__ = [
     "ExpeditionStatus",
     "EntityStatus",
     "Severity",
+    "ConsistencyStatus",
+    "CollectionPairInput",
+    "CollectionConsistency",
+    "InspectionReport",
     "HealthStatus",
 ]

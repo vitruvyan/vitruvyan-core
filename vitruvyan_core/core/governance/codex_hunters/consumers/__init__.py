@@ -9,6 +9,7 @@ from .base import BaseConsumer, ProcessResult
 from .tracker import TrackerConsumer
 from .restorer import RestorerConsumer
 from .binder import BinderConsumer
+from .inspector import InspectorConsumer
 
 __all__ = [
     "BaseConsumer",
@@ -16,4 +17,5 @@ __all__ = [
     "TrackerConsumer",
     "RestorerConsumer",
     "BinderConsumer",
+    "InspectorConsumer",
 ]

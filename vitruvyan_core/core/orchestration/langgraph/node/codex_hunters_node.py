@@ -395,7 +395,7 @@ def codex_hunters_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 "databases_checked": ["PostgreSQL", "Qdrant"],
                 "integrity_score": "excellent",
                 "issues_found": [],
-                "agents_deployed": ["Tracker", "Inspector", "Binder"],
+                "agents_deployed": ["Tracker", "Restorer", "Inspector", "Binder"],
                 "duration_seconds": 2.5
             }
             

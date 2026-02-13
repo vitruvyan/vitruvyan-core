@@ -180,6 +180,83 @@ class ExpeditionResult:
         }
 
 
+class ConsistencyStatus(str, Enum):
+    """Consistency status classification."""
+    EXCELLENT = "excellent"  # >= 95%
+    GOOD = "good"            # >= 85%
+    POOR = "poor"            # >= 70%
+    CRITICAL = "critical"    # >= 50%
+    EMPTY = "empty"          # both sides have 0 records
+    ERROR = "error"          # computation failed
+
+
+@dataclass(frozen=True)
+class CollectionPairInput:
+    """
+    Input data for a single collection-pair consistency check.
+
+    Domain-agnostic: represents any two mirrored data stores
+    (e.g. relational DB ↔ vector DB, primary ↔ replica).
+    """
+    collection_name: str
+    source_a_count: int            # record count in store A
+    source_b_count: int            # record count in store B
+    source_a_ids: List[str] = field(default_factory=list)  # IDs present in A
+    source_b_ids: List[str] = field(default_factory=list)  # IDs present in B
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class CollectionConsistency:
+    """
+    Consistency report for a single collection pair.
+    """
+    collection_name: str
+    source_a_count: int
+    source_b_count: int
+    consistency_score: float       # 0.0 – 1.0
+    status: ConsistencyStatus
+    orphans_a: List[str] = field(default_factory=list)  # IDs only in store A
+    orphans_b: List[str] = field(default_factory=list)  # IDs only in store B
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "collection_name": self.collection_name,
+            "source_a_count": self.source_a_count,
+            "source_b_count": self.source_b_count,
+            "consistency_score": round(self.consistency_score, 4),
+            "status": self.status.value,
+            "orphans_a_count": len(self.orphans_a),
+            "orphans_b_count": len(self.orphans_b),
+            "orphans_a": self.orphans_a[:50],  # cap for serialization
+            "orphans_b": self.orphans_b[:50],
+        }
+
+
+@dataclass(frozen=True)
+class InspectionReport:
+    """
+    Full inspection report across all collection pairs.
+    """
+    overall_score: float                              # weighted average
+    overall_status: ConsistencyStatus
+    collections: List[CollectionConsistency] = field(default_factory=list)
+    recommendations: List[str] = field(default_factory=list)
+    needs_healing: bool = False
+    inspected_at: datetime = field(default_factory=datetime.utcnow)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "overall_score": round(self.overall_score, 4),
+            "overall_status": self.overall_status.value,
+            "collections": [c.to_dict() for c in self.collections],
+            "recommendations": self.recommendations,
+            "needs_healing": self.needs_healing,
+            "inspected_at": self.inspected_at.isoformat(),
+        }
+
+
 @dataclass(frozen=True)
 class HealthStatus:
     """
