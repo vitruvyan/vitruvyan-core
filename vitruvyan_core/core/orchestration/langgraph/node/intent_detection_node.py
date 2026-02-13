@@ -103,8 +103,8 @@ async def _call_babel_gardens(input_text: str, timeout: float = 5.0) -> Dict[str
             if resp.status_code == 200:
                 meta = resp.json().get("metadata", {})
                 lang = meta.get("language", "unknown")
-                unicode_langs = {"ar", "zh", "ja", "ko", "he", "ru"}
-                confidence = 0.95 if lang in unicode_langs else 0.85
+                # Contract-compliant: Trust service-provided confidence (no threshold logic)
+                confidence = meta.get("confidence", 0.9)  # Babel Gardens pre-calculates confidence
                 return {
                     "language_detected": lang,
                     "language_confidence": confidence,

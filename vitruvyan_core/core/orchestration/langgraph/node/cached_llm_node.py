@@ -141,97 +141,10 @@ class CachedLLMOrchestrator:
             return "collection"
         else:
             return "general"
-
-    def _analyze_user_emotion(self, user_input: str) -> str:
-        """
-        Lightweight emotion classifier to pick a tone adaptation.
-        Returns: 'anxious'|'excited'|'confused'|'neutral'
-        """
-        # Backwards-compatible wrapper; prefer using _detect_user_emotion for label+confidence
-        label, _ = self._detect_user_emotion(user_input)
-        return label
-
-    def _detect_user_emotion(self, user_input: str) -> tuple:
-        """
-        Detect user emotion with a lightweight heuristic-based classifier.
-        Returns (label, confidence) where label in {anxious, excited, confused, neutral}
-        and confidence is 0.0-1.0.
-        """
-        if not user_input:
-            return ("neutral", 0.0)
-
-        ui = user_input.lower()
-
-        # multilingual keyword lists (small curated sets)
-        anxiety_keywords = ["paura", "preoccup", "anxious", "worried", "scared", "rischio", "perdere", "ansia"]
-        excitement_keywords = ["wow", "fantastico", "grande opportunità", "explosive", "moon", "🚀", "entusiast", "eufor", "fantastica"]
-        confusion_keywords = ["non capisco", "confus", "come funziona", "spiegami", "cosa significa", "non ho capito"]
-
-        score = {"anxious": 0.0, "excited": 0.0, "confused": 0.0}
-
-        # keyword matching gives base score
-        for k in anxiety_keywords:
-            if k in ui:
-                score["anxious"] += 1.0
-        for k in excitement_keywords:
-            if k in ui:
-                score["excited"] += 1.0
-        for k in confusion_keywords:
-            if k in ui:
-                score["confused"] += 1.0
-
-        # emoji heuristics
-        if "🚀" in user_input or "🔥" in user_input:
-            score["excited"] += 1.2
-
-        # punctuation/upper heuristics (multiple exclamation marks -> excitement)
-        excl = user_input.count("!")
-        if excl >= 2:
-            score["excited"] += 0.8
-
-        # question-heavy -> possible confusion
-        qmarks = user_input.count("?")
-        if qmarks >= 1:
-            score["confused"] += 0.6
-
-        # length-based heuristic: very short urgent phrases -> anxious
-        words = ui.split()
-        if len(words) <= 3 and any(w in ui for w in ["aiuto", "help", "preoccupa", "urgent"]):
-            score["anxious"] += 0.9
-
-        # Normalize scores to confidences
-        max_label = max(score, key=lambda k: score[k])
-        max_score = score[max_label]
-
-        # If all zeros -> neutral
-        if max_score == 0:
-            return ("neutral", 0.0)
-
-        # rough confidence scaling: sigmoid-ish mapping
-        # map max_score (0.5..inf) to 0.3..0.95
-        conf = min(0.95, 0.3 + (max_score / (1.0 + max_score)) * 0.8)
-        return (max_label, round(conf, 2))
-
-    def _get_emotion_adaptation(self, language: str, emotion: str) -> str:
-        """
-        Return a short adaptation string to append to the system prompt
-        according to detected emotion and language.
-        """
-        adaptations = {
-            "it": {
-                "anxious": "🛡️ TONO ADATTIVO: RASSICURANTE\nL'utente sembra preoccupato. Riconosci le preoccupazioni prima di dare consigli. Usa frasi come 'È normale avere dubbi su...' e enfatizza risk management.",
-                "excited": "⚖️ TONO ADATTIVO: CAUTO ED EDUCATIVO\nL'utente sembra entusiasta. Celebra l'entusiasmo ma bilancia con realismo; suggerisci sizing prudente.",
-                "confused": "📚 TONO ADATTIVO: DIDATTICO E SEMPLIFICANTE\nL'utente sembra confuso. Scomponi concetti complessi, usa analogie e offri spiegazioni semplici.",
-                "neutral": ""
-            },
-            "en": {
-                "anxious": "🛡️ ADAPTIVE TONE: REASSURING\nUser seems worried. Acknowledge concerns before advice. Use phrases like 'It's normal to have doubts...' and emphasize risk management.",
-                "excited": "⚖️ ADAPTIVE TONE: CAUTIOUS & EDUCATIONAL\nUser seems excited. Celebrate but add realism; suggest prudent position sizing.",
-                "confused": "📚 ADAPTIVE TONE: DIDACTIC & SIMPLIFYING\nUser seems confused. Break concepts into simple steps and offer analogies.",
-                "neutral": ""
-            }
-        }
-        return adaptations.get(language, adaptations["en"]).get(emotion, "")
+    
+    # NOTE: Emotion detection removed (dead code + contract violations)
+    # Emotion logic delegated to detect_emotion() from _archived_emotion_detector_v1
+    # See line 376 where detect_emotion() is called for emotion analysis
     
     def _adapt_similar_response(self, cached_response: str, current_state: Dict[str, Any]) -> str:
         """
@@ -410,7 +323,9 @@ RESPONSE STRUCTURE:
                         if isinstance(group, list):
                             all_items.extend(group)
                     if all_items:
-                        top_5 = sorted(all_items, key=lambda x: x.get("score", x.get("composite_score", 0)), reverse=True)[:5]
+                        # Contract-compliant: Assume results pre-sorted by service (no domain sorting in orchestration)
+                        # Services MUST return results ordered by relevance/score
+                        top_5 = all_items[:5]  # Take first 5 (pre-sorted)
                         context_sections.append("📊 TOP RESULTS:")
                         for item in top_5:
                             entity = item.get("entity_id", item.get("id", "unknown"))
