@@ -74,5 +74,5 @@ class TestLLMCacheManager:
             pytest.skip("LLMCacheManager requires external dependencies")
 
     def test_cache_manager_has_get_method(self):
-        """Il cache manager deve avere un metodo get o equivalente."""
-        assert hasattr(LLMCacheManager, 'get') or hasattr(LLMCacheManager, '__getitem__')
+        """Il cache manager deve avere un metodo per recuperare risposte cachate."""
+        assert hasattr(LLMCacheManager, 'get_cached_response') or hasattr(LLMCacheManager, 'cache_response')

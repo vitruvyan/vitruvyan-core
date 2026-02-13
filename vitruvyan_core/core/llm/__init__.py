@@ -17,8 +17,14 @@ Legacy (in _legacy/):
 """
 
 # Backward compatibility — redirect to _legacy/
-from ._legacy.llm_interface import LLMInterface
-from ._legacy.conversational_llm import ConversationalLLM
+try:
+    from ._legacy.llm_interface import LLMInterface
+    from ._legacy.conversational_llm import ConversationalLLM
+except (ImportError, ModuleNotFoundError):
+    # Legacy modules may have broken dependencies — not critical
+    LLMInterface = None
+    ConversationalLLM = None
+
 from .cache_manager import (
     get_cache_manager,
     CacheEntry,
