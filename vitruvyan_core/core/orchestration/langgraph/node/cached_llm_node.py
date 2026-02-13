@@ -15,8 +15,8 @@ from dotenv import load_dotenv
 from core.llm.cache_manager import get_cache_manager, CacheEntry
 # Import LLMAgent
 from core.agents.llm_agent import get_llm_agent
-# 🆕 Import emotion detection
-from core.orchestration.langgraph.node.emotion_detector import detect_emotion, get_emotion_system_prompt_fragment
+# 🆕 Import emotion detection (LEGACY - archived functions)
+from core.orchestration.langgraph.node._archived_emotion_detector_v1 import detect_emotion, get_emotion_system_prompt_fragment
 
 load_dotenv()
 

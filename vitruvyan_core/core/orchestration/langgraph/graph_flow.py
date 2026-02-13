@@ -9,8 +9,8 @@ from core.orchestration.langgraph.node.route_node import route_node
 from core.orchestration.langgraph.node.exec_node import exec_node
 from core.orchestration.langgraph.node.qdrant_node import qdrant_node
 from core.orchestration.langgraph.node.compose_node import compose_node
-# 🎭 PHASE 2.1 - Babel Gardens Emotion Detection
-from core.orchestration.langgraph.node.babel_emotion_node import babel_emotion_node
+# 🎭 PHASE 2.1 - Babel Gardens Emotion Detection (LEGACY - to be refactored to emotion_detector)
+from core.orchestration.langgraph.node._legacy_babel_emotion_node_v1 import babel_emotion_node
 # Enhanced LLM node with caching
 from core.orchestration.langgraph.node.cached_llm_node import cached_llm_node
 from core.orchestration.langgraph.memory_utils import merge_slots
