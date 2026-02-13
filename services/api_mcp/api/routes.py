@@ -7,19 +7,16 @@ import logging
 from datetime import datetime
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse, Response
-from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 from schemas import TOOL_SCHEMAS, ExecuteRequest, MCPResponse
 from tools import TOOL_EXECUTORS
 from middleware import sacred_orders_middleware
+from monitoring import mcp_requests_total, mcp_execution_duration
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-# Prometheus metrics
-mcp_requests_total = Counter('vitruvyan_mcp_requests_total', 'Total MCP tool requests', ['tool', 'status'])
-mcp_execution_duration = Histogram('vitruvyan_mcp_execution_duration_seconds', 'MCP execution duration', ['tool'])
 
 
 @router.get("/")

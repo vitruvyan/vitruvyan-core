@@ -212,6 +212,18 @@ class CodexConfig:
                     description=ec_data.get("description", "")
                 )
             
+            # Parse streams (optional)
+            streams = StreamConfig()
+            if "streams" in data and isinstance(data["streams"], dict):
+                s_data = data["streams"]
+                streams = StreamConfig(
+                    prefix=s_data.get("prefix", streams.prefix),
+                    discovery_channel=s_data.get("discovery_channel", streams.discovery_channel),
+                    restoration_channel=s_data.get("restoration_channel", streams.restoration_channel),
+                    binding_channel=s_data.get("binding_channel", streams.binding_channel),
+                    expedition_channel=s_data.get("expedition_channel", streams.expedition_channel),
+                )
+
             # Parse sources
             sources = {}
             if "sources" in data:
@@ -240,6 +252,7 @@ class CodexConfig:
                 entity_table=entity_table,
                 embedding_collection=embedding_collection,
                 sources=sources if sources else cls().sources,
+                streams=streams,
                 quality=quality,
                 embedding_model=data.get("embedding_model", "sentence-transformers/all-MiniLM-L6-v2"),
                 embedding_dimension=data.get("embedding_dimension", 384),

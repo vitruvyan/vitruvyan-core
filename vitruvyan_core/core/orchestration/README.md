@@ -1,5 +1,7 @@
 # Orchestration Layer (`core/orchestration/`)
 
+> **Last updated**: February 13, 2026
+
 **Domain-agnostic LangGraph orchestration with plugin architecture**
 
 ---
@@ -35,17 +37,18 @@ vitruvyan_core/core/orchestration/
 │   ├── response_formatter.py  # Domain-agnostic formatter interface
 │   └── slot_filler.py         # Domain-agnostic slot filling interface
 └── langgraph/                 # LangGraph implementation
-    ├── graph_runner.py        # Entry points (run_graph_once, run_graph)
-    ├── graph_flow.py          # Graph builder
+    ├── graph_runner.py        # Entry point (run_graph)
+    ├── graph_flow.py          # Graph builder (407L, domain-agnostic)
     ├── simple_graph_audit_monitor.py  # Execution monitoring
-    └── node/                  # Graph nodes
-        ├── compose_node.py    # Response composition
-        ├── crew_node.py       # CrewAI integration
-        ├── entity_resolver.py # Entity database matching
-        ├── portfolio_*.py     # Portfolio operations (finance)
-        ├── screener_node.py   # Entity screening (finance)
-        ├── sentiment_node.py  # Sentiment analysis (finance)
-        └── vault_*.py         # Memory persistence
+    └── node/                  # Graph nodes (~30 nodes)
+        ├── babel_gardens_node.py      # Semantic signal extraction (HTTP adapter)
+        ├── cached_llm_node.py         # LLM completion (via LLMAgent)
+        ├── compose_node.py            # Response composition
+        ├── emotion_detector_node.py   # Emotion detection (HTTP adapter)
+        ├── entity_resolver.py         # Entity database matching
+        ├── pattern_weavers_node.py    # Ontology resolution (HTTP adapter)
+        ├── qdrant_node.py             # Semantic search (domain-agnostic)
+        └── vault_*.py                 # Memory persistence
 ```
 
 ---
@@ -84,20 +87,18 @@ nodes = registry.get_nodes_for_intent("investment_verdict")
 **Purpose**: Execute LangGraph state machine
 
 ```python
-from core.orchestration.langgraph.graph_runner import run_graph_once
+from core.orchestration.langgraph.graph_runner import run_graph
 
-result = run_graph_once(
-    input_text="Should I invest in Apple?",
-    user_id="demo_user"
-)
+result = run_graph({
+    "input_text": "Analyze entity E007",
+    "user_id": "demo_user"
+})
 
 # Returns:
 # {
-#   "intent": "investment_verdict",
-#   "entities": ["AAPL"],
-#   "verdict": "BUY",
-#   "confidence": 0.85,
-#   "human": "Leonardo: Based on fundamentals, Apple is a strong buy.",
+#   "intent": "...",
+#   "entities": ["E007"],
+#   "human": "...",
 #   ...
 # }
 ```
@@ -333,20 +334,14 @@ response = compose_node(state)
 **Main API** for executing graphs:
 
 ```python
-from core.orchestration.langgraph.graph_runner import run_graph_once, run_graph
+from core.orchestration.langgraph.graph_runner import run_graph
 
-# Simple execution
-result = run_graph_once(
-    input_text="Should I invest in Apple?",
-    user_id="demo"
-)
-
-# With custom payload
+# Execute graph with payload
 result = run_graph({
-    "input_text": "Compare Apple vs Microsoft",
+    "input_text": "Compare entities A vs B",
     "user_id": "demo",
-    "entities": ["AAPL", "MSFT"],  # Pre-validated
-    "intent": "comparison"         # Pre-classified
+    "validated_entities": ["E001", "E002"],  # Pre-validated
+    "intent": "comparison"                    # Pre-classified
 })
 ```
 
@@ -577,6 +572,14 @@ except asyncio.TimeoutError:
 ---
 
 ## Changelog
+
+**Feb 13, 2026** — Legacy elimination & cleanup
+- ✅ Removed `run_graph_once()` dead function (55L) from graph_flow.py
+- ✅ Replaced 2 legacy imports with HTTP adapter nodes (emotion_detector, pattern_weavers)
+- ✅ Renamed `sentinel_portfolio_value` → `sentinel_collection_value` (domain-agnostic)
+- ✅ Cleaned cached_llm_node.py: removed `_archived_emotion_detector_v1` import
+- ✅ Removed qdrant_node.py finance hardcoding → `QDRANT_SOURCE_FILTER` env var
+- ✅ Deleted all `_legacy/` directories (0 legacy files remaining)
 
 **Feb 2026** — Domain-agnostic refactoring
 - ✅ Extracted finance logic into plugin

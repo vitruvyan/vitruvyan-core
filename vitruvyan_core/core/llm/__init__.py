@@ -11,19 +11,10 @@ Core Components:
 - prompts: Domain-agnostic prompt registry & versioning (sub-module)
 - gemma_client: Gemma HTTP proxy bridge
 
-Legacy (in _legacy/):
-- LLMInterface: Superseded by LLMAgent (Feb 12, 2026)
-- ConversationalLLM: Superseded by LLMAgent + PromptRegistry (Feb 12, 2026)
+Deprecated (removed Feb 13, 2026):
+- LLMInterface → use core.agents.llm_agent.LLMAgent
+- ConversationalLLM → use LLMAgent + PromptRegistry
 """
-
-# Backward compatibility — redirect to _legacy/
-try:
-    from ._legacy.llm_interface import LLMInterface
-    from ._legacy.conversational_llm import ConversationalLLM
-except (ImportError, ModuleNotFoundError):
-    # Legacy modules may have broken dependencies — not critical
-    LLMInterface = None
-    ConversationalLLM = None
 
 from .cache_manager import (
     get_cache_manager,
@@ -36,28 +27,19 @@ from . import cache_api
 
 # Re-export prompts utilities for external use
 from .prompts import (
-    get_base_prompt,
-    get_scenario_prompt,
-    get_combined_prompt,
-    VITRUVYAN_SYSTEM_PROMPT_V1_0,
-    SCENARIO_TYPES,
+    PromptRegistry,
+    register_generic_domain,
     ACTIVE_PROMPT_VERSION,
 )
 
 __all__ = [
-    # Core LLM Interface
-    "LLMInterface",
-    "ConversationalLLM",
     # Cache System
     "LLMCacheManager",
     "get_cache_manager",
     "CacheEntry",
     "cache_api",
     # Prompt Engineering (sub-module)
-    "get_base_prompt",
-    "get_scenario_prompt",
-    "get_combined_prompt",
-    "VITRUVYAN_SYSTEM_PROMPT_V1_0",
-    "SCENARIO_TYPES",
+    "PromptRegistry",
+    "register_generic_domain",
     "ACTIVE_PROMPT_VERSION",
 ]

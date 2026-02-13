@@ -1,0 +1,144 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Inconsolata:wght@400;500;600&display=swap");
+
+:root {
+  --md-text-font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+  --md-code-font-family: var(--md-text-font-family);
+}
+
+.kb-subtitle,
+.kb-hero__tagline,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, sans-serif;
+}
+
+body {
+  font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+}
+
+.headerlink {
+  display: none !important;
+}
+
+/* mkdocs-simple-blog renders a page title (nav title) AND the markdown h1.
+   We keep the markdown heading and hide the theme title to avoid duplication. */
+#component-title {
+  display: none !important;
+}
+
+.kb-subtitle {
+  font-size: 1.05rem;
+  text-transform: none;
+}
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+h1,
+h2,
+h3 {
+  line-height: 1.12;
+}
+
+.md-typeset h1,
+h1 {
+  font-size: 2.1rem;
+}
+
+.md-typeset h2,
+h2 {
+  font-size: 1.55rem;
+}
+
+.md-typeset h3,
+h3 {
+  font-size: 1.25rem;
+}
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3 {
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.md-typeset h4,
+.md-typeset h5,
+.md-typeset h6 {
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, sans-serif;
+  font-weight: 600;
+}
+
+.md-header__title,
+.md-nav__title {
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, sans-serif;
+}
+
+.md-typeset p,
+.md-typeset li {
+  font-weight: 400;
+}
+
+.md-nav--primary > .md-nav__title[for="__drawer"] {
+  display: none;
+}
+
+.kb-subtitle {
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, sans-serif;
+  font-weight: 600;
+  margin: 0.25rem 0 0.75rem 0;
+}
+
+.kb-hero {
+  text-align: center;
+  margin: 0.75rem 0 1.25rem 0;
+}
+
+.kb-hero__tagline {
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, sans-serif;
+  font-weight: 600;
+  font-size: 1.3rem;
+  margin: 0.5rem 0 0.75rem 0;
+  color: var(--md-accent-fg-color);
+}
+
+.kb-hero__cta {
+  margin: 0;
+}
+
+.kb-hero__cta .md-button {
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, sans-serif;
+  font-weight: 700;
+}
+
+[data-md-color-scheme="lantana"] {
+  --md-default-bg-color: #0b1220;
+  --md-default-fg-color: #e8eefc;
+  --md-default-fg-color--light: rgba(232, 238, 252, 0.72);
+  --md-default-fg-color--lighter: rgba(232, 238, 252, 0.56);
+  --md-default-fg-color--lightest: rgba(232, 238, 252, 0.12);
+
+  --md-primary-fg-color: #22c55e;
+  --md-primary-fg-color--light: #4ade80;
+  --md-primary-fg-color--dark: #16a34a;
+
+  --md-accent-fg-color: #a78bfa;
+  --md-accent-fg-color--transparent: rgba(167, 139, 250, 0.12);
+
+  --md-typeset-a-color: var(--md-accent-fg-color);
+  --md-code-bg-color: rgba(255, 255, 255, 0.06);
+}

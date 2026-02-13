@@ -1,0 +1,111 @@
+# ============================================================================
+# MkDocs Configuration — PUBLIC DOCUMENTATION (No Authentication)
+# ============================================================================
+# Purpose: Public-facing docs (main KB) available without password
+# Paths:   /docs/ (en) and /it/docs/ (it)
+# ============================================================================
+
+site_name: Vitruvyan OS
+site_description: Domain-agnostic epistemic operating system
+site_author: Vitruvyan Team
+site_url: https://kb.vitruvyan.com/docs/
+
+docs_dir: /app/docs_root
+site_dir: /app/site_docs_public
+
+# Prevent internal/admin-only pages from being built into the public site.
+# MkDocs builds all markdown under `docs_dir` even if it is not in `nav`.
+exclude_docs: |
+  docs/internal/**
+  infrastructure/**
+  services/**
+  vitruvyan_core/**
+  tests/**
+  scripts/**
+  config/**
+  examples/**
+  .github/**
+
+theme:
+  name: simple-blog
+  language: en
+  sidebar: true
+  navigation_depth: 3
+
+plugins:
+  - i18n:
+      fallback_to_default: true
+      docs_structure: suffix
+      languages:
+        - locale: en
+          name: English
+          default: true
+          build: true
+          link: /docs/
+        - locale: it
+          name: Italiano
+          build: true
+          link: /it/docs/
+  - search:
+      lang:
+        - en
+        - it
+  - mermaid2
+  - minify:
+      minify_html: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid_custom
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - tables
+  - footnotes
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+      toc_depth: 3
+
+nav:
+  - Home: docs/public/DOCS_HOME.md
+  - Getting Started:
+    - Overview: docs/foundational/VITRUVYAN_OVERVIEW.md
+    - Quick Start: docs/foundational/QUICK_START.md
+    - Pipeline Walkthrough: docs/foundational/VITRUVYAN_PIPELINE_WALKTHROUGH.md
+  - Installation:
+    - Overview: docs/installation/README.md
+    - Requirements: docs/installation/REQUIREMENTS.md
+    - Local Setup: docs/installation/LOCAL.md
+    - Docker Setup: docs/installation/DOCKER.md
+    - Production Deployment: docs/installation/PRODUCTION.md
+    - Environment Variables: docs/installation/ENV_VARS.md
+    - Health Checks: docs/installation/HEALTH_CHECKS.md
+  - Architecture:
+    - Overview: docs/architecture/README.md
+  - Sacred Orders:
+    - Index: docs/orders/README.md
+    - Codex Hunters: docs/orders/CODEX_HUNTERS.md
+    - Memory Orders: docs/orders/MEMORY_ORDERS.md
+    - Vault Keepers: docs/orders/VAULT_KEEPERS.md
+    - Orthodoxy Wardens: docs/orders/ORTHODOXY_WARDENS.md
+    - Babel Gardens: docs/orders/BABEL_GARDENS.md
+    - Pattern Weavers: docs/orders/PATTERN_WEAVERS.md
+
+extra_css:
+  - docs/stylesheets/vitruvyan.css
+
+copyright: Copyright &copy; 2026 Vitruvyan Team

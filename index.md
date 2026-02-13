@@ -5,16 +5,16 @@
 
 ## 🎯 Welcome
 
-Questa è la knowledge base ufficiale di **Vitruvyan Core**, il sistema operativo epistemico domain-agnostic basato su architettura Sacred Orders.
+This is the official knowledge base for **Vitruvyan Core** — a domain-agnostic epistemic operating system built on the Sacred Orders architecture.
 
 ## 📚 Documentation
 
-Esplora la documentazione:
+Explore the docs:
 
-- **[Getting Started](docs/foundational/VITRUVYAN_OVERVIEW.md)** — Panoramica e quick start
-- **[Architecture](docs/architecture/README.md)** — Pattern architetturali e design decisions
-- **[Sacred Orders](docs/foundational/VITRUVYAN_CHARTER.md)** — I 6 ordini sacri (Governance)
-- **[Services](services/README_SERVICES.md)** — Microservizi (LIVELLO 2)
+- **[Getting Started](docs/foundational/VITRUVYAN_OVERVIEW.md)** — Overview and quick start
+- **[Architecture](docs/architecture/README.md)** — Architectural patterns and design decisions
+- **[Sacred Orders](docs/orders/README.md)** — The 6 orders (governance)
+- **[Services](services/README_SERVICES.md)** — Microservices (Level 2)
 - **[Infrastructure](infrastructure/README_INFRASTRUCTURE.md)** — Docker, monitoring, deploy
 - **[Development](tests/README_TESTS.md)** — Testing, examples, scripts
 
@@ -23,19 +23,19 @@ Esplora la documentazione:
 ### Core Concepts
 - [SACRED_ORDER_PATTERN](vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md) — Mandatory 10-directory structure
 - [Locality-First Docs](docs/README_DOCS.md) — Documentation organization
-- [Synaptic Conclave](vitruvyan_core/core/synaptic_conclave/README.md) — Event bus (Redis Streams)
+- [Synaptic Conclave](vitruvyan_core/core/synaptic_conclave/docs/README.md) — Event bus (Redis Streams)
 
 ### Governance (Sacred Orders)
-- [Memory Orders](vitruvyan_core/core/governance/memory_orders/README.md) — Coherence analysis (RAG)
-- [Vault Keepers](vitruvyan_core/core/governance/vault_keepers/README.md) — Archival & persistence
-- [Orthodoxy Wardens](vitruvyan_core/core/governance/orthodoxy_wardens/README.md) — Truth & validation
-- [Babel Gardens](vitruvyan_core/core/governance/babel_gardens/README.md) — Language processing
-- [Codex Hunters](vitruvyan_core/core/governance/codex_hunters/README.md) — Code discovery
-- [Pattern Weavers](vitruvyan_core/core/governance/pattern_weavers/README.md) — Pattern analysis
+- [Memory Orders](docs/orders/MEMORY_ORDERS.md) — Dual-memory coherence
+- [Vault Keepers](docs/orders/VAULT_KEEPERS.md) — Archival & persistence
+- [Orthodoxy Wardens](docs/orders/ORTHODOXY_WARDENS.md) — Truth & validation
+- [Babel Gardens](docs/orders/BABEL_GARDENS.md) — Language processing
+- [Codex Hunters](docs/orders/CODEX_HUNTERS.md) — Data acquisition
+- [Pattern Weavers](docs/orders/PATTERN_WEAVERS.md) — Ontology resolution
 
 ### Planning & Roadmap
-- [ALBERATURA Framework](docs/planning/ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md) — Strategic blueprint
-- [Sacred Orders Refactoring Plan](docs/planning/SACRED_ORDERS_REFACTORING_PLAN.md) — Implementation roadmap
+- [ALBERATURA Framework](docs/planning/_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md) — Strategic blueprint
+- [Sacred Orders Refactoring Plan](docs/architecture/SACRED_ORDERS_REFACTORING_PLAN.md) — Implementation roadmap
 
 ## 🚀 Status
 

@@ -1,5 +1,12 @@
 # 🧠 Gemma Cognitive Layer - Unified Container
 
+> **Last updated**: February 13, 2026
+
+> **Feb 13, 2026**: Legacy route-forwarding shim removed from `main.py`
+> (try/except block that copied routes from `_legacy.main_legacy`).
+> `_legacy/` directory deleted. `api_semantic:8003` service deleted
+> (was a non-conformant monolite with 0 dependencies).
+
 ## Panoramica
 
 Il **Gemma Cognitive Layer Unificato** rappresenta la **Fase 2** del nostro piano di transizione ibrido, combinando 4 moduli specializzati in un singolo container ottimizzato per l'architettura Vitruvyan OS Blueprint 2026.
@@ -175,7 +182,7 @@ docker-compose -f docker-compose.gemma-cognitive.yml logs -f
 
 ### Backward Compatibility
 - Mantiene compatibilità con `api_sentiment:8005` (enhanced endpoints)
-- Integra con `api_semantic:8003`, `api_neural:8004` ~~, `api_crewai:8002`~~ (CrewAI deprecated)
+- Integra con `api_neural:8004`
 - Connessione diretta a PostgreSQL, Redis, Qdrant
 
 ### Service Discovery

@@ -1,8 +1,10 @@
 # Pattern Weavers — Universal Ontology Resolution Engine
 
+> **Last updated**: February 13, 2026
+
 **Version**: 2.0.0 (Phase 1 - Ontological Purification Complete)  
-**Last Updated**: February 11, 2026  
-**Status**: Production Ready (Phase 1 Complete, Phase 2 Planned)  
+**Last Updated**: February 13, 2026  
+**Status**: Production Ready (Phase 1 Complete, legacy eliminated)  
 **Epistemic Order**: REASON (Semantic Contextualization Layer)
 
 ---
@@ -80,9 +82,10 @@ vitruvyan_core/core/cognitive/pattern_weavers/
 │   └── charter.md       # Sacred Order charter (91 lines)
 ├── docs/                # Implementation notes, design decisions
 ├── examples/            # Usage examples (pure Python, no service dependencies)
-├── tests/               # Unit tests (pytest, no Docker/Redis/Postgres)
-└── _legacy/             # Pre-refactoring code (frozen archive, read-only)
+└── tests/               # Unit tests (pytest, no Docker/Redis/Postgres)
 ```
+
+> **Feb 13, 2026**: `_legacy/` directory deleted. All pre-refactoring files removed.
 
 **Core Modules**:
 -   **entities.py** (140 lines): Immutable domain objects
@@ -138,8 +141,9 @@ services/api_pattern_weavers/
 ├── monitoring/
 │   └── health.py        # Health checks, Prometheus metrics
 ├── requirements.txt     # Python dependencies
-└── _legacy/             # Pre-refactoring service code (frozen archive)
 ```
+
+> **Feb 13, 2026**: `_legacy/` directory in service layer also deleted.
 
 **main.py** (62 lines ✅ < 100): Minimal FastAPI bootstrap
 ```python
@@ -741,8 +745,8 @@ pattern_weavers_concepts_extracted_total  # Total unique concepts
 
 **License**: Proprietary (Vitruvyan AI Inc.)  
 **Authors**: Vitruvyan Core Team  
-**Last Updated**: February 11, 2026  
-**Version**: 2.0.0 (Phase 1 Complete)
+**Last Updated**: February 13, 2026  
+**Version**: 2.0.0 (Phase 1 Complete, legacy eliminated)
 
 **Sacred Orders Integration**:
 - Babel Gardens (Embedding Generation)

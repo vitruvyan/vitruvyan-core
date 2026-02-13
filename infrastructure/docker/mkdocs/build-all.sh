@@ -12,10 +12,25 @@ set -e  # Exit on error
 echo "🏗️  Building Vitruvyan Knowledge Base (Multi-Build)..."
 echo ""
 
+# Cleanup legacy i18n filenames/symlinks (avoid conflicts with mkdocs-static-i18n)
+rm -f /app/docs_root/index.en.md 2>/dev/null || true
+
 # Prepare public landing page (single file only)
 echo "📄 Preparing public landing page..."
 cp /app/docs/public/landing.md /app/docs_root_public/index.md
 echo "✅ Copied landing.md → docs_root_public/index.md"
+
+if [ -f /app/docs/public/landing.it.md ]; then
+  cp /app/docs/public/landing.it.md /app/docs_root_public/index.it.md
+  echo "✅ Copied landing.it.md → docs_root_public/index.it.md"
+fi
+
+# Shared assets (stylesheets, images, etc.) used by both public + full sites
+mkdir -p /app/docs_root_public/docs/stylesheets
+if [ -f /app/docs/stylesheets/vitruvyan.css ]; then
+  cp /app/docs/stylesheets/vitruvyan.css /app/docs_root_public/docs/stylesheets/vitruvyan.css
+  echo "✅ Copied vitruvyan.css → docs_root_public/docs/stylesheets/vitruvyan.css"
+fi
 echo ""
 
 # Build 1: Public documentation (no authentication required)
@@ -28,14 +43,24 @@ mkdocs build \
 echo "✅ Public site: /app/site_public"
 echo ""
 
-# Build 2: Full documentation (authentication required)
-echo "📚 [2/2] Building FULL documentation..."
+# Build 2: Public KB documentation (no authentication)
+echo "📚 [2/3] Building PUBLIC KB documentation..."
+mkdocs build \
+  --config-file /app/mkdocs.docs.yml \
+  --site-dir /app/site_docs_public \
+  --clean
+
+echo "✅ Public docs site: /app/site_docs_public"
+echo ""
+
+# Build 3: Admin documentation (authentication required)
+echo "📚 [3/3] Building ADMIN documentation..."
 mkdocs build \
   --config-file /app/mkdocs.yml \
   --site-dir /app/site \
   --clean
 
-echo "✅ Full site: /app/site"
+echo "✅ Admin site: /app/site"
 echo ""
 
 # Summary
@@ -43,5 +68,6 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "✅ Multi-build complete!"
 echo ""
 echo "PUBLIC:  $(du -sh /app/site_public | cut -f1) (no auth)"
-echo "FULL:    $(du -sh /app/site | cut -f1) (authenticated)"
+echo "DOCS:    $(du -sh /app/site_docs_public | cut -f1) (no auth)"
+echo "ADMIN:   $(du -sh /app/site | cut -f1) (authenticated)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

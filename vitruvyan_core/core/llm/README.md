@@ -1,5 +1,7 @@
 # core/llm — LLM Infrastructure Layer
 
+> **Last updated**: February 13, 2026
+
 ## Architecture
 
 ```
@@ -8,9 +10,12 @@ core/llm/                  ← Prompt system + cache utilities
 ├── prompts/               ← PromptRegistry (domain-aware prompt management)
 ├── cache_manager.py       ← Redis-backed response caching (LLMCacheManager)
 ├── cache_api.py           ← Cache REST API utilities
-├── gemma_client.py        ← Local Gemma model client (experimental)
-└── _legacy/               ← Archived abstractions (llm_interface, conversational_llm)
+└── gemma_client.py        ← Local Gemma model client (experimental)
 ```
+
+> **Feb 13, 2026**: `_legacy/` directory deleted. `LLMInterface` and `ConversationalLLM`
+> backward-compat re-exports removed from `__init__.py`. 5 legacy prompt symbols
+> removed from `prompts/__init__.py`. All LLM access is now exclusively via `LLMAgent`.
 
 ## Nuclear Option Philosophy (Appendix G)
 

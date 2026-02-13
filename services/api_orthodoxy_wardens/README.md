@@ -1,5 +1,7 @@
 # API Orthodoxy Wardens
 
+> **Last updated**: February 13, 2026
+
 > **Epistemic Tribunal Service — LIVELLO 2 Infrastructure Layer**
 
 REST API service for compliance evaluation, truth validation, and decision rendering. The epistemic judge that examines outputs and renders verdicts without executing corrections.
@@ -66,7 +68,11 @@ api_orthodoxy_wardens/
 ├── config.py            Environment variables, settings
 ├── adapters/
 │   ├── bus_adapter.py   Orchestrates LIVELLO 1 + StreamBus events
-│   └── persistence.py   I/O layer (PostgresAgent, QdrantAgent)
+│   ├── persistence.py   I/O layer (PostgresAgent, QdrantAgent)
+│   ├── roles.py         SacredRole implementations (promoted from _legacy/core)
+│   ├── workflows.py     Workflow orchestration (promoted from _legacy/core)
+│   ├── event_handlers.py  Event handling logic (promoted from _legacy/core)
+│   └── orthodoxy_db_manager.py  DB operations (promoted from _legacy/core)
 ├── api/
 │   └── routes.py        HTTP endpoints (validate → delegate → return)
 ├── models/
@@ -76,9 +82,13 @@ api_orthodoxy_wardens/
 ├── streams_listener.py  Redis Streams consumer (background)
 ├── examples/            API usage examples and test scripts
 ├── Dockerfile           Container definition
-├── requirements.txt     Python dependencies
-└── _legacy/             Pre-refactoring code
+└── requirements.txt     Python dependencies
 ```
+
+> **Feb 13, 2026**: `_legacy/` directory deleted. 4 load-bearing runtime files
+> (roles, workflows, event_handlers, orthodoxy_db_manager) promoted from
+> `_legacy/core/` to `adapters/`. All import paths in main.py, api/routes.py,
+> and monitoring/health.py updated accordingly.
 
 ---
 

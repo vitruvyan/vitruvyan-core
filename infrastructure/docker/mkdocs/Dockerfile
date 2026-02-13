@@ -26,7 +26,7 @@ RUN chmod +x /app/build-all.sh
 
 # Create output directories and symlinked docs_root (for full site)
 # Create separate docs_root_public (for public landing page only)
-RUN mkdir -p /app/site /app/site_public /app/docs_root /app/docs_root_public && \
+RUN mkdir -p /app/site /app/site_public /app/site_docs_public /app/docs_root /app/docs_root_public && \
     ln -s /app/docs /app/docs_root/docs && \
     ln -s /app/vitruvyan_core /app/docs_root/vitruvyan_core && \
     ln -s /app/services /app/docs_root/services && \
@@ -35,7 +35,8 @@ RUN mkdir -p /app/site /app/site_public /app/docs_root /app/docs_root_public && 
     ln -s /app/examples /app/docs_root/examples && \
     ln -s /app/config /app/docs_root/config && \
     ln -s /app/scripts /app/docs_root/scripts && \
-    ln -s /app/index.md /app/docs_root/index.md
+    ln -s /app/index.md /app/docs_root/index.md && \
+    ln -s /app/index.it.md /app/docs_root/index.it.md
 
 # Documentation will be mounted as volumes
 EXPOSE 8000

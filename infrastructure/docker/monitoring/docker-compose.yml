@@ -8,9 +8,12 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/.htpasswd_advanced:/etc/nginx/.htpasswd_advanced:ro
       - ./certbot/www:/var/www/certbot:rw
       - ./certbot/conf:/etc/letsencrypt:rw
       - mkdocs_site_public:/var/www/mkdocs/site_public:ro
+      - mkdocs_site_docs_public:/var/www/mkdocs/site_docs_public:ro
+      - mkdocs_site_admin:/var/www/mkdocs/site_admin:ro
     networks:
       - monitoring-net
       - core-net
@@ -36,3 +39,9 @@ volumes:
   mkdocs_site_public:
     external: true
     name: vitruvyan-core_mkdocs_site_public
+  mkdocs_site_docs_public:
+    external: true
+    name: vitruvyan-core_mkdocs_site_docs_public
+  mkdocs_site_admin:
+    external: true
+    name: vitruvyan-core_mkdocs_site

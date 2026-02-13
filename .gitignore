@@ -87,5 +87,19 @@ Thumbs.db
 build_logs/
 site/
 
+# Certbot / Let's Encrypt (runtime state, never commit)
+infrastructure/docker/monitoring/certbot/conf/
+infrastructure/docker/monitoring/certbot/www/
+
+# Nginx Basic Auth credentials (generated locally)
+infrastructure/docker/monitoring/nginx/.htpasswd
+infrastructure/docker/monitoring/nginx/.htpasswd_advanced
+
+# Keycloak local env (do not commit)
+infrastructure/docker/keycloak/keycloak.env
+
+# oauth2-proxy local env (do not commit)
+infrastructure/docker/monitoring/oauth2-proxy/oauth2-proxy.env
+
 # Node modules (if any frontend)
 node_modules/

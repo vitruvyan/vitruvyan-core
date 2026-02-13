@@ -1,5 +1,7 @@
 # Orthodoxy Wardens — Sacred Order #5: Truth & Governance
 
+> **Last updated**: February 13, 2026
+
 > **"Il giudice non è mai il boia."** — The judge is never the executioner.
 
 Orthodoxy Wardens is an **epistemic tribunal**: it receives confessions (audit requests),
@@ -12,14 +14,14 @@ corrections, restarts services, or writes to databases directly.
 orthodoxy_wardens/
 ├── domain/          Frozen dataclasses: Confession, Finding, Verdict, LogDecision
 ├── events/          Event type constants + OrthodoxyEvent envelope
-├── consumers/       SacredRole ABC + decision engine implementations (FASE 3)
-├── governance/      Rules, classifiers, verdict engine (FASE 2)
+├── consumers/       SacredRole ABC + decision engine implementations
+│   └── confessor_agent.py  (~1007L, uses LLMAgent, DI pattern)
+├── governance/      Rules, classifiers, verdict engine
 ├── monitoring/      Prometheus metric name constants
 ├── philosophy/      Decision Engine Charter — the "why"
 ├── docs/            Extended documentation
 ├── examples/        Usage examples and test fixtures
-├── tests/           Unit tests
-└── _legacy/         Pre-refactoring files (to be removed after FASE 4)
+└── tests/           Unit tests
 ```
 
 ## Domain Model
@@ -92,7 +94,13 @@ assert verdict.should_send is False
 | FASE 1 | Domain objects + events + ABC | ✅ Complete |
 | FASE 2 | Governance engine (RuleSet, classifier) | ⏳ Planned |
 | FASE 3 | Consumers (Confessor, Inquisitor, Penitent, Chronicler) | ⏳ Planned |
-| FASE 4 | Service layer slimming | ⏳ Planned |
+| FASE 4 | Service layer slimming + legacy deletion | ✅ Complete (Feb 13, 2026) |
+
+### Feb 13, 2026 — Legacy Elimination
+- `_legacy/` directory deleted (all files either promoted to `adapters/` or discarded)
+- `confessor_agent.py`: `LLMInterface` → `LLMAgent` (via `get_llm_agent()`)
+- `confessor_agent.py`: Removed 3 hardcoded `_legacy` imports (SystemMonitor, DockerManager, GitMonitor) → dependency injection via config
+- `confessor_agent.py`: Finance-specific language → domain-agnostic ("financial_outputs" → "domain_outputs")
 
 ## See Also
 

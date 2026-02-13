@@ -4,6 +4,9 @@
 > **Epistemic Layer**: PERCEPTION (Ingestion)  
 > **LIVELLO 1**: Pure Domain — Domain-Agnostic Knowledge Discovery
 
+This page follows the shared documentation template:
+`docs/foundational/TEMPLATE_SACRED_ORDER_COMPONENT.md`.
+
 ---
 
 ## 📜 Charter
@@ -11,6 +14,12 @@
 Codex Hunters are responsible for **acquiring and normalizing external knowledge** from disparate sources. Like medieval scholars traveling to remote monasteries seeking forgotten manuscripts, the Hunters discover, validate, and preserve data with unwavering precision.
 
 **Sacred Mandate**: No codex left unfound, no data corrupted, no truth lost.
+
+### Non-goals (boundaries)
+
+- Not a risk engine (scoring/forecasting belongs to Reason-layer engines).
+- Not a UI, not an auth boundary (enforce access at reverse-proxy).
+- LIVELLO 1 is **pure**: no HTTP, no DB, no Redis I/O.
 
 ---
 
@@ -62,6 +71,26 @@ result = binder.process({"entity": restored})
 bound = result.data["bound_entity"]
 print(f"Dedupe key: {bound.dedupe_key}")  # Deterministic hash
 ```
+
+---
+
+## 🧭 Code Map (Where to Read)
+
+### LIVELLO 1 (Pure Domain)
+
+- `vitruvyan_core/core/governance/codex_hunters/domain/config.py` — `CodexConfig` (sources, streams, quality, storage targets)
+- `vitruvyan_core/core/governance/codex_hunters/consumers/tracker.py` — discovery request validation + `DiscoveredEntity` + deterministic `dedupe_key`
+- `vitruvyan_core/core/governance/codex_hunters/consumers/restorer.py` — normalization + validation + `quality_score` → `RestoredEntity`
+- `vitruvyan_core/core/governance/codex_hunters/consumers/binder.py` — bind metadata + dedupe + optional embedding id → `BoundEntity`
+- `vitruvyan_core/core/governance/codex_hunters/docs/CODEX_HUNTERS_REFACTOR_PLAN.md` — roadmap + boundary enforcement targets
+
+### LIVELLO 2 (Service / Adapters)
+
+- `services/api_codex_hunters/main.py` — FastAPI service entrypoint
+- `services/api_codex_hunters/adapters/bus_adapter.py` — orchestrates LIVELLO 1 consumers + emits Streams events
+- `services/api_codex_hunters/streams_listener.py` — Streams consumer that dispatches requests to the API
+- `vitruvyan_core/core/orchestration/langgraph/node/codex_hunters_node.py` — current LangGraph integration (API-trigger)
+- `vitruvyan_core/core/orchestration/langgraph/codex_trigger.py` — helper to trigger expeditions from graph/system
 
 ---
 
@@ -286,7 +315,55 @@ python3 -c "from vitruvyan_core.core.governance.codex_hunters.consumers import *
 
 ---
 
-## 🎨 Domain Deployment Examples
+## 🧩 Verticalization (Domain Implementation Guide)
+
+Codex Hunters is domain-agnostic by design. A **vertical domain** (finance, energy, healthcare, …) plugs in by providing a “domain pack” that defines:
+
+1) **Vocabulary** (what `entity_id` means in that domain)  
+2) **Sources** (where raw data comes from)  
+3) **Normalization rules** (how to standardize raw payloads)  
+4) **Routing hooks** (when to trigger an expedition in orchestration)
+
+### 1) Vocabulary mapping (avoid confusion)
+
+| Core primitive | Finance example | Energy example |
+|---|---|---|
+| `entity_id` | `ticker` (AAPL) | `plant_id` / `meter_id` |
+| `source` | market data provider | SCADA / ISO feed |
+| `normalized_data` | fundamentals/metrics | telemetry/forecasts |
+
+### 2) Domain config (tables/collections/stream prefix/sources)
+
+Use `CodexConfig` to re-bind storage targets, stream prefix, and enabled sources without changing core logic:
+
+- `vitruvyan_core/core/governance/codex_hunters/domain/config.py` (`CodexConfig.from_yaml(...)`)
+
+Practical rule:
+- Keep **domain choices** (entity tables, stream prefixes, enabled sources) in config.
+- Keep **core stages** (Track/Restore/Bind) unchanged.
+
+### 3) Domain normalization (source-specific “normalizers”)
+
+In LIVELLO 1, normalization is injected via `RestorerConsumer.register_normalizer(source, fn)`:
+
+- `vitruvyan_core/core/governance/codex_hunters/consumers/restorer.py`
+
+Pattern:
+- For each enabled `source`, register a normalizer that converts vendor payload → canonical `normalized_data`.
+
+### 4) Domain routing (when to trigger Codex expeditions)
+
+The core orchestration supports domain plugins; finance is the reference pattern:
+
+- `vitruvyan_core/domains/finance_plugin.py` (GraphPlugin + custom router → `"codex_expedition"`)
+- `examples/verticals/README.md` (vertical extension philosophy)
+
+Rule of thumb:
+- Trigger Codex Hunters when the domain needs **discovery/mapping** (e.g., missing entity IDs) before execution.
+
+---
+
+## 🎨 Domain Deployment Examples (configuration-only)
 
 ### Healthcare
 
@@ -326,6 +403,14 @@ CodexConfig(
     }
 )
 ```
+
+---
+
+## ⚠️ Known issues / roadmap
+
+Codex Hunters is being actively “de-financialized”. Track target state and boundary enforcement here:
+
+- `vitruvyan_core/core/governance/codex_hunters/docs/CODEX_HUNTERS_REFACTOR_PLAN.md`
 
 ---
 

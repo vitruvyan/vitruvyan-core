@@ -9,8 +9,8 @@ from core.orchestration.langgraph.node.route_node import route_node
 from core.orchestration.langgraph.node.exec_node import exec_node
 from core.orchestration.langgraph.node.qdrant_node import qdrant_node
 from core.orchestration.langgraph.node.compose_node import compose_node
-# 🎭 PHASE 2.1 - Babel Gardens Emotion Detection (LEGACY - to be refactored to emotion_detector)
-from core.orchestration.langgraph.node._legacy_babel_emotion_node_v1 import babel_emotion_node
+# Babel Gardens Emotion Detection (v2 — HTTP adapter)
+from core.orchestration.langgraph.node.emotion_detector import emotion_detector_node as babel_emotion_node
 # Enhanced LLM node with caching
 from core.orchestration.langgraph.node.cached_llm_node import cached_llm_node
 from core.orchestration.langgraph.memory_utils import merge_slots
@@ -59,8 +59,8 @@ from core.orchestration.langgraph.node.llm_mcp_node import llm_mcp_node
 # 🧠 VSGS (Vitruvyan Semantic Grounding System) - PR-A Bootstrap
 from core.orchestration.langgraph.node.semantic_grounding_node import semantic_grounding_node
 
-# 🕸️ Pattern Weavers - Semantic enrichment (Nov 2025, _legacy until LIVELLO 2 completes)
-from core.cognitive.pattern_weavers._legacy.weaver_node import weaver_node
+# Pattern Weavers - Semantic enrichment (v2 — HTTP adapter)
+from core.orchestration.langgraph.node.pattern_weavers_node import pattern_weavers_node as weaver_node
 
 # 🎯 Advisor Node - Decision-making layer (Dec 27, 2025)
 from core.orchestration.langgraph.node.advisor_node import advisor_node
@@ -113,7 +113,7 @@ class GraphState(TypedDict, total=False):
     
     # 🛡️ Sentinel Order Fields
     sentinel_risk_score: Optional[float]     # Current risk assessment (0.0-1.0)
-    sentinel_portfolio_value: Optional[float] # Collection value under protection (legacy name)
+    sentinel_collection_value: Optional[float] # Value of collection under protection
     sentinel_protection_mode: Optional[str]  # conservative, balanced, aggressive, emergency
     sentinel_alerts: Optional[List[str]]     # Active alerts
     sentinel_status: Optional[str]           # monitoring, alert_issued, emergency, recovery
@@ -172,65 +172,13 @@ class GraphState(TypedDict, total=False):
     # 🧠 CAN v2 Fields (Dec 27, 2025)
     can_response: Optional[Dict[str, Any]]  # CAN structured response (CANResponse schema)
     can_mode: Optional[str]  # urgent | analytical | exploratory | conversational
-    can_route: Optional[str]  # single | comparison | screening | collection | allocation | sector | chat
+    can_route: Optional[str]  # Routing mode (domain plugin defines valid values)
     follow_ups: Optional[List[str]]  # Suggested next questions
-    conversation_type: Optional[str]  # single | comparison | collection | screening | allocation | sector
+    conversation_type: Optional[str]  # Conversation mode (domain plugin defines valid values)
 
 
-def run_graph_once(user_input: str, user_id: str = "demo"):
-    state = {"input_text": user_input, "user_id": user_id}
-
-    # 0) Load previous slots - REMOVED (Phase 1 Migration Nov 2025)
-    # Reason: VSGS (semantic_grounding_node) handles conversation context automatically
-    # state["semantic_matches"] will be populated by semantic_grounding_node if enabled
-    # Old code: last_slots = get_last_conversation(user_id)
-    last_slots = None  # Placeholder for merge_slots compatibility
-
-    # 1) Parse input
-    state = parse_node(state)
-
-    # 2) Merge slots
-    if last_slots:
-        state = merge_slots(last_slots, state)
-
-    # 3) 🧠 PHASE 2.1 - Unified Intent Detection (language + intent + synonyms)
-    state = intent_detection_node(state)
-    
-    # 🕸️ Pattern Weavers - Semantic enrichment after intent detection (Nov 2025)
-    state = weaver_node(state)
-
-    # 4) Resolve entity_id
-    state = entity_resolver_node(state)
-
-    # 5) Parse horizon
-    state = horizon_parser_node(state)
-
-    # 6) Parse top-k
-    state = topk_parser_node(state)
-
-    # 7) Routing
-    state = route_node(state)
-
-    # 9) Save updated state - REMOVED (Phase 1 Migration Nov 2025)
-    # Reason: semantic_grounding_node auto-saves conversations to PostgreSQL + Qdrant
-    # Old code (kept as reference for Phase 2 removal):
-    # try:
-    #     slots_to_save = {
-    #         "entity_ids": state.get("entity_ids"),
-    #         "budget": state.get("budget"),
-    #         "horizon": state.get("horizon"),
-    #         "language": state.get("language"),
-    #     }
-    #     save_conversation(
-    #         user_id=state.get("user_id"),
-    #         input_text=state.get("input_text") or "<NO_INPUT>",
-    #         slots=slots_to_save,
-    #         intent=state.get("intent", "unknown")
-    #     )
-    # except Exception as e:
-    #     print(f"⚠️ Error saving conversation: {e}")
-
-    return state
+# run_graph_once() REMOVED — consolidated into graph_runner.py
+# Use: from core.orchestration.langgraph.graph_runner import run_graph_once
 
 
 def build_graph():
@@ -419,11 +367,9 @@ def build_graph():
         
         final_state = original_invoke(state)
         
-        # Restore sentiment/entity_ids if lost (legacy)
-        if "sentiment" in state and "sentiment" not in final_state:
-            final_state["sentiment"] = state["sentiment"]
-        if "entity_ids" in state and "entity_ids" not in final_state:
-            final_state["entity_ids"] = state["entity_ids"]
+        # Restore entities if lost during Sacred Orders pipeline
+        if "entities" in state and "entities" not in final_state:
+            final_state["entities"] = state["entities"]
         
         # 🎭 PHASE 2.1: Restore UX fields if lost during Sacred Orders pipeline
         for field, snapshot_value in ux_snapshot.items():

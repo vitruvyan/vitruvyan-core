@@ -1,6 +1,11 @@
 """
 Autonomous Audit Agent - LangGraph Implementation
 NO CrewAI Dependencies - Pure Python + LangGraph
+
+NOTE: This consumer violates LIVELLO 1 purity (it has I/O via monitoring tools).
+The monitoring tools (system_monitor, docker_manager, git_monitor) MUST be
+injected via config dict from the service layer (LIVELLO 2).
+Full LIVELLO 1 rewrite is tracked as a future task.
 """
 
 import asyncio
@@ -10,16 +15,12 @@ from typing import Dict, List, TypedDict
 import json
 from langgraph.graph import StateGraph, END
 
-# Import your existing LLM interface
-from core.llm.llm_interface import LLMInterface
+# LLM access via centralized LLMAgent (singleton gateway)
+from core.agents.llm_agent import get_llm_agent
 
 # Import monitoring tools (NEW GOVERNANCE STRUCTURE)
 from core.governance.orthodoxy_wardens.consumers.code_analyzer import CodeAnalyzer
-# LEGACY: These 3 files moved to _legacy/ during FASE 0 refactoring (Feb 9, 2026)
-# They will be eliminated entirely when confessor is rewritten as pure consumer (FASE 3)
-from core.governance.orthodoxy_wardens._legacy.chronicler_agent import SystemMonitor
-from core.governance.orthodoxy_wardens._legacy.docker_manager import DockerManager
-from core.governance.orthodoxy_wardens._legacy.git_monitor import GitMonitor
+# NOTE: SystemMonitor, DockerManager, GitMonitor are injected via config (LIVELLO 2 responsibility)
 from core.governance.orthodoxy_wardens.consumers.inquisitor_agent import ComplianceValidator
 from core.governance.orthodoxy_wardens.consumers.penitent_agent import AutoCorrector
 # TODO: disaster_prevention moved to different location - to be implemented
@@ -98,19 +99,20 @@ class AutonomousAuditAgent:
         self.config = config
         self.logger = logging.getLogger(__name__)
         
-        # Initialize LLM interface (your existing caching system)
-        self.llm_interface = config.get("llm_interface")
+        # LLM via centralized LLMAgent (replaces legacy LLMInterface)
+        self.llm_agent = get_llm_agent()
+        # Compatibility shim: some methods still use self.llm_interface
+        self.llm_interface = self.llm_agent
         self.db_manager = config.get("db_manager")
         
-        # Initialize monitoring tools
-        self.code_analyzer = CodeAnalyzer()
-        self.system_monitor = SystemMonitor()
-        self.docker_manager = DockerManager()
-        self.git_monitor = GitMonitor()
-        self.compliance_validator = ComplianceValidator(self.llm_interface)
-        self.auto_corrector = AutoCorrector()
-        # TODO: disaster_prevention to be re-implemented in governance structure
-        self.disaster_prevention = None  # Temporarily disabled
+        # Initialize monitoring tools (injected from LIVELLO 2 or defaults)
+        self.code_analyzer = config.get("code_analyzer") or CodeAnalyzer()
+        self.system_monitor = config.get("system_monitor")  # Injected from service layer
+        self.docker_manager = config.get("docker_manager")  # Injected from service layer
+        self.git_monitor = config.get("git_monitor")        # Injected from service layer
+        self.compliance_validator = config.get("compliance_validator") or ComplianceValidator(self.llm_agent)
+        self.auto_corrector = config.get("auto_corrector") or AutoCorrector()
+        self.disaster_prevention = None
         
         # Setup LangGraph workflow
         self.setup_workflow()
@@ -287,13 +289,13 @@ class AutonomousAuditAgent:
     
     async def validate_compliance(self, state: AuditState) -> AuditState:
         """
-        Node 4: Validate financial compliance using LLM
+        Node 4: Validate domain compliance using LLM
         """
         audit_id = state.get("audit_id")
         self.logger.info(f"Validating compliance for audit {audit_id}")
         
         try:
-            # Get recent financial outputs for compliance validation
+            # Get recent outputs for compliance validation
             compliance_results = await self.compliance_validator.validate_recent_outputs()
             
             # Calculate compliance score
@@ -375,10 +377,10 @@ class AutonomousAuditAgent:
         state["status"] = severity
         
         # Use LLM for additional decision insights
-        if self.llm_interface:
+        if self.llm_agent:
             try:
                 decision_prompt = self._create_decision_prompt(analysis, compliance_score, overall_risk)
-                llm_insights = await self.llm_interface.get_completion(decision_prompt)
+                llm_insights = self.llm_agent.complete(decision_prompt)
                 
                 state["analysis_results"]["llm_insights"] = {
                     "decision_analysis": llm_insights,
@@ -550,10 +552,10 @@ class AutonomousAuditAgent:
             }
             
             # Use LLM for deeper insights if available
-            if self.llm_interface:
+            if self.llm_agent:
                 try:
                     learning_prompt = self._create_learning_prompt(state)
-                    llm_learning = await self.llm_interface.get_completion(learning_prompt)
+                    llm_learning = self.llm_agent.complete(learning_prompt)
                     insights["llm_learning"] = llm_learning
                     
                 except Exception as e:
@@ -597,7 +599,7 @@ class AutonomousAuditAgent:
         elif trigger_type == "alert":
             return base_scope + ["system_monitoring", "container_health"]
         elif trigger_type == "compliance_violation":
-            return base_scope + ["financial_outputs", "regulatory_checks"]
+            return base_scope + ["domain_outputs", "governance_checks"]
         else:
             return base_scope
     
@@ -761,7 +763,7 @@ COMPLIANCE VIOLATIONS:
 {json.dumps(analysis.get('compliance', {}).get('critical_violations', []), indent=2)}
 
 Based on this analysis, what autonomous actions should be taken immediately?
-Focus on financial compliance and system stability.
+Focus on governance compliance and system stability.
 Prioritize actions by severity and provide specific recommendations.
 """
     
@@ -957,7 +959,6 @@ Provide insights for:
             # Map container names to internal ports
             port_mapping = {
                 "vitruvyan_api_graph": "8004",
-                "vitruvyan_api_semantic": "8001", 
                 "vitruvyan_api_neural": "8002",
                 "vitruvyan_api_sentiment": "8003",
                 "vitruvyan_api_crewai": "8005",

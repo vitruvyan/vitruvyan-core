@@ -43,10 +43,13 @@ def qdrant_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
         # 2️⃣ Fallback to phrases_embeddings with SMART FILTERING
         if not hits:
+            # Domain-agnostic source filtering via env var (comma-separated list)
+            _raw_sources = os.getenv("QDRANT_SOURCE_FILTER", "").strip()
+            _source_filter = [s.strip() for s in _raw_sources.split(",") if s.strip()] or None
             res = _agent.search_phrases(
                 query_vector=vec,
                 top_k=5,
-                filter_financial_only=bool(int(os.getenv("QDRANT_FILTER_DOMAIN", "1")))  # Configurable domain filtering
+                source_filter=_source_filter
             )
             
             # Convert search_phrases format to legacy format (for backwards compatibility)

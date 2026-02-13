@@ -34,21 +34,8 @@ from .version import ACTIVE_PROMPT_VERSION, get_prompt_version, list_available_v
 # Auto-register generic OS prompts as fallback domain
 register_generic_domain()
 
-# Backward-compatible imports from legacy
-try:
-    from ._legacy import (
-        VITRUVYAN_SYSTEM_PROMPT_V1_0,
-        SCENARIO_TYPES,
-        get_base_prompt,
-        get_scenario_prompt,
-        get_combined_prompt
-    )
-except ImportError:
-    VITRUVYAN_SYSTEM_PROMPT_V1_0 = None
-    SCENARIO_TYPES = []
-    get_base_prompt = None
-    get_scenario_prompt = None
-    get_combined_prompt = None
+# Legacy prompt imports removed (Feb 13, 2026)
+# Use PromptRegistry for all prompt management
 
 __all__ = [
     # New API
@@ -60,10 +47,4 @@ __all__ = [
     "ACTIVE_PROMPT_VERSION",
     "get_prompt_version",
     "list_available_versions",
-    # Legacy (backward compatible)
-    "VITRUVYAN_SYSTEM_PROMPT_V1_0",
-    "SCENARIO_TYPES",
-    "get_base_prompt",
-    "get_scenario_prompt",
-    "get_combined_prompt"
 ]

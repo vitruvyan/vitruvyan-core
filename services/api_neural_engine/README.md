@@ -1,5 +1,7 @@
 # 🧠 Vitruvyan Neural Engine API
 
+> **Last updated**: February 13, 2026
+
 **Port**: 8003  
 **Status**: ✅ Production Ready (Domain-Agnostic v2.0)  
 **Architecture**: Pluggable domain providers via contracts (IDataProvider, IScoringStrategy)
@@ -72,19 +74,29 @@ Neural Engine is the **CORE quantitative ranking service** in Vitruvyan ecosyste
 ## 📦 Container Structure
 
 ```
-services/core/api_neural_engine/
-├── Dockerfile                  ← Multi-stage build (base → deps → final)
+services/api_neural_engine/
+├── Dockerfile                  ← Multi-stage build
 ├── README.md                   ← This file
-├── main.py                     ← FastAPI application (8003)
+├── main.py                     ← FastAPI bootstrap (83 lines, < 100 ✅)
+├── config.py                   ← Environment variables, settings (extracted Feb 13)
+├── api/
+│   ├── __init__.py
+│   └── routes.py               ← Thin HTTP endpoints (extracted Feb 13)
+├── monitoring/
+│   ├── __init__.py
+│   └── metrics.py              ← Prometheus metric declarations (extracted Feb 13)
 ├── modules/
 │   ├── __init__.py
-│   └── engine_orchestrator.py ← NeuralEngine wrapper
+│   └── engine_orchestrator.py  ← NeuralEngine wrapper
 ├── schemas/
 │   ├── __init__.py
-│   └── api_models.py          ← Pydantic request/response models
-└── shared/
-    └── __init__.py            ← Shared utilities (future)
+│   └── api_models.py           ← Pydantic request/response models
+└── requirements.txt
 ```
+
+> **Feb 13, 2026**: `main.py` refactored from 386 → 83 lines.
+> Extracted `config.py`, `api/routes.py`, `monitoring/metrics.py`.
+> Service now at 100% SACRED_ORDER_PATTERN conformance.
 
 ---
 
@@ -364,4 +376,4 @@ When modifying this service:
 
 **Status**: ✅ Phase 1 Complete (Mock domain ready for testing)  
 **Next Phase**: Integrate TickerDataProvider + FinancialScoringStrategy from vitruvyan monolith  
-**Last Updated**: February 8, 2026
+**Last Updated**: February 13, 2026

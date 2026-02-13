@@ -5,15 +5,19 @@
 # ============================================================================
 
 # Core
-mkdocs==1.5.3
+mkdocs==1.6.1
 
 # Theme (Material Design)
-mkdocs-material==9.5.3
+mkdocs-material==9.7.1
+
+# Optional theme (Simple Blog)
+mkdocs-simple-blog==0.3.0
 
 # Plugins
 mkdocs-mermaid2-plugin==1.1.1      # Mermaid diagrams
 mkdocs-redirects==1.2.1            # URL redirects
 mkdocs-minify-plugin==0.8.0        # HTML/CSS minification
+mkdocs-static-i18n==1.2.0          # Multi-language support (i18n)
 pymdown-extensions==10.7           # Markdown extensions (admonitions, tabs, etc.)
 
 # Search

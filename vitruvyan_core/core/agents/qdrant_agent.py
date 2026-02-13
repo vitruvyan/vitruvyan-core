@@ -141,68 +141,37 @@ class QdrantAgent:
             logger.error(f"Errore search: {e}")
             return {"status": "error", "error": str(e)}
 
-    # 🔍 Ricerca seed phrases con smart filtering (elimina Reddit/GNews noise)
+    # Search seed phrases with optional source filtering
     def search_phrases(
         self,
         query_vector: List[float],
         top_k: int = 10,
-        filter_financial_only: bool = True,
+        source_filter: Optional[List[str]] = None,
         collection: str = "phrases_embeddings"
     ) -> Dict[str, Any]:
         """
-        Search seed phrases con filtering intelligente.
+        Search seed phrases with optional source filtering.
         
         Args:
             query_vector: Query embedding (384-dim for MiniLM-L6-v2)
             top_k: Number of results (default 10)
-            filter_financial_only: If True, exclude non-financial Reddit/GNews noise
+            source_filter: Optional list of allowed source names for filtering.
+                           If None, no source filtering is applied.
+                           Domain verticals should pass their own source list.
             collection: Qdrant collection name (default: phrases_embeddings)
         
         Returns:
             Dict with status, results (list of {score, phrase_text, source, context_type})
-        
-        Smart Filtering Strategy:
-            INCLUDE:
-            - seed_human_generated, gpt_paraphrase, seed_multilingual
-            - reddit_it/borsaitaliana/*, reddit_it/finanza/*
-            - reddit_en/wallstreetbets/*, reddit_en/entities/*, reddit_en/investing/*
-            
-            EXCLUDE (noise):
-            - reddit_it/italia/*, reddit_it/italy/*
-            - reddit_es/mexico/*, reddit_en/general/*
-            - gnews_general
         """
         
-        # Financial sources whitelist (include subreddit finanziari)
-        FINANCIAL_SOURCES = [
-            "seed_human_generated",
-            "gpt_paraphrase",
-            "seed_multilingual",
-            "vitruvyan_docs",
-            "earnings_reports",
-            "financial_news",
-            # Financial subreddits (keep)
-            "reddit_it/borsaitaliana/top",
-            "reddit_it/borsaitaliana/hot",
-            "reddit_it/borsaitaliana/new",
-            "reddit_it/finanza/top",
-            "reddit_it/finanza/hot",
-            "reddit_it/finanza/new",
-            "reddit_en/wallstreetbets/top",
-            "reddit_en/entities/top",
-            "reddit_en/investing/top",
-            "reddit_it/criptovalute/top",
-            "reddit_es/criptomonedas/top",
-        ]
-        
-        # Build Qdrant filter
+        # Build Qdrant filter from caller-provided source list
         qfilter = None
-        if filter_financial_only:
+        if source_filter:
             qfilter = Filter(
                 must=[
                     FieldCondition(
                         key="source",
-                        match=MatchAny(any=FINANCIAL_SOURCES)
+                        match=MatchAny(any=source_filter)
                     )
                 ]
             )
@@ -230,7 +199,7 @@ class QdrantAgent:
             
             logger.info(
                 f"✅ search_phrases: {len(results)} results "
-                f"(filtered={filter_financial_only}, collection={collection})"
+                f"(source_filter={source_filter}, collection={collection})"
             )
             
             return {"status": "ok", "results": results, "count": len(results)}

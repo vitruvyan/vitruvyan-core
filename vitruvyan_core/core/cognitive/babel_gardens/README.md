@@ -1,5 +1,7 @@
 # Babel Gardens — Universal Semantic Signal Extraction Layer
 
+> **Last updated**: February 13, 2026
+
 > "The Tower accepts all tongues, weaves all signals, grounds all meaning."
 
 **Sacred Order**: Perception (Linguistic Processing & Semantic Grounding)  
@@ -90,13 +92,6 @@ vitruvyan_core/core/cognitive/babel_gardens/domain/
 └── entities.py                # Legacy sentiment entities (deprecated)
 ```
 
-**Sacred Laws** (invariants):
-1. "The Tower accepts all tongues" (multilingual support)
-2. "Words carry meaning, not secrets" (embeddings only)
-3. "Signals are inferred, never invented" (grounded in text evidence)
-4. "Explainability is sacred" (Orthodoxy Wardens integration)
-5. "The Gardens grow with configuration" (YAML-driven extensibility)
-
 ### LIVELLO 2 (Service Layer)
 ```
 services/api_babel_gardens/plugins/
@@ -164,11 +159,11 @@ signals = plugin.extract_signals(
 # ]
 ```
 
-### 4. Legacy Modules (`_legacy/`)
-**Archived** (Phase 2 refactoring):
+### 4. Legacy Modules
+**Deleted** (Feb 13, 2026 — legacy elimination):
 - `emotion_detector.py`: Deprecated (use SignalSchema)
 - `sentiment_fusion.py`: Deprecated (use FinanceSignalsPlugin)
-- Backward compatibility wrappers will be removed in Phase 4
+- All `_legacy/` files removed. No backward compatibility wrappers remain.
 
 ---
 
@@ -393,10 +388,10 @@ See [MIGRATION_GUIDE_V2.1.md](docs/MIGRATION_GUIDE_V2.1.md) for full details.
 - Babel → Vault Keepers integration (SignalArchivist)
 - Backward compatibility (dual-mode)
 
-### ⏳ Phase 4 (Q2 2026)
-- Additional plugins (SecBERT, MaritimeBERT, BioClinicalBERT, LegalBERT)
-- Pattern Weavers signal correlation
-- Legacy removal (_legacy/ deletion)
+### ✅ Phase 4 (Complete — Feb 13, 2026)
+- ✅ `_legacy/` directory deleted (all archived files removed)
+- Additional plugins (SecBERT, MaritimeBERT, BioClinicalBERT, LegalBERT) deferred to Q2 2026
+- Pattern Weavers signal correlation deferred to Q2 2026
 
 ---
 
@@ -413,5 +408,5 @@ When adding a new vertical:
 ---
 
 **Version**: 2.1.0  
-**Last Updated**: February 11, 2026  
-**Status**: Production Ready (Phase 1-3 Complete)
+**Last Updated**: February 13, 2026  
+**Status**: Production Ready (Phase 1-4 Complete, legacy eliminated)

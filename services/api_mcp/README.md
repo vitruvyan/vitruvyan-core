@@ -1,6 +1,13 @@
 # 🏛️ MCP Server — Model Context Protocol Gateway
 
-MCP è un **gateway stateless** che espone tool in formato “function-calling” e applica una pipeline di governance/audit (Sacred Orders) a ogni esecuzione.
+> **Last updated**: February 13, 2026
+
+MCP è un **gateway stateless** che espone tool in formato "function-calling" e applica una pipeline di governance/audit (Sacred Orders) a ogni esecuzione.
+
+> **Feb 13, 2026**: Added `adapters/` (bus_adapter.py, persistence.py) and
+> `monitoring/` (__init__.py with Prometheus metrics, health.py). Inline metric
+> declarations extracted from `api/routes.py` to `monitoring/`. Service now at
+> 100% SACRED_ORDER_PATTERN conformance.
 
 Documentazione canonica (vitruvyan-core): `docs/services/mcp.md`
 

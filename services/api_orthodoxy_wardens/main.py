@@ -1,6 +1,6 @@
 """
 Orthodoxy Wardens — Sacred Order API (LIVELLO 2)
-FastAPI bootstrap. Logic delegated to adapters/bus_adapter.py + _legacy/core.
+FastAPI bootstrap. Logic delegated to adapters/.
 """
 import logging
 import os
@@ -13,18 +13,17 @@ from api_orthodoxy_wardens.api.routes import router
 from api_orthodoxy_wardens.config import settings
 from api_orthodoxy_wardens.monitoring.health import setup_synaptic_conclave_listeners, metrics_endpoint
 from api_orthodoxy_wardens.adapters.bus_adapter import OrthodoxyBusAdapter
-from api_orthodoxy_wardens._legacy.core import event_handlers
-from api_orthodoxy_wardens._legacy.core.roles import (
+from api_orthodoxy_wardens.adapters import event_handlers
+from api_orthodoxy_wardens.adapters.roles import (
     OrthodoxConfessor, OrthodoxPenitent, OrthodoxChronicler, OrthodoxInquisitor, OrthodoxAbbot
 )
-from api_orthodoxy_wardens._legacy.core.workflows import set_agents
+from api_orthodoxy_wardens.adapters.workflows import set_agents
 from core.governance.orthodoxy_wardens.consumers.confessor_agent import AutonomousAuditAgent
-from core.governance.orthodoxy_wardens._legacy.chronicler_agent import SystemMonitor
 from core.governance.orthodoxy_wardens.consumers.inquisitor_agent import ComplianceValidator
 from core.governance.orthodoxy_wardens.consumers.penitent_agent import AutoCorrector
-from core.llm.llm_interface import LLMInterface
+from core.agents.llm_agent import get_llm_agent
 from core.agents.postgres_agent import PostgresAgent
-from api_orthodoxy_wardens._legacy.core.orthodoxy_db_manager import OrthodoxyDatabaseManager
+from api_orthodoxy_wardens.adapters.orthodoxy_db_manager import OrthodoxyDatabaseManager
 
 logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL))
 logger = logging.getLogger("OrthodoxyWardens")
@@ -51,20 +50,20 @@ async def startup():
     bus_adapter = OrthodoxyBusAdapter()
 
     if not test_mode:
-        llm_interface = LLMInterface()
+        llm_agent = get_llm_agent()
         try:
             orthodoxy_db_manager = OrthodoxyDatabaseManager()
         except Exception as exc:
             logger.error("OrthodoxyDatabaseManager init failed: %s", exc)
 
         confessor_agent = AutonomousAuditAgent(config={
-            "llm_interface": llm_interface, "db_manager": orthodoxy_db_manager, "role": "Confessor"
+            "db_manager": orthodoxy_db_manager, "role": "Confessor"
         })
         penitent_agent = AutoCorrector()
-        chronicler_agent = SystemMonitor()
-        inquisitor_agent = ComplianceValidator(llm_interface=llm_interface)
+        chronicler_agent = None  # SystemMonitor removed (legacy)
+        inquisitor_agent = ComplianceValidator(llm_interface=llm_agent)
         abbot_agent = AutonomousAuditAgent(config={
-            "llm_interface": llm_interface, "db_manager": orthodoxy_db_manager, "role": "Abbot"
+            "db_manager": orthodoxy_db_manager, "role": "Abbot"
         })
         set_agents(confessor_agent, penitent_agent, chronicler_agent, inquisitor_agent, orthodoxy_db_manager)
 

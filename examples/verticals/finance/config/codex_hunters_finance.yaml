@@ -1,0 +1,50 @@
+metadata:
+  vertical: finance
+  version: "0.1"
+  purpose: "Codex Hunters pilot domain-pack (finance)"
+
+# Storage targets (domain chooses names; core remains unchanged)
+entity_table:
+  name: tickers
+  schema: finance
+  primary_key: ticker_id
+  description: "Canonical finance entities (tickers)"
+
+embedding_collection:
+  name: ticker_embeddings
+  vector_size: 384
+  distance_metric: Cosine
+  description: "Ticker semantic embeddings"
+
+# Event streams namespace for the vertical (requires CodexConfig.from_yaml to parse `streams`)
+streams:
+  prefix: codex.finance
+
+# Sources are configured here; actual I/O adapters live in LIVELLO 2
+sources:
+  yfinance:
+    name: yfinance
+    rate_limit_per_minute: 60
+    timeout_seconds: 30
+    retry_attempts: 2
+    description: "Market data (public) - prototype only"
+    enabled: true
+  alpha_vantage:
+    name: alpha_vantage
+    rate_limit_per_minute: 5
+    timeout_seconds: 60
+    retry_attempts: 2
+    description: "Market data (API key) - prototype only"
+    enabled: false
+
+# Quality policy for finance ingestion (tunable)
+quality:
+  threshold_valid: 0.70
+  penalty_per_error: 0.15
+  penalty_null_ratio: 0.25
+  max_null_ratio: 0.50
+
+# Embeddings (pilot defaults)
+embedding_model: sentence-transformers/all-MiniLM-L6-v2
+embedding_dimension: 384
+

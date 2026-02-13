@@ -15,8 +15,6 @@ from dotenv import load_dotenv
 from core.llm.cache_manager import get_cache_manager, CacheEntry
 # Import LLMAgent
 from core.agents.llm_agent import get_llm_agent
-# 🆕 Import emotion detection (LEGACY - archived functions)
-from core.orchestration.langgraph.node._archived_emotion_detector_v1 import detect_emotion, get_emotion_system_prompt_fragment
 
 load_dotenv()
 
@@ -142,9 +140,8 @@ class CachedLLMOrchestrator:
         else:
             return "general"
     
-    # NOTE: Emotion detection removed (dead code + contract violations)
-    # Emotion logic delegated to detect_emotion() from _archived_emotion_detector_v1
-    # See line 376 where detect_emotion() is called for emotion analysis
+    # NOTE: Emotion detection is handled by babel_emotion_node upstream in the graph.
+    # No legacy fallback needed — if babel_emotion_node didn't run, default to neutral.
     
     def _adapt_similar_response(self, cached_response: str, current_state: Dict[str, Any]) -> str:
         """
@@ -266,31 +263,24 @@ RESPONSE STRUCTURE:
         
         base = base_prompts.get(language, base_prompts["en"]).get(prompt_type, base_prompts[language]["detailed_analysis"])
 
-        # 🆕 Emotion-adaptive prompt injection with new emotion_detector
-        user_input = state.get("input_text", "") if state is not None else ""
+        # Emotion-adaptive prompt injection
+        # Emotion is populated by babel_emotion_node upstream in the graph.
+        # If not available, default to neutral.
+        emotion = state.get("emotion_detected", "neutral")
+        emotion_conf = state.get("emotion_confidence", 0.0)
         
-        # 🎭 Phase 2.1: Prioritize Babel Gardens emotion over legacy detection
-        if state.get("emotion_detected") is not None and state.get("emotion_confidence") is not None:
-            # Use emotion from babel_emotion_node (already in state)
-            emotion = state.get("emotion_detected")
-            emotion_conf = state.get("emotion_confidence")
-            print(f"🎭 [cached_llm] Using Babel Gardens emotion: {emotion} (confidence: {emotion_conf:.2f})")
-        else:
-            # Fallback to legacy detection if Babel didn't provide emotion
-            # Get Babel Gardens sentiment if available
-            babel_sentiment = None
-            if state.get("sentiment_label"):
-                babel_sentiment = {
-                    "sentiment_label": state.get("sentiment_label"),
-                    "sentiment_score": state.get("sentiment_score")
-                }
-            
-            # Detect emotion using legacy sophisticated system
-            emotion, emotion_conf = detect_emotion(user_input, language, babel_sentiment)
-            print(f"🎭 [cached_llm] Detected emotion (legacy): {emotion} (confidence: {emotion_conf:.2f})")
-        
-        # Get emotion-specific system prompt fragment
-        emotion_fragment = get_emotion_system_prompt_fragment(emotion, language)
+        # Simple emotion-to-prompt mapping (no legacy dependency)
+        emotion_fragment = ""
+        if emotion_conf >= 0.7 and emotion != "neutral":
+            emotion_prompts = {
+                "anxious": "User seems worried. Be reassuring, balanced, and risk-aware.",
+                "frustrated": "User seems confused/frustrated. Be patient, break down concepts step-by-step.",
+                "excited": "User is very enthusiastic. Balance their energy with professional caution.",
+                "confused": "User doesn't understand. Explain simply, use examples, avoid jargon.",
+                "confident": "User is confident. Provide concise, actionable information.",
+                "curious": "User is curious. Provide informative, educational responses.",
+            }
+            emotion_fragment = emotion_prompts.get(emotion, "")
 
         # Compose final prompt: personality + emotion adaptation + base prompt
         final_prompt = VITRUVYAN_PERSONALITY_PROMPT + "\n\n"

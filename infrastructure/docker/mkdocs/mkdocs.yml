@@ -7,13 +7,10 @@
 # Build:  mkdocs build → site/ (static HTML)
 # ============================================================================
 
-site_name: Vitruvyan Core Documentation
+site_name: Vitruvyan OS
 site_description: Domain-agnostic epistemic operating system
 site_author: Vitruvyan Team
-site_url: https://kb.vitruvyan.com
-
-repo_name: vitruvyan-core
-repo_url: https://github.com/vitruvyan/vitruvyan-core  # Update with actual repo
+site_url: https://kb.vitruvyan.com/admin/
 
 # Docs directory (symlinked docs root)
 docs_dir: /app/docs_root
@@ -21,45 +18,30 @@ site_dir: /app/site
 
 # Theme configuration
 theme:
-  name: material
+  name: simple-blog
   language: en
-  palette:
-    # Light mode
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: indigo
-      accent: deep purple
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-    # Dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: indigo
-      accent: deep purple
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
+  sidebar: true
+  navigation_depth: 3
   
-  features:
-    - navigation.instant      # Instant loading (SPA-like)
-    - navigation.tracking     # URL updates with scroll
-    - navigation.tabs         # Top-level sections as tabs
-    - navigation.sections     # Group sections
-    - navigation.expand       # Expand all sections by default
-    - navigation.top          # Back to top button
-    - search.suggest          # Search suggestions
-    - search.highlight        # Highlight search terms
-    - content.code.copy       # Copy button for code blocks
-    - content.tabs.link       # Link tabs across pages
-
-  icon:
-    repo: fontawesome/brands/github
-
 # Plugins
 plugins:
+  - i18n:
+      fallback_to_default: true
+      docs_structure: suffix
+      languages:
+        - locale: en
+          name: English
+          default: true
+          build: true
+          link: /admin/
+        - locale: it
+          name: Italiano
+          build: true
+          link: /it/admin/
   - search:
-      lang: en
+      lang:
+        - en
+        - it
   # git-revision-date-localized disabled (requires git repo in mounted volumes)
   # - git-revision-date-localized:
   #     enable_creation_date: true
@@ -97,55 +79,78 @@ markdown_extensions:
 
 # Navigation structure
 nav:
-  - Home: index.md
+  - Home: docs/index.md
   
   - Getting Started:
     - Overview: docs/foundational/VITRUVYAN_OVERVIEW.md
     - Quick Start: docs/foundational/QUICK_START.md
-    - Charter: docs/foundational/VITRUVYAN_CHARTER.md
+    - Epistemic Charter: docs/foundational/Vitruvyan_Epistemic_Charter.md
+    - Pipeline Walkthrough: docs/foundational/VITRUVYAN_PIPELINE_WALKTHROUGH.md
+
+  - Installation:
+    - Overview: docs/installation/README.md
+    - Requirements: docs/installation/REQUIREMENTS.md
+    - Local Setup: docs/installation/LOCAL.md
+    - Docker Setup: docs/installation/DOCKER.md
+    - Production Deployment: docs/installation/PRODUCTION.md
+    - Environment Variables: docs/installation/ENV_VARS.md
+    - Health Checks: docs/installation/HEALTH_CHECKS.md
     
   - Architecture:
     - Overview: docs/architecture/README.md
-    - Sacred Orders Pattern: docs/architecture/SACRED_ORDER_PATTERN.md
-    - Cognitive Bus: docs/architecture/COGNITIVE_BUS_ARCHITECTURE_SEPARATION.md
-    - Technical Debt: docs/architecture/TECHNICAL_DEBT_REPORT_FEB12.md
+    - Sacred Orders Pattern: vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md
+    - Cognitive Bus: vitruvyan_core/core/synaptic_conclave/docs/README.md
+    - Technical Debt Audit: docs/architecture/TECHNICAL_DEBT_AUDIT.md
     
   - Sacred Orders:
-    - Memory Orders: vitruvyan_core/governance/memory_orders/README.md
-    - Vault Keepers: vitruvyan_core/governance/vault_keepers/README.md
-    - Orthodoxy Wardens: vitruvyan_core/governance/orthodoxy_wardens/README.md
-    - Babel Gardens: vitruvyan_core/governance/babel_gardens/README.md
-    - Codex Hunters: vitruvyan_core/governance/codex_hunters/README.md
-    - Pattern Weavers: vitruvyan_core/governance/pattern_weavers/README.md
+    - Index: docs/internal/orders/README.md
+    - Codex Hunters: docs/internal/orders/CODEX_HUNTERS.md
+    - Orthodoxy Wardens: docs/internal/orders/ORTHODOXY_WARDENS.md
+    - Vault Keepers: docs/internal/orders/VAULT_KEEPERS.md
+    - Memory Orders: docs/internal/orders/MEMORY_ORDERS.md
+    - Babel Gardens: docs/internal/orders/BABEL_GARDENS.md
+    - Pattern Weavers: docs/internal/orders/PATTERN_WEAVERS.md
     
   - Services:
     - Overview: services/README_SERVICES.md
     - API Graph: services/api_graph/README.md
     - API MCP: services/api_mcp/README.md
+    - Sacred Orders APIs:
+      - Index: docs/internal/services/README.md
+      - Pattern Weavers API: docs/internal/services/PATTERN_WEAVERS_API.md
+      - Codex Hunters API: docs/internal/services/CODEX_HUNTERS_API.md
+      - Memory Orders API: docs/internal/services/MEMORY_ORDERS_API.md
+      - Orthodoxy Wardens API: docs/internal/services/ORTHODOXY_WARDENS_API.md
+      - Vault Keepers API: docs/internal/services/VAULT_KEEPERS_API.md
     
   - Infrastructure:
     - Overview: infrastructure/README_INFRASTRUCTURE.md
     - Docker Setup: infrastructure/docker/README.md
     - Monitoring: infrastructure/docker/monitoring/README.md
+    - KB Access Control: infrastructure/docker/mkdocs/ACCESS_CONTROL.md
     
   - Development:
     - Testing: tests/README_TESTS.md
+    - Templates: docs/foundational/TEMPLATE_SACRED_ORDER_COMPONENT.md
+    - Verticals:
+      - Pattern: examples/verticals/README.md
+      - Finance:
+        - Codex Hunters Domain Pack: examples/verticals/finance/CODEX_HUNTERS_DOMAIN_PACK.md
     - Examples: examples/README_EXAMPLES.md
     - Configuration: config/README_CONFIG.md
     - Scripts: scripts/README_SCRIPTS.md
     
   - Planning:
-    - Roadmap: docs/planning/ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md
-    - Refactoring Plan: docs/planning/SACRED_ORDERS_REFACTORING_PLAN.md
+    - Roadmap: docs/planning/_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md
+    - Refactoring Plan: docs/architecture/SACRED_ORDERS_REFACTORING_PLAN.md
 
 # Extra
 extra:
   version:
     provider: mike  # Versioning provider (optional)
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/vitruvyan
-      name: Vitruvyan on GitHub
+
+extra_css:
+  - docs/stylesheets/vitruvyan.css
 
 # Copyright
 copyright: Copyright &copy; 2026 Vitruvyan Team

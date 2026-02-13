@@ -7,13 +7,10 @@
 # Access: https://kb.vitruvyan.com/ (root path, no authentication)
 # ============================================================================
 
-site_name: Vitruvyan Core
+site_name: Vitruvyan OS
 site_description: Domain-agnostic epistemic operating system — Request knowledge base access
 site_author: Vitruvyan Team
 site_url: https://kb.vitruvyan.com
-
-repo_name: vitruvyan-core
-repo_url: https://github.com/vitruvyan/vitruvyan-core
 
 # Docs directory (dedicated public directory with landing page only)
 docs_dir: /app/docs_root_public
@@ -21,27 +18,26 @@ site_dir: /app/site_public
 
 # Theme configuration (minimal)
 theme:
-  name: material
+  name: simple-blog
   language: en
-  palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: indigo
-      accent: deep purple
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: indigo
-      accent: deep purple
-  features:
-    - navigation.instant
-    - content.code.copy
-  icon:
-    repo: fontawesome/brands/github
+  sidebar: true
+  navigation_depth: 2
 
 # Plugins (minimal)
 plugins:
-  - search:
-      lang: en
+  - i18n:
+      fallback_to_default: true
+      docs_structure: suffix
+      languages:
+        - locale: en
+          name: English
+          default: true
+          build: true
+          link: /
+        - locale: it
+          name: Italiano
+          build: true
+          link: /it/
 
 # Markdown extensions (minimal)
 markdown_extensions:
@@ -49,6 +45,7 @@ markdown_extensions:
   - pymdownx.superfences
   - admonition
   - attr_list
+  - md_in_html
   - tables
   - toc:
       permalink: true
@@ -57,12 +54,8 @@ markdown_extensions:
 nav:
   - Home: index.md
 
-# Footer
-extra:
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/vitruvyan/vitruvyan-core
-      name: GitHub Repository
+extra_css:
+  - docs/stylesheets/vitruvyan.css
 
 # Copyright
 copyright: Copyright &copy; 2026 Vitruvyan Team

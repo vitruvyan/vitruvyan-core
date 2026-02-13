@@ -28,7 +28,7 @@ from core.governance.orthodoxy_wardens.monitoring.metrics import (
 )
 
 # Import event handlers
-from api_orthodoxy_wardens._legacy.core.event_handlers import (
+from api_orthodoxy_wardens.adapters.event_handlers import (
     handle_audit_request,
     handle_system_events
 )
