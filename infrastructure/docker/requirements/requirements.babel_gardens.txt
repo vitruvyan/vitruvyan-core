@@ -90,6 +90,11 @@ gunicorn>=21.2.0
 # pandas-datareader>=0.10.0
 
 # ===========================
+# LLM (Nuclear Option - LLM-first emotion/sentiment)
+# ===========================
+openai>=1.0.0
+
+# ===========================
 # LANGUAGE DETECTION
 # ===========================
 langdetect>=1.0.9

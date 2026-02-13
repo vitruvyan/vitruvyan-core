@@ -107,6 +107,7 @@ services/api_<order>/
 
 #### README.md Requirements
 - **Location**: Root of each Sacred Order module (`vitruvyan_core/core/governance/<order>/` and `services/api_<order>/`)
+- **Versioning**: Every README.md **MUST** include `> **Last updated**: <date>` as the first line after the title (H1). Update this date on every edit.
 - **Content**: 
   - Module purpose and domain responsibility
   - Quick start (code examples)
@@ -530,8 +531,7 @@ Use these as the “quick mental checklist” while coding. If a change violates
 - **Streams, not Pub/Sub**: Redis Streams is the canonical transport; acknowledge after handling; generator consumption.
 - **Bus is payload-blind**: transport never inspects/correlates/routes semantically/synthesizes events.
 - **Validated lists are authoritative**: if a client provides `validated_*`, respect it (including explicit `[]`).
-- **Bias-aware tests**: avoid tiny repetitive fixtures that overfit (prefer diversity/generators).
-
+- **Bias-aware tests**: avoid tiny repetitive fixtures that overfit (prefer diversity/generators).- **LLM-first, never heuristics-first (Nuclear Option)**: linguistic understanding (intent, emotion, entity extraction, ontology mapping) **MUST** delegate to LLM as primary engine. Regex/keyword/pattern-matching are **only** allowed as graceful-degradation fallback when LLM is unavailable, never as the primary classification path. Hardcoded linguistic templates crystallize finite patterns over infinite language — they always fail on edge cases, rare languages, sarcasm, dialects, and novel phrasing. The cascade is always: `LLM (primary, ~95% accuracy) → regex/heuristic fallback (degraded, ~60-70%)`. This applies to: intent detection, emotion detection, entity extraction, ontology recognition, language detection, and any other NLU task. Reference: Appendix F (Conversational Layer — "Never build heuristics when reasoning is possible"), Appendix G (Nuclear Option), Appendix I (Pattern Weavers LLM Ontology).
 ---
 
 ## Where new code should go (rule of thumb)

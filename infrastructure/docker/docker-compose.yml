@@ -69,26 +69,54 @@ services:
     networks:
       - core-net
 
+  keycloak_db:
+    image: postgres:16-alpine
+    container_name: core_keycloak_db
+    restart: always
+    env_file:
+      - ./keycloak/keycloak.env
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+    volumes:
+      - keycloak_db_data:/var/lib/postgresql/data
+    networks:
+      - core-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.1
     container_name: core_keycloak
     restart: always
+    depends_on:
+      keycloak_db:
+        condition: service_healthy
     command:
       - start
       - --proxy=edge
-      - --hostname=user.vitruvyan.com
+      - --hostname=kb.vitruvyan.com
       - --hostname-strict=false
+      - --http-relative-path=/auth
+      - --http-enabled=true
     environment:
-      KC_HOSTNAME: user.vitruvyan.com
+      KC_HOSTNAME: kb.vitruvyan.com
       KC_HOSTNAME_STRICT: false
+      KC_HTTP_RELATIVE_PATH: /auth
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://172.17.0.1:5432/keycloak
-      KC_DB_USERNAME: vitruvyan_user
-      KC_DB_PASSWORD: "@Caravaggio971"
+      KC_DB_URL: jdbc:postgresql://keycloak_db:5432/keycloak
+      KC_DB_USERNAME: keycloak
       KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: "@Caravaggio971"
     ports:
-      - "9080:8080"
+      - "127.0.0.1:9080:8080"
+    env_file:
+      - ./keycloak/keycloak.env
+    volumes:
+      - ./keycloak/bootstrap-kb.sh:/bootstrap-kb.sh:ro
     networks:
       - core-net
 
@@ -402,6 +430,8 @@ services:
       - QDRANT_URL=${QDRANT_URL:-http://core_qdrant:6333}
       # Service URLs
       - NEURAL_ENGINE_URL=http://neural_engine:8003
+      # LLM (Nuclear Option - emotion/sentiment)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       # Model config
       - HUGGINGFACE_HUB_CACHE=/app/models
       - TRANSFORMERS_CACHE=/app/models
@@ -893,13 +923,12 @@ services:
 
   mkdocs:
     image: vitruvyan/mkdocs:latest
-    container_name: core_mkdocs
     build:
       context: ./mkdocs
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "9800:8000"
+      - "127.0.0.1:9800:8000"
     volumes:
       - ../../docs:/app/docs:ro
       - ../../vitruvyan_core:/app/vitruvyan_core:ro
@@ -910,11 +939,14 @@ services:
       - ../../config:/app/config:ro
       - ../../scripts:/app/scripts:ro
       - ../../index.md:/app/index.md:ro
+      - ../../index.it.md:/app/index.it.md:ro
       - ./mkdocs/mkdocs.yml:/app/mkdocs.yml:ro
       - ./mkdocs/mkdocs.public.yml:/app/mkdocs.public.yml:ro
+      - ./mkdocs/mkdocs.docs.yml:/app/mkdocs.docs.yml:ro
       - ./mkdocs/build-all.sh:/app/build-all.sh:ro
       - mkdocs_site:/app/site
       - mkdocs_site_public:/app/site_public
+      - mkdocs_site_docs_public:/app/site_docs_public
     working_dir: /app
     command: sh -c "/app/build-all.sh && mkdocs serve -a 0.0.0.0:8000 --config-file mkdocs.yml --dev-addr 0.0.0.0:8000"
     networks:
@@ -958,6 +990,8 @@ volumes:
   portainer_data_core:
   mkdocs_site:
   mkdocs_site_public:
+  mkdocs_site_docs_public:
+  keycloak_db_data:
 
 networks:
   core-net:
