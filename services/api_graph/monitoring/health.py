@@ -54,13 +54,13 @@ api_requests_inflight = Gauge(
     'Number of requests currently being processed'
 )
 
-# CrewAI agent specific metrics
-crew_agent_latency_seconds = Histogram(
-    'crew_agent_latency_seconds',
-    'CrewAI agent execution latency',
-    ['agent_type'],
-    buckets=[1.0, 2.0, 5.0, 10.0, 20.0, 40.0, 60.0, 120.0]
-)
+# DEPRECATED (Feb 2026): CrewAI removed
+# crew_agent_latency_seconds = Histogram(
+#     'crew_agent_latency_seconds',
+#     'CrewAI agent execution latency',
+#     ['agent_type'],
+#     buckets=[1.0, 2.0, 5.0, 10.0, 20.0, 40.0, 60.0, 120.0]
+# )
 
 # Graph node execution metrics
 graph_node_executions_total = Counter(

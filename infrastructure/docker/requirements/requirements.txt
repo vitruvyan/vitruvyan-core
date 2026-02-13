@@ -16,8 +16,8 @@ tokenizers==0.21.4
 sentence-transformers==5.0.0
 openai==1.88.0
 
-# --- CrewAI & LangGraph ---
-crewai==0.175.0
+# --- LangGraph ---
+# CrewAI removed (deprecated Feb 2026)
 langgraph==0.5.4
 
 # --- Vector DB ---

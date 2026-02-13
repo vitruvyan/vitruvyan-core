@@ -39,8 +39,8 @@ command-not-found==0.3
 ConfigArgParse==1.5.3
 configobj==5.0.6
 constantly==15.1.0
-crewai==0.175.0
-crewai-tools==0.17.0
+# crewai==0.175.0  # DEPRECATED - removed Feb 2026
+# crewai-tools==0.17.0  # DEPRECATED - removed Feb 2026
 cryptography==45.0.5
 cupshelpers==1.0
 curl_cffi==0.11.3

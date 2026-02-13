@@ -568,11 +568,12 @@ class CognitiveBridgeModule(GemmaServiceBase):
             health_check_path="/health"
         )
         
-        self.service_endpoints["crewai_agents"] = ServiceEndpoint(
-            name="crewai_agents",
-            url=os.getenv("CREWAI_URL", "http://localhost:8002"),
-            health_check_path="/health"
-        )
+        # DEPRECATED (Feb 2026): CrewAI removed
+        # self.service_endpoints["crewai_agents"] = ServiceEndpoint(
+        #     name="crewai_agents",
+        #     url=os.getenv("CREWAI_URL", "http://localhost:8002"),
+        #     health_check_path="/health"
+        # )
         
         logger.info(f"🔗 Setup {len(self.service_endpoints)} service endpoints")
     

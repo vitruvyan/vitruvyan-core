@@ -29,8 +29,9 @@ Demonstrates how to:
 **Purpose**: Market sentiment analysis  
 **Finance-Specific**: 🟡 PARTIAL (could be generic signal analysis)
 
-### 4. `crew_node.py` (286 lines)
-**Purpose**: CrewAI strategic analysis (trend/momentum/volatility/backtest)  
+### 4. `crew_node.py` (286 lines) — ⚠️ DEPRECATED
+**Purpose**: ~~CrewAI strategic analysis~~ (CrewAI removed Feb 2026)  
+**Note**: This is a placeholder/stub. Multi-agent orchestration now handled by LangGraph.  
 **Finance-Specific**: 🟡 PARTIAL (if routes are finance-specific)
 
 ### 5. `sentinel_node.py` (283 lines)

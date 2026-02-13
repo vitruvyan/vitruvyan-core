@@ -175,7 +175,7 @@ docker-compose -f docker-compose.gemma-cognitive.yml logs -f
 
 ### Backward Compatibility
 - Mantiene compatibilità con `api_sentiment:8005` (enhanced endpoints)
-- Integra con `api_semantic:8003`, `api_neural:8004`, `api_crewai:8002`
+- Integra con `api_semantic:8003`, `api_neural:8004` ~~, `api_crewai:8002`~~ (CrewAI deprecated)
 - Connessione diretta a PostgreSQL, Redis, Qdrant
 
 ### Service Discovery

@@ -179,7 +179,7 @@ class GraphPersistence:
 | `graph_request_duration_seconds` | Histogram | route, method | Request latency (0.1-60s) |
 | `graph_execution_duration_seconds` | Histogram | graph_type | Graph execution time (0.5-80s) |
 | `api_requests_inflight` | Gauge | - | Concurrent requests |
-| `crew_agent_latency_seconds` | Histogram | agent_type | CrewAI agent execution (1-120s) |
+| ~~`crew_agent_latency_seconds`~~ | ~~Histogram~~ | ~~agent_type~~ | ~~CrewAI agent execution~~ (deprecated) |
 | `graph_node_executions_total` | Counter | node_name, status | Node executions |
 
 **Middleware**: `prometheus_middleware` tracks all HTTP requests (auto-labels, error tracking)

@@ -16,6 +16,7 @@ pytest-asyncio>=0.21.0
 # Documentation
 markdown>=3.4.0
 mkdocs>=1.5.0
+mkdocs-static-i18n>=1.2.0
 
 # Optional: Enhanced Logging
 structlog>=22.0.0
