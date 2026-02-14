@@ -1,0 +1,2 @@
+# Symlink pgadmin.conf in sites-available to enable it in nginx.conf if needed
+ln -s /etc/nginx/sites-available/pgadmin.conf /etc/nginx/conf.d/pgadmin.conf

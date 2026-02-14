@@ -192,5 +192,4 @@ This ensures not only accuracy but *integrity* — a harmony between data, logic
 
 **Author:** Vitruvyan Ethics & Governance Council  
 **Version:** 2.0.0 (LIVELLO 1+2 Pattern, Synaptic Conclave terminology)  
-**Last Updated:** February 11, 2026  
-**Last Updated:** 2025-10-26
+**Last Updated:** February 14, 2026
