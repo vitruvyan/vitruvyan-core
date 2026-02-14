@@ -157,6 +157,8 @@ MCP **MUST** integrate with all Sacred Orders, not bypass them:
 │  ⚠️ CRITICAL: Validation ONLY, NO orchestration           │
 ├──────────────────────────────────────────────────────────┤
 │                                                           │
+│  CORE SACRED ORDERS (Domain-Agnostic V1.0)               │
+│  ────────────────────────────────────────────────────    │
 │  1. 🧠 SYNAPTIC CONCLAVE (Event Logger)                  │
 │     - Receives: cognitive_bus:mcp_request                │
 │     - Action: Logs event for observability               │
@@ -173,15 +175,18 @@ MCP **MUST** integrate with all Sacred Orders, not bypass them:
 │     - Versioning: Immutable audit trail                  │
 │     - Query: "Show all MCP calls for user_id X"          │
 │                                                           │
-│  4. 🛡️ SENTINEL (Guardian)                               │
-│     - Monitors: Portfolio operations via MCP             │
-│     - Blocks: High-risk trades (risk_score > 0.8)        │
-│     - Escalates: To Synaptic Conclave if suspicious      │
-│                                                           │
-│  5. 🗝️ CODEX HUNTERS (Gatherer)                          │
+│  4. 🗝️ CODEX HUNTERS (Gatherer)                          │
 │     - Triggered: By MCP tool fetch_latest_news()         │
 │     - Scrapes: Reddit, GNews, financial APIs             │
 │     - Persists: Dual-memory (PostgreSQL + Qdrant)        │
+│                                                           │
+│  FINANCE VERTICAL EXTENSIONS (Example)                   │
+│  ────────────────────────────────────────────────────    │
+│  🛡️ SENTINEL (Portfolio Guardian)                        │
+│     - Monitors: Portfolio operations via MCP             │
+│     - Blocks: High-risk trades (risk_score > 0.8)        │
+│     - Escalates: To Synaptic Conclave if suspicious      │
+│     - Status: Example implementation (NOT core V1.0)     │
 │                                                           │
 └──────────────────────────────────────────────────────────┘
 ```

@@ -12,13 +12,18 @@ This file is the **high-signal, stable context** Copilot needs to work productiv
 ---
 
 ## Sacred Orders (Epistemic Hierarchy)
-| Order | Domain | Responsibility |
-|------:|--------|----------------|
-| Perception | Ingestion | Acquire + normalize external inputs |
-| Memory | Persistence | Store structured + semantic state |
-| Reason | Computation | Produce deterministic / explainable outputs |
-| Discourse | Orchestration | Turn system state into narratives / UX payloads |
-| Truth | Governance | Validate outputs, audit, enforce invariants |
+| Order | Domain | Responsibility | Sacred Orders (V1.0) |
+|------:|--------|----------------|----------------------|
+| **Perception** | Ingestion | Acquire + normalize external inputs | Babel Gardens, Codex Hunters |
+| **Memory** | Persistence | Store structured + semantic state | Memory Orders, Vault Keepers |
+| **Reason** | Computation | Produce deterministic / explainable outputs | Pattern Weavers |
+| **Discourse** | Orchestration | Turn system state into narratives / UX payloads | *(Graph/CAN — infrastructure)* |
+| **Truth** | Governance | Validate outputs, audit, enforce invariants | Orthodoxy Wardens |
+
+**Note**: Avoid numeric labels (#1-#6) in documentation — use epistemic category (e.g., "Sacred Order: TRUTH") to prevent confusion across domains.
+
+**Domain-Specific Extensions** (not core Sacred Orders):
+- **Sentinel** (Portfolio Guardian) — Finance vertical risk monitoring (`examples/verticals/finance/`)
 
 ---
 

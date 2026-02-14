@@ -10,12 +10,20 @@
 The **Truth & Integrity Layer** forms the moral and procedural backbone of the Vitruvyan ecosystem.  
 It ensures that every action, computation, and explanation adheres to epistemic integrity, transparency, and traceability.
 
-This layer is composed of **four interdependent guardians**:  
-**Orthodoxy Wardens**, **Vault Keepers**, **Sentinel**, and the **Synaptic Conclave** (event bus).
+### Core Components (V1.0 — Domain-Agnostic)
 
-> **Architecture Note (Feb 2026)**: Orthodoxy Wardens and Vault Keepers now follow the **LIVELLO 1+2 Pattern** (10-directory pure domain + service layers). See Sacred Orders documentation for details.
+This layer is composed of **three interdependent guardians**:  
+1. **Orthodoxy Wardens** (Sacred Order: TRUTH) — Epistemic validation and audit  
+2. **Vault Keepers** (Sacred Order: MEMORY) — Immutable archival and versioning  
+3. **Synaptic Conclave** — Event bus (Redis Streams transport layer)
+
+> **Architecture Note (Feb 2026)**: Orthodoxy Wardens and Vault Keepers follow the **LIVELLO 1+2 Pattern** (10-directory pure domain + service layers). Both are **100% Sacred Order conformant**.
 
 Together, they establish a **self-auditing, self-healing governance fabric** that supervises all cognitive orders — from perception (data) to truth (reason).
+
+### Domain-Specific Extensions (Finance Vertical)
+
+**Sentinel (Portfolio Guardian)** — Real-time portfolio risk monitoring (see section 3 below). Currently implemented as a finance vertical example (`examples/verticals/finance/nodes/sentinel_node.py`), not a core Sacred Order.
 
 ---
 
@@ -65,8 +73,9 @@ If a Neural Engine decision from 2024 needs review, the Vault Keepers can fully 
 
 ---
 
-## 3. Sentinel (Portfolio Guardian)
-**Role:** Continuous oversight of live portfolio signals and market risk.
+## 3. Sentinel (Portfolio Guardian) — Finance Vertical Extension
+**Role:** Continuous oversight of live portfolio signals and market risk.  
+**Status:** Example implementation in `examples/verticals/finance/`, **NOT a core Sacred Order** for V1.0.
 
 ### Description
 Sentinel monitors real-time portfolio performance and cross-validates it against Neural Engine projections.  
