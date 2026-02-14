@@ -149,6 +149,7 @@ services:
       - QDRANT_PORT=${QDRANT_PORT:-6333}
       - NE_BASE_URL=http://neural_engine:8003
       - SENTIMENT_API_URL=http://babel_gardens:8009
+      - BABEL_GARDENS_URL=http://babel_gardens:8009
       - EMBEDDING_API_URL=http://embedding:8010
       - REDIS_HOST=core_redis
       - REDIS_PORT=6379
@@ -537,7 +538,7 @@ services:
       # Embedding Service
       - EMBEDDING_SERVICE_URL=http://embedding:8010/embed
       # Babel Gardens
-      - BABEL_GARDENS_URL=http://babel_gardens:8006
+      - BABEL_GARDENS_URL=http://babel_gardens:8009
       # Config
       - LOG_LEVEL=INFO
       - PYTHONUNBUFFERED=1
@@ -552,6 +553,12 @@ services:
       - babel_gardens
     networks:
       - core-net
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import os,redis; r=redis.Redis(host=os.getenv('REDIS_HOST','core_redis'), port=int(os.getenv('REDIS_PORT','6379'))); r.ping(); print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     command: ["python3", "/app/api_memory_orders/streams_listener.py"]
 
   codex_hunters:
@@ -697,6 +704,12 @@ services:
       - vault_keepers
     networks:
       - core-net
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import os,redis; r=redis.Redis(host=os.getenv('REDIS_HOST','core_redis'), port=int(os.getenv('REDIS_PORT','6379'))); r.ping(); print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     command: ["python3", "/app/api_vault_keepers/streams_listener.py"]
 
   babel_listener:

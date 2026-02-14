@@ -10,13 +10,21 @@ Sacred Order: Truth (Memory & Archival)
 Layer: Service (LIVELLO 2)
 """
 import logging
+from pathlib import Path
 from typing import Dict, Any, List, Optional
+
+from prometheus_client import Counter
 
 from core.agents.postgres_agent import PostgresAgent
 from core.agents.qdrant_agent import QdrantAgent
 from api_vault_keepers.config import settings
 
 logger = logging.getLogger("VaultKeepers.Persistence")
+
+VAULT_AUDIT_DUPLICATE_ATTEMPTS_TOTAL = Counter(
+    "vault_audit_duplicate_attempts_total",
+    "Total duplicate audit insert attempts blocked by idempotency constraint.",
+)
 
 
 class PersistenceAdapter:
@@ -34,7 +42,28 @@ class PersistenceAdapter:
     def __init__(self):
         self.pg_agent = PostgresAgent()
         self.qdrant_agent = QdrantAgent()
+        self._ensure_vault_audit_idempotency()
         logger.info("Persistence adapter initialized (PostgreSQL + Qdrant)")
+
+    def _ensure_vault_audit_idempotency(self) -> None:
+        """
+        Apply idempotent audit migration on startup.
+
+        Guarantees:
+        - Table exists
+        - Duplicate correlation_id rows are compacted deterministically
+        - UNIQUE constraint exists on correlation_id
+        """
+        migration_path = (
+            Path(__file__).resolve().parents[1]
+            / "migrations"
+            / "001_vault_audit_idempotency.sql"
+        )
+        sql = migration_path.read_text(encoding="utf-8")
+        if not self.pg_agent.execute(sql):
+            raise RuntimeError(
+                f"Failed applying audit idempotency migration: {migration_path}"
+            )
     
     # ═══════════════════════════════════════════════════════════════════════
     # PostgreSQL Operations
@@ -635,38 +664,21 @@ class PersistenceAdapter:
         """
         try:
             logger.debug(f"Storing audit record: {audit_record.record_id}")
-            
-            # Create table if doesn't exist
-            create_table = """
-                CREATE TABLE IF NOT EXISTS vault_audit_log (
-                    record_id VARCHAR PRIMARY KEY,
-                    timestamp TIMESTAMP,
-                    operation VARCHAR,
-                    performed_by VARCHAR,
-                    resource_type VARCHAR,
-                    resource_id VARCHAR,
-                    action VARCHAR,
-                    status VARCHAR,
-                    correlation_id VARCHAR,
-                    metadata JSONB,
-                    created_at TIMESTAMP DEFAULT NOW()
-                )
-            """
-            self.pg_agent.execute(create_table)
-            
+
             # Convert metadata tuples to dict
             import json
             metadata_dict = dict(audit_record.metadata) if audit_record.metadata else {}
             metadata_json = json.dumps(metadata_dict)
-            
-            # Insert audit record
+
+            # Insert audit record with DB-enforced idempotency
             insert_query = """
                 INSERT INTO vault_audit_log 
                 (record_id, timestamp, operation, performed_by, resource_type, 
                  resource_id, action, status, correlation_id, metadata)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (correlation_id) DO NOTHING
             """
-            self.pg_agent.execute(insert_query, (
+            insert_ok = self.pg_agent.execute(insert_query, (
                 audit_record.record_id,
                 audit_record.timestamp,
                 audit_record.operation,
@@ -678,8 +690,32 @@ class PersistenceAdapter:
                 audit_record.correlation_id,
                 metadata_json
             ))
-            
-            return {"status": "stored", "record_id": audit_record.record_id}
+            if not insert_ok:
+                return {
+                    "status": "failed",
+                    "error": "audit insert execution failed",
+                }
+
+            existing = self.pg_agent.fetch_one(
+                "SELECT record_id FROM vault_audit_log WHERE correlation_id = %s",
+                (audit_record.correlation_id,),
+            )
+            if existing:
+                if existing.get("record_id") == audit_record.record_id:
+                    return {
+                        "status": "stored",
+                        "record_id": existing.get("record_id"),
+                    }
+                VAULT_AUDIT_DUPLICATE_ATTEMPTS_TOTAL.inc()
+                return {
+                    "status": "duplicate_ignored",
+                    "record_id": existing.get("record_id"),
+                }
+
+            return {
+                "status": "failed",
+                "error": "audit insert failed without duplicate match",
+            }
             
         except Exception as e:
             logger.error(f"Audit record storage failed: {e}", exc_info=e)
@@ -731,3 +767,42 @@ class PersistenceAdapter:
             
         except Exception as e:
             logger.error(f"Snapshot registration failed: {e}", exc_info=e)
+
+    def get_audit_summary(self, limit: int = 10) -> Dict[str, Any]:
+        """
+        Return aggregate + recent audit record summary from vault_audit_log.
+
+        Args:
+            limit: Number of recent records to include.
+        """
+        try:
+            exists_query = """
+                SELECT EXISTS(
+                    SELECT 1 FROM information_schema.tables
+                    WHERE table_name = 'vault_audit_log'
+                ) AS exists
+            """
+            exists_result = self.pg_agent.fetch(exists_query)
+            table_exists = bool(exists_result and exists_result[0].get("exists"))
+            if not table_exists:
+                return {"total_records": 0, "recent_records": []}
+
+            count_query = "SELECT COUNT(*) AS count FROM vault_audit_log"
+            count_result = self.pg_agent.fetch(count_query)
+            total_records = int(count_result[0].get("count", 0)) if count_result else 0
+
+            recent_query = """
+                SELECT record_id, operation, resource_type, status, correlation_id, created_at
+                FROM vault_audit_log
+                ORDER BY created_at DESC
+                LIMIT %s
+            """
+            recent_records = self.pg_agent.fetch(recent_query, (limit,))
+
+            return {
+                "total_records": total_records,
+                "recent_records": recent_records,
+            }
+        except Exception as e:
+            logger.error(f"Audit summary query failed: {e}", exc_info=e)
+            return {"total_records": 0, "recent_records": [], "error": str(e)}

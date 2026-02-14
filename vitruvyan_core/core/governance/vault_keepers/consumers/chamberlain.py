@@ -10,6 +10,7 @@ Layer: Foundational (consumers)
 
 from typing import Any, Dict
 from datetime import datetime
+from uuid import uuid4
 
 from ..consumers.base import VaultRole
 from ..domain.vault_objects import AuditRecord
@@ -71,8 +72,8 @@ class Chamberlain(VaultRole):
         status = event.get("status", "completed")
         correlation_id = event.get("correlation_id", "unknown")
         
-        # Generate record ID
-        record_id = f"audit_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+        # Generate collision-resistant record ID for high-throughput ingest.
+        record_id = f"audit_{datetime.utcnow().strftime('%Y%m%d_%H%M%S_%f')}_{uuid4().hex[:8]}"
         
         # Collect metadata
         metadata_dict = event.get("metadata", {})

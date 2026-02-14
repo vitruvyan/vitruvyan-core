@@ -117,19 +117,20 @@ class MemoryStreamsListener:
         try:
             # Parse payload
             payload = event.payload if isinstance(event.payload, dict) else {}
+            channel = event.stream.replace("vitruvyan:", "", 1)
             
             # Route to appropriate handler
-            if event.stream == MEMORY_COHERENCE_REQUESTED:
+            if channel == MEMORY_COHERENCE_REQUESTED:
                 await self.handle_coherence_request(payload)
             
-            elif event.stream == MEMORY_HEALTH_REQUESTED:
+            elif channel == MEMORY_HEALTH_REQUESTED:
                 await self.handle_health_request(payload)
             
-            elif event.stream == MEMORY_SYNC_REQUESTED:
+            elif channel == MEMORY_SYNC_REQUESTED:
                 await self.handle_sync_request(payload)
             
             else:
-                logger.warning(f"Unknown channel: {event.stream}")
+                logger.warning(f"Unknown channel: {event.stream} (normalized={channel})")
         
         except Exception as e:
             logger.error(f"Failed to handle event {event.event_id}: {e}")
