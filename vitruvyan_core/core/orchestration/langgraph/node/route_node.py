@@ -17,7 +17,7 @@ def route_node(state: dict) -> dict:
 
     # 🗝️ Check for Codex Hunters expedition trigger first
     try:
-        from core.langgraph.codex_trigger import should_trigger_codex_expedition
+        from core.orchestration.langgraph.codex_trigger import should_trigger_codex_expedition
         
         if should_trigger_codex_expedition(state):
             state["route"] = "codex_expedition"
@@ -52,9 +52,11 @@ def route_node(state: dict) -> dict:
         print(f"➡️ Routing: intent '{intent}' → llm_soft")
 
     elif intent == "unknown":
-        # "unknown" goes to slot_filler for priority slot check in compose_node
-        state["route"] = "slot_filler"
-        print(f"➡️ Routing: intent 'unknown' → slot_filler (compose with slot check priority)")
+        # "unknown" goes to semantic_fallback (LLM-first architecture via RAG)
+        # Rationale: Deprecated slot-filling pattern (see SLOT_FILLING_ARCHITECTURE_ALIGNMENT.md)
+        # RAG search provides context → compose → CAN node extracts semantic meaning
+        state["route"] = "semantic_fallback"
+        print(f"➡️ Routing: intent 'unknown' → semantic_fallback (RAG + LLM-first)")
 
     elif intent in TECHNICAL_INTENTS:
         state["route"] = "dispatcher_exec"

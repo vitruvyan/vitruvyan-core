@@ -491,7 +491,14 @@ class LLMAgent:
             
             # Cache result
             if not skip_cache and self._enable_cache and self.cache and cache_key:
-                self._set_cached(cache_key, result, cache_ttl_hours)
+                self._set_cached(
+                    cache_key=cache_key,
+                    response=result,
+                    ttl_hours=cache_ttl_hours,
+                    state={},  # Complete method doesn't have state context
+                    model=model,
+                    tokens_used=actual_tokens,
+                )
             
             # Record latency
             latency = (time.time() - start_time) * 1000
@@ -772,21 +779,23 @@ class LLMAgent:
         """Get cached response."""
         try:
             if self.cache:
-                entry = self.cache.get(cache_key)
+                entry = self.cache.get_cached_response(cache_key)
                 if entry:
                     return entry.response
         except Exception as e:
             logger.warning(f"⚠️ Cache get error: {e}")
         return None
     
-    def _set_cached(self, cache_key: str, response: str, ttl_hours: int) -> None:
+    def _set_cached(self, cache_key: str, response: str, ttl_hours: int, state: Dict[str, Any] = None, model: str = None, tokens_used: int = 0) -> None:
         """Set cached response."""
         try:
             if self.cache:
-                self.cache.set(
+                self.cache.cache_response(
                     cache_key=cache_key,
                     response=response,
-                    ttl_hours=ttl_hours,
+                    state=state or {},
+                    model=model or self.default_model,
+                    tokens_used=tokens_used,
                 )
         except Exception as e:
             logger.warning(f"⚠️ Cache set error: {e}")
