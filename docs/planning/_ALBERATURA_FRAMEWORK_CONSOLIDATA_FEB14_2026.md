@@ -64,7 +64,6 @@ vitruvyan-core/
 │   │   │   │
 │   │   │   ├── memory_orders/             Sacred Order — Memory/Coherence (10/10)
 │   │   │   │   ├── _legacy/               Archived code
-│   │   │   │   ├── scripts/               (empty)
 │   │   │   │   └── (same 10-dir structure)
 │   │   │   │
 │   │   │   ├── orthodoxy_wardens/         Sacred Order — Truth/Governance (10/10)
@@ -348,11 +347,6 @@ LAYER 4 — Services
 ## Proposed Cleanup (Minor — No Structural Redesign Needed)
 
 L'architettura attuale è solida. Non serve una ristrutturazione. Servono solo pulizie puntuali:
-
-### ~~Directories vuote~~ — ELIMINATE (commit ef28808+)
-
-Tutte le 5 directory vuote identificate sono state eliminate:
-`client/`, `listeners/`, `utilities/`, `monitoring/`, `memory_orders/scripts/`
 
 ### Compatibility shims da valutare
 
