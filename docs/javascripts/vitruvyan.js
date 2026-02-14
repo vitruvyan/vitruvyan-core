@@ -52,6 +52,16 @@
 
     const suffix = `${search || ""}${hash || ""}`;
 
+    // The simple-blog theme generates a single `search.html` at the site root.
+    // Avoid generating a broken /it/... search URL.
+    if (pathname.endsWith("/search.html") || pathname === "/search.html") {
+      return {
+        en: "/admin/" + suffix,
+        it: "/it/admin/" + suffix,
+        active: pathname.includes("/it/") ? "it" : "en",
+      };
+    }
+
     // Prefer the production routing scheme (/admin/ and /it/admin/).
     if (pathname.includes("/it/admin/")) {
       return {
@@ -127,6 +137,28 @@
     } else {
       outerNav.appendChild(li);
     }
+  }
+
+  function fixSearchPageMenuLinks() {
+    const { pathname } = window.location;
+    if (!(pathname.endsWith("/search.html") || pathname === "/search.html")) return;
+
+    // In the current i18n build, `search.html` can be rendered with `/it/...` hrefs.
+    // Normalize them to the current context to avoid accidental language jumps.
+    const navbar = document.querySelector("nav.navbar");
+    if (!navbar) return;
+
+    const inItalianContext = pathname.includes("/it/");
+    const anchors = navbar.querySelectorAll("a[href]");
+    anchors.forEach((a) => {
+      const href = a.getAttribute("href") || "";
+
+      // Normalize "./it/..." or "it/..." to "./..." when not in Italian context.
+      if (!inItalianContext && (href.startsWith("./it/") || href.startsWith("it/"))) {
+        const normalized = href.replace(/^\.?\/?it\//, "./");
+        a.setAttribute("href", normalized);
+      }
+    });
   }
 
   function setupSearchSuggest() {
@@ -220,5 +252,11 @@
     document.addEventListener("DOMContentLoaded", setupLanguageSwitch, { once: true });
   } else {
     setupLanguageSwitch();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", fixSearchPageMenuLinks, { once: true });
+  } else {
+    fixSearchPageMenuLinks();
   }
 })();
