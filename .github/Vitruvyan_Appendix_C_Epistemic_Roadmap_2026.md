@@ -1,115 +1,121 @@
 # Appendix C — Epistemic Roadmap 2026
 
-**Last Updated**: February 11, 2026  
-**Status**: Updated with Q1 2026 completions
+**Last Updated**: February 14, 2026  
+**Status**: Q1 2026 Core Milestones Complete, Q2-Q4 In Progress
+
+> **Note (Feb 2026)**: This roadmap tracks **vitruvyan-core domain-agnostic infrastructure**. Finance vertical features (VARE, Sentinel, portfolio management) are tracked separately in vertical-specific roadmaps.
+
+---
 
 ## Completed Milestones (Q4 2025 - Q1 2026)
 
-- ✅ Sacred Orders LIVELLO 1+2 refactoring (Memory Orders, Vault Keepers, Orthodoxy Wardens)
-- ✅ Domain-agnostic core architecture (Neural Engine contracts, LangGraph plugins)
-- ✅ Synaptic Conclave event bus (Redis Streams, channel-based routing)
-- ✅ Graph simplification v1 (removed legacy nodes, streamlined pipeline)
-- ✅ Plugin architecture (`GraphPlugin` ABC + `BaseGraphState` 35 universal fields)
-- ✅ Numpy vectorized composite scoring (~100x speedup)
+### Q4 2025 ✔️
+- ✅ Sacred Orders LIVELLO 1+2 refactoring (Memory Orders, Vault Keepers, Orthodoxy Wardens, Babel Gardens, Codex Hunters, Pattern Weavers)
+- ✅ Synaptic Conclave event bus migration (Redis Pub/Sub → Streams, channel-based routing)
+- ✅ Graph simplification v1 (removed 12 legacy nodes, streamlined 19-node pipeline)
+- ✅ CrewAI deprecation (replaced with domain-agnostic orchestration)
 
-**Last Updated**: February 11, 2026  
-**Status**: Updated with Q1 2026 completions
-
-## Q4 2025 (COMPLETED ✅)
-- Sacred Orders LIVELLO 1+2 refactoring (Memory Orders, Vault Keepers, Orthodoxy Wardens)
-- Domain-agnostic core architecture (Neural Engine contracts, LangGraph plugins)
-- Synaptic Conclave event bus (Redis Streams, channel-based routing)
-- Graph simplification v1 (removed legacy nodes, streamlined pipeline)
-*The Evolution of Vitruvyan toward Autonomous Epistemic Intelligence*
+### Q1 2026 ✔️
+- ✅ **Neural Engine v2**: Domain-agnostic contracts (`IDataProvider` + `IScoringStrategy`)
+- ✅ **Plugin Architecture**: `GraphPlugin` ABC + `BaseGraphState` (35 universal fields)
+- ✅ **Numpy Vectorization**: Composite scoring ∼100x speedup (vs pandas iterrows)
+- ✅ **Intent Registry Refactoring**: Domain plugin pattern (finance/medical/legal verticals)
+- ✅ **100% Sacred Orders Conformance**: All 6 orders follow 10-directory LIVELLO 1+2 pattern
 
 ---
 
-## Overview
-This roadmap defines the strategic and technical milestones from Q4 2025 to Q4 2026.  
-Each quarter represents a stage of epistemic evolution — from structural stability to adaptive cognition.
+## Active Roadmap (Q2-Q4 2026)
+
+*Domain-agnostic epistemic OS evolution — from structural stability to adaptive cognition*
 
 ---
 
-## Timeline Summary
+## Timeline Summary (2026)
+
 | Quarter | Milestone | Focus | Deliverable |
 |----------|------------|--------|--------------|
-| **Q4 2025** | Refactor Completion & Alignment | Structural consolidation | Unified LangGraph + CrewAI + Redis |
-| **Q1 2026** | Neural Engine v2 & VARE Integration | Adaptive risk computation | Dynamic composite scoring |
-| **Q2 2026** | VWRE + VMFL Feedback Loop | Cognitive introspection | Self-auditing and learning |
-| **Q3 2026** | Babel Gardens v2 | Linguistic explainability | Multilingual generative reasoning |
-| **Q4 2026** | Conclave Self-Diagnostics | Epistemic autonomy | Self-verifying intelligence |
+| **Q1 2026** | ✔️ Domain-Agnostic Foundation | Contracts + Plugins | Neural Engine v2, Intent Registry, Sacred Orders 100% conformance |
+| **Q2 2026** | Explainability & Attribution | VEE v3 + VWRE Core Patterns | Universal explanation framework (any domain) |
+| **Q3 2026** | Multilingual Discourse | Babel Gardens v2 | 84-language semantic fusion + generative reasoning |
+| **Q4 2026** | Epistemic Autonomy | Conclave Self-Diagnostics | Self-validating truth protocols |
 
 ---
 
-## Q4 2025 — Refactor & Alignment
-**Goal:** Complete architectural unification.  
-- Eliminate redundant sentiment/embedding containers.  
-- Centralize semantic and linguistic fusion under Babel Gardens.  
-- Streamline LangGraph → Redis → CrewAI flow.
+## Q2 2026 — Explainability & Attribution (In Progress)
 
-**Outcome:** Stable cognitive baseline ready for higher-order reasoning.
+**Goal:** Universal explanation framework for ANY domain (not just finance).
 
----
+**Core Deliverables**:
+- **VEE v3 (Vitruvyan Explainability Engine)**: Domain-agnostic narrative templates
+  - 3-level explanations: Summary → Detailed → Technical
+  - Multi-language support (84 languages via Babel Gardens)
+  - Vertical-specific templates injected at runtime (not hardcoded)
 
-## Q1 2026 — Neural Engine v2 + VARE
-**Goal:** Introduce adaptive risk weighting.  
-- Implement Vitruvyan Adaptive Risk Engine (VARE).  
-- Integrate Sentinel for live portfolio risk tracking.  
-- Enhance composite score computation with volatility and beta factors.
+- **VWRE Core Pattern (Attribution Analysis)**:
+  - Generic weighted contribution analysis (not finance-specific)
+  - Reverse engineer ANY composite score into factor contributions
+  - Math: `contribution_i = weight_i × factor_z_i` (universal formula)
 
-**Outcome:** Real-time adaptive intelligence capable of market regime awareness.
+- **Orthodoxy Wardens Integration**:
+  - Epistemic validation for explainability outputs (truth governance)
+  - Audit trail: every explanation mathematically verifiable
 
----
-
-## Q2 2026 — VWRE + VMFL Feedback Loop
-**Goal:** Implement self-reflective intelligence.  
-- Activate VWRE for backward interpretability of scores.  
-- Enable VMFL for reinforcement learning through historical performance.  
-- Integrate Orthodoxy Wardens for epistemic supervision.
-
-**Outcome:** Self-correcting epistemic system — able to audit and evolve itself.
+**Outcome:** Users understand WHY the system ranked entity X over entity Y, in ANY domain (healthcare, e-commerce, research, finance).
 
 ---
 
-## Q3 2026 — Babel Gardens v2
-**Goal:** Expand linguistic and cultural reasoning.  
-- Support for 84 languages via transformer fusion.  
-- Integrate FinBERT + MiniLM embeddings through multilingual autoencoder.  
-- Enhance explainability narratives in LangGraph output.
+## Q3 2026 — Babel Gardens v2 (Planned)
 
-**Outcome:** Globalized epistemic communication layer.
+**Goal:** Expand linguistic and cultural reasoning across ALL verticals.
 
----
+**Deliverables**:
+- Support for 84 languages via transformer fusion (current: 8 languages)
+- Integrate FinBERT + MiniLM embeddings through multilingual autoencoder
+- Enhanced explainability narratives in LangGraph output (VEE integration)
+- Domain-agnostic sentiment analysis (not finance-specific)
 
-## Q4 2026 — Conclave Self-Diagnostics
-**Goal:** Achieve epistemic autonomy.  
-- Implement self-assessment protocols for all agents.  
-- Enable Conclave reasoning graph for distributed truth validation.  
-- Integrate Orthodoxy Wardens and Vault Keepers with automated loop closure.
-
-**Outcome:** Fully self-auditing cognitive organism.
+**Outcome:** Globalized epistemic communication layer — ANY domain in ANY language.
 
 ---
 
-## KPI Matrix
+## Q4 2026 — Conclave Self-Diagnostics (Planned)
+
+**Goal:** Achieve epistemic autonomy — self-validating intelligence.
+
+**Deliverables**:
+- Implement self-assessment protocols for all Sacred Orders
+- Enable Conclave reasoning graph for distributed truth validation
+- Integrate Orthodoxy Wardens and Vault Keepers with automated loop closure
+- Self-correcting epistemic feedback loops (system learns from errors)
+
+**Outcome:** Fully self-auditing cognitive organism capable of real-time epistemic diagnosis.
+
+---
+
+## KPI Matrix (Core Infrastructure, Domain-Agnostic)
+
 | KPI | Target Q4 2026 | Description |
 |------|----------------|-------------|
-| Mean response latency | < 1.0s | End-to-end graph inference |
-| Epistemic coherence | ≥ 95% | Conclave validation accuracy |
-| Data redundancy | ≤ 10% | After refactor consolidation |
-| Explainability coverage | 100% | All NE outputs human-readable |
-| Risk adaptation lag | < 30s | VARE responsiveness |
-| Memory recall accuracy | ≥ 90% | VMFL cross-validation success |
+| Mean response latency | < 1.0s | End-to-end graph inference (any domain) |
+| Epistemic coherence | ≥ 95% | Conclave validation accuracy (truth governance) |
+| Data redundancy | ≤ 10% | Postgres ↔ Qdrant sync (Memory Orders) |
+| Explainability coverage | 100% | All outputs human-readable (VEE universal templates) |
+| Sacred Orders conformance | 100% | All 6 orders follow LIVELLO 1+2 pattern |
+| Plugin compatibility | ≥ 3 domains | Healthcare, Finance, E-Commerce verticals operational |
 
 ---
 
-## Long-Term Vision
-Vitruvyan’s roadmap culminates in a **self-validating epistemic system** —  
-an ecosystem where data, reasoning, and truth continuously synchronize.  
-By Q4 2026, the framework will reach **Conclave Autonomy Level I**, capable of real-time self-diagnosis and linguistic introspection.
+## Long-Term Vision (2027+)
+
+Vitruvyan's roadmap culminates in a **self-validating, domain-agnostic epistemic system** —  
+an ecosystem where perception, reasoning, and truth continuously synchronize **regardless of domain**.
+
+By Q4 2026, the framework will reach **Conclave Autonomy Level I**: capable of real-time self-diagnosis, linguistic introspection, and autonomous vertical deployment (healthcare, legal, research, finance, etc.).
+
+**Beyond 2026**: Self-improving epistemic intelligence — the system refines its own contracts, discovers new reasoning patterns, and proposes architectural improvements autonomously.
 
 ---
 
 **Author:** Vitruvyan Strategy Office  
-**Version:** 1.0.0  
-**Last Updated:** 2025-10-26
+**Version:** 2.0.0 (Domain-Agnostic Roadmap)  
+**Last Updated:** February 14, 2026

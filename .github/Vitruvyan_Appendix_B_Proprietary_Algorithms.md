@@ -1,53 +1,76 @@
-# Appendix B — Proprietary Algorithms & Cognitive Signatures
-*Vitruvyan Cognitive Core — The Signature Algorithms*
+# Appendix B — Explainability Patterns & Finance Vertical Algorithms
+*Core Epistemic Patterns + Domain-Specific Implementations*
 
-**Last Updated**: February 11, 2026  
-**Status**: Finance Domain Algorithms (Not Core Primitives)
+**Last Updated**: February 14, 2026  
+**Scope**: Core explainability patterns (VEE, VWRE) + Finance vertical algorithms (VGOP, VARE, VHSW, VMFL)
 
-> **Note (Feb 2026)**: VEE and VARE described below are **finance domain-specific algorithms**. The core Neural Engine is now domain-agnostic via `IDataProvider` + `IScoringStrategy` contracts. These algorithms remain valid for finance verticals but are not part of the core engine primitives.
+> **Architecture Note (Feb 2026)**: This document covers TWO distinct categories:
+> 
+> **1. CORE PATTERNS** (domain-agnostic, vitruvyan-core primitives):  
+> - **VEE** (Explainability Engine): Universal narrative generation framework (ANY domain)  
+> - **VWRE** (Weighted Reverse Engineering): Generic attribution analysis (ANY composite scoring)
+> 
+> **2. FINANCE VERTICAL IMPLEMENTATIONS** (examples/verticals/finance/):  
+> - **VGOP** (Goal Optimization Protocol): Ticker filtering by user goals (finance-specific)  
+> - **VARE** (Adaptive Risk Engine): Portfolio risk modulation (finance-specific)  
+> - **VHSW** (Human Sentiment Weighting): Market psychology integration (finance-specific)  
+> - **VMFL** (Memory Feedback Loop): Performance-based learning (finance-specific)
+> 
+> The core Neural Engine is now domain-agnostic via `IDataProvider` + `IScoringStrategy` contracts.  
+> Finance implementations remain valid as vertical reference patterns.
 
 ---
 
 ## Overview
-The proprietary algorithms of Vitruvyan form the **cognitive signature** of the system.  
-They define how perception, reasoning, and self-awareness interact inside the epistemic architecture.  
-Each module corresponds to a distinct cognitive faculty — explainability, retrospection, empathy, prudence, and memory.
+
+This document covers **epistemic patterns** that enable explainability, attribution, and adaptive intelligence:
+
+- **Core Patterns** (VEE, VWRE): Universal frameworks applicable to ANY domain (healthcare, e-commerce, research, finance)
+- **Finance Vertical** (VGOP, VARE, VHSW, VMFL): Domain-specific implementations for trading/portfolio management
+
+Each module corresponds to a distinct cognitive faculty — explainability, attribution, goal-optimization, prudence, empathy, and memory.
 
 ---
 
-## Algorithm Index
-| Code | Name | Status | Role |
-|------|------|--------|------|
-| **VEE** | Vitruvyan Explainability Engine | ✅ Active | Multilevel explainability and narrative generation |
-| **VWRE** | Vitruvyan Weighted Reverse Engineering | ✅ Active | Attribution analysis - reverse engineer composite_z into factor contributions |
-| **VGOP** | Vitruvyan Goal Optimization Protocol | 📋 Designed | Goal-driven ticker filtering with probabilistic modeling |
-| **VARE** | Vitruvyan Adaptive Risk Engine | ✅ Active | Dynamic risk modulation and profile matching |
-| **VHSW** | Vitruvyan Human Sentiment Weighting | 🚧 Partial | Integration of collective sentiment and human priors |
-| **VMFL** | Vitruvyan Memory Feedback Loop | 🚧 Partial | Performance-based feedback and learning loop |
+## Pattern & Algorithm Index
+
+| Code | Name | Category | Status | Role |
+|------|------|----------|--------|------|
+| **VEE** | Vitruvyan Explainability Engine | 🌐 Core Pattern | ✅ Active | Multilevel explainability and narrative generation (universal) |
+| **VWRE** | Vitruvyan Weighted Reverse Engineering | 🌐 Core Pattern | ✅ Active | Attribution analysis - reverse engineer composite scores (universal) |
+| **VGOP** | Vitruvyan Goal Optimization Protocol | 💰 Finance Vertical | 📋 Designed | Goal-driven ticker filtering with probabilistic modeling |
+| **VARE** | Vitruvyan Adaptive Risk Engine | 💰 Finance Vertical | ✅ Active | Dynamic portfolio risk modulation |
+| **VHSW** | Vitruvyan Human Sentiment Weighting | 💰 Finance Vertical | 🚧 Partial | Integration of market sentiment and human priors |
+| **VMFL** | Vitruvyan Memory Feedback Loop | 💰 Finance Vertical | 🚧 Partial | Performance-based feedback and learning loop |
 
 ---
 
-## 1. Vitruvyan Explainability Engine (VEE)
-**Status:** Active  
-**Purpose:** Transform raw numeric outputs into human-understandable explanations.
+## CORE PATTERNS (Domain-Agnostic)
 
-### Architecture
+### 1. Vitruvyan Explainability Engine (VEE)
+**Category:** 🌐 Core Pattern (Universal)  
+**Status:** ✅ Active  
+**Purpose:** Transform raw numeric outputs into human-understandable explanations (ANY domain).
+
+### Architecture (Domain-Agnostic)
 ```
-Neural Engine → Explainability Layer → LangGraph Narrative → UI Panels
+Neural Engine (any domain) → Explainability Layer → LangGraph Narrative → UI/API Output
 ```
-- Uses rule-based templates + LLM interpretive layer.
-- Three levels of explanation: *Simple*, *Technical*, *Detailed*.
-- Integrated with `compose_node` and `vee_explainer.py`.
-- Outputs JSON with narrative + causal reasoning trace.
+- Uses rule-based templates + LLM interpretive layer
+- Three levels of explanation: *Summary*, *Detailed*, *Technical*
+- Integrated with `compose_node` and VEE generator
+- Outputs JSON with narrative + causal reasoning trace
+- **Universal**: Works with healthcare diagnoses, e-commerce recommendations, research rankings, financial portfolios
 
 ### Cognitive Function
-Transparency and storytelling — allows users to trust the model by understanding it.
+Transparency and storytelling — allows users to trust the model by understanding it (domain-independent).
 
 ---
 
-## 2. Vitruvyan Weighted Reverse Engineering (VWRE)
+### 2. Vitruvyan Weighted Reverse Engineering (VWRE)
+**Category:** 🌐 Core Pattern (Universal)  
 **Status:** ✅ Active (Dec 23, 2025)  
-**Purpose:** Attribution Analysis — reverse engineer composite_z scores into weighted factor contributions.
+**Purpose:** Attribution Analysis — reverse engineer ANY composite score into weighted factor contributions.
 
 ### Core Logic
 ```python
@@ -86,13 +109,18 @@ VWREResult(
 - VEE enhancement: "Rank driven by momentum (39.7% weight, +0.735 contribution)"
 
 ### Cognitive Function
-Retrospection and introspection — the system explains its own reasoning chain with mathematical precision.
+Retrospection and introspection — the system explains its own reasoning chain with mathematical precision (domain-independent).
 
 ---
 
-## 3. Vitruvyan Goal Optimization Protocol (VGOP)
+## FINANCE VERTICAL IMPLEMENTATIONS
+
+> **Note**: The following algorithms are **finance domain-specific** implementations. They demonstrate patterns that can be adapted for other verticals (healthcare risk scoring, e-commerce conversion optimization, etc.).
+
+### 3. Vitruvyan Goal Optimization Protocol (VGOP)
+**Category:** 💰 Finance Vertical  
 **Status:** 📋 Designed (Q2 2026)  
-**Purpose:** Goal-driven ticker filtering with probabilistic modeling.
+**Purpose:** Goal-driven ticker filtering with probabilistic modeling (finance-specific).
 
 ### Original Vision
 > "Un motore che parte dai tuoi obiettivi (es. +5% entro 1 settimana con max -2% risk) e calcola la probabilità inversa su ogni ticker, proponendo solo titoli compatibili con il tuo target."
@@ -135,9 +163,10 @@ Goal-oriented reasoning — the system adapts recommendations to user objectives
 
 ---
 
-## 4. Vitruvyan Human Sentiment Weighting (VHSW)
+### 4. Vitruvyan Human Sentiment Weighting (VHSW)
+**Category:** 💰 Finance Vertical  
 **Status:** 🚧 Partial  
-**Purpose:** Modulate quantitative signals with real-world human sentiment.
+**Purpose:** Modulate quantitative signals with real-world market sentiment (finance-specific).
 
 ### Data Sources
 - Reddit & X (Twitter) embeddings from Babel Gardens.
@@ -153,9 +182,10 @@ Empathy — aligns system reasoning with collective market psychology.
 
 ---
 
-## 5. Vitruvyan Adaptive Risk Engine (VARE)
+### 5. Vitruvyan Adaptive Risk Engine (VARE)
+**Category:** 💰 Finance Vertical  
 **Status:** ✅ Active  
-**Purpose:** Adjust model aggressiveness and weighting based on volatility, drawdown, and regime detection.
+**Purpose:** Adjust portfolio aggressiveness based on volatility, drawdown, and regime detection (finance-specific).
 
 ### Implementation Plan
 - Uses rolling volatility (σ), drawdown %, and sector beta.
@@ -167,9 +197,10 @@ Prudence — manages exposure adaptively, similar to a self-aware portfolio mana
 
 ---
 
-## 6. Vitruvyan Memory Feedback Loop (VMFL)
+### 6. Vitruvyan Memory Feedback Loop (VMFL)
+**Category:** 💰 Finance Vertical  
 **Status:** 🚧 Partial  
-**Purpose:** Learn from performance over time — feedback integration.
+**Purpose:** Learn from trading performance over time — feedback integration (finance-specific).
 
 ### Core Flow
 ```
@@ -184,7 +215,8 @@ Memory — enables the system to refine itself over time, creating experiential 
 
 ---
 
-## Summary of Interactions
+## Summary of Interactions (Finance Vertical Example)
+
 ```
 Codex Hunters → Neural Engine → VWRE (attribution) → VEE (explainability)
                               ↓
@@ -192,28 +224,44 @@ Codex Hunters → Neural Engine → VWRE (attribution) → VEE (explainability)
                               ↓
                            VMFL (feedback) → Vault Keepers
 ```
-- **Input:** factual and sentiment data.
-- **Process:** rank → attribute → explain → filter by goal → adapt risk → remember.
-- **Output:** transparent, goal-aligned, and adaptive trading intelligence.
+
+**Finance Vertical Flow**:
+- **Input:** Market data + sentiment (Babel Gardens)
+- **Process:** Rank → Attribute (VWRE core) → Explain (VEE core) → Filter by goal (VGOP finance) → Adapt risk (VARE finance) → Remember (VMFL finance)
+- **Output:** Transparent, goal-aligned, risk-aware trading intelligence
+
+**Universal Pattern**:
+- Replace "tickers" with "entities" (patients, products, papers)
+- Replace "goal" with domain objective (diagnosis confidence, conversion probability, citation impact)
+- Core patterns (VEE, VWRE) remain unchanged
 
 ---
 
 ## Roadmap & Priorities (2025–2026)
+
+### Core Patterns (Domain-Agnostic)
 | Quarter | Module | Priority | Status | Key Goal |
 |----------|---------|-----------|---------|----------|
-| Q4 2025 | VARE | 🔺 High | ✅ Complete | Integrate adaptive risk scoring |
-| Q4 2025 | VWRE | 🔺 High | ✅ Complete | Enable explainable backtracking |
-| Q1 2026 | VEE v3 | 🔺 High | 🔄 In Progress | Enhanced fundamentals integration |
-| Q2 2026 | VGOP | 🔺 High | 📋 Designed | Goal-driven optimization |
-| Q3 2026 | VMFL | 🔺 Medium | 🚧 Partial | Activate self-learning feedback |
-| Q4 2026 | VHSW | 🔹 Low | 🚧 Partial | Introduce collective sentiment weighting |
+| Q4 2025 | VWRE | 🔺 High | ✅ Complete | Enable explainable attribution (universal formula) |
+| Q1 2026 | VEE v3 | 🔺 High | ✅ Complete | Domain-agnostic narrative templates |
+| Q2 2026 | VEE Multilingual | 🔺 High | 🔄 In Progress | 84-language support via Babel Gardens |
+
+### Finance Vertical Implementations
+| Quarter | Module | Priority | Status | Key Goal |
+|----------|---------|-----------|---------|----------|
+| Q4 2025 | VARE | 🔺 High | ✅ Complete | Integrate adaptive portfolio risk scoring |
+| Q2 2026 | VGOP | 🔺 High | 📋 Designed | Goal-driven ticker optimization |
+| Q3 2026 | VMFL | 🔹 Medium | 🚧 Partial | Activate self-learning feedback loop |
+| Q4 2026 | VHSW | 🔹 Low | 🚧 Partial | Introduce market sentiment weighting |
 
 ---
 
 **Author:** Vitruvyan Core Team  
-**Version:** 2.0.0  
-**Last Updated:** 2025-12-23  
-**Key Achievements (Dec 2025):**  
-- ✅ VWRE-A Attribution Analysis deployed (600+ lines, Neural Engine + VEE integration)  
-- ✅ VARE Risk Engine operational (850 lines, multi-dimensional risk analysis)  
-- 📋 VGOP comprehensive design spec complete (Q2 2026 implementation planned)
+**Version:** 3.0.0 (Core Patterns + Finance Vertical Separation)  
+**Last Updated:** February 14, 2026  
+
+**Key Achievements (Feb 2026)**:  
+- ✅ **VEE v3**: Domain-agnostic narrative generation (healthcare, e-commerce, research, finance)  
+- ✅ **VWRE**: Universal attribution analysis (600+ lines, mathematically verifiable)  
+- ✅ **VARE**: Finance vertical risk engine operational (850 lines, multi-dimensional portfolio risk)  
+- 📋 **VGOP**: Comprehensive design spec complete (Q2 2026 finance vertical implementation)
