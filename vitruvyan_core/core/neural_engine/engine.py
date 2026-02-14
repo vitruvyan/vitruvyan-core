@@ -23,7 +23,7 @@ import logging
 from typing import Optional, List, Dict, Any
 import pandas as pd
 
-from vitruvyan_core.contracts import IDataProvider, IScoringStrategy
+from contracts import IDataProvider, IScoringStrategy
 from .scoring import ZScoreCalculator, StratificationMode
 from .composite import CompositeScorer
 from .ranking import RankingEngine

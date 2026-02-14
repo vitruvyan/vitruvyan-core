@@ -13,9 +13,9 @@ import numpy as np
 import pandas as pd
 from unittest.mock import MagicMock
 
-from vitruvyan_core.core.neural_engine.scoring import ZScoreCalculator
-from vitruvyan_core.core.neural_engine.composite import CompositeScorer
-from vitruvyan_core.core.neural_engine.ranking import RankingEngine
+from core.neural_engine.scoring import ZScoreCalculator
+from core.neural_engine.composite import CompositeScorer
+from core.neural_engine.ranking import RankingEngine
 
 
 # ============================================================================
@@ -411,8 +411,8 @@ class TestNeuralEngineIntegration:
 
     def test_run_default_params(self):
         """NeuralEngine.run() with defaults produces valid output."""
-        from vitruvyan_core.core.neural_engine import NeuralEngine
-        from vitruvyan_core.core.neural_engine.domain_examples import (
+        from core.neural_engine import NeuralEngine
+        from core.neural_engine.domain_examples import (
             MockDataProvider, MockScoringStrategy
         )
 
@@ -433,8 +433,8 @@ class TestNeuralEngineIntegration:
 
     def test_run_composite_stratification(self):
         """Composite stratification mode with custom weight."""
-        from vitruvyan_core.core.neural_engine import NeuralEngine
-        from vitruvyan_core.core.neural_engine.domain_examples import (
+        from core.neural_engine import NeuralEngine
+        from core.neural_engine.domain_examples import (
             MockDataProvider, MockScoringStrategy
         )
 
@@ -456,8 +456,8 @@ class TestNeuralEngineIntegration:
 
     def test_run_custom_bucket_thresholds(self):
         """Custom bucket thresholds propagated to RankingEngine."""
-        from vitruvyan_core.core.neural_engine import NeuralEngine
-        from vitruvyan_core.core.neural_engine.domain_examples import (
+        from core.neural_engine import NeuralEngine
+        from core.neural_engine.domain_examples import (
             MockDataProvider, MockScoringStrategy
         )
 
@@ -477,8 +477,8 @@ class TestNeuralEngineIntegration:
 
     def test_invalid_profile_raises(self):
         """Invalid profile raises ValueError."""
-        from vitruvyan_core.core.neural_engine import NeuralEngine
-        from vitruvyan_core.core.neural_engine.domain_examples import (
+        from core.neural_engine import NeuralEngine
+        from core.neural_engine.domain_examples import (
             MockDataProvider, MockScoringStrategy
         )
 

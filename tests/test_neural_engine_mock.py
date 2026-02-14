@@ -12,7 +12,7 @@ from typing import Dict, Any, List, Optional
 import pandas as pd
 import numpy as np
 
-from vitruvyan_core.contracts import IDataProvider
+from contracts import IDataProvider
 
 
 class MockDataProvider(IDataProvider):

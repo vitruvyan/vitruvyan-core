@@ -11,7 +11,7 @@ Date: February 8, 2026
 from typing import Dict, List
 import pandas as pd
 
-from vitruvyan_core.contracts import IScoringStrategy
+from contracts import IScoringStrategy
 
 
 class MockScoringStrategy(IScoringStrategy):
@@ -63,7 +63,7 @@ class MockScoringStrategy(IScoringStrategy):
 
 # Add to test file
 if __name__ == "__main__":
-    from vitruvyan_core.core.neural_engine import NeuralEngine
+    from core.neural_engine import NeuralEngine
     
     # Initialize with mock implementations
     provider = MockDataProvider()

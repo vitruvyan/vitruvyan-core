@@ -16,7 +16,7 @@ from typing import Dict, Any, List
 import numpy as np
 import pandas as pd
 
-from vitruvyan_core.contracts import IScoringStrategy
+from contracts import IScoringStrategy
 
 logger = logging.getLogger(__name__)
 
