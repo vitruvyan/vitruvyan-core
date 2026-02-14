@@ -4,7 +4,7 @@ Params Extraction Node — Domain-Agnostic
 Sacred Order: Discourse (Parameter Parsing)
 
 Extracts temporal horizon and top-k from user input via
-regex patterns (multilingual) + LLM fallback.
+regex patterns (multilingual, domain-neutral) + LLM fallback.
 
 Consolidated from horizon_parser_node + topk_parser_node.
 
@@ -18,6 +18,8 @@ STATE OUTPUTS:
 - horizon_text: str (matched text)
 - top_k: int (1-50)
 - route: "params_extraction"
+
+Version: 2.0 (Feb 14, 2026 - Finance-specific terms removed, domain-agnostic patterns)
 """
 
 import re
@@ -42,20 +44,17 @@ DEFAULT_TOP_K = 10
 HORIZON_PATTERNS = {
     "short": [
         r"\b(short|breve|corto|corta|few weeks?|poche settimane?|1-3 months?|1-3 mesi)\b",
-        r"\b(day trading|scalping|intraday|giornaliero)\b",
-        r"\b(immediate|immediato|subito)\b",
+        r"\b(immediate|immediato|subito|daily|giornaliero|intraday)\b",
         r"\b\d+\s*(day|days|giorno|giorni|settimana|settimane|week|weeks)\b",
     ],
     "medium": [
-        r"\b(medium|medio|moderato|6 months?|6 mesi|1 year|1 anno|medio periodo)\b",
-        r"\b(swing|swing trading|medio termine)\b",
+        r"\b(medium|medio|moderato|6 months?|6 mesi|1 year|1 anno|medio periodo|medio termine)\b",
         r"\b(quarterly|trimestrale|annual|annuale)\b",
         r"\b\d+\s*(month|months|mese|mesi)\b",
     ],
     "long": [
         r"\b(long|lungo|lungo periodo|lungo termine|years?|anni|decade|decennio)\b",
-        r"\b(buy.?and.?hold|hold|investimento|pension|pensione)\b",
-        r"\b(retirement|pensionamento|strategic|strategico)\b",
+        r"\b(strategic|strategico|long.?term|a lungo)\b",
         r"\b\d+\s*(year|years|anno|anni)\b",
     ]
 }
