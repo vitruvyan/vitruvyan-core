@@ -49,7 +49,7 @@ def advisor_node(state: Dict[str, Any]) -> Dict[str, Any]:
     numerical_panel = state.get("numerical_panel", [])
     comparison_matrix = state.get("comparison_matrix", {})
     collection_data = state.get("collection_data", {})
-    allocation_data = state.get("allocation_data", {})
+    recommendation_data = state.get("recommendation_data", {})
     screening_data = state.get("screening_data", {})
     vee_explanations = state.get("vee_explanations", {})
     horizon = state.get("horizon", "medio")
@@ -117,12 +117,12 @@ def _advisor_collection(collection_data: Dict[str, Any], numerical_panel: List[D
     }
 
 
-def _advisor_allocation(allocation_data: Dict[str, Any], numerical_panel: List[Dict[str, Any]], horizon: str) -> Dict[str, Any]:
-    """PRESERVED HELPER: Allocation advisory structure (not implemented)"""
+def _advisor_recommendation(recommendation_data: Dict[str, Any], numerical_panel: List[Dict[str, Any]], horizon: str) -> Dict[str, Any]:
+    """PRESERVED HELPER: Recommendation advisory structure (not implemented)"""
     return {
         "action": "NO_ACTION",
         "confidence": 0.0,
-        "rationale": "Domain plugin required for allocation recommendations",
+        "rationale": "Domain plugin required for recommendations",
         "factors_considered": [],
         "domain_neutral": True
     }

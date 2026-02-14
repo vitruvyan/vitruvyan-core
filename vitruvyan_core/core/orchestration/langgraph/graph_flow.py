@@ -153,15 +153,9 @@ class GraphState(TypedDict, total=False):
     sentinel_correlation_id: Optional[str]   # Event correlation ID
     conclave_event: Optional[Dict[str, Any]] # Raw Synaptic Conclave event data
     
-    # 🧠 CrewAI Strategic Order Fields
-    crew_correlation_id: Optional[str]       # Correlation ID for async tracking
-    crew_analysis_type: Optional[str]        # Type of analysis (comprehensive, trend, risk, etc.)
-    crew_status: Optional[str]               # requested, processing, completed, failed
-    crew_strategy_result: Optional[Dict[str, Any]]  # Complete strategy result
-    crew_agents_used: Optional[List[str]]    # List of agents in execution
-    crew_execution_time: Optional[float]     # Time taken for strategy generation
-    crew_confidence: Optional[float]         # Confidence score (0.0-1.0)
-    crew_timestamp: Optional[str]            # When crew processing completed
+    # 🧠 CrewAI Strategic Order Fields — DEPRECATED (see CREWAI_DEPRECATION_NOTICE.md)
+    # Removed Feb 14, 2026: crew_correlation_id, crew_analysis_type, crew_status,
+    # crew_strategy_result, crew_agents_used, crew_execution_time, crew_confidence, crew_timestamp
     
     # 🌿 Babel Gardens Linguistic Unity Fields
     babel_status: Optional[str]              # success, degraded, failed, idle
@@ -197,7 +191,7 @@ class GraphState(TypedDict, total=False):
     
     # 🎯 Advisor Node Fields (Dec 27, 2025)
     advisor_recommendation: Optional[Dict[str, Any]]  # Actionable recommendation (action, confidence, rationale)
-    user_requests_action: Optional[bool]  # Trigger for advisor activation ("cosa fare?", "comprare?")
+    user_requests_action: Optional[bool]  # Trigger for advisor activation ("cosa fare?", "what should I do?")
     
     # 🧠 CAN v2 Fields (Dec 27, 2025)
     can_response: Optional[Dict[str, Any]]  # CAN structured response (CANResponse schema)

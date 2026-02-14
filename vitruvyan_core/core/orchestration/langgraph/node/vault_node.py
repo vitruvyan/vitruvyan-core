@@ -199,7 +199,7 @@ def _map_protection_to_event(protection_type: str) -> str:
     mapping = {
         "integrity_check": "integrity.check.requested",
         "critical": "backup.create.requested",
-        "financial_guardian": "audit.vault.requested",
+        "domain_guardian": "audit.vault.requested",
         "standard": "integrity.check.requested"
     }
     return mapping.get(protection_type, "integrity.check.requested")

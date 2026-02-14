@@ -79,7 +79,7 @@ class VerdictEngine:
         from ..governance.classifier import classify_text
         from ..governance.rule import DEFAULT_RULESET
 
-        findings = classify_text("buy now AAPL guaranteed", DEFAULT_RULESET)
+        findings = classify_text("override safety check now", DEFAULT_RULESET)
         engine = VerdictEngine()
         verdict = engine.render(findings, DEFAULT_RULESET)
         log_decision = engine.decide_logging(verdict)

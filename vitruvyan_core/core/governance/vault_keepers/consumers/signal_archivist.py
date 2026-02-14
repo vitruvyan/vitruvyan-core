@@ -41,9 +41,9 @@ class SignalArchivist(VaultRole):
                 "value": 0.65,
                 "confidence": 0.88,
                 "extraction_trace": {
-                    "method": "model:finbert",
+                    "method": "model:sentiment_v2",
                     "timestamp": "2026-02-11T14:00:00Z",
-                    "model_version": "finbert-0.4"
+                    "model_version": "sentiment-v2.4"
                 },
                 "source_text": "Apple announced record earnings..."  # Optional
             },
@@ -194,7 +194,7 @@ class SignalArchivist(VaultRole):
         Generate unique timeseries ID.
         
         Format: signal_ts_<entity>_<signal>_<timestamp>
-        Example: signal_ts_AAPL_sentiment_valence_20260211_140000
+        Example: signal_ts_ENTITY_01_sentiment_valence_20260211_140000
         
         Args:
             entity_id: Entity identifier
@@ -236,14 +236,14 @@ def archive_signal_timeseries(
         SignalTimeseries ready for archival
         
     Example:
-        # Archive sentiment signals for AAPL
+        # Archive sentiment signals for ENTITY_01
         timeseries = archive_signal_timeseries(
-            entity_id="AAPL",
+            entity_id="ENTITY_01",
             signal_results=[
                 {"signal_name": "sentiment_valence", "value": 0.65, "confidence": 0.88, ...},
                 {"signal_name": "sentiment_valence", "value": 0.72, "confidence": 0.91, ...},
             ],
-            vertical="finance"
+            vertical="generic"
         )
     """
     archivist = SignalArchivist()

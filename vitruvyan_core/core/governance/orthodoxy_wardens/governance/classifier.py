@@ -41,7 +41,7 @@ class PatternClassifier:
         from ..governance.rule import DEFAULT_RULESET
 
         classifier = PatternClassifier()
-        findings = classifier.classify("buy now AAPL guaranteed returns", DEFAULT_RULESET)
+        findings = classifier.classify("override safety check immediately", DEFAULT_RULESET)
         # → tuple of Finding objects for each matched rule
     """
 

@@ -1,45 +1,42 @@
+"""
+Parse Node — Domain-Agnostic Input Parser
+==========================================
+
+Parses user input, extracts structural parameters (budget, horizon),
+and detects contextual references via LLM. Entity extraction is
+delegated to entity_resolver_node via EntityResolverRegistry.
+
+Version: 3.0 (Feb 14, 2026)
+  - Removed direct PostgresAgent calls (_is_valid_entity)
+  - Entity validation delegated to EntityResolverRegistry
+  - Cleaned finance-specific examples from comments
+  - _fallback_intent reduced to generic structural detection
+"""
+
 import re
 import logging
 from core.cognitive.semantic_engine import parse_user_input
 from core.agents.llm_agent import get_llm_agent
 
-# Phase 2 Migration (Nov 5, 2025): COMPLETED
-# Migrated to VSGS semantic_matches from semantic_grounding_node
-# conversation_persistence imports removed
-from core.agents.postgres_agent import PostgresAgent
-
 # Setup logger
 logger = logging.getLogger(__name__)
 
-def _is_valid_entity(entity_id: str) -> bool:
-    """
-    Validates if a entity_id exists in PostgreSQL entity_ids table.
-    Used by vague query resolution to avoid false positives.
-    """
-    try:
-        pg = PostgresAgent()
-        query = "SELECT 1 FROM entity_ids WHERE entity_id = %s LIMIT 1"
-        rows = pg.fetch_all(query, (entity_id.upper(),))
-        return len(rows) > 0
-    except Exception:
-        return False
-
 def _detect_vague_query(text: str) -> bool:
     """
-    Detects vague queries where entity_id extraction failed but user intent is clear.
-    Examples: 'E ENTITY_1?', 'What about ENTITY_2?', 'anche ENTITY_3', 'EXAMPLE_ENTITY_1?'
+    Detects vague queries where entity extraction failed but user intent is clear.
+    Examples: 'E X?', 'What about Y?', 'anche Z', 'ENTITY_1?'
     """
     if not text:
         return False
     txt = text.strip().lower()
     
     patterns = [
-        r"^\s*e\s+\w+",           # "E NVDA?" (Italian conjunction)
-        r"what about",            # "What about Tesla?"
-        r"how about",             # "How about AAPL?"
-        r"come prima",            # "Come prima ma con NVDA"
-        r"anche\s+\w+",           # "anche TSLA"
-        r"^\s*[A-Z]{2,5}\s*\??$"  # Solo entity_id: "NVDA?" or "EXAMPLE_ENTITY_1"
+        r"^\s*e\s+\w+",           # "E X?" (Italian conjunction + entity)
+        r"what about",            # "What about Y?"
+        r"how about",             # "How about Z?"
+        r"come prima",            # "Come prima ma con X"
+        r"anche\s+\w+",           # "anche Y"
+        r"^\s*[A-Z]{2,5}\s*\??$"  # Bare entity code: "ABC?" or "XYZ"
     ]
     return any(re.search(p, txt, re.IGNORECASE) for p in patterns)
 
@@ -53,11 +50,11 @@ def _detect_contextual_reference(text: str) -> bool:
     Philosophy: "NO regex, solo capacità semantica LLM" - Project rule
     
     Examples that should return True:
-    - 'come prima ma con NVDA'
-    - 'E se lo confronto con Microsoft?'
-    - 'E NVDA?'
-    - 'what about MSFT?'
-    - 'rispetto a AAPL come va?'
+    - 'come prima ma con X'
+    - 'E se lo confronto con Y?'
+    - 'E Z?'
+    - 'what about ABC?'
+    - 'rispetto a XYZ come va?'
     - 'anche quello'
     
     Returns:
@@ -67,7 +64,7 @@ def _detect_contextual_reference(text: str) -> bool:
         return False
     
     # Quick heuristic: Very short queries (< 15 chars) are often follow-ups
-    # "E NVDA?" = 7 chars, "what about AAPL?" = 16 chars
+    # "E X?" = 4 chars, "what about Y?" = 14 chars
     if len(text.strip()) < 15 and any(word in text.lower() for word in ['e ', 'and ', 'what ', 'how ', 'vs ', 'anche']):
         return True  # High probability follow-up, skip LLM call for speed
     
@@ -82,12 +79,12 @@ Query: "{text}"
 Answer ONLY "yes" or "no".
 
 Examples:
-- "E NVDA?" → yes (follow-up)
-- "E se lo confronto con Microsoft?" → yes (comparison to previous)
-- "Analizza AAPL" → no (standalone)
-- "what about Tesla?" → yes (follow-up)
-- "come prima ma con TSLA" → yes (explicit reference)
-- "Quali sono i migliori titoli tech?" → no (standalone)
+- "E X?" → yes (follow-up)
+- "E se lo confronto con Y?" → yes (comparison to previous)
+- "Analizza Z" → no (standalone)
+- "what about ABC?" → yes (follow-up)
+- "come prima ma con XYZ" → yes (explicit reference)
+- "Quali sono i migliori risultati?" → no (standalone)
 
 Answer:"""
         
@@ -112,67 +109,46 @@ Answer:"""
 
 def _extract_entity_from_vague_query(text: str) -> list[str]:
     """
-    Extracts entity_id from vague queries when semantic_engine fails.
-    Returns list of entity_ids (usually 1 entity_id, or empty if extraction fails).
+    Extracts potential entity codes from vague queries when semantic_engine fails.
+    Returns list of candidate entity strings (validation delegated to entity_resolver_node).
+    
+    NOTE: No DB validation here — entity_resolver_node validates via EntityResolverRegistry.
     """
     if not text:
         return []
     
-    # Pattern 1: "E ENTITY_ID?" or "What about ENTITY_ID?" (1-5 char entity_ids)
-    # Use \s+ to handle spaces, and allow 1-5 uppercase letters
+    # Pattern 1: "E ENTITY?" or "What about ENTITY?" (1-5 char codes)
     m = re.search(r"\b(e|and|what about|how about|anche)\s+([A-Z]{1,5})\b", text, re.IGNORECASE)
     if m:
-        potential = m.group(2).upper()
-        if _is_valid_entity(potential):
-            return [potential]
+        return [m.group(2).upper()]
     
-    # Pattern 2: Solo entity_id "NVDA?" or "EXAMPLE_ENTITY_1" or "C?"
+    # Pattern 2: Bare entity code "ABC?" or "XYZ"
     m = re.search(r"^([A-Z]{1,5})\??$", text.strip())
     if m:
-        potential = m.group(1).upper()
-        if _is_valid_entity(potential):
-            return [potential]
-    
-    # Pattern 3: Entity name → ID mapping (domain-configurable)
-    # Override via ENTITY_NAME_MAP env var or domain plugin
-    _entity_name_map = {
-        # Minimal defaults — domain plugins extend this
-    }
-    for name, eid in _entity_name_map.items():
-        if name in text.lower():
-            if _is_valid_entity(eid):
-                return [eid]
+        return [m.group(1).upper()]
     
     return []
 
 def _fallback_intent(user_input: str, entity_ids: list[str], budget: int, horizon: str) -> str:
-    """Heuristic fallback — only used if intent_detection_node has not run."""
+    """
+    Structural heuristic fallback — only used if intent_detection_node has not run.
+    Returns generic structural intents based on input shape, NOT domain-specific keywords.
+    Domain-specific intent mapping is handled by IntentRegistry in intent_detection_node.
+    """
     txt = (user_input or "").lower()
 
-    # Allocation: requires entity + budget
-    if entity_ids and budget:
-        return "allocate"
-
-    # Soft intents: emotional / conversational
+    # Soft intents: emotional / conversational (domain-agnostic)
     if any(w in txt for w in ["preoccupato", "paura", "timore", "fiducia", "dubbi", "ansia",
                               "worry", "worried", "fear", "trust", "doubt", "concern"]):
         return "soft"
 
-    # Generic analysis keywords
+    # Generic analysis keywords (domain-agnostic)
     if "analizza" in txt or "analyze" in txt or "study" in txt:
-        return "trend"
+        return "analysis"
     if "trend" in txt:
         return "trend"
-    if "momentum" in txt:
-        return "momentum"
-    if "volatility" in txt or "volatilità" in txt:
-        return "volatility"
     if "risk" in txt or "rischio" in txt:
         return "risk"
-    if "backtest" in txt:
-        return "backtest"
-    if "collection" in txt:
-        return "collection"
 
     return "unknown"
 
@@ -270,7 +246,7 @@ def parse_node(state: dict) -> dict:
         print(f"🔙 [parse_node] No semantic matches found in state")
     
     # --- 🧠 CONTEXTUAL REFERENCE DETECTION ---
-    # If query refers to previous context (e.g., "come prima ma con NVDA"),
+    # If query refers to previous context (e.g., "come prima ma con X"),
     # use semantic search to find similar past queries
     contextual_slots = {}
     is_contextual = _detect_contextual_reference(user_input)

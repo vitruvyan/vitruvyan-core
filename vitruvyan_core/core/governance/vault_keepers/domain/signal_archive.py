@@ -20,7 +20,7 @@ class SignalDataPoint:
         timestamp: ISO 8601 timestamp of signal extraction
         value: Signal value (numeric)
         confidence: Confidence score [0,1]
-        extraction_method: How signal was extracted ("model:finbert", "heuristic:volatility_calc")
+        extraction_method: How signal was extracted ("model:sentiment_v2", "heuristic:volatility_calc")
         source_text_hash: SHA256 of source text (for traceability, optional)
         metadata: Additional context (tuple of key-value pairs)
     
@@ -29,9 +29,9 @@ class SignalDataPoint:
             timestamp="2026-02-11T14:00:00Z",
             value=0.65,
             confidence=0.88,
-            extraction_method="model:finbert",
+            extraction_method="model:sentiment_v2",
             source_text_hash="abc123...",
-            metadata=(("entity_id", "AAPL"), ("vertical", "finance"))
+            metadata=(("entity_id", "ENTITY_01"), ("vertical", "generic"))
         )
     """
     timestamp: str
@@ -68,12 +68,12 @@ class SignalTimeseries:
         - Traceable: Each point links to extraction method + source text hash
         - Compressible: Tuple of small dataclasses for efficient storage
     
-    Example (Finance):
+    Example (Generic):
         SignalTimeseries(
-            timeseries_id="signal_ts_AAPL_sentiment_valence_20260211",
-            entity_id="AAPL",
+            timeseries_id="signal_ts_ENTITY_01_sentiment_valence_20260211",
+            entity_id="ENTITY_01",
             signal_name="sentiment_valence",
-            vertical="finance",
+            vertical="generic",
             data_points=(
                 SignalDataPoint(timestamp="2026-02-11T10:00:00Z", value=0.65, confidence=0.88, ...),
                 SignalDataPoint(timestamp="2026-02-11T12:00:00Z", value=0.72, confidence=0.91, ...),
@@ -201,11 +201,11 @@ class SignalArchiveQuery:
         limit: Maximum number of timeseries to return (optional)
     
     Example:
-        # Query all sentiment signals for AAPL in February 2026
+        # Query all sentiment signals for ENTITY_01 in February 2026
         SignalArchiveQuery(
-            entity_id="AAPL",
+            entity_id="ENTITY_01",
             signal_name="sentiment_valence",
-            vertical="finance",
+            vertical="generic",
             start_time="2026-02-01T00:00:00Z",
             end_time="2026-02-28T23:59:59Z",
             min_confidence=0.8

@@ -22,9 +22,9 @@ def output_normalizer_node(state: Dict[str, Any]) -> Dict[str, Any]:
         }
 
     # Route: Secondary engine fallback
-    elif route == "crew_fallback" and "raw_output" in state:
+    elif route == "engine_fallback" and "raw_output" in state:
         result = {
-            "route": "crew_fallback",
+            "route": "engine_fallback",
             "summary": "Fallback engine results",
             "raw_output": state["raw_output"],
         }

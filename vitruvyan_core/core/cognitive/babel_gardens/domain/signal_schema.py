@@ -35,7 +35,7 @@ class SignalSchema:
                 name="sentiment_valence",
                 value_range=(-1.0, 1.0),
                 aggregation_method="weighted",
-                extraction_method="model:finbert"
+                extraction_method="model:sentiment_v2"
             )
         
         Cybersecurity:

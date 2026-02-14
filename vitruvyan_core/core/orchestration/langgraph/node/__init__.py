@@ -12,16 +12,14 @@ Key Nodes:
 - intent_detection_node: GPT-3.5 + Babel sentiment + regex cascade
 - entity_resolver_node: Nuclear Option LLM entity_id extraction (95% accuracy)
 - exec_node: Neural Engine execution router
-- compose_node: VEE + ConversationalLLM narrative fusion
-- sentiment_node: Babel Gardens sentiment analysis
-- collection_node: Collection Guardian risk monitoring
+- compose_node: Response narrative composition
+- emotion_detector: Babel Gardens emotion detection
+- can_node: Conversational Autonomous Navigator
 - vault_node: Vault Keepers archival
 - orthodoxy_node: Orthodoxy Wardens validation
-- sentinel_node: Sentinel alerts
-- crew_node: CrewAI orchestration
 - codex_hunters_node: Data collection trigger
 
-Version: 2.0.0
+Version: 3.0.0 (Feb 14, 2026)
 """
 
-__version__ = '2.0.0'
+__version__ = '3.0.0'
