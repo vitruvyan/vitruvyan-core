@@ -10,12 +10,15 @@ Core Components:
 - parser: Parser ABC for domain-specific input parsing
 - intent_registry: IntentRegistry for configurable intent detection
 - route_registry: RouteRegistry for configurable routing
+- entity_resolver_registry: EntityResolverRegistry for domain-specific entity resolution (hook pattern)
+- execution_registry: ExecutionRegistry for domain-specific execution handlers (hook pattern)
 
 LangGraph Implementation:
 - langgraph/: LangGraph-specific implementation
 
 Author: Vitruvyan Core Team
 Created: February 10, 2026
+Updated: February 14, 2026 (Hook pattern for entity_resolver + exec nodes)
 """
 
 from core.orchestration.base_state import (
@@ -80,6 +83,20 @@ from core.orchestration.route_registry import (
     create_generic_registry as create_generic_route_registry,
 )
 
+from core.orchestration.entity_resolver_registry import (
+    EntityResolverRegistry,
+    EntityResolverDefinition,
+    get_entity_resolver_registry,
+    reset_entity_resolver_registry,
+)
+
+from core.orchestration.execution_registry import (
+    ExecutionRegistry,
+    ExecutionHandlerDefinition,
+    get_execution_registry,
+    reset_execution_registry,
+)
+
 __all__ = [
     # Base State
     "BaseGraphState",
@@ -131,4 +148,14 @@ __all__ = [
     "RouteDefinition",
     "IntentRouteMapping",
     "create_generic_route_registry",
+    # Entity Resolver Registry
+    "EntityResolverRegistry",
+    "EntityResolverDefinition",
+    "get_entity_resolver_registry",
+    "reset_entity_resolver_registry",
+    # Execution Registry
+    "ExecutionRegistry",
+    "ExecutionHandlerDefinition",
+    "get_execution_registry",
+    "reset_execution_registry",
 ]

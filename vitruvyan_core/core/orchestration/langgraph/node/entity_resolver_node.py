@@ -1,53 +1,65 @@
 """
-Entity Resolver Node — Domain-Agnostic Stub
-============================================
+Entity Resolver Node — Domain-Agnostic Hook Pattern
+====================================================
 
-This is a STUB implementation for vitruvyan-core.
+Hook pattern implementation using EntityResolverRegistry.
+
 The actual entity resolution logic is domain-specific and should be
-provided by a GraphPlugin (e.g., FinanceGraphPlugin for ticker resolution).
+registered via EntityResolverRegistry (e.g., finance domain registers
+ticker→company resolver, logistics registers route_id→route resolver).
 
-In the domain-agnostic core, this node simply passes through,
-preserving any entity_ids already in the state.
+In the domain-agnostic core, this node uses the registry to:
+1. Check if a domain-specific resolver is registered
+2. Execute domain resolver if available
+3. Gracefully fallback to passthrough stub if no resolver
 
 Author: Vitruvyan Core Team  
 Created: February 10, 2026
-Status: STUB — Override with domain-specific implementation
+Updated: February 14, 2026 (Hook pattern implementation)
+Status: PRODUCTION
+Version: 2.0
 """
 
 from typing import Dict, Any
 import logging
+import os
+
+from core.orchestration.entity_resolver_registry import get_entity_resolver_registry
 
 logger = logging.getLogger(__name__)
 
 
 def entity_resolver_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """
-    🌐 [DOMAIN-AGNOSTIC] Entity Resolver Node
+    🌐 [DOMAIN-AGNOSTIC] Entity Resolver Node (Hook Pattern)
     
-    Stub implementation that passes through without modification.
-    Domain plugins override this with actual entity resolution logic.
+    Uses EntityResolverRegistry to execute domain-specific entity resolution.
     
-    In finance domain: Resolves ticker symbols to company entities
-    In logistics domain: Resolves route IDs to route objects
-    In healthcare domain: Resolves patient IDs to patient records
+    Behavior:
+    - If ENTITY_DOMAIN env var set → use registered domain resolver
+    - If no domain or no resolver → graceful passthrough stub
+    
+    Domain examples:
+    - finance: Resolves ticker symbols to company entities
+    - logistics: Resolves route IDs to route objects
+    - healthcare: Resolves patient IDs to patient records
     
     Args:
         state: LangGraph state dictionary
         
     Returns:
-        State unchanged (stub behavior)
+        Updated state (via domain resolver or passthrough stub)
     """
-    logger.debug("[entity_resolver] 🌐 STUB - passthrough (no domain-specific resolver loaded)")
+    # Get domain from environment (mirrors INTENT_DOMAIN pattern)
+    domain = os.getenv("ENTITY_DOMAIN")
     
-    # Simply preserve existing entity_ids if any
-    entity_ids = state.get("entity_ids", [])
-    
-    if entity_ids:
-        logger.info(f"[entity_resolver] 📋 Preserving {len(entity_ids)} entity IDs from state")
+    if domain:
+        logger.debug(f"[entity_resolver] 🔌 Domain: {domain} (from ENTITY_DOMAIN env var)")
     else:
-        logger.debug("[entity_resolver] 📋 No entity IDs in state")
+        logger.debug("[entity_resolver] 🌐 No ENTITY_DOMAIN set → passthrough stub")
     
-    # Set flow to direct (no conversational clarification needed in stub)
-    state["flow"] = "direct"
+    # Get registry and execute
+    registry = get_entity_resolver_registry()
+    state = registry.resolve(state, domain=domain)
     
     return state
