@@ -4,6 +4,8 @@
 
 Vitruvyan is a **modular cognitive architecture** for building AI systems that can perceive, reason, remember, communicate, and self-govern. It is not an application — it is the substrate on which domain-specific intelligent agents are built.
 
+> Note (Feb 14, 2026): this page is an **architectural overview**. Some parts describe **design intent** (target), while others reflect **current runtime**. For the most precise “what is active today”, use `docs/foundational/VITRUVYAN_PIPELINE_WALKTHROUGH.md`.
+
 Think of it this way:
 - **Linux** is an operating system for hardware. It provides processes, memory management, filesystems, and IPC — but knows nothing about what applications you run on it.
 - **Vitruvyan** is an operating system for cognition. It provides perception, memory, reasoning, discourse, and truth governance — but knows nothing about the domain you apply it to.
@@ -73,7 +75,7 @@ graph TB
 
     subgraph ORCHESTRATION["🎯 LangGraph — Central Nervous System"]
         direction LR
-        GRAPH["StateGraph<br/><i>23 nodes · ~80 state fields<br/>conditional routing</i>"]
+        GRAPH["StateGraph<br/><i>19 nodes (full graph) · ~80 state fields<br/>conditional routing</i>"]
     end
 
     %% Data flows
@@ -139,6 +141,8 @@ Two canonical storage systems with **mandatory access patterns**:
 
   The `EvaluationOrchestrator` executes the pipeline: *compute → normalize (cross-entity) → aggregate → package*. The core knows nothing about what an "entity" or "factor" means in your domain — that knowledge lives in **verticals**.
 
+- **Execution wiring note (runtime)**: the LangGraph `exec` step in core is currently **domain-neutral** (a stub/passthrough). A vertical is expected to provide the domain execution hook (e.g., call Neural Engine, tools, or a domain service) and/or enable the MCP dispatcher path.
+
 - **Plasticity** — Bounded adaptive learning. System parameters (thresholds, weights) can evolve, but within structural limits with full audit trail. Not unsupervised ML — governed adaptation.
 
 ### 4. Discourse — *"How do I explain this?"*
@@ -157,7 +161,7 @@ Two canonical storage systems with **mandatory access patterns**:
 ### 5. Truth — *"Is this correct? Is it coherent?"*
 
 - **Orthodoxy Wardens** — Every output is validated before reaching the user. Verdicts: `blessed` (clean), `purified` (corrected with warnings), `heretical` (rejected).
-- **Vault Keepers** — Immutable versioned archive of all significant events. Connected to blockchain anchoring (Tron) for cryptographic proof.
+- **Vault Keepers** — Immutable versioned archive of significant events. The governance layer can emit **archival directives** that include a `blockchain` destination, but chain anchoring is an optional/vertical-specific integration (not guaranteed by the core runtime).
 - **Sentinel** — Continuous monitoring for anomalies and risk escalation.
 
 ---
@@ -198,7 +202,11 @@ Events use dot notation (`codex.discovery.mapped`, `babel.sentiment.fused`) and 
 
 ## LangGraph — The Orchestrator
 
-A 23-node `StateGraph` manages the full cognitive pipeline. The state object carries ~80 typed fields that flow through every node.
+A `StateGraph` manages the full cognitive pipeline.
+
+Current runtime (Feb 14, 2026):
+- **Full graph**: 19 nodes
+- **Minimal graph**: 4 nodes (feature-flagged)
 
 ```mermaid
 graph LR
@@ -210,31 +218,33 @@ graph LR
     F --> G["params<br/>extraction"]
     G --> H{decide}
 
-    H -->|analysis| I["execution<br/>nodes"]
-    H -->|conversation| J["CAN node"]
-    H -->|codex| K["codex<br/>hunters"]
-    H -->|sentinel| L[sentinel]
+    H -->|exec| I[exec]
+    H -->|qdrant| J[qdrant]
+    H -->|llm_soft| K[llm_soft]
+    H -->|slot_filler| L[compose]
+    H -->|codex| M["codex<br/>hunters"]
+    H -->|mcp| N[llm_mcp]
 
-    I --> M["output<br/>normalizer"]
-    M --> N["orthodoxy<br/>wardens"]
-    N --> O["vault<br/>keepers"]
-    O --> P["compose<br/>+ VEE"]
-    P --> Q[CAN]
-    Q --> R["proactive<br/>suggestions"]
-    R --> S((END))
+    I --> O["output<br/>normalizer"]
+    J --> O
+    K --> O
+    N --> O
 
-    J --> S
-    K --> S
+    O --> P["orthodoxy<br/>wardens"]
+    P --> Q["vault<br/>keepers"]
+    Q --> R[compose]
+    R --> S[CAN]
+    S --> T((END))
 
     style H fill:#e53e3e,stroke:#c53030,color:#fff
-    style S fill:#2f855a,stroke:#276749,color:#fff
+    style T fill:#2f855a,stroke:#276749,color:#fff
 ```
 
 Key design decisions:
 - **Sacred Flow**: analysis results pass through `orthodoxy → vault → compose → CAN` before reaching the user — every output is validated and archived
 - **Codex bypass**: data collection routes directly to END (it's background work, not part of the conversation)
-- **`invoke_with_propagation()`**: ensures UX fields (emotion, language, cultural context) survive the entire pipeline
-- **`USE_MCP` flag**: enables A/B testing between legacy execution nodes and the MCP bridge
+- **Stub injection points (runtime)**: `entity_resolver` and `exec` are intentionally domain-neutral in core; verticals are expected to implement/override these behaviors
+- **`USE_MCP` flag**: can route execution through the MCP bridge for tool calling
 
 ---
 

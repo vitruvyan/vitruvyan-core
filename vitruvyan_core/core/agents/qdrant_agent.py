@@ -254,7 +254,7 @@ class QdrantAgent:
                 {
                     "id": "hash_123",
                     "embedding": [0.1, 0.2, ..., 0.384],  # 384-dim vector
-                    "text": "analizza AAPL momentum",
+                    "text": "analyze entity_123 trend",
                     "score": 0.87,
                     "language": "it"
                 }

@@ -6,6 +6,7 @@ from typing import TypedDict, Optional, Dict, Any, List
 # Import modular nodes
 from core.orchestration.langgraph.node.parse_node import parse_node
 from core.orchestration.langgraph.node.route_node import route_node
+from core.orchestration.langgraph.node import route_node as _route_mod
 from core.orchestration.langgraph.node.exec_node import exec_node
 from core.orchestration.langgraph.node.qdrant_node import qdrant_node
 from core.orchestration.langgraph.node.compose_node import compose_node
@@ -32,7 +33,14 @@ if _INTENT_DOMAIN == "finance":
     _intent_mod.configure(_intent_reg, context_keywords=_CTX_KW, ambiguous_patterns=_AMB_PAT)
 else:
     from core.orchestration.intent_registry import create_generic_registry
-    _intent_mod.configure(create_generic_registry())
+    _intent_reg = create_generic_registry()
+    _intent_mod.configure(_intent_reg)
+
+# Configure route_node with registry-driven intent routing (domain-agnostic)
+_route_mod.configure(
+    exec_intents=_intent_reg.get_exec_intent_names(),
+    soft_intents=_intent_reg.get_soft_intent_names(),
+)
 
 # 🔍 PHASE 2.2 - Quality Check (ARCHIVED → _legacy/quality_check_node.py)
 

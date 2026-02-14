@@ -28,7 +28,7 @@ AVAILABLE_VERSIONS = {
         "description": "Initial prompt system with base + 6 scenario types",
         "changes": [
             "Base identity prompt (Vitruvyan personality)",
-            "6 scenario prompts (analysis, recommendation, market, collection, comparison, onboarding)",
+            "6 scenario prompts (analysis, recommendation, overview, collection, comparison, onboarding)",
             "Multi-language support (IT, EN, ES)"
         ],
         "performance": {

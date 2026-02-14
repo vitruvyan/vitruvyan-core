@@ -1,5 +1,5 @@
 """
-🎯 Advisor Node (Sacred Order: DISCOURSE)
+Advisor Node (Sacred Order: DISCOURSE)
 Domain-agnostic decision advisory layer.
 
 Architecture:
@@ -9,16 +9,24 @@ Architecture:
 
 Status: STUB — requires domain plugin for actionable recommendations.
 Domain plugins implement scoring rules, divergence logic, and confidence thresholds.
+
+Version: 2.0 (Feb 14, 2026)
+  - Finance-specific terms removed (portfolio → collection)
+  - All helpers renamed to domain-neutral vocabulary
 """
 
 import logging
 from typing import Dict, Any, List, Optional
+
+logger = logging.getLogger(__name__)
+
+
 def advisor_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """
-    🌐 DOMAIN_NEUTRAL: Decision Advisory Node
+    DOMAIN_NEUTRAL: Decision Advisory Node
     
     [PHASE 1D - NOT_IMPLEMENTED]
-    This node would generate actionable recommendations based on multi-factor analysis.
+    This node generates actionable recommendations based on multi-factor analysis.
     Domain-specific logic has been stripped — requires domain plugin.
     
     Original architecture preserved:
@@ -29,25 +37,25 @@ def advisor_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     For domain implementation, see: vitruvyan_core/domains/base_domain.py
     """
-    logger.info("🌐 [decision_advisor] DOMAIN_NEUTRAL / NOT_IMPLEMENTED")
+    logger.info("[decision_advisor] DOMAIN_NEUTRAL / NOT_IMPLEMENTED")
     
     # Check if user requests action
     user_requests_action = state.get("user_requests_action", False)
     if not user_requests_action:
-        logger.info("🌐 [decision_advisor] User did not request action, skipping")
+        logger.info("[decision_advisor] User did not request action, skipping")
         return state
     
     # PRESERVED STRUCTURE: Extract multi-source data
     numerical_panel = state.get("numerical_panel", [])
     comparison_matrix = state.get("comparison_matrix", {})
-    portfolio_data = state.get("portfolio_data", {})
+    collection_data = state.get("collection_data", {})
     allocation_data = state.get("allocation_data", {})
     screening_data = state.get("screening_data", {})
     vee_explanations = state.get("vee_explanations", {})
     horizon = state.get("horizon", "medio")
     conversation_type = state.get("conversation_type", "single")
     
-    logger.info(f"🌐 [decision_advisor] Data available: panel={len(numerical_panel)}, type={conversation_type}")
+    logger.info(f"[decision_advisor] Data available: panel={len(numerical_panel)}, type={conversation_type}")
     
     # PRESERVED STRUCTURE: Conversation type routing
     # Domain plugin would implement:
@@ -56,22 +64,22 @@ def advisor_node(state: Dict[str, Any]) -> Dict[str, Any]:
     # - _advisor_screening() for filtering results
     # - _advisor_single_entity() for individual decisions
     
-    logger.info(f"🌐 [decision_advisor] PASSTHROUGH: no recommendation generated (domain plugin required)")
+    logger.info("[decision_advisor] PASSTHROUGH: no recommendation generated (domain plugin required)")
     
     # DOMAIN_NEUTRAL PASSTHROUGH: Generic recommendation structure
     recommendation = {
-        "action": "NO_ACTION",  # Domain plugin would determine action
-        "confidence": 0.0,  # Domain plugin would calculate confidence
+        "action": "NO_ACTION",
+        "confidence": 0.0,
         "rationale": (
             "Decision advisory logic not implemented. "
             "This node requires a domain plugin to generate actionable recommendations."
         ),
-        "factors_considered": [],  # Domain plugin would list decision factors
+        "factors_considered": [],
         "domain_neutral": True
     }
     
     state["advisor_recommendation"] = recommendation
-    logger.info(f"🌐 [decision_advisor] Completed passthrough (no recommendation)")
+    logger.info("[decision_advisor] Completed passthrough (no recommendation)")
     
     return state
 
@@ -98,7 +106,7 @@ def _advisor_comparison(comparison_matrix: Dict[str, Any], numerical_panel: List
     }
 
 
-def _advisor_portfolio(portfolio_data: Dict[str, Any], numerical_panel: List[Dict[str, Any]], horizon: str) -> Dict[str, Any]:
+def _advisor_collection(collection_data: Dict[str, Any], numerical_panel: List[Dict[str, Any]], horizon: str) -> Dict[str, Any]:
     """PRESERVED HELPER: Collection advisory structure (not implemented)"""
     return {
         "action": "NO_ACTION",

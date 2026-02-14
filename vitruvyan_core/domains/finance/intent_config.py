@@ -50,6 +50,7 @@ def register_finance_intents(registry: IntentRegistry) -> IntentRegistry:
             ],
             synonyms=["analizza", "analyze", "study"],
             requires_entities=True,
+            route_type="exec",
         ),
         IntentDefinition(
             name="risk",
@@ -60,6 +61,7 @@ def register_finance_intents(registry: IntentRegistry) -> IntentRegistry:
             ],
             synonyms=["rischio"],
             requires_entities=True,
+            route_type="exec",
         ),
         IntentDefinition(
             name="collection",
@@ -70,6 +72,7 @@ def register_finance_intents(registry: IntentRegistry) -> IntentRegistry:
                 "Portfolio review",
             ],
             synonyms=["portfolio", "portafoglio", "portfolio_review"],
+            route_type="exec",
         ),
         IntentDefinition(
             name="sentiment",
@@ -79,6 +82,7 @@ def register_finance_intents(registry: IntentRegistry) -> IntentRegistry:
                 "What people think about NVDA",
             ],
             synonyms=[],
+            route_type="exec",
         ),
         IntentDefinition(
             name="momentum",
@@ -88,6 +92,7 @@ def register_finance_intents(registry: IntentRegistry) -> IntentRegistry:
                 "Strong momentum stocks",
             ],
             synonyms=[],
+            route_type="exec",
         ),
         IntentDefinition(
             name="volatility",
@@ -97,6 +102,7 @@ def register_finance_intents(registry: IntentRegistry) -> IntentRegistry:
                 "Volatilità NVDA",
             ],
             synonyms=["volatilità"],
+            route_type="exec",
         ),
         IntentDefinition(
             name="backtest",
@@ -105,6 +111,7 @@ def register_finance_intents(registry: IntentRegistry) -> IntentRegistry:
                 "Backtest RSI strategy on AAPL",
             ],
             synonyms=[],
+            route_type="exec",
         ),
         IntentDefinition(
             name="allocate",
@@ -118,6 +125,7 @@ def register_finance_intents(registry: IntentRegistry) -> IntentRegistry:
                 "buy", "acquista", "acquisto",
             ],
             requires_amount=True,
+            route_type="exec",
         ),
         IntentDefinition(
             name="horizon_advice",
@@ -127,6 +135,7 @@ def register_finance_intents(registry: IntentRegistry) -> IntentRegistry:
                 "Best horizon for tech stocks?",
             ],
             synonyms=[],
+            route_type="soft",
         ),
     ]
     for intent in intents:

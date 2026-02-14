@@ -267,7 +267,7 @@ class WorkingMemory:
         Examples:
             - "context:user123:*" → All memories for user123
             - "analysis:*" → All analysis-related memories
-            - "risk:portfolio:*" → All portfolio risk memories
+            - "risk:collection:*" → All collection risk memories
         
         Returns:
             Dict mapping key → value for all matches

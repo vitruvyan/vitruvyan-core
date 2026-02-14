@@ -112,12 +112,12 @@ class LLMCacheManager:
         
         if "ranking" in raw_output:
             ranking = raw_output["ranking"]
-            # Hash top 5 entity_ids and their scores
-            all_stocks = []
+            # Hash top 5 entities and their scores
+            all_items = []
             for group in ranking.values():
-                all_stocks.extend(group)
+                all_items.extend(group)
             
-            top_5 = sorted(all_stocks, key=lambda x: x.get("composite_score", 0), reverse=True)[:5]
+            top_5 = sorted(all_items, key=lambda x: x.get("composite_score", 0), reverse=True)[:5]
             key_data["top_performers"] = [
                 {
                     "entity_id": entity["entity_id"],
@@ -379,7 +379,7 @@ class LLMCacheManager:
             return 0
     
     def invalidate_cache_for_entities(self, entity_ids: List[str]):
-        """Invalidate cache entries for specific entity_ids (e.g., after market events)"""
+        """Invalidate cache entries for specific entity_ids (e.g., after data updates)"""
         try:
             pattern = "llm_cache:*"
             keys = self.redis_client.keys(pattern)

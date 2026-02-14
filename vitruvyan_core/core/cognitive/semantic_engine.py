@@ -3,9 +3,9 @@ Semantic Engine — Domain-Agnostic Stub
 =======================================
 
 This is a STUB implementation for vitruvyan-core.
-The actual semantic parsing logic is domain-specific (finance parses for
-tickers/horizons, logistics parses for routes/schedules). The real
-implementation should be provided by a domain plugin or service.
+The actual semantic parsing logic is domain-specific (each domain defines its
+own entity types and extraction rules). The real implementation should be
+provided by a domain plugin or service.
 
 In the domain-agnostic core, this module provides passthrough functions.
 
@@ -31,9 +31,8 @@ def parse_user_input(
     Stub implementation that returns minimal parsed structure.
     Domain plugins override this with actual semantic parsing.
     
-    In finance domain: Extracts tickers, horizon, budget, intent
-    In logistics domain: Extracts routes, dates, carriers
-    In healthcare domain: Extracts patients, symptoms, urgency
+    Each domain extracts its own entity types, parameters, and intent.
+    Examples: entity identifiers, temporal horizons, quantities, classifications.
     
     Args:
         user_input: Raw user text
@@ -55,7 +54,7 @@ def parse_user_input(
         "intent": None,
         
         # Domain-specific fields (empty in stub)
-        "entity_ids": [],  # Tickers, routes, patients, etc.
+        "entity_ids": [],  # Domain-specific entity identifiers
         "horizon": None,   # Time horizon
         "amount": None,    # Budget/quantity
         

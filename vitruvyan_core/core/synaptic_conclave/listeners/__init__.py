@@ -19,7 +19,7 @@ Rationale: Separation of concerns - docker for deployment, synaptic_conclave for
 
 Listeners:
 ----------
-- LangGraphStreamsListener: Portfolio monitoring workflows (native streams)
+- LangGraphStreamsListener: Collection monitoring workflows (native streams)
 """
 
 # ⚠️ NO CENTRALIZED IMPORTS - Prevents transitive dependency issues

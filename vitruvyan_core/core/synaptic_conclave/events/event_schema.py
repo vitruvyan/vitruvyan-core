@@ -110,7 +110,7 @@ class CodexIntent(Enum):
 
 
 class SentinelIntent(Enum):
-    """Sentinel Order event intents - Phase 4.7 Portfolio Guardian Cognitive Integration"""
+    """Sentinel Order event intents - Phase 4.7 Guardian Cognitive Integration"""
     # Risk assessment events
     RISK_ASSESSED = "risk.assessed"
     ALERT_ISSUED = "alert.issued"
@@ -135,7 +135,7 @@ class CrewIntent(Enum):
     MOMENTUM_ANALYSIS_REQUESTED = "momentum.analysis.requested"
     VOLATILITY_ANALYSIS_REQUESTED = "volatility.analysis.requested"
     RISK_ANALYSIS_REQUESTED = "risk.analysis.requested"
-    PORTFOLIO_ANALYSIS_REQUESTED = "portfolio.analysis.requested"
+    PORTFOLIO_ANALYSIS_REQUESTED = "portfolio.analysis.requested"  # Legacy: collection analysis
     BACKTEST_REQUESTED = "backtest.requested"
     
     # Outgoing responses from CrewAI
@@ -144,7 +144,7 @@ class CrewIntent(Enum):
     MOMENTUM_COMPLETED = "momentum.completed"
     VOLATILITY_COMPLETED = "volatility.completed"
     RISK_COMPLETED = "risk.completed"
-    PORTFOLIO_COMPLETED = "portfolio.completed"
+    PORTFOLIO_COMPLETED = "portfolio.completed"  # Legacy: collection completed
     BACKTEST_COMPLETED = "backtest.completed"
     
     # Task lifecycle events
@@ -218,10 +218,10 @@ class AuditAlertPayload:
 class SentinelRiskPayload:
     """Payload schema for sentinel risk assessment events"""
     risk_score: float                  # 0.0 to 1.0 risk score
-    portfolio_value: float             # Current portfolio value
-    daily_pnl_pct: float              # Daily P&L percentage
-    drawdown: float                    # Current drawdown
-    market_condition: str              # "bull_market", "bear_market", "high_volatility", etc.
+    monitored_value: float             # Current value of monitored resource
+    daily_change_pct: float            # Daily change percentage
+    current_decline: float             # Current decline from peak
+    environment_condition: str         # "stable", "volatile", "critical", etc.
     alerts: List[str]                  # List of active alert types
     protection_mode: str               # "conservative", "balanced", "aggressive", "emergency"
     recommended_actions: List[str]     # Suggested actions
@@ -232,10 +232,10 @@ class SentinelRiskPayload:
 @dataclass
 class SentinelEmergencyPayload:
     """Payload schema for sentinel emergency events"""
-    emergency_type: str                # "market_crash", "portfolio_breach", "system_failure"
+    emergency_type: str                # "severe_event", "threshold_breach", "system_failure"
     severity: str                      # "critical", "emergency"
     reason: str                        # Human-readable emergency reason
-    portfolio_impact: float            # Estimated impact (loss percentage)
+    estimated_impact: float            # Estimated impact percentage
     triggered_by: str                  # What triggered the emergency
     immediate_actions: List[str]       # Actions taken immediately
     escalation_required: bool          # Whether escalation is needed
@@ -599,14 +599,14 @@ def create_codex_discovery_event(
 
 def create_sentinel_risk_event(
     risk_score: float,
-    portfolio_value: float,
-    daily_pnl_pct: float,
-    drawdown: float,
-    market_condition: str,
+    monitored_value: float,
+    daily_change_pct: float,
+    current_decline: float,
+    environment_condition: str,
     alerts: List[str],
     protection_mode: str,
     recommended_actions: List[str],
-    emitter: str = "portfolio_guardian",
+    emitter: str = "sentinel_guardian",
     target: str = "conclave",
     **kwargs
 ) -> Dict[str, Any]:
@@ -614,10 +614,10 @@ def create_sentinel_risk_event(
     
     payload = SentinelRiskPayload(
         risk_score=risk_score,
-        portfolio_value=portfolio_value,
-        daily_pnl_pct=daily_pnl_pct,
-        drawdown=drawdown,
-        market_condition=market_condition,
+        monitored_value=monitored_value,
+        daily_change_pct=daily_change_pct,
+        current_decline=current_decline,
+        environment_condition=environment_condition,
         alerts=alerts,
         protection_mode=protection_mode,
         recommended_actions=recommended_actions,
@@ -639,11 +639,11 @@ def create_sentinel_emergency_event(
     emergency_type: str,
     severity: str,
     reason: str,
-    portfolio_impact: float,
+    estimated_impact: float,
     triggered_by: str,
     immediate_actions: List[str],
     escalation_required: bool,
-    emitter: str = "portfolio_guardian",
+    emitter: str = "sentinel_guardian",
     target: str = "conclave",
     **kwargs
 ) -> Dict[str, Any]:
@@ -653,7 +653,7 @@ def create_sentinel_emergency_event(
         emergency_type=emergency_type,
         severity=severity,
         reason=reason,
-        portfolio_impact=portfolio_impact,
+        estimated_impact=estimated_impact,
         triggered_by=triggered_by,
         immediate_actions=immediate_actions,
         escalation_required=escalation_required,
@@ -701,8 +701,8 @@ EVENT_ROUTING_MAP = {
         f"{EventDomain.SENTINEL.value}.{SentinelIntent.EMERGENCY_TRIGGERED.value}"
     ],
     
-    # Portfolio Guardian / Sentinel Order listens to these events
-    "portfolio_guardian": [
+    # Sentinel Guardian listens to these events
+    "sentinel_guardian": [
         f"{EventDomain.ORTHODOXY.value}.{OrthodoxIntent.HEALING_APPLIED.value}",
         f"{EventDomain.VAULT.value}.{VaultIntent.BACKUP_CREATED.value}",
         f"{EventDomain.VAULT.value}.{VaultIntent.PROTECTION_GRANTED.value}",

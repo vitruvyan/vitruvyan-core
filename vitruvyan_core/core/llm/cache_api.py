@@ -219,15 +219,15 @@ async def get_cost_analysis(days: int = 30) -> Dict[str, Any]:
 
 @router.post("/preload")
 async def preload_common_queries() -> Dict[str, Any]:
-    """Preload cache with common financial queries"""
+    """Preload cache with common queries (domain-configurable)"""
     try:
-        # Common financial queries to preload
+        # Common queries to preload (domain-agnostic examples)
         common_queries = [
-            {"input_text": "Analisi del mercato azionario oggi", "intent": "market_overview"},
-            {"input_text": "Migliori titoli da comprare", "intent": "recommendation"},
-            {"input_text": "Analisi rischio portafoglio", "intent": "collection"},
-            {"input_text": "Trend tecnologico settore", "intent": "sector_analysis"},
-            {"input_text": "Opportunità investimento lungo termine", "intent": "investment"}
+            {"input_text": "Analyze recent data overview", "intent": "trend"},
+            {"input_text": "Show recommendations", "intent": "recommendation"},
+            {"input_text": "Collection risk analysis", "intent": "collection"},
+            {"input_text": "Sector trend analysis", "intent": "sector_analysis"},
+            {"input_text": "Long-term opportunities", "intent": "soft"}
         ]
         
         preloaded_count = 0

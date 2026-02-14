@@ -91,19 +91,19 @@ class SacredLexicon:
                     },
                     "payload_schemas": {
                         "sentiment.requested": {
-                            "ticker": "string",
+                            "entity_id": "string",
                             "mode": "string",
                             "cultural_weighting": "boolean",
                             "correlation_id": "string"
                         },
                         "sentiment.fused": {
-                            "ticker": "string",
+                            "entity_id": "string",
                             "sentiment_score": "float",
                             "sentiment_label": "string",
                             "confidence": "float",
                             "fusion_method": "string",
-                            "gemma_score": "float",
-                            "finbert_score": "float",
+                            "primary_score": "float",
+                            "secondary_score": "float",
                             "correlation_id": "string"
                         },
                         "linguistic.analysis.requested": {

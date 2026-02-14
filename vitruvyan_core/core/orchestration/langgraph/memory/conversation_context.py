@@ -1,5 +1,10 @@
 # Context Memory for LLM Enhancement
 # core/langgraph/memory/conversation_context.py
+#
+# Version: 2.0 (Feb 14, 2026)
+#   - Finance-specific terms removed (MarketContextProvider → DomainContextProvider)
+#   - investment_horizon → temporal_horizon
+#   - Hardcoded market narrative removed
 
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
@@ -7,7 +12,8 @@ import json
 
 class ConversationContextManager:
     """
-    Manages conversational context for enhanced LLM responses
+    Manages conversational context for enhanced LLM responses.
+    Domain-agnostic: tracks user preferences, entities, and interaction patterns.
     """
     
     def __init__(self):
@@ -28,7 +34,6 @@ class ConversationContextManager:
     def _get_recent_conversations(self, user_id: str) -> List[Dict]:
         """Get recent conversation history - uses VSGS semantic_grounding_node"""
         # Phase 2 Migration (Nov 2025): Use semantic_grounding_node state["semantic_matches"]
-        # conversation_persistence.py moved to legacy/deprecated/
         return []
     
     def _extract_context_themes(self, history: List[Dict]) -> Dict[str, Any]:
@@ -36,7 +41,7 @@ class ConversationContextManager:
         themes = {
             "preferred_entities": [],
             "risk_tolerance": "unknown",
-            "investment_horizon": "unknown", 
+            "temporal_horizon": "unknown", 
             "emotional_state": "neutral",
             "expertise_level": "intermediate",
             "language_preference": "en"
@@ -72,70 +77,57 @@ class ConversationContextManager:
         if themes["risk_tolerance"] != "unknown":
             context_parts.append(f"Risk tolerance: {themes['risk_tolerance']}")
         
-        if themes["investment_horizon"] != "unknown":
-            context_parts.append(f"Investment horizon: {themes['investment_horizon']}")
+        if themes["temporal_horizon"] != "unknown":
+            context_parts.append(f"Temporal horizon: {themes['temporal_horizon']}")
         
         # Current session context
-        current_entitys = current_state.get("entity_ids", [])
-        if current_entitys:
-            context_parts.append(f"Current focus: {', '.join(current_entitys)}")
+        current_entities = current_state.get("entity_ids", [])
+        if current_entities:
+            context_parts.append(f"Current focus: {', '.join(current_entities)}")
         
         return "CONVERSATION CONTEXT:\n" + "\n".join(f"- {part}" for part in context_parts)
 
 
-class MarketContextProvider:
+class DomainContextProvider:
     """
-    Provides dynamic market context for LLM responses
+    Provides dynamic domain context for LLM responses.
+    Domain-agnostic: returns generic context by default.
+    Domain plugins can override or extend this via configuration.
     """
     
-    def get_market_narrative(self, entity_ids: List[str] = None) -> str:
-        """Get current market narrative context"""
+    def get_domain_narrative(self, entity_ids: List[str] = None) -> str:
+        """Get current domain narrative context"""
         
-        # Base market context
-        base_context = self._get_base_market_context()
+        # Base domain context
+        base_context = self._get_base_context()
         
-        # EntityId-specific context
+        # Entity-specific context
         entity_context = ""
         if entity_ids:
             entity_context = self._get_entity_specific_context(entity_ids)
         
         return f"{base_context}\n{entity_context}".strip()
     
-    def _get_base_market_context(self) -> str:
-        """Base market environment context"""
-        # This could be enhanced with live market data
+    def _get_base_context(self) -> str:
+        """Base environment context (domain-neutral)"""
+        # Domain plugins should override this with domain-specific context
         return """
-CURRENT MARKET ENVIRONMENT:
-- Tech sector leadership continues amid AI revolution
-- Interest rate environment remains dynamic
-- Geopolitical tensions creating selective volatility
-- Energy transition themes driving long-term flows
-- Consumer discretionary showing mixed signals
+CURRENT ENVIRONMENT:
+- Domain context not configured (using generic defaults)
+- Configure a domain plugin to provide environment-specific context
 """
     
     def _get_entity_specific_context(self, entity_ids: List[str]) -> str:
         """Get specific context for mentioned entity_ids"""
-        
-        # Generic entity classifications (verticals should configure their own)
-        # These are examples - in production, load from configuration
-        example_tech_entities = ["EXAMPLE_ENTITY_1", "EXAMPLE_ENTITY_4", "EXAMPLE_ENTITY_5"]
-        example_finance_entities = ["EXAMPLE_ENTITY_2", "EXAMPLE_ENTITY_3"]
-        
-        context_parts = []
-        
-        for entity_id in entity_ids:
-            if entity_id in example_tech_entities:
-                context_parts.append(f"{entity_id}: Example technology entity")
-            elif entity_id in example_finance_entities:
-                context_parts.append(f"{entity_id}: Example finance entity")
-            # Verticals should implement their own classification logic
-        
-        return "ENTITY_ID-SPECIFIC CONTEXT:\n" + "\n".join(f"- {part}" for part in context_parts) if context_parts else ""
+        # Domain plugins should override this with entity-specific lookups
+        if not entity_ids:
+            return ""
+        return f"ENTITY CONTEXT:\n- Entities referenced: {', '.join(entity_ids)}"
 
 
 # Integration function for enhanced LLM node
 def enhance_llm_with_context(state: Dict[str, Any]) -> Dict[str, Any]:
-    """Enhance LLM state with conversation and market context"""
+    """Enhance LLM state with conversation and domain context"""
     
     user_id = state.get("user_id", "demo")
     entity_ids = state.get("entity_ids", [])
@@ -144,12 +136,12 @@ def enhance_llm_with_context(state: Dict[str, Any]) -> Dict[str, Any]:
     context_manager = ConversationContextManager()
     conversation_context = context_manager.build_conversation_context(user_id, state)
     
-    # Add market context  
-    market_provider = MarketContextProvider()
-    market_context = market_provider.get_market_narrative(entity_ids)
+    # Add domain context  
+    domain_provider = DomainContextProvider()
+    domain_context = domain_provider.get_domain_narrative(entity_ids)
     
     # Enhance state
     state["conversation_context"] = conversation_context
-    state["market_context"] = market_context
+    state["domain_context"] = domain_context
     
     return state

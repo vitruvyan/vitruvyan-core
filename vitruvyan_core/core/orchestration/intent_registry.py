@@ -50,6 +50,7 @@ class IntentDefinition:
     synonyms: List[str] = field(default_factory=list)
     requires_entities: bool = False
     requires_amount: bool = False
+    route_type: str = "exec"  # "exec" → dispatcher_exec, "soft" → llm_soft, "semantic" → semantic_fallback
 
 
 @dataclass
@@ -127,11 +128,13 @@ class IntentRegistry:
                 description="Emotional/psychological queries, greetings, non-actionable",
                 examples=["Hello", "I'm nervous", "Thanks"],
                 synonyms=["greeting", "emotion"],
+                route_type="soft",
             ),
             IntentDefinition(
                 name="unknown",
                 description="Unclear or unrecognized requests",
                 examples=["...", "hmm", "xyz123"],
+                route_type="semantic",
             ),
         ]
         for intent in core_intents:
@@ -195,6 +198,14 @@ class IntentRegistry:
     def get_intent_labels(self) -> List[str]:
         """Get list of all registered intent names."""
         return list(self._intents.keys())
+
+    def get_exec_intent_names(self) -> List[str]:
+        """Get intent names that route to dispatcher_exec (route_type='exec')."""
+        return [name for name, defn in self._intents.items() if defn.route_type == "exec"]
+
+    def get_soft_intent_names(self) -> List[str]:
+        """Get intent names that route to llm_soft (route_type='soft')."""
+        return [name for name, defn in self._intents.items() if defn.route_type == "soft"]
     
     def get_filter_names(self) -> List[str]:
         """Get list of all registered filter names."""
