@@ -11,8 +11,8 @@ The EntityResolverRegistry allows domains to:
 
 Philosophy:
 ----------
-Entity resolution is domain-specific (finance: ticker→company,
-logistics: route_id→route, healthcare: patient_id→patient).
+Entity resolution is domain-specific (e.g., logistics: route_id→route,
+healthcare: patient_id→patient, finance vertical: symbol→company).
 The core provides a hook pattern with passthrough default.
 
 Author: Vitruvyan Core Team
@@ -68,16 +68,16 @@ class EntityResolverRegistry:
         registry = EntityResolverRegistry()
         
         # Register domain resolver
-        def finance_resolver(state):
-            # Resolve ticker symbols to company entities
+        def domain_resolver(state):
+            # Resolve entity IDs to enriched entities
             entity_ids = state.get("entity_ids", [])
             # ... resolution logic ...
             return state
         
         registry.register(EntityResolverDefinition(
-            domain="finance",
-            resolver_fn=finance_resolver,
-            description="Resolve ticker symbols to company entities",
+            domain="my_domain",
+            resolver_fn=domain_resolver,
+            description="Resolve entity IDs to enriched entities",
             requires_fields=["entity_ids"]
         ))
         

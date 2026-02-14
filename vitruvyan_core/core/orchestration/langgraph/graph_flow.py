@@ -42,6 +42,17 @@ _route_mod.configure(
     soft_intents=_intent_reg.get_soft_intent_names(),
 )
 
+# 🔍 Configure EntityResolverRegistry (domain plugin pattern)
+_ENTITY_DOMAIN = _os.getenv("ENTITY_DOMAIN", _INTENT_DOMAIN)
+if _ENTITY_DOMAIN:
+    try:
+        if _ENTITY_DOMAIN == "finance":
+            from domains.finance.entity_resolver_config import register_finance_entity_resolver
+            register_finance_entity_resolver()
+        # Other domains: add elif branches here
+    except ImportError:
+        pass  # No domain plugin available — entity_resolver_node uses passthrough stub
+
 # 🔍 PHASE 2.2 - Quality Check (ARCHIVED → _legacy/quality_check_node.py)
 
 # ⚙️ PHASE 2.3 - Consolidated Parameter Extraction (horizon_parser + topk_parser)
@@ -92,7 +103,7 @@ class GraphState(TypedDict, total=False):
     
     # Domain-agnostic entity/signal fields (replaces budget/horizon/entity_ids)
     entities: Optional[List[Dict[str, Any]]]  # Generic entities (id, type, attributes)
-    entity_ids: Optional[List[str]]           # Legacy entity IDs (tickers, codes) - used by parse/compose
+    entity_ids: Optional[List[str]]           # Legacy entity IDs (codes, symbols) - used by parse/compose
     validated_entities: Optional[List[str]]   # Client-validated entities (authoritative per Golden Rules)
     context_entities: Optional[List[str]]     # Fallback entities from context/VSGS
     signals: Optional[Dict[str, Any]]         # Generic signals (sentiment, score, metadata)

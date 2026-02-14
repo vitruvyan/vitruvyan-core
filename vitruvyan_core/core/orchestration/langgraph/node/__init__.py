@@ -14,7 +14,7 @@ Key Nodes:
 - exec_node: Neural Engine execution router
 - compose_node: VEE + ConversationalLLM narrative fusion
 - sentiment_node: Babel Gardens sentiment analysis
-- portfolio_node: Collection Guardian risk monitoring
+- collection_node: Collection Guardian risk monitoring
 - vault_node: Vault Keepers archival
 - orthodoxy_node: Orthodoxy Wardens validation
 - sentinel_node: Sentinel alerts

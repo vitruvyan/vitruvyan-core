@@ -22,7 +22,7 @@
 ## 1. LangGraph Nodes (Path B — Sync Query Pipeline)
 
 **Location**: `vitruvyan_core/core/orchestration/langgraph/node/`  
-**Total Active Nodes**: 20 (as of Feb 14, 2026)
+**Total Active Nodes**: 19 (as of Feb 14, 2026) *(full graph wiring; graph terminates via LangGraph `END`, not a node module)*
 
 | Node | Status | Domain-Specific | Env Var | Default Behavior | Notes |
 |------|--------|----------------|---------|------------------|-------|
@@ -45,7 +45,6 @@
 | `can_node.py` | ACTIVE | No | - | Contextual Answer Normalizer | LLM-based synthesis |
 | `advisor_node.py` | STUB | Yes | - | Returns "Domain plugin required" | Portfolio stub (finance) |
 | `codex_hunters_node.py` | ACTIVE | No | - | System maintenance route | Codex Hunters HTTP API |
-| `end_node.py` | ACTIVE | No | - | Final state snapshot | Graph termination |
 
 ### Archived Nodes (_legacy/)
 

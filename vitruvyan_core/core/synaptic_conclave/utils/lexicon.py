@@ -78,7 +78,7 @@ class SacredLexicon:
                     "intents": {
                         # EPOCH II - Synaptic Conclave Integration
                         "sentiment.requested": "Sentiment analysis requested via Cognitive Bus",
-                        "sentiment.fused": "Sentiment fusion completed (Gemma + FinBERT)",
+                        "sentiment.fused": "Sentiment fusion completed",
                         "linguistic.analysis.requested": "Linguistic analysis requested",
                         "language.interpreted": "Language interpretation completed",
                         # Legacy intents (maintained for backward compatibility)

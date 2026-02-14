@@ -9,7 +9,7 @@ Hierarchy:
 ---------
 - Parser (ABC) - defines contract for parsing user input
 - BaseParser - provides common utilities (contextual detection, slot merging)
-- FinanceParser - extracts budget, horizon, tickers (in finance vertical)
+- DomainParser - extracts domain-specific slots (budget, horizon, etc.)
 - SupportParser - extracts urgency, category, priority (in support vertical)
 
 Design Philosophy:
@@ -85,16 +85,16 @@ class Parser(ABC):
     
     Example implementation:
     
-        class FinanceParser(Parser):
+        class DomainParser(Parser):
             def extract_slots(self, text: str, language: str = "auto") -> Dict[str, Any]:
                 return {
                     "budget": self._extract_budget(text),
                     "horizon": self._extract_horizon(text),
-                    "companies": self._extract_companies(text),
+                    "entities": self._extract_entities(text),
                 }
                 
             def validate_entity(self, entity_id: str) -> bool:
-                return self._is_valid_ticker(entity_id)
+                return self._is_valid_entity(entity_id)
     """
     
     @abstractmethod

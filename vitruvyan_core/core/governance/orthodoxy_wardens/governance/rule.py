@@ -159,62 +159,15 @@ class RuleSet:
 # Every rule has a unique ID following: <category>.<subcategory>.<NNN>
 
 def _build_default_rules() -> tuple:
-    """Build the default rule set extracted from legacy agents."""
+    """Build the default rule set — GENERIC rules only (domain-agnostic).
+
+    Domain-specific compliance rules (finance, healthcare, legal, etc.)
+    are loaded via GovernanceRuleRegistry from ``domains/<domain>/governance_rules.py``.
+    """
     rules = []
 
     # ─────────────────────────────────────────────────────────────
-    # COMPLIANCE rules (from code_analyzer + inquisitor)
-    # ─────────────────────────────────────────────────────────────
-    _compliance = [
-        # Prescriptive language — CRITICAL
-        ("compliance.prescriptive.001", r"\b(buy now|sell now|must buy|must sell)\b",
-         "critical", "Direct buy/sell instruction"),
-        ("compliance.prescriptive.002", r"\b(guaranteed|sure thing|risk-free|can't lose)\b",
-         "critical", "Guaranteed outcome claim"),
-        ("compliance.prescriptive.003", r"\b(definitely|certainly) (buy|sell|invest)\b",
-         "critical", "Certain outcome instruction"),
-        # Unsupported claims — HIGH
-        ("compliance.unsupported.001", r"\b(100% accurate|never wrong|always profitable)\b",
-         "high", "Impossible accuracy claim"),
-        ("compliance.unsupported.002", r"\b(get rich quick|easy money|instant profit)\b",
-         "high", "Get-rich-quick language"),
-        ("compliance.unsupported.003", r"\b(guaranteed returns|no risk)\b",
-         "high", "No-risk guarantee"),
-        # Misleading statements — HIGH
-        ("compliance.misleading.001",
-         r"\b(will definitely|will certainly) (rise|fall|increase|decrease)\b",
-         "high", "Certain prediction about market direction"),
-        ("compliance.misleading.002", r"\b(impossible to lose|cannot fail)\b",
-         "high", "Impossibility claim"),
-        ("compliance.misleading.003", r"\b(unlimited profit|infinite returns)\b",
-         "high", "Unlimited upside promise"),
-        # Financial advice patterns (from code_analyzer)
-        ("compliance.advice.001", r"\b(you should|you must) (buy|sell|invest)\b",
-         "high", "Direct financial advice"),
-        ("compliance.advice.002", r"\b(recommendation|advice): (buy|sell)\b",
-         "high", "Explicit recommendation"),
-        ("compliance.advice.003", r"\b(strong buy|strong sell)\b",
-         "medium", "Brokerage-style rating language"),
-        # Improper disclaimers — MEDIUM
-        ("compliance.disclaimer.001",
-         r"not financial advice.*but.*(?:buy|sell|invest)",
-         "medium", "Disclaimer contradicted by advice"),
-        ("compliance.disclaimer.002",
-         r"disclaimer.*however.*(?:recommend|suggest)",
-         "medium", "Disclaimer negated by recommendation"),
-    ]
-    for rule_id, pattern, severity, desc in _compliance:
-        rules.append(Rule(
-            rule_id=rule_id,
-            category="compliance",
-            subcategory=rule_id.split(".")[1],
-            severity=severity,
-            pattern=pattern,
-            description=desc,
-        ))
-
-    # ─────────────────────────────────────────────────────────────
-    # SECURITY rules (from code_analyzer)
+    # SECURITY rules (from code_analyzer) — DOMAIN-AGNOSTIC
     # ─────────────────────────────────────────────────────────────
     _security = [
         ("security.secrets.001", r"password\s*=\s*['\"][^'\"]+['\"]",
@@ -295,7 +248,7 @@ def _build_default_rules() -> tuple:
         ))
 
     # ─────────────────────────────────────────────────────────────
-    # HALLUCINATION rules (new — for LLM output validation)
+    # HALLUCINATION rules — DOMAIN-AGNOSTIC (LLM output validation)
     # ─────────────────────────────────────────────────────────────
     _hallucination = [
         ("hallucination.numeric.001",
@@ -305,8 +258,8 @@ def _build_default_rules() -> tuple:
          r"\b\d{4,}%\s*(growth|return|increase)",
          "high", "Unrealistic percentage (1000%+ growth/return)"),
         ("hallucination.certainty.001",
-         r"\b(proven|mathematical certainty|scientifically proven)\b.*\b(stock|market|invest)\b",
-         "high", "False certainty claim about markets"),
+         r"\b(proven|mathematical certainty|scientifically proven)\b.*\b(outcome|result|prediction)\b",
+         "high", "False certainty claim about outcomes"),
     ]
     for rule_id, pattern, severity, desc in _hallucination:
         rules.append(Rule(
@@ -328,9 +281,9 @@ DEFAULT_RULESET: RuleSet = RuleSet.create(
     version="v1.0",
     rules=DEFAULT_RULES,
     description=(
-        "Default Orthodoxy Wardens ruleset. "
-        "Extracted from code_analyzer.py + inquisitor_agent.py (Feb 2026). "
-        "Covers: compliance (14 rules), security (9), performance (6), "
-        "quality (3), hallucination (3). Total: 35 rules."
+        "Default Orthodoxy Wardens ruleset (domain-agnostic). "
+        "Generic rules only: security (9), performance (6), "
+        "quality (3), hallucination (3). Total: 21 rules. "
+        "Domain-specific compliance rules loaded via GovernanceRuleRegistry."
     ),
 )

@@ -88,6 +88,15 @@ nav:
     - Epistemic Charter: docs/foundational/Vitruvyan_Epistemic_Charter.md
     - Pipeline Walkthrough: docs/foundational/VITRUVYAN_PIPELINE_WALKTHROUGH.md
 
+  - Installation:
+    - Overview: docs/installation/README.md
+    - Requirements: docs/installation/REQUIREMENTS.md
+    - Local Setup: docs/installation/LOCAL.md
+    - Docker Setup: docs/installation/DOCKER.md
+    - Production Deployment: docs/installation/PRODUCTION.md
+    - Environment Variables: docs/installation/ENV_VARS.md
+    - Health Checks: docs/installation/HEALTH_CHECKS.md
+
   - System Core:
     - Orchestration:
       - Overview: vitruvyan_core/core/orchestration/README.md
@@ -112,16 +121,7 @@ nav:
     - Compute (Neural Engine):
       - Overview: vitruvyan_core/core/neural_engine/README.md
       - Neural Engine API: docs/internal/services/NEURAL_ENGINE_API.md
-
-  - Installation:
-    - Overview: docs/installation/README.md
-    - Requirements: docs/installation/REQUIREMENTS.md
-    - Local Setup: docs/installation/LOCAL.md
-    - Docker Setup: docs/installation/DOCKER.md
-    - Production Deployment: docs/installation/PRODUCTION.md
-    - Environment Variables: docs/installation/ENV_VARS.md
-    - Health Checks: docs/installation/HEALTH_CHECKS.md
-    
+ 
   - Architecture:
     - Overview: docs/architecture/README.md
     - Sacred Orders Pattern: vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md

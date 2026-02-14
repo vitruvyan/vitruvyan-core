@@ -6,7 +6,7 @@
 > **Version**: 0.1.0-alpha  
 > **Status**: Foundation Phase — Consolidation (SACRED_ORDER_PATTERN 100%, Hook Pattern 3/3 nodes)
 
-Vitruvyan Core is an **opinionated architectural framework** for multi-domain agentic AI systems. It provides LangGraph orchestration, Redis Streams event bus, Sacred Orders governance, and domain-agnostic primitives that can be specialized through a **registry-based plugin pattern**.
+Vitruvyan Core is an **opinionated architectural framework** for multi-service, multi-domain agentic AI systems. It provides LangGraph orchestration, Redis Streams event bus, Sacred Orders governance, and domain-agnostic primitives that can be specialized through a **registry-based plugin pattern** (hook registries + environment selection).
 
 ---
 
@@ -49,9 +49,9 @@ Vitruvyan Core **IS**:
 
 ### What Core Provides
 
-1. **LangGraph Orchestration** (20 nodes, 6 route branches)
+1. **LangGraph Orchestration** (19-node full graph, 4-node minimal graph; 6 route branches)
    - Domain-agnostic cognitive pipeline (parse → intent → weaver → resolver → grounding → decision)
-   - Hook pattern for domain-specific nodes (intent, entity resolution, execution)
+   - Hook pattern for domain-specific behaviors (intent, entity resolution, execution) with stub fallback when unconfigured
    - Sacred Flow governance (output_normalizer → orthodoxy → vault → compose → CAN)
 
 2. **Redis Streams Event Bus** (StreamBus, 641L)
@@ -557,7 +557,7 @@ curl -X POST http://localhost:8020/execute \
 **Version**: 0.1.0-alpha  
 **Created**: December 28, 2025
 
-This is the clean fork from the original Vitruvyan trading system. All finance-specific logic has been abstracted out, leaving a domain-neutral agentic core.
+This is the clean fork from the original Vitruvyan trading system. Core execution paths and primitives are domain-neutral; finance remains as an optional reference vertical under `vitruvyan_core/domains/finance/`.
 
 ---
 
@@ -617,13 +617,13 @@ Access at **http://localhost:8000**
 
 ## 📊 Project Status
 
-**✅ Phase 4A Complete - Mercator Vertical Validated**  
-**🚀 Phase 4B Ready - AEGIS Vertical Development**
+**Foundation Phase — Consolidation (Feb 2026)**  
+**Hook Pattern**: intent/entity/exec registries implemented (3/3)
 
-- **Core Status:** Fully domain-agnostic and validated
+- **Core Status:** Domain-agnostic substrate with optional vertical injection (stub fallback when a vertical is not configured)
 - **Architecture:** Provider incarnation pattern proven
-- **Validation:** All tests passing, 95%+ coverage
-- **Next:** AEGIS governance vertical implementation
+- **Validation:** See `docs/foundational/MODULE_STATUS_MAP.md` and `tests/` for current coverage and integration status
+- **Next:** Vertical integrations (e.g., AEGIS) + end-to-end domain execution wiring
 
 📋 **[Report Finale Completo](REPORT_FINALE.md)** - Documentazione dettagliata progetto
 

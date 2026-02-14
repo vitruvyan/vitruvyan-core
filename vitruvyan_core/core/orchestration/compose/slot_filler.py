@@ -87,13 +87,13 @@ class SlotFiller(ABC):
     - Questions should be adapted to language, emotion, and user context
     - Bundling reduces conversation turns while maintaining clarity
     
-    Example usage in FinancePlugin:
+    Example usage in DomainPlugin:
     
-        class FinanceSlotFiller(SlotFiller):
+        class DomainSlotFiller(SlotFiller):
             def get_slot_definitions(self):
                 return [
                     SlotDefinition("risk_tolerance", "Risk Profile", ...),
-                    SlotDefinition("time_horizon", "Investment Horizon", ...),
+                    SlotDefinition("time_horizon", "Temporal Horizon", ...),
                 ]
             
             def generate_question(self, slot, language, state):

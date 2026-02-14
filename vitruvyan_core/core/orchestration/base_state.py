@@ -12,7 +12,7 @@ by inheriting from BaseGraphState in their own FinanceGraphState, etc.
 
 Design Principles:
 1. Only ~30 fields (vs 100+ in legacy finance monolith)
-2. Zero domain-specific fields (no tickers, portfolios, allocations)
+2. Zero domain-specific fields (no domain entities, collections, allocations)
 3. Sacred Orders fields are agnostic (orthodoxy, vault work for any domain)
 4. Emotion/language fields are agnostic (Babel Gardens works for any domain)
 
@@ -31,7 +31,7 @@ class BaseGraphState(TypedDict, total=False):
     All fields here are universal — they work for finance, logistics,
     healthcare, or any other vertical.
     
-    Domain-specific fields (tickers, portfolios, routes, patients)
+    Domain-specific fields (entities, collections, routes, patients)
     are added via inheritance in the vertical's GraphPlugin.
     """
     

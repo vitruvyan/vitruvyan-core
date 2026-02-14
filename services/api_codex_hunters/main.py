@@ -7,6 +7,7 @@ Version: 2.0.0 (February 2026 - SACRED_ORDER_PATTERN)
 """
 
 import logging
+import os
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -47,7 +48,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

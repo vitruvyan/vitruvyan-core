@@ -243,7 +243,7 @@ graph LR
 Key design decisions:
 - **Sacred Flow**: analysis results pass through `orthodoxy → vault → compose → CAN` before reaching the user — every output is validated and archived
 - **Codex bypass**: data collection routes directly to END (it's background work, not part of the conversation)
-- **Stub injection points (runtime)**: `entity_resolver` and `exec` are intentionally domain-neutral in core; verticals are expected to implement/override these behaviors
+- **Hook injection points (runtime)**: `entity_resolver` and `exec` are domain-agnostic and routed via registries (hook pattern). Without a configured vertical they degrade to stub behavior; with a vertical they execute domain logic.
 - **`USE_MCP` flag**: can route execution through the MCP bridge for tool calling
 
 ---

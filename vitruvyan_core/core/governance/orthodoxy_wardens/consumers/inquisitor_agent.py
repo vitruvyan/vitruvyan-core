@@ -1,5 +1,5 @@
 """
-Compliance Validator - Financial Compliance Validation
+Compliance Validator - Domain-Agnostic Compliance Validation
 Uses LLM for intelligent compliance checking - NO CrewAI dependencies
 """
 
@@ -16,91 +16,51 @@ class ComplianceValidator:
     Two-stage compliance validation: pattern-based + LLM semantic analysis.
     
     **What it does**:
-    Scans system outputs (API responses, VEE narratives, logs) for regulatory violations 
-    that could constitute unauthorized financial advice. Uses regex patterns for fast 
-    detection, then validates context with LLM to avoid false positives.
+    Scans system outputs (API responses, narratives, logs) for compliance violations
+    using domain-configurable rules. Uses regex patterns for fast detection, then
+    validates context with LLM to avoid false positives.
     
     **How it works**:
     1. **Stage 1 - Pattern Scan** (0-5ms):
-       - Regex rules detect prescriptive language: "buy now", "must sell", "guaranteed profit"
-       - Text similarity for misleading statements: "risk-free", "always profitable"
-       - Pattern matching for missing disclaimers
+       - Regex rules detect prescriptive language and unsupported claims
+       - Pattern matching for compliance violations
     
     2. **Stage 2 - LLM Semantic Check** (200-500ms):
-       - GPT-4o-mini analyzes flagged text in full context
-       - Prompt: "Is this financial advice or educational analysis?"
-       - Reduces false positives by ~80% (e.g., "AAPL buy signal detected" ≠ advice)
+       - LLM analyzes flagged text in full context
+       - Reduces false positives by ~80%
     
     3. **Risk Scoring**:
        - Critical violation (score=1.0): Prescriptive language without disclaimers
-       - High violation (score=0.7): Unsupported claims ("guaranteed returns")
+       - High violation (score=0.7): Unsupported claims
        - Medium violation (score=0.4): Misleading phrasing
        - Low violation (score=0.2): Missing disclaimers
     
-    **When to use**:
-    - Real-time: Before serving VEE narratives to users (blocks heretical responses)
-    - Batch: After Neural Engine screening (validates all tickers in result set)
-    - Audit: During AutonomousAuditAgent workflow (compliance_validation node)
-    - Manual: Via API `POST /conclave/investigate` for spot checks
+    **Configuration**:
+    - Compliance rules are loaded from GovernanceRuleRegistry (domain-specific)
+    - Output sources are configurable via constructor or environment
+    - LLM prompt is domain-agnostic
     
-    **Example**:
-    ```python
-    validator = ComplianceValidator(llm_interface=llm)
-    
-    report = await validator.validate_output(
-        text="NVDA shows strong momentum. Consider adding to watchlist.",
-        output_type="vee_narrative",
-        context={"ticker": "NVDA", "user_portfolio": ["AAPL", "MSFT"]}
-    )
-    
-    # report contains:
-    # {
-    #   "compliance_score": 0.95,  # 0-1 (1=fully compliant)
-    #   "violations": [],  # empty = no issues
-    #   "severity": "none",
-    #   "corrections": [],
-    #   "llm_reasoning": "Educational analysis, no prescriptive language"
-    # }
-    ```
-    
-    **Compliance Rules** (4 categories):
-    - `prescriptive_language`: Direct buy/sell instructions → CRITICAL
-    - `unsupported_claims`: Guarantees, "always", "never" → HIGH
-    - `misleading_statements`: Hidden risks, biased framing → MEDIUM
-    - `improper_disclaimers`: Missing risk warnings → LOW
-    
-    **Integration**:
-    Called by AutonomousAuditAgent's `validate_compliance()` node.
-    Also used in VEE generation pipeline via `validate_before_send()` hook.
-    
-    **Performance**: 
-    - Pattern scan: <5ms (99% of cases)
-    - LLM check: ~300ms (only when patterns match)
-    - Cost: $0.000015 per LLM validation (GPT-4o-mini)
-    
-    **Output**: ComplianceReport with violations, severity, suggested corrections, and LLM reasoning.
+    **Output**: ComplianceReport with violations, severity, suggested corrections.
     """
     
-    def __init__(self, llm_interface=None):
+    def __init__(self, llm_interface=None, output_sources=None):
         self.logger = logging.getLogger(__name__)
         self.llm_interface = llm_interface
         
-        # Compliance rules and patterns
+        # Compliance rules and patterns — domain-agnostic defaults
+        # Domain-specific rules should be loaded via GovernanceRuleRegistry
         self.compliance_rules = {
             "prescriptive_language": {
                 "severity": "critical",
                 "patterns": [
-                    r"\b(buy now|sell now|must buy|must sell)\b",
                     r"\b(guaranteed|sure thing|risk-free|can\'t lose)\b",
-                    r"\b(definitely|certainly) (buy|sell|invest)\b"
                 ],
-                "description": "Prescriptive language that constitutes financial advice"
+                "description": "Prescriptive language that constitutes unauthorized advice"
             },
             "unsupported_claims": {
                 "severity": "high",
                 "patterns": [
                     r"\b(100% accurate|never wrong|always profitable)\b",
-                    r"\b(get rich quick|easy money|instant profit)\b",
                     r"\b(guaranteed returns|no risk)\b"
                 ],
                 "description": "Unsupported claims about performance or risk"
@@ -112,31 +72,28 @@ class ComplianceValidator:
                     r"\b(impossible to lose|cannot fail)\b",
                     r"\b(unlimited profit|infinite returns)\b"
                 ],
-                "description": "Misleading statements about market predictions"
+                "description": "Misleading statements about predicted outcomes"
             },
             "improper_disclaimers": {
                 "severity": "medium",
                 "patterns": [
-                    r"not financial advice.*but.*(?:buy|sell|invest)",
                     r"disclaimer.*however.*(?:recommend|suggest)"
                 ],
                 "description": "Disclaimers followed by advice-like content"
             }
         }
         
-        # Financial analysis output sources to check
-        self.output_sources = [
-            "/app/logs/agent_logs.txt",
-            "/app/logs/trend_analysis.log",
-            "/app/logs/risk_analysis.log",  
-            "/app/logs/portfolio_analysis.log"
+        # Output sources to check — configurable via constructor or env
+        self.output_sources = output_sources or [
+            os.getenv("COMPLIANCE_LOG_DIR", "/app/logs") + "/agent_logs.txt",
+            os.getenv("COMPLIANCE_LOG_DIR", "/app/logs") + "/analysis.log",
         ]
         
         self.logger.info("ComplianceValidator initialized")
     
     async def validate_recent_outputs(self, hours: int = 24) -> List[Dict]:
         """
-        Validate recent financial outputs for compliance
+        Validate recent outputs for compliance
         """
         try:
             violations = []
@@ -269,20 +226,20 @@ class ComplianceValidator:
     
     def _create_compliance_prompt(self, content: str) -> str:
         """
-        Create prompt for LLM compliance validation
+        Create prompt for LLM compliance validation — domain-agnostic
         """
         return f"""
-Analyze the following financial analysis output for regulatory compliance violations:
+Analyze the following output for compliance violations:
 
 CONTENT TO ANALYZE:
 {content}
 
 COMPLIANCE RULES TO CHECK:
-1. No prescriptive language (buy now, sell now, must buy, guaranteed, etc.)
+1. No prescriptive language (guaranteed, must do, etc.)
 2. No unsupported claims (100% accurate, never wrong, risk-free, etc.)
-3. No misleading statements about market predictions
+3. No misleading statements about predicted outcomes
 4. Proper disclaimers that don't contradict the content
-5. No financial advice disguised as analysis
+5. No unauthorized advice disguised as analysis
 
 ANALYSIS REQUIRED:
 - Identify any compliance violations
@@ -482,7 +439,7 @@ FORMAT YOUR RESPONSE AS JSON:
         violation_types = [v.get("rule", "") for v in violations]
         
         if "prescriptive_language" in violation_types:
-            recommendations.append("Remove prescriptive language - replace 'buy now' with 'shows positive indicators'")
+            recommendations.append("Remove prescriptive language - avoid direct imperatives and guarantees")
         
         if "unsupported_claims" in violation_types:
             recommendations.append("Remove unsupported claims - avoid terms like 'guaranteed' or '100% accurate'")
@@ -492,10 +449,10 @@ FORMAT YOUR RESPONSE AS JSON:
         
         # General recommendations
         recommendations.extend([
-            "Add appropriate disclaimers about investment risks",
+            "Add appropriate disclaimers about risks and limitations",
             "Focus on data presentation rather than recommendations",
             "Use educational language rather than advisory tone",
-            "Include risk warnings where appropriate"
+            "Include appropriate warnings where needed"
         ])
         
         return recommendations[:5]  # Limit to top 5 recommendations
@@ -551,10 +508,6 @@ FORMAT YOUR RESPONSE AS JSON:
         Correct prescriptive language in content
         """
         corrections = {
-            r"\bbuy now\b": "shows buy indicators",
-            r"\bsell now\b": "shows sell indicators", 
-            r"\bmust buy\b": "indicates potential buying opportunity",
-            r"\bmust sell\b": "indicates potential selling opportunity",
             r"\bguaranteed\b": "expected",
             r"\bsure thing\b": "high confidence signal",
             r"\brisk-free\b": "lower risk",
@@ -575,8 +528,6 @@ FORMAT YOUR RESPONSE AS JSON:
             r"\b100% accurate\b": "historically accurate",
             r"\bnever wrong\b": "consistently reliable",
             r"\balways profitable\b": "generally profitable",
-            r"\bget rich quick\b": "potential for returns",
-            r"\beasy money\b": "investment opportunity",
             r"\binstant profit\b": "potential returns"
         }
         
@@ -595,7 +546,7 @@ FORMAT YOUR RESPONSE AS JSON:
         
         try:
             enhancement_prompt = f"""
-Improve the following financial analysis text to ensure regulatory compliance:
+Improve the following text to ensure compliance:
 
 CONTENT:
 {content}

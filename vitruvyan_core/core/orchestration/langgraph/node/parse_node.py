@@ -171,7 +171,7 @@ def _fallback_intent(user_input: str, entity_ids: list[str], budget: int, horizo
         return "risk"
     if "backtest" in txt:
         return "backtest"
-    if "collection" in txt or "portafoglio" in txt:
+    if "collection" in txt:
         return "collection"
 
     return "unknown"

@@ -126,7 +126,7 @@ Reply with just the classification word: short, medium, or long
 
 TOPK_PATTERNS = [
     r"\b(?:top|best|migliori?|mejores?)\s+(\d+)\b",
-    r"\b(\d+)\s+(?:top|best|migliori?|mejores?|entities?|titoli|acciones?|etfs?)\b",
+    r"\b(\d+)\s+(?:top|best|migliori?|mejores?|entities?|items?|results?)\b",
     r"\b(?:first|primi?|primeros?)\s+(\d+)\b",
     r"\b(\d+)\s+(?:recommendations?|raccomandazioni?|recomendaciones?)\b",
     r"\b(?:show|mostra|muestra)\s+(?:me\s+)?(\d+)\b",

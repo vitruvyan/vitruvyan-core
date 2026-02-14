@@ -65,16 +65,16 @@ class GraphPlugin(ABC):
     them into a single compiled graph.
     
     Example:
-        class FinanceGraphPlugin(GraphPlugin):
+        class ExampleGraphPlugin(GraphPlugin):
             def get_domain_name(self) -> str:
-                return "finance"
+                return "example"
             
             def get_nodes(self) -> Dict[str, NodeContract]:
                 return {
-                    "ticker_resolver": NodeContract(
-                        name="ticker_resolver",
-                        handler=ticker_resolver_node,
-                        description="Resolves ticker symbols to entity IDs"
+                    "entity_resolver": NodeContract(
+                        name="entity_resolver",
+                        handler=entity_resolver_node,
+                        description="Resolves entity IDs to enriched entities"
                     ),
                     ...
                 }
@@ -97,11 +97,11 @@ class GraphPlugin(ABC):
         These are merged with BaseGraphState to create the
         domain-specific GraphState TypedDict.
         
-        Example (finance):
+        Example:
             return {
-                "tickers": Optional[List[str]],
-                "portfolio_data": Optional[Dict[str, Any]],
-                "allocation_weights": Optional[Dict[str, float]],
+                "domain_entities": Optional[List[str]],
+                "collection_data": Optional[Dict[str, Any]],
+                "weight_map": Optional[Dict[str, float]],
             }
         """
         pass
@@ -115,8 +115,8 @@ class GraphPlugin(ABC):
         
         Example:
             return {
-                "ticker_resolver": NodeContract(...),
-                "screener": NodeContract(...),
+                "entity_resolver": NodeContract(...),
+                "scorer": NodeContract(...),
             }
         """
         pass
@@ -131,9 +131,9 @@ class GraphPlugin(ABC):
         
         Example:
             return {
-                "shadow_buy": "shadow_trading",
-                "portfolio_review": "portfolio_node",
-                "screener": "screener",
+                "custom_action": "action_node",
+                "collection_review": "collection_node",
+                "scorer": "scorer",
             }
         """
         pass
@@ -147,7 +147,7 @@ class GraphPlugin(ABC):
         for intent classification.
         
         Example:
-            return ["trend", "momentum", "risk", "shadow_buy", "portfolio_review"]
+            return ["analyze", "score", "validate", "custom_action", "collection_review"]
         """
         pass
     
@@ -160,7 +160,7 @@ class GraphPlugin(ABC):
         but before routing (decide).
         
         Example:
-            return ["ticker_resolver"]  # Finance needs ticker resolution
+            return ["entity_resolver"]  # Domain-specific entity resolution
         """
         pass
     
@@ -188,10 +188,10 @@ class GraphPlugin(ABC):
         
         Default returns empty (core handles generic cases).
         
-        Example (finance):
+        Example:
             return {
-                "sensitive_terms": ["portfolio", "investment", "trading"],
-                "action_verbs": ["buy", "sell", "allocate"],
+                "sensitive_terms": ["protected", "classified", "restricted"],
+                "action_verbs": ["execute", "override", "escalate"],
             }
         """
         return {}
