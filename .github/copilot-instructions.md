@@ -585,5 +585,4 @@ Prefer OS terms in new code unless you are working inside an explicitly finance 
 - MCP integration: `.github/Vitruvyan_Appendix_K_MCP_Integration.md`
 - Synaptic Conclave (bus): `.github/Vitruvyan_Appendix_L_Synaptic_Conclave.md`
 - UI architecture (example client): `.github/Vitruvyan_Appendix_L_UI_Architecture.md`
-- Shadow trading (example vertical): `.github/Vitruvyan_Appendix_M_Shadow_Trading.md`
-- Portfolio architects (example vertical): `.github/Vitruvyan_Appendix_N_Portfolio_Architects.md`
+

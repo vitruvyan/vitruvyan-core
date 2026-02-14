@@ -18,7 +18,7 @@ The first domain specialization (codename **Mercator**) is financial analysis. B
 
 ```mermaid
 graph TB
-    subgraph PERCEPTION["🔭 Perception — Sacred Order #1"]
+    subgraph PERCEPTION["🔭 PERCEPTION — Babel Gardens · Codex Hunters"]
         direction TB
         TRACKER["Tracker<br/><i>multi-source data collection</i>"]
         RESTORER["Restorer<br/><i>dedup, clean, normalize</i>"]
@@ -33,7 +33,7 @@ graph TB
         LEADER -.->|orchestrates| TRACKER
     end
 
-    subgraph MEMORY["🧠 Memory — Sacred Order #2"]
+    subgraph MEMORY["🧠 MEMORY — Memory Orders · Vault Keepers"]
         direction TB
         PG[("PostgreSQL<br/><i>relational truth</i>")]
         QD[("Qdrant<br/><i>semantic vectors</i>")]
@@ -47,13 +47,13 @@ graph TB
         MO -.->|reconciles| QD
     end
 
-    subgraph REASON["⚙️ Reason — Sacred Order #3"]
+    subgraph REASON["⚙️ REASON — Pattern Weavers"]
         direction TB
         NE["Neural Engine<br/><i>factor evaluation<br/>normalize → aggregate → rank</i><br/>(vertical hook: EXEC_DOMAIN)"]
         PLAST["Plasticity<br/><i>bounded adaptation</i>"]
     end
 
-    subgraph DISCOURSE["💬 Discourse — Sacred Order #4"]
+    subgraph DISCOURSE["💬 DISCOURSE — Conversational Layer"]
         direction TB
         BABEL["Babel Gardens<br/><i>semantic fusion<br/>sentiment · embeddings<br/>84 languages</i>"]
         WEAVERS["Pattern Weavers<br/><i>contextual enrichment<br/>vague → structured</i>"]
@@ -61,11 +61,10 @@ graph TB
         CAN["CAN Node<br/><i>conversational response</i>"]
     end
 
-    subgraph TRUTH["🛡️ Truth — Sacred Order #5"]
+    subgraph TRUTH["🛡️ TRUTH — Orthodoxy Wardens"]
         direction TB
         ORTHO["Orthodoxy Wardens<br/><i>epistemic validation</i>"]
         VAULT["Vault Keepers<br/><i>immutable archive</i>"]
-        SENTINEL["Sentinel<br/><i>risk monitoring</i>"]
     end
 
     subgraph BUS["🔴 Cognitive Bus — Synaptic Conclave"]
@@ -162,7 +161,8 @@ Two canonical storage systems with **mandatory access patterns**:
 
 - **Orthodoxy Wardens** — Every output is validated before reaching the user. Verdicts: `blessed` (clean), `purified` (corrected with warnings), `heretical` (rejected).
 - **Vault Keepers** — Immutable versioned archive of significant events. The governance layer can emit **archival directives** that include a `blockchain` destination, but chain anchoring is an optional/vertical-specific integration (not guaranteed by the core runtime).
-- **Sentinel** — Continuous monitoring for anomalies and risk escalation.
+
+> **Note**: Sentinel (risk monitoring) is a **finance vertical extension**, not part of the domain-agnostic core V1.0. See Appendix D for vertical-specific governance patterns.
 
 ---
 

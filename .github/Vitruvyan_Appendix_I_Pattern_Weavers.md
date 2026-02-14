@@ -250,7 +250,7 @@ PatternMatch(
 - ❌ Aggregate risk scores (removed _aggregate_risk, Feb 10 2026)
 - ❌ Compute sentiment (belongs to Babel Gardens)
 - ❌ Predict outcomes (belongs to Neural Engine)
-- ❌ Generate strategies (belongs to Portfolio Architects)
+- ❌ Generate strategies (belongs to vertical execution layers)
 
 ---
 

@@ -197,7 +197,6 @@ class CognitiveEvent:
    - ⏳ LangGraph (CRITICAL)
    - ⏳ VEE Engine
    - ⏳ MCP Server
-   - ⏳ Portfolio Architects
    - ⏳ CAN Node
    - ⏳ Sentiment Node
 
@@ -438,14 +437,13 @@ redis_stream_pending{stream="...", group="..."}
 - ✅ Babel Gardens (3 channels) — Jan 24
 - ✅ Codex Hunters (4 channels) — Jan 24
 
-**Pending** (9 services):
+**Pending** (8 services):
 - ⏳ Orthodoxy Wardens (CRITICAL, 5 channels)
 - ⏳ Pattern Weavers (3 channels)
 - ⏳ Neural Engine (CRITICAL, 2 channels)
 - ⏳ LangGraph (CRITICAL, 8 channels)
 - ⏳ VEE Engine (2 channels)
 - ⏳ MCP Server (4 channels)
-- ⏳ Portfolio Architects (3 channels)
 - ⏳ CAN Node (2 channels)
 - ⏳ Sentiment Node (2 channels)
 
