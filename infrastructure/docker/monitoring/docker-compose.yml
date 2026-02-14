@@ -16,13 +16,17 @@ services:
       - mkdocs_site_docs_public:/var/www/mkdocs/site_docs_public:ro
       - mkdocs_site_admin:/var/www/mkdocs/site_admin:ro
     networks:
-      - monitoring-net
-      - core-net
+      monitoring-net:
+        aliases:
+          - auth.vitruvyan.com
+      core-net: {}
 
   oauth2-proxy:
     image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
     container_name: core_oauth2_proxy
     restart: unless-stopped
+    depends_on:
+      - nginx
     env_file:
       - ./oauth2-proxy/oauth2-proxy.env
     command:

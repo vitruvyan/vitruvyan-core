@@ -57,5 +57,8 @@ nav:
 extra_css:
   - docs/stylesheets/vitruvyan.css
 
+extra_javascript:
+  - docs/javascripts/vitruvyan.js
+
 # Copyright
 copyright: Copyright &copy; 2026 Vitruvyan Team
