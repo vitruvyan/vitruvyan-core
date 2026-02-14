@@ -11,7 +11,7 @@ COPY redis_streams_exporter.py .
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python3 -c "import requests; requests.get('http://localhost:9121/health').raise_for_status()"
+    CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:9121/health')"
 
 # Run exporter
 CMD ["python3", "redis_streams_exporter.py"]

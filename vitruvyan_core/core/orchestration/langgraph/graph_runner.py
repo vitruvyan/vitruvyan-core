@@ -174,6 +174,8 @@ def run_graph_once(
         response["route"] = final_state.get("route")
         response["entity_ids"] = final_state.get("entity_ids")
         response["horizon"] = final_state.get("horizon")
+        response["user_id"] = final_state.get("user_id")
+        response["needed_slots"] = final_state.get("needed_slots", [])
         
         # ✅ FIX (Nov 4, 2025): Add VSGS fields to API response
         response["vsgs_status"] = final_state.get("vsgs_status")
@@ -255,29 +257,59 @@ def run_graph_once(
     
     # CASE 3: No action field - likely semantic_fallback or error
     # Compose a minimal valid response with available metadata
+    # Propagate ALL fields consistently (parity with CASE 1 and CASE 2)
+    _s = final_state if isinstance(final_state, dict) else {}
     return {
         "action": "clarify",
         "questions": ["Unable to process request. Please provide more details."],
         "semantic_fallback": True,
-        "language_detected": final_state.get("language_detected") if isinstance(final_state, dict) else None,
-        "language_confidence": final_state.get("language_confidence") if isinstance(final_state, dict) else None,
-        "babel_status": final_state.get("babel_status") if isinstance(final_state, dict) else None,
-        "cultural_context": final_state.get("cultural_context") if isinstance(final_state, dict) else None,
-        # 🎭 Phase 2.1: Include emotion detection even in fallback
-        "emotion_detected": final_state.get("emotion_detected") if isinstance(final_state, dict) else None,
-        "emotion_confidence": final_state.get("emotion_confidence") if isinstance(final_state, dict) else None,
-        # ✅ FIX (Nov 2, 2025): Add intent, route, entity_ids, horizon to API response
-        "intent": final_state.get("intent") if isinstance(final_state, dict) else None,
-        "route": final_state.get("route") if isinstance(final_state, dict) else None,
-        "entity_ids": final_state.get("entity_ids") if isinstance(final_state, dict) else None,
-        "horizon": final_state.get("horizon") if isinstance(final_state, dict) else None,
-        # ✅ FIX (Nov 4, 2025): Add VSGS fields to API response
-        "vsgs_status": final_state.get("vsgs_status") if isinstance(final_state, dict) else None,
-        "vsgs_elapsed_ms": final_state.get("vsgs_elapsed_ms") if isinstance(final_state, dict) else None,
-        "vsgs_error": final_state.get("vsgs_error") if isinstance(final_state, dict) else None,
-        "semantic_matches_count": len(final_state.get("semantic_matches", [])) if isinstance(final_state, dict) else 0,
-        # 🕸️ FIX (Dec 25, 2025): Add Pattern Weaver context to API response
-        "weaver_context": final_state.get("weaver_context") if isinstance(final_state, dict) else None,
+        "needed_slots": _s.get("needed_slots", []),
+        "language_detected": _s.get("language_detected"),
+        "language_confidence": _s.get("language_confidence"),
+        "babel_status": _s.get("babel_status"),
+        "cultural_context": _s.get("cultural_context"),
+        # Emotion detection
+        "emotion_detected": _s.get("emotion_detected"),
+        "emotion_confidence": _s.get("emotion_confidence"),
+        "emotion_intensity": _s.get("emotion_intensity"),
+        "emotion_secondary": _s.get("emotion_secondary"),
+        "emotion_reasoning": _s.get("emotion_reasoning"),
+        "emotion_sentiment_label": _s.get("emotion_sentiment_label"),
+        "emotion_sentiment_score": _s.get("emotion_sentiment_score"),
+        "emotion_metadata": _s.get("emotion_metadata"),
+        # Core routing
+        "intent": _s.get("intent"),
+        "route": _s.get("route"),
+        "entity_ids": _s.get("entity_ids"),
+        "horizon": _s.get("horizon"),
+        "user_id": _s.get("user_id"),
+        # Sacred Orders: Orthodoxy
+        "orthodoxy_verdict": _s.get("orthodoxy_verdict"),
+        "orthodoxy_blessing": _s.get("orthodoxy_blessing"),
+        "orthodoxy_confidence": _s.get("orthodoxy_confidence"),
+        "orthodoxy_findings": _s.get("orthodoxy_findings"),
+        "orthodoxy_message": _s.get("orthodoxy_message"),
+        "orthodoxy_timestamp": _s.get("orthodoxy_timestamp"),
+        "theological_metadata": _s.get("theological_metadata"),
+        # Sacred Orders: Vault
+        "vault_blessing": _s.get("vault_blessing"),
+        "vault_status": _s.get("vault_status"),
+        # VSGS
+        "vsgs_status": _s.get("vsgs_status"),
+        "vsgs_elapsed_ms": _s.get("vsgs_elapsed_ms"),
+        "vsgs_error": _s.get("vsgs_error"),
+        "semantic_matches_count": len(_s.get("semantic_matches", [])),
+        # Pattern Weavers
+        "weaver_context": _s.get("weaver_context"),
+        # CAN
+        "can_mode": _s.get("can_mode"),
+        "can_route": _s.get("can_route"),
+        "can_response": _s.get("can_response"),
+        "follow_ups": _s.get("follow_ups"),
+        "conversation_type": _s.get("conversation_type"),
+        # Advisor
+        "advisor_recommendation": _s.get("advisor_recommendation"),
+        "user_requests_action": _s.get("user_requests_action"),
     }
 
 

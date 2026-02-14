@@ -49,7 +49,7 @@ graph TB
 
     subgraph REASON["⚙️ Reason — Sacred Order #3"]
         direction TB
-        NE["Neural Engine<br/><i>factor evaluation<br/>normalize → aggregate → rank</i>"]
+        NE["Neural Engine<br/><i>factor evaluation<br/>normalize → aggregate → rank</i><br/>(vertical hook: EXEC_DOMAIN)"]
         PLAST["Plasticity<br/><i>bounded adaptation</i>"]
     end
 
@@ -221,7 +221,6 @@ graph LR
     H -->|exec| I[exec]
     H -->|qdrant| J[qdrant]
     H -->|llm_soft| K[llm_soft]
-    H -->|slot_filler| L[compose]
     H -->|codex| M["codex<br/>hunters"]
     H -->|mcp| N[llm_mcp]
 
@@ -232,7 +231,8 @@ graph LR
 
     O --> P["orthodoxy<br/>wardens"]
     P --> Q["vault<br/>keepers"]
-    Q --> R[compose]
+    H -->|slot_filler| R[compose]
+    Q --> R
     R --> S[CAN]
     S --> T((END))
 
@@ -254,7 +254,7 @@ Services **never import each other's code**. Three communication channels:
 
 | Channel | When | Example |
 |---------|------|---------|
-| **REST API** (httpx) | Synchronous request/response between Docker containers | LangGraph calls Neural Engine API at `:8003/screen` |
+| **REST API** (httpx) | Synchronous request/response between Docker containers | LangGraph `exec` can call a vertical service (e.g., Neural Engine) when `EXEC_DOMAIN` is configured |
 | **Redis Streams** | Asynchronous event propagation | Codex publishes `codex.discovery.mapped`, Babel Gardens consumes it |
 | **LangGraph State** | Within the orchestration pipeline | `state["weaver_context"]` flows from Pattern Weavers node to Entity Resolver |
 

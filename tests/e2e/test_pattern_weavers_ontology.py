@@ -188,23 +188,23 @@ class TestWeaverInGraphPipeline:
         assert isinstance(ctx, dict)
         assert "status" in ctx
 
-    def test_weaver_context_has_concepts(self, graph_run):
-        """weaver_context must have a concepts list."""
+    def test_weaver_context_has_matches(self, graph_run):
+        """weaver_context must have a matches list."""
         parsed = graph_run("Analisi pattern emergenti nei dati")["parsed"]
         ctx = parsed.get("weaver_context", {})
-        assert "concepts" in ctx
-        assert isinstance(ctx["concepts"], list)
+        assert "matches" in ctx
+        assert isinstance(ctx["matches"], list)
 
-    def test_weaver_context_has_patterns(self, graph_run):
-        """weaver_context must have a patterns list."""
+    def test_weaver_context_has_metadata(self, graph_run):
+        """weaver_context must have metadata."""
         parsed = graph_run("Riconoscimento strutture ricorrenti")["parsed"]
         ctx = parsed.get("weaver_context", {})
-        assert "patterns" in ctx
-        assert isinstance(ctx["patterns"], list)
+        assert "metadata" in ctx
+        assert isinstance(ctx["metadata"], dict)
 
     def test_weaver_latency_tracked(self, graph_run):
         """Weaver processing time must be tracked."""
         parsed = graph_run("Test latenza weaver")["parsed"]
         ctx = parsed.get("weaver_context", {})
-        assert "latency_ms" in ctx
-        assert isinstance(ctx["latency_ms"], (int, float))
+        assert "processing_time_ms" in ctx
+        assert isinstance(ctx["processing_time_ms"], (int, float))

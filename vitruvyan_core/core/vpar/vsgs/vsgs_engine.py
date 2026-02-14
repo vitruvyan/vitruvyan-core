@@ -117,17 +117,17 @@ class VSGSEngine:
     def _search(self, embedding: List[float],
                 user_id: str) -> List[Dict[str, Any]]:
         """Query Qdrant for top-k semantic matches."""
-        from qdrant_client import models
+        from core.agents.qdrant_agent import Filter, FieldCondition, MatchValue
 
         qdrant = self._get_qdrant()
         results = qdrant.search(
             collection=self.config.collection,
             query_vector=embedding,
             top_k=self.config.top_k,
-            qfilter=models.Filter(
-                must=[models.FieldCondition(
+            qfilter=Filter(
+                must=[FieldCondition(
                     key="user_id",
-                    match=models.MatchValue(value=user_id),
+                    match=MatchValue(value=user_id),
                 )]
             ),
         )

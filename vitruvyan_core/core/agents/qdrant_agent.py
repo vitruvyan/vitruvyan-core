@@ -13,6 +13,7 @@ from qdrant_client.http.models import (
     Filter,
     FieldCondition,
     MatchAny,
+    MatchValue,
     SearchRequest
 )
 
