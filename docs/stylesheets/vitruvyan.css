@@ -202,6 +202,33 @@ a#component-site-name:hover {
   user-select: none;
 }
 
+/* Auth controls (Sign in / Sign out) in header navbar. */
+#kb-auth-controls {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.25rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+#kb-auth-controls .kb-auth-controls__link {
+  padding-left: 0.45rem;
+  padding-right: 0.45rem;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  line-height: 1.2;
+}
+
+#kb-auth-controls .kb-auth-controls__link:hover {
+  text-decoration: none;
+  border-color: rgba(0, 0, 0, 0.28);
+}
+
+#kb-auth-controls .kb-auth-controls__link--login {
+  font-weight: 700;
+}
+
 [data-md-color-scheme="lantana"] {
   --md-default-bg-color: #0b1220;
   --md-default-fg-color: #e8eefc;

@@ -69,7 +69,7 @@ def orthodoxy_node(state: Dict[str, Any]) -> Dict[str, Any]:
         event_payload = {
             **audit_payload,
             "target": "orthodoxy_wardens",
-            "event_type": "system.audit.requested",
+            "type": "system.audit.requested",
             "correlation_id": correlation_id,
         }
         
@@ -138,7 +138,7 @@ def _await_divine_verdict_sync(redis_bus, correlation_id: str, timeout: float = 
     def verdict_handler(event: Any):
         nonlocal verdict_received
         # Check if this verdict matches our correlation ID
-        if (event.event_type == "orthodoxy.absolution.granted" and 
+        if (event.type == "orthodoxy.absolution.granted" and 
             event.correlation_id == correlation_id):
             verdict_received = event.payload
             logger.debug(f"[ORTHODOXY][GRAPH] ✨ Verdict matched correlation: {correlation_id}")

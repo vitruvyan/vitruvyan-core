@@ -139,6 +139,68 @@
     }
   }
 
+  function computeAuthLinks() {
+    const { pathname, search, hash } = window.location;
+    const suffix = `${search || ""}${hash || ""}`;
+
+    const inItalianContext =
+      pathname.startsWith("/it/") || pathname.includes("/it/docs/") || pathname.includes("/it/admin/");
+
+    const defaultAfterLogin = inItalianContext ? "/it/docs/" : "/docs/";
+
+    // If the user is on the public landing, send them to docs after login.
+    const rd =
+      pathname === "/" || pathname === "/it/" || pathname === "/index.html" || pathname === "/it/index.html"
+        ? defaultAfterLogin
+        : `${pathname}${suffix}`;
+
+    const encodedRd = encodeURIComponent(rd);
+
+    return {
+      login: `/oauth2/start?rd=${encodedRd}`,
+      logout: `/oauth2/sign_out?rd=${encodeURIComponent(inItalianContext ? "/it/" : "/")}`,
+    };
+  }
+
+  function setupAuthControls() {
+    const navbar = document.querySelector("nav.navbar");
+    if (!navbar) return;
+
+    if (document.getElementById("kb-auth-controls")) return;
+
+    const outerNav = navbar.querySelector("#navbarsMenu > ul.navbar-nav");
+    if (!outerNav) return;
+
+    const searchItem = outerNav.querySelector(".md-search-icon")?.closest("li.nav-item") || null;
+
+    const { login, logout } = computeAuthLinks();
+
+    const li = document.createElement("li");
+    li.className = "nav-item kb-auth-controls";
+    li.id = "kb-auth-controls";
+
+    const loginLink = document.createElement("a");
+    loginLink.className = "nav-link text-decoration-none kb-auth-controls__link kb-auth-controls__link--login";
+    loginLink.href = login;
+    loginLink.textContent = "Sign in";
+    loginLink.setAttribute("aria-label", "Sign in");
+
+    const logoutLink = document.createElement("a");
+    logoutLink.className = "nav-link text-decoration-none kb-auth-controls__link kb-auth-controls__link--logout";
+    logoutLink.href = logout;
+    logoutLink.textContent = "Sign out";
+    logoutLink.setAttribute("aria-label", "Sign out");
+
+    li.appendChild(loginLink);
+    li.appendChild(logoutLink);
+
+    if (searchItem) {
+      outerNav.insertBefore(li, searchItem);
+    } else {
+      outerNav.appendChild(li);
+    }
+  }
+
   function fixSearchPageMenuLinks() {
     const { pathname } = window.location;
     if (!(pathname.endsWith("/search.html") || pathname === "/search.html")) return;
@@ -252,6 +314,12 @@
     document.addEventListener("DOMContentLoaded", setupLanguageSwitch, { once: true });
   } else {
     setupLanguageSwitch();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupAuthControls, { once: true });
+  } else {
+    setupAuthControls();
   }
 
   if (document.readyState === "loading") {

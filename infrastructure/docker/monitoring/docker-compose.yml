@@ -30,7 +30,7 @@ services:
       - --provider=oidc
       - --oidc-issuer-url=https://auth.vitruvyan.com/realms/vitruvyan-core
       - --client-id=kb
-      - --scope=openid email profile groups
+      - --scope=openid email profile
       - --code-challenge-method=S256
       - --email-domain=*
       - --redirect-url=https://kb.vitruvyan.com/oauth2/callback

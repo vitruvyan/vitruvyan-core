@@ -149,7 +149,7 @@ def _request_divine_protection(protection_type: str, state: Dict[str, Any]) -> D
         event_payload = {
             'target': 'vault_keepers_conclave',
             'protection_type': protection_type,
-            'event_type': event_channel,
+            'type': event_channel,
             'correlation_id': correlation_id,
             'state_context': {
                 'intent': state.get('intent'),
@@ -216,7 +216,7 @@ def _await_divine_protection(correlation_id: str, timeout: float = 5.0) -> Dict[
         nonlocal received_response
         
         if event.correlation_id == correlation_id:
-            logger.info(f"[VAULT][GRAPH] ✨ Divine protection received: {event.event_type}")
+            logger.info(f"[VAULT][GRAPH] ✨ Divine protection received: {event.type}")
             received_response = event.to_dict()
     
     try:
@@ -335,7 +335,7 @@ def _create_fallback_protection() -> Dict[str, Any]:
             "protection_measures": ["local_integrity_check", "emergency_blessing"]
         },
         "sacred_response": {
-            "event_type": "local_protection_response",
+            "type": "local_protection_response",
             "message": "Local vault protection applied"
         },
         "correlation_id": f"local_fallback_{int(time.time() * 1000)}",
