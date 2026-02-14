@@ -430,7 +430,7 @@ class TestFinanceResponseFormatter:
     def test_formatter_conversation_type_detection(self):
         """FinanceResponseFormatter should detect finance-specific types."""
         from vitruvyan_core.domains.finance import FinanceResponseFormatter
-        from vitruvyan_core.core.orchestration.compose.response_formatter import ConversationType
+        from core.orchestration.compose.response_formatter import ConversationType
         
         formatter = FinanceResponseFormatter()
         
@@ -531,8 +531,8 @@ class TestFinanceGraphPlugin:
     def test_plugin_has_compose_components(self):
         """FinanceGraphPlugin should provide ResponseFormatter and SlotFiller."""
         from vitruvyan_core.domains.finance_plugin import FinanceGraphPlugin
-        from vitruvyan_core.core.orchestration.compose.response_formatter import ResponseFormatter
-        from vitruvyan_core.core.orchestration.compose.slot_filler import SlotFiller
+        from core.orchestration.compose.response_formatter import ResponseFormatter
+        from core.orchestration.compose.slot_filler import SlotFiller
         
         plugin = FinanceGraphPlugin()
         

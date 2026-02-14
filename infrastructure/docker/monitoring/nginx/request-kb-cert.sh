@@ -15,7 +15,7 @@ if ! docker ps | grep -q core_nginx; then
 fi
 
 # Richiedi il certificato
-docker compose run --rm certbot certonly \
+docker compose run --rm --entrypoint certbot certbot certonly \
     --webroot \
     -w /var/www/certbot \
     --email admin@vitruvyan.com \

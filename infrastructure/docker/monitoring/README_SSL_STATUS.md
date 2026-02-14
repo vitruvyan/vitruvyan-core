@@ -1,10 +1,11 @@
-# Configurazione nginx + SSL (Feb 12, 2026)
+# Configurazione nginx + SSL (Feb 2026)
 
 ## Stato attuale
 
 ✅ **Dashboard** (dashboard.vitruvyan.com) - ATTIVO con SSL  
 ✅ **Metrics** (metrics.vitruvyan.com) - ATTIVO con SSL  
-⏸️ **Knowledge Base** (kb.vitruvyan.com) - PREPARATO, certificato SSL da richiedere
+✅ **Knowledge Base** (kb.vitruvyan.com) - ATTIVO con SSL  
+✅ **Auth** (auth.vitruvyan.com) - ATTIVO con SSL (Keycloak)
 
 ## Certificati SSL esistenti
 
@@ -12,7 +13,8 @@
 infrastructure/docker/monitoring/certbot/conf/live/
 ├── dashboard.vitruvyan.com/  ✅
 ├── metrics.vitruvyan.com/     ✅
-└── kb.vitruvyan.com/          ⏸️ (da creare)
+├── kb.vitruvyan.com/          ✅
+└── auth.vitruvyan.com/        ✅
 ```
 
 ## Architettura
@@ -27,35 +29,28 @@ infrastructure/docker/monitoring/certbot/conf/live/
 
 - `core_grafana:3000` → dashboard.vitruvyan.com
 - `core_prometheus:9090` → metrics.vitruvyan.com
-- `core_mkdocs:8000` → kb.vitruvyan.com (⚠️ unhealthy, serve 404)
+- `core_mkdocs:8000` → kb.vitruvyan.com
+- `core_keycloak:8080` → auth.vitruvyan.com
 
-## Per attivare kb.vitruvyan.com
+## Richiedere certificati
 
-### Passo 1: Verifica DNS
+### 1) Verifica DNS
 ```bash
 # Assicurati che kb.vitruvyan.com punti all'IP pubblico del server
 dig kb.vitruvyan.com +short
 ```
 
-### Passo 2: Richiedi certificato SSL
+### 2) Richiedi certificato SSL (singolo dominio)
 ```bash
 cd infrastructure/docker/monitoring
 ./nginx/request-kb-cert.sh
+./nginx/request-auth-cert.sh
 ```
 
-### Passo 3: Abilita configurazione nginx
-```bash
-# Modifica infrastructure/docker/monitoring/nginx/nginx.conf
-# Decommenta il blocco:
-#   # HTTPS: Knowledge Base (kb) - Temporarily disabled
-
-# Riavvia nginx
-docker compose restart nginx
-```
-
-### Passo 4: Verifica
+### 3) Verifica
 ```bash
 curl -I https://kb.vitruvyan.com
+curl -I https://auth.vitruvyan.com/auth/
 ```
 
 ## Comandi utili
@@ -71,8 +66,8 @@ docker logs core_nginx --tail 50
 # Test configurazione nginx
 docker exec core_nginx nginx -t
 
-# Rinnovo certificati (cron consigliato ogni 60 giorni)
-docker compose run --rm certbot renew
+# Rinnovo certificati manuale (rinnova tutti i domini)
+./certbot/renew.sh
 
 # Riavvio nginx (dopo modifica config)
 docker compose restart nginx
@@ -80,6 +75,5 @@ docker compose restart nginx
 
 ## Note
 
-- **Certbot**: container idle, usato solo per richieste/rinnovi manuali
-- **Rinnovo automatico**: da implementare tramite cron (script `certbot/renew.sh`)
-- **core_mkdocs**: attualmente unhealthy (404), da verificare configurazione mkdocs.yml
+- **Certbot**: usato per richieste/rinnovi con webroot su `/var/www/certbot`
+- **Rinnovo automatico**: presente via cron (script `certbot/renew.sh`)

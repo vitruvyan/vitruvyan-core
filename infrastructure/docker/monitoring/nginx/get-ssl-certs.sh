@@ -34,7 +34,7 @@ for DOMAIN in "${DOMAINS[@]}"; do
         echo "⚠️  Usando staging server (test)"
     fi
     
-    docker compose run --rm certbot $CERTBOT_ARGS
+    docker compose run --rm --entrypoint certbot certbot $CERTBOT_ARGS
     
     if [ $? -eq 0 ]; then
         echo "✅ Certificato ottenuto per $DOMAIN"

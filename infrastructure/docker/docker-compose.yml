@@ -99,12 +99,12 @@ services:
     command:
       - start
       - --proxy=edge
-      - --hostname=kb.vitruvyan.com
+      - --hostname=auth.vitruvyan.com
       - --hostname-strict=false
       - --http-relative-path=/auth
       - --http-enabled=true
     environment:
-      KC_HOSTNAME: kb.vitruvyan.com
+      KC_HOSTNAME: auth.vitruvyan.com
       KC_HOSTNAME_STRICT: false
       KC_HTTP_RELATIVE_PATH: /auth
       KC_DB: postgres
