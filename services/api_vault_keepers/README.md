@@ -32,17 +32,17 @@ docker compose up -d api_vault_keepers
 import requests
 
 # Check data integrity
-response = requests.post("http://localhost:8001/integrity/check", json={
-    "target": "postgresql",
-    "scope": "full"
+response = requests.post("http://localhost:8007/vault/integrity_check", json={
+    "scope": "full",
+    "correlation_id": "manual_check_001"
 })
 print(response.json())
-# {"status": "blessed", "corruption_detected": false, "details": {...}}
+# {"overall_status": "...", "findings": [...], ...}
 
 # Create backup
-response = requests.post("http://localhost:8001/backup/create", json={
-    "type": "full",
-    "systems": ["postgresql", "qdrant"]
+response = requests.post("http://localhost:8007/vault/backup", json={
+    "mode": "full",
+    "include_vectors": True
 })
 print(response.json())
 ```
@@ -86,25 +86,14 @@ api_vault_keepers/
 
 ## API Endpoints
 
-### Integrity Monitoring
-- `POST /integrity/check` — Validate data integrity across systems
-- `GET /integrity/status` — Get current integrity status
-- `GET /integrity/history` — Integrity check history
+All endpoints are under `/vault`.
 
-### Backup Operations
-- `POST /backup/create` — Create new backup (full/incremental)
-- `GET /backup/list` — List available backups
-- `GET /backup/{id}/status` — Check backup status
-
-### Recovery Operations
-- `POST /recovery/plan` — Generate recovery plan
-- `POST /recovery/execute` — Execute data recovery
-- `GET /recovery/history` — Recovery operation history
-
-### Audit Trail
-- `GET /audit/events` — Immutable audit events
-- `GET /audit/search` — Search audit trail
-- `POST /audit/record` — Record custom audit event
+- `GET /vault/health` — Service and dependency health
+- `GET /vault/status` — Comprehensive vault status
+- `POST /vault/integrity_check` — Validate cross-store integrity
+- `POST /vault/backup` — Execute backup workflow
+- `POST /vault/restore` — Dry-run or execute restore workflow
+- `POST /vault/archive` — Archive external content payload
 
 ---
 
@@ -123,12 +112,11 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 
 # Service
-VAULT_KEEPERS_PORT=8001
-VAULT_KEEPERS_HOST=0.0.0.0
+SERVICE_PORT=8007
+SERVICE_HOST=0.0.0.0
 
 # Backup settings
 BACKUP_RETENTION_DAYS=30
-BACKUP_PATH=/data/backups
 ```
 
 ---
@@ -156,5 +144,4 @@ docker compose up -d --build api_vault_keepers api_vault_keepers_listener
 
 - **Core**: `vitruvyan_core/core/governance/vault_keepers/` — Pure domain logic
 - **Bus**: Events published to `vault.*` channels
-- **Dependencies**: PostgreSQL, Qdrant, Redis Streams, backup storage</content>
-<parameter name="filePath">/home/vitruvyan/vitruvyan-core/services/api_vault_keepers/README.md
+- **Dependencies**: PostgreSQL, Qdrant, Redis Streams, backup storage

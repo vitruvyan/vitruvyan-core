@@ -7,16 +7,16 @@ responses in the orchestration layer, allowing domain plugins to
 inject their own formatting logic.
 """
 
-from vitruvyan_core.core.orchestration.compose.base_composer import (
+from core.orchestration.compose.base_composer import (
     BaseComposer,
     ComposerResult,
 )
-from vitruvyan_core.core.orchestration.compose.response_formatter import (
+from core.orchestration.compose.response_formatter import (
     ResponseFormatter,
     FormattedResponse,
     ConversationType,
 )
-from vitruvyan_core.core.orchestration.compose.slot_filler import (
+from core.orchestration.compose.slot_filler import (
     SlotFiller,
     SlotQuestion,
 )

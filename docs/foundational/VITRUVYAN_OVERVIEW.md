@@ -18,12 +18,12 @@ The first domain specialization (codename **Mercator**) is financial analysis. B
 graph TB
     subgraph PERCEPTION["🔭 Perception — Sacred Order #1"]
         direction TB
-        TRACKER[Tracker<br/><i>multi-source data collection</i>]
-        RESTORER[Restorer<br/><i>dedup, clean, normalize</i>]
-        BINDER[Binder<br/><i>dual-write PostgreSQL + Qdrant</i>]
-        SCRIBE[Scribe<br/><i>derived indicators</i>]
-        CARTOGRAPHER[Cartographer<br/><i>consistency audits</i>]
-        LEADER[Expedition Leader<br/><i>coordination</i>]
+        TRACKER["Tracker<br/><i>multi-source data collection</i>"]
+        RESTORER["Restorer<br/><i>dedup, clean, normalize</i>"]
+        BINDER["Binder<br/><i>dual-write PostgreSQL + Qdrant</i>"]
+        SCRIBE["Scribe<br/><i>derived indicators</i>"]
+        CARTOGRAPHER["Cartographer<br/><i>consistency audits</i>"]
+        LEADER["Expedition Leader<br/><i>coordination</i>"]
 
         TRACKER --> RESTORER --> BINDER
         BINDER --> SCRIBE
@@ -33,11 +33,11 @@ graph TB
 
     subgraph MEMORY["🧠 Memory — Sacred Order #2"]
         direction TB
-        PG[(PostgreSQL<br/><i>relational truth</i>)]
-        QD[(Qdrant<br/><i>semantic vectors</i>)]
+        PG[("PostgreSQL<br/><i>relational truth</i>")]
+        QD[("Qdrant<br/><i>semantic vectors</i>")]
         PGA[PostgresAgent]
         QDA[QdrantAgent]
-        MO[Memory Orders<br/><i>sync & coherence</i>]
+        MO["Memory Orders<br/><i>sync & coherence</i>"]
 
         PGA --> PG
         QDA --> QD
@@ -47,33 +47,33 @@ graph TB
 
     subgraph REASON["⚙️ Reason — Sacred Order #3"]
         direction TB
-        NE[Neural Engine<br/><i>factor evaluation<br/>normalize → aggregate → rank</i>]
-        PLAST[Plasticity<br/><i>bounded adaptation</i>]
+        NE["Neural Engine<br/><i>factor evaluation<br/>normalize → aggregate → rank</i>"]
+        PLAST["Plasticity<br/><i>bounded adaptation</i>"]
     end
 
     subgraph DISCOURSE["💬 Discourse — Sacred Order #4"]
         direction TB
-        BABEL[Babel Gardens<br/><i>semantic fusion<br/>sentiment · embeddings<br/>84 languages</i>]
-        WEAVERS[Pattern Weavers<br/><i>contextual enrichment<br/>vague → structured</i>]
-        VEE[VEE<br/><i>3-level explainability</i>]
-        CAN[CAN Node<br/><i>conversational response</i>]
+        BABEL["Babel Gardens<br/><i>semantic fusion<br/>sentiment · embeddings<br/>84 languages</i>"]
+        WEAVERS["Pattern Weavers<br/><i>contextual enrichment<br/>vague → structured</i>"]
+        VEE["VEE<br/><i>3-level explainability</i>"]
+        CAN["CAN Node<br/><i>conversational response</i>"]
     end
 
     subgraph TRUTH["🛡️ Truth — Sacred Order #5"]
         direction TB
-        ORTHO[Orthodoxy Wardens<br/><i>epistemic validation</i>]
-        VAULT[Vault Keepers<br/><i>immutable archive</i>]
-        SENTINEL[Sentinel<br/><i>risk monitoring</i>]
+        ORTHO["Orthodoxy Wardens<br/><i>epistemic validation</i>"]
+        VAULT["Vault Keepers<br/><i>immutable archive</i>"]
+        SENTINEL["Sentinel<br/><i>risk monitoring</i>"]
     end
 
     subgraph BUS["🔴 Cognitive Bus — Synaptic Conclave"]
         direction LR
-        REDIS[Redis Streams<br/><i>durable · ordered · causal</i>]
+        REDIS["Redis Streams<br/><i>durable · ordered · causal</i>"]
     end
 
     subgraph ORCHESTRATION["🎯 LangGraph — Central Nervous System"]
         direction LR
-        GRAPH[StateGraph<br/><i>23 nodes · ~80 state fields<br/>conditional routing</i>]
+        GRAPH["StateGraph<br/><i>23 nodes · ~80 state fields<br/>conditional routing</i>"]
     end
 
     %% Data flows
@@ -202,25 +202,25 @@ A 23-node `StateGraph` manages the full cognitive pipeline. The state object car
 
 ```mermaid
 graph LR
-    A[parse] --> B[intent<br/>detection]
-    B --> C[pattern<br/>weavers]
-    C --> D[entity<br/>resolver]
-    D --> E[babel<br/>emotion]
-    E --> F[semantic<br/>grounding]
-    F --> G[params<br/>extraction]
+    A[parse] --> B["intent<br/>detection"]
+    B --> C["pattern<br/>weavers"]
+    C --> D["entity<br/>resolver"]
+    D --> E["babel<br/>emotion"]
+    E --> F["semantic<br/>grounding"]
+    F --> G["params<br/>extraction"]
     G --> H{decide}
 
-    H -->|analysis| I[execution<br/>nodes]
-    H -->|conversation| J[CAN node]
-    H -->|codex| K[codex<br/>hunters]
+    H -->|analysis| I["execution<br/>nodes"]
+    H -->|conversation| J["CAN node"]
+    H -->|codex| K["codex<br/>hunters"]
     H -->|sentinel| L[sentinel]
 
-    I --> M[output<br/>normalizer]
-    M --> N[orthodoxy<br/>wardens]
-    N --> O[vault<br/>keepers]
-    O --> P[compose<br/>+ VEE]
+    I --> M["output<br/>normalizer"]
+    M --> N["orthodoxy<br/>wardens"]
+    N --> O["vault<br/>keepers"]
+    O --> P["compose<br/>+ VEE"]
     P --> Q[CAN]
-    Q --> R[proactive<br/>suggestions]
+    Q --> R["proactive<br/>suggestions"]
     R --> S((END))
 
     J --> S

@@ -1,5 +1,11 @@
 # Orthodoxy Wardens
 
+## What it does
+
+- Turns audit triggers into structured cases
+- Produces findings and renders verdicts (including `non_liquet`)
+- Declares correction/logging directives (service executes I/O)
+
 - **Epistemic Layer**: Truth & Governance
 - **Mandate**: validate outputs and render epistemic verdicts (blessed / heretical / non_liquet)
 - **Hard boundary**: the judge never executes corrections (only requests/reporting)
@@ -49,4 +55,3 @@ Finance contributes domain-specific validation rules as **evidence** (not author
 - numeric hallucination checks (prices, returns, units)
 - compliance constraints (disclaimers, uncertainty, provenance)
 - allowed actions and forbidden claims (institutional posture)
-

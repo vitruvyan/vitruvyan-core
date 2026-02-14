@@ -1,5 +1,11 @@
 # Pattern Weavers
 
+## What it does
+
+- Resolves free text into taxonomy categories (concepts, sectors, regions, …)
+- Extracts concepts for downstream pipelines
+- Provides keyword fallback when semantic search is unavailable
+
 - **Epistemic Layer**: Reason (Ontology Resolution / Semantic Contextualization)
 - **Mandate**: resolve user text into structured taxonomy matches (concepts, sectors, regions, entities)
 - **Hard boundary**: extract structure, never interpret meaning (no risk/scoring here)
@@ -50,4 +56,3 @@ Finance provides:
 
 Rule:
 domain taxonomies live outside the core; the core is only the resolver.
-

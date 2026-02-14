@@ -45,8 +45,11 @@ class Settings:
     COHERENCE_THRESHOLD_HEALTHY = float(os.getenv("COHERENCE_THRESHOLD_HEALTHY", "5.0"))
     COHERENCE_THRESHOLD_WARNING = float(os.getenv("COHERENCE_THRESHOLD_WARNING", "15.0"))
     
-    # Audit
-    MEMORY_AUDIT_TABLE = os.getenv("MEMORY_AUDIT_TABLE", "memory_audit_log")
+    # Interoperability channels
+    VAULT_AUDIT_REQUEST_CHANNEL = os.getenv("VAULT_AUDIT_REQUEST_CHANNEL", "audit.vault.requested")
+
+    # Reconciliation execution mode
+    MEMORY_RECONCILIATION_MODE = os.getenv("MEMORY_RECONCILIATION_MODE", "dry_run").lower()
     
     # Feature flags
     ENABLE_AUTO_SYNC = os.getenv("ENABLE_AUTO_SYNC", "false").lower() == "true"
@@ -54,3 +57,6 @@ class Settings:
 
 
 settings = Settings()
+
+if settings.MEMORY_RECONCILIATION_MODE not in {"dry_run", "assisted", "autonomous"}:
+    settings.MEMORY_RECONCILIATION_MODE = "dry_run"

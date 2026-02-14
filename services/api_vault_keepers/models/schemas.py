@@ -13,6 +13,7 @@ from datetime import datetime
 
 class IntegrityCheckRequest(BaseModel):
     """Request model for manual integrity check"""
+    scope: str = Field(default="full", description="Validation scope: full | postgresql | qdrant")
     check_type: str = Field(default="manual", description="Type of integrity check")
     priority: str = Field(default="high", description="Check priority level")
     correlation_id: Optional[str] = Field(None, description="Optional correlation ID")

@@ -148,6 +148,8 @@ async def run_graph_endpoint(
     return await adapter.execute_graph(
         input_text=data.input_text,
         user_id=data.user_id or settings.DEFAULT_USER_ID,
+        validated_entities=data.validated_entities,
+        language=data.language,
     )
 
 

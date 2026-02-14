@@ -15,6 +15,8 @@ class GraphInputSchema(BaseModel):
     """Graph execution input schema."""
     input_text: str = Field(..., description="User input text to process")
     user_id: Optional[str] = Field(None, description="User ID (default: demo)")
+    validated_entities: Optional[List[str]] = Field(None, description="Client-validated entity list (authoritative per Golden Rules)")
+    language: Optional[str] = Field(None, description="Language hint (en, it, es)")
 
 
 class GraphResponseSchema(BaseModel):

@@ -32,7 +32,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Babel Gardens endpoint
-BABEL_GARDENS_URL = os.getenv("BABEL_GARDENS_URL", "http://vitruvyan_babel_gardens:8009")
+BABEL_GARDENS_URL = os.getenv("BABEL_GARDENS_URL", "http://babel_gardens:8009")
 EMOTION_ENDPOINT = f"{BABEL_GARDENS_URL}/v1/emotion/detect"
 
 
@@ -78,6 +78,7 @@ def emotion_detector_node(state: Dict[str, Any]) -> Dict[str, Any]:
             state["babel_emotion_result"] = result
             state["emotion_detected"] = emotion
             state["emotion_confidence"] = confidence
+            state["emotion_metadata"] = result.get("metadata", {})
             
             logger.info(f"🎭 [emotion_detector] Detected: {emotion} (confidence: {confidence:.2f})")
             

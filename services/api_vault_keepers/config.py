@@ -34,6 +34,7 @@ class Settings:
         "vault.archive.requested",
         "vault.restore.requested",
         "vault.snapshot.requested",
+        "audit.vault.requested",
         "orthodoxy.audit.completed",
         "neural_engine.screening.completed",
     ]

@@ -1,5 +1,11 @@
 # Babel Gardens
 
+## A cosa serve
+
+- Estrae segnali semantici strutturati dal testo (con confidence + tracciabilità)
+- Produce embedding/feature consumabili in sicurezza dai downstream
+- Espone un boundary pulito via eventi/API (il service esegue l’I/O)
+
 - **Livello epistemico**: Perception (Linguistic Processing / Signal Extraction)
 - **Mandato**: trasformare testo non strutturato in **segnali semantici strutturati e spiegabili**
 - **Verticalizzazione**: segnali YAML + plugin opzionali
@@ -44,4 +50,3 @@ Definiti in `vitruvyan_core/core/cognitive/babel_gardens/events/__init__.py` (es
 ## Verticalizzazione (pilota finanza)
 
 Finanza definisce i segnali in YAML e (se serve) un plugin di inferenza; la schema dei segnali vive nel domain pack, non nel core.
-

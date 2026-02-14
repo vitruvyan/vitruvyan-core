@@ -1,5 +1,11 @@
 # Pattern Weavers
 
+## A cosa serve
+
+- Mappa testo libero in categorie tassonomiche (concetti, settori, regioni, …)
+- Estrae concetti per pipeline downstream
+- Fornisce fallback keyword quando la ricerca semantica non è disponibile
+
 - **Livello epistemico**: Reason (Ontology Resolution / Semantic Contextualization)
 - **Mandato**: risolvere testo in match tassonomici (concetti, settori, regioni, entità)
 - **Confine**: estrarre struttura, non interpretare (no risk/scoring)
@@ -42,4 +48,3 @@ Definiti in `vitruvyan_core/core/cognitive/pattern_weavers/events/__init__.py`:
 ## Verticalizzazione (pilota finanza)
 
 Finanza fornisce tassonomie YAML (settori/strumenti/regioni) e keyword; il core resta solo il resolver.
-

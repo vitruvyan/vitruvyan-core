@@ -14,20 +14,20 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
-from vitruvyan_core.core.orchestration.compose.response_formatter import (
+from core.orchestration.compose.response_formatter import (
     ResponseFormatter,
     FormattedResponse,
     ConversationType,
     GenericResponseFormatter,
 )
-from vitruvyan_core.core.orchestration.compose.slot_filler import (
+from core.orchestration.compose.slot_filler import (
     SlotFiller,
     SlotBundle,
     GenericSlotFiller,
 )
 
 if TYPE_CHECKING:
-    from vitruvyan_core.core.orchestration.graph_engine import GraphPlugin
+    from core.orchestration.graph_engine import GraphPlugin
 
 
 @dataclass

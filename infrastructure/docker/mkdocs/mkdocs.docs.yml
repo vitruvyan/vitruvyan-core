@@ -52,7 +52,10 @@ plugins:
         - it
   - mermaid2
   - minify:
-      minify_html: true
+      # NOTE: keep Mermaid diagram source newlines intact.
+      # htmlmin tends to collapse whitespace inside <div class="mermaid">,
+      # which breaks Mermaid parsing ("Syntax error in text").
+      minify_html: false
 
 markdown_extensions:
   - admonition
@@ -61,7 +64,7 @@ markdown_extensions:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: !!python/name:mermaid2.fence_mermaid_custom
+          format: !!python/name:pymdownx.superfences.fence_div_format
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.highlight:
@@ -97,6 +100,7 @@ nav:
   - Architecture:
     - Overview: docs/architecture/README.md
   - Sacred Orders:
+    - Introduction: docs/foundational/SACRED_ORDERS_INTRO.md
     - Index: docs/orders/README.md
     - Codex Hunters: docs/orders/CODEX_HUNTERS.md
     - Memory Orders: docs/orders/MEMORY_ORDERS.md

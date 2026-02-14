@@ -1,5 +1,11 @@
 # Vault Keepers
 
+## What it does
+
+- Integrity validation across Postgres/Qdrant
+- Backup/recovery planning + archival directives
+- Immutable audit trail generation (service executes I/O)
+
 - **Epistemic Layer**: Truth (Memory & Archival)
 - **Mandate**: integrity monitoring, backup/recovery planning, immutable audit trails
 - **Outputs**: integrity reports, snapshots metadata, recovery plans (LIVELLO 1 is pure)
@@ -50,4 +56,3 @@ Finance plugs in by defining:
 - retention policies (how long to keep snapshots/audit trails)
 - critical tables/collections to validate (e.g. `finance.tickers`, `ticker_embeddings`)
 - restore priority rules (what must be restored first in incidents)
-

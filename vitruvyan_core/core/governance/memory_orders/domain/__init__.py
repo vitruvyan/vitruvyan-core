@@ -11,6 +11,9 @@ from .memory_objects import (
     SyncInput,
     SyncOperation,
     SyncPlan,
+    DriftType,
+    ConflictType,
+    ReconciliationPlan,
 )
 
 __all__ = [
@@ -21,4 +24,7 @@ __all__ = [
     "SyncInput",
     "SyncOperation",
     "SyncPlan",
+    "DriftType",
+    "ConflictType",
+    "ReconciliationPlan",
 ]

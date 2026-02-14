@@ -11,10 +11,8 @@ Questa sezione è la vista **interna** (admin) dei Sacred Orders: note di implem
 - **Codex Hunters** — discovery → normalizzazione → binding (sorgenti → entità canoniche)
 - **Orthodoxy Wardens** — governance epistemica (confessione → findings → verdetto)
 - **Vault Keepers** — archiviazione, integrità, pianificazione backup/restore e audit trail
+- **Memory Orders** — integrità di coerenza Postgres ↔ Qdrant (drift, health, sync planning)
+- **Babel Gardens** — testo → segnali semantici strutturati (embeddings, sentiment/segnali, explainability)
+- **Pattern Weavers** — risoluzione ontologica/tassonomica (weave semantico + fallback keyword)
 
-Altri ordini verranno estesi iterativamente:
-
-- Memory Orders
-- Babel Gardens
-- Pattern Weavers
-
+Alcune pagine potrebbero essere ancora in espansione (soprattutto Babel Gardens in refactor), ma il riassunto in testa ad ogni pagina è il punto di partenza stabile.

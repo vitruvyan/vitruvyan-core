@@ -1,5 +1,11 @@
 # Memory Orders
 
+## A cosa serve
+
+- Drift calculation (PostgreSQL ↔ Qdrant)
+- Health aggregation sulle dipendenze di memoria
+- Sync planning (solo planning; esecuzione in LIVELLO 2)
+
 - **Livello epistemico**: Memoria & Coerenza
 - **Mandato**: mantenere coerenza tra **Archivarium** (PostgreSQL) e **Mnemosyne** (Qdrant)
 - **Output**: report coerenza, health snapshot, piani di sync (no I/O in LIVELLO 1)
@@ -44,4 +50,3 @@ Definiti in `vitruvyan_core/core/governance/memory_orders/events/memory_events.p
 ## Verticalizzazione (pilota finanza)
 
 Il dominio “lega” Memory Orders scegliendo naming e collezioni (es. `tickers`, `ticker_embeddings`) e la policy di esecuzione sync nel service layer.
-

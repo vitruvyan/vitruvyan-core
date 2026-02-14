@@ -2,6 +2,12 @@
 
 <p class="kb-subtitle">Pianificazione backup e recovery, integrity checks e audit trail immutabile.</p>
 
+## A cosa serve
+
+- **Validazione integrità**: giudica segnali di salute/coerenza e produce report di integrità
+- **Pianificazione backup & recovery**: genera piani snapshot/restore (il service esegue le operazioni)
+- **Audit trail**: produce record immutabili e direttive di archiviazione
+
 Vault Keepers è l’ordine di **archiviazione + integrità + pianificazione backup/restore**. Produce decisioni e piani puri; il service layer esegue l’I/O.
 
 ## Mappa del codice

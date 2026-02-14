@@ -84,9 +84,20 @@ class GraphState(TypedDict, total=False):
     
     # Domain-agnostic entity/signal fields (replaces budget/horizon/entity_ids)
     entities: Optional[List[Dict[str, Any]]]  # Generic entities (id, type, attributes)
+    entity_ids: Optional[List[str]]           # Legacy entity IDs (tickers, codes) - used by parse/compose
+    validated_entities: Optional[List[str]]   # Client-validated entities (authoritative per Golden Rules)
+    context_entities: Optional[List[str]]     # Fallback entities from context/VSGS
     signals: Optional[Dict[str, Any]]         # Generic signals (sentiment, score, metadata)
     context: Optional[Dict[str, Any]]         # Vertical-specific extensible context
     top_k: Optional[int]                      # Generic parameter (top K results)
+    
+    # Legacy slot fields (used by parse/compose/route nodes)
+    budget: Optional[Any]                    # Budget parameter
+    horizon: Optional[str]                   # Time horizon
+    amount: Optional[Any]                    # Amount (alias for budget in route_node)
+    companies: Optional[List[str]]           # Extracted company names
+    flow: Optional[str]                      # Flow type (direct, clarification)
+    language: Optional[str]                  # Language hint from client
     
     # 🚨 Professional Boundaries Fields (Nov 2, 2025)
     needs_clarification: Optional[bool]      # True if query is ambiguous and requires clarification

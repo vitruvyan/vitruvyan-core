@@ -17,7 +17,7 @@ import logging
 from typing import Dict, Any
 from datetime import datetime
 
-from core.synaptic_conclave.redis_client import get_redis_bus, CognitiveEvent
+from core.synaptic_conclave.redis_client import get_redis_bus
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -144,33 +144,38 @@ def _request_divine_protection(protection_type: str, state: Dict[str, Any]) -> D
         if not redis_bus.is_listening:
             redis_bus.start_listening()
         
-        # Prepare protection request event
-        protection_event = CognitiveEvent(
-            type=_map_protection_to_event(protection_type),
-            source='langgraph_vault_node',
-            payload={
-                'target': 'vault_keepers_conclave',
-                'protection_type': protection_type,
-                'state_context': {
-                    'intent': state.get('intent'),
-                    'entity_ids': state.get('entity_ids', []),
-                    'route': state.get('route'),
-                    'human_input_preview': state.get('human_input', '')[:100]
-                },
-                'priority': 'high' if protection_type == 'critical' else 'normal'
+        # Prepare protection request event and publish via shim.publish()
+        event_channel = _map_protection_to_event(protection_type)
+        event_payload = {
+            'target': 'vault_keepers_conclave',
+            'protection_type': protection_type,
+            'event_type': event_channel,
+            'correlation_id': correlation_id,
+            'state_context': {
+                'intent': state.get('intent'),
+                'entity_ids': state.get('entity_ids', []),
+                'route': state.get('route'),
+                'human_input_preview': state.get('human_input', '')[:100]
             },
-            timestamp=datetime.utcnow(),
-            correlation_id=correlation_id
-        )
+            'priority': 'high' if protection_type == 'critical' else 'normal'
+        }
         
-        # Publish protection request
-        publish_success = redis_bus.publish_event(protection_event)
+        try:
+            event_id = redis_bus.publish(
+                channel=event_channel,
+                payload=event_payload,
+                emitter='langgraph_vault_node',
+            )
+            publish_success = bool(event_id)
+        except Exception as pub_err:
+            logger.warning(f"[VAULT][GRAPH] ⚠️ Publish error: {pub_err}")
+            publish_success = False
         
         if not publish_success:
             logger.warning(f"[VAULT][GRAPH] ⚠️ Failed to publish protection request")
             return _create_fallback_protection()
         
-        logger.info(f"[VAULT][GRAPH] 📡 Protection request published: {protection_event.event_type}")
+        logger.info(f"[VAULT][GRAPH] 📡 Protection request published: {event_channel}")
         
         # Wait for divine response
         vault_response = _await_divine_protection(correlation_id, timeout=5.0)
@@ -203,7 +208,7 @@ def _await_divine_protection(correlation_id: str, timeout: float = 5.0) -> Dict[
     start_time = time.time()
     received_response = {}
     
-    def response_handler(event: CognitiveEvent):
+    def response_handler(event: Any):
         """Handle vault protection response"""
         nonlocal received_response
         

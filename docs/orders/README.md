@@ -7,6 +7,8 @@ These pages document the **Sacred Orders** of Vitruvyan OS as production compone
 - **Code map** (LIVELLO 1 vs LIVELLO 2) for fast onboarding
 - **Verticalization** guidance: how a domain (e.g. finance) plugs in without contaminating the core
 
+Start with: [Sacred Orders — Introduction](../foundational/SACRED_ORDERS_INTRO.md)
+
 ## Orders
 
 1. [Memory Orders](MEMORY_ORDERS.md) — Dual-memory coherence & sync planning (PostgreSQL ↔ Qdrant)
@@ -19,4 +21,3 @@ These pages document the **Sacred Orders** of Vitruvyan OS as production compone
 ## Reading path (recommended)
 
 1) Babel Gardens → 2) Pattern Weavers → 3) Codex Hunters → 4) Memory Orders → 5) Vault Keepers → 6) Orthodoxy Wardens
-

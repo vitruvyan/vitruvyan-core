@@ -2,6 +2,12 @@
 
 <p class="kb-subtitle">Epistemic tribunal: findings, verdicts, corrections plans (advisory), and audit directives.</p>
 
+## What it does
+
+- **Intake and structure**: turns raw events/requests into structured cases (`Confession`)
+- **Audit and judge**: produces findings and renders a `Verdict` (including `non_liquet`)
+- **Declare actions**: outputs correction plans (advisory) and logging/archive directives (service executes I/O)
+
 Orthodoxy Wardens is the **epistemic governance tribunal**: it audits events/outputs, produces findings, renders verdicts, and declares what should be logged or corrected.
 
 ## Code map

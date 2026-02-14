@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 
 # Synaptic Conclave Integration
-from core.synaptic_conclave.redis_client import get_redis_bus, CognitiveEvent
+from core.synaptic_conclave.redis_client import get_redis_bus
 
 logger = logging.getLogger(__name__)
 
@@ -64,19 +64,26 @@ def orthodoxy_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 logger.warning("[ORTHODOXY][GRAPH] ⚠️ Synaptic Conclave unavailable, applying local blessing")
                 return _apply_local_blessing(state, "conclave_offline")
         
-        # Publish audit request event
-        audit_event = CognitiveEvent(
-            type="system.audit.requested",
-            source="langgraph_orthodoxy_node",
-            payload={
-                **audit_payload,
-                "target": "orthodoxy_wardens"
-            },
-            timestamp=datetime.utcnow(),
-            correlation_id=f"graph_audit_{user_id}_{int(session_start)}"
-        )
+        # Publish audit request event via shim.publish(channel, payload, emitter)
+        correlation_id = f"graph_audit_{user_id}_{int(session_start)}"
+        event_payload = {
+            **audit_payload,
+            "target": "orthodoxy_wardens",
+            "event_type": "system.audit.requested",
+            "correlation_id": correlation_id,
+        }
         
-        success = redis_bus.publish_event(audit_event)
+        try:
+            event_id = redis_bus.publish(
+                channel="system.audit.requested",
+                payload=event_payload,
+                emitter="langgraph_orthodoxy_node",
+            )
+            success = bool(event_id)
+        except Exception as pub_err:
+            logger.error(f"[ORTHODOXY][GRAPH] ❌ Publish error: {pub_err}")
+            success = False
+        
         if not success:
             logger.error("[ORTHODOXY][GRAPH] ❌ Failed to publish audit request")
             return _apply_local_blessing(state, "publish_failed")
@@ -84,7 +91,7 @@ def orthodoxy_node(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"[ORTHODOXY][GRAPH] 📡 Audit request transmitted to Sacred Order")
         
         # Await divine verdict (with timeout) - sync version
-        verdict = _await_divine_verdict_sync(redis_bus, audit_event.correlation_id, timeout=10.0)
+        verdict = _await_divine_verdict_sync(redis_bus, correlation_id, timeout=10.0)
         
         if verdict:
             # Sacred verdict received
@@ -125,7 +132,7 @@ def _await_divine_verdict_sync(redis_bus, correlation_id: str, timeout: float = 
     start_time = time.time()
     verdict_received = None
     
-    def verdict_handler(event: CognitiveEvent):
+    def verdict_handler(event: Any):
         nonlocal verdict_received
         # Check if this verdict matches our correlation ID
         if (event.event_type == "orthodoxy.absolution.granted" and 

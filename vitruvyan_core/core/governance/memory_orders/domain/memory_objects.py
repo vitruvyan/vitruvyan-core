@@ -9,6 +9,7 @@ Layer: Foundational (LIVELLO 1 — domain)
 """
 
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any
 
 
@@ -252,4 +253,70 @@ class SyncPlan:
             "estimated_duration_s": self.estimated_duration_s,
             "mode": self.mode,
             "total_operations": self.total_operations
+        }
+
+
+class DriftType(str, Enum):
+    """Classifies reconciliation drift categories between canonical and derived stores."""
+
+    COUNT_MISMATCH = "count_mismatch"
+    ORPHAN_IN_PG = "orphan_in_pg"
+    ORPHAN_IN_QDRANT = "orphan_in_qdrant"
+    VERSION_MISMATCH = "version_mismatch"
+    DUPLICATE_ENTRY = "duplicate_entry"
+
+
+class ConflictType(str, Enum):
+    """Classifies storage conflicts that require reconciliation action."""
+
+    STALE_VECTOR = "stale_vector"
+    MISSING_VECTOR = "missing_vector"
+    ORPHAN_VECTOR = "orphan_vector"
+    DUPLICATE_VECTOR = "duplicate_vector"
+
+
+@dataclass(frozen=True)
+class ReconciliationPlan:
+    """
+    Deterministic reconciliation plan produced from pure drift inputs.
+
+    Attributes:
+        drift_types: Classified drift categories.
+        operations: Sync operations required to align derived state with canonical state.
+        severity: Overall severity ('healthy' | 'warning' | 'critical').
+        requires_execution: True when at least one operation must be executed.
+    """
+
+    drift_types: tuple[DriftType, ...]
+    operations: tuple[SyncOperation, ...]
+    severity: str
+    requires_execution: bool
+
+    VALID_SEVERITIES = frozenset(["healthy", "warning", "critical"])
+
+    def __post_init__(self):
+        if self.severity not in self.VALID_SEVERITIES:
+            raise ValueError(f"Invalid severity: {self.severity}. Must be one of {self.VALID_SEVERITIES}")
+
+    @property
+    def operations_count(self) -> int:
+        """Total operations to execute."""
+        return len(self.operations)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize reconciliation plan for service responses/events."""
+        return {
+            "drift_types": [drift.value for drift in self.drift_types],
+            "operations": [
+                {
+                    "operation_type": op.operation_type,
+                    "target": op.target,
+                    "payload": dict(op.payload),
+                    "entity_id": op.entity_id,
+                }
+                for op in self.operations
+            ],
+            "severity": self.severity,
+            "requires_execution": self.requires_execution,
+            "operations_count": self.operations_count,
         }

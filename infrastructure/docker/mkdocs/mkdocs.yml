@@ -48,17 +48,20 @@ plugins:
   #     type: timeago
   - mermaid2
   - minify:
-      minify_html: true
+      # NOTE: keep Mermaid diagram source newlines intact.
+      # htmlmin tends to collapse whitespace inside <div class="mermaid">,
+      # which breaks Mermaid parsing ("Syntax error in text").
+      minify_html: false
 
 # Markdown extensions
 markdown_extensions:
   - admonition              # Callouts (notes, warnings, etc.)
   - pymdownx.details        # Collapsible admonitions
-  - pymdownx.superfences:   # Code blocks, Mermaid diagrams
+  - pymdownx.superfences:   # Code blocks, Mermaid (via mermaid2 post-processing)
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: !!python/name:mermaid2.fence_mermaid_custom
+          format: !!python/name:pymdownx.superfences.fence_div_format
   - pymdownx.tabbed:        # Content tabs
       alternate_style: true
   - pymdownx.highlight:     # Syntax highlighting
@@ -101,8 +104,14 @@ nav:
     - Sacred Orders Pattern: vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md
     - Cognitive Bus: vitruvyan_core/core/synaptic_conclave/docs/README.md
     - Technical Debt Audit: docs/architecture/TECHNICAL_DEBT_AUDIT.md
+
+  - Core Agents:
+    - Index: docs/internal/platform/README.md
+    - Dual Memory & RAG: docs/internal/platform/DUAL_MEMORY_RAG.md
+    - LLM / AI Layer: docs/internal/platform/LLM_LAYER.md
     
   - Sacred Orders:
+    - Introduction: docs/foundational/SACRED_ORDERS_INTRO.md
     - Index: docs/internal/orders/README.md
     - Codex Hunters: docs/internal/orders/CODEX_HUNTERS.md
     - Orthodoxy Wardens: docs/internal/orders/ORTHODOXY_WARDENS.md
@@ -117,6 +126,7 @@ nav:
     - API MCP: services/api_mcp/README.md
     - Sacred Orders APIs:
       - Index: docs/internal/services/README.md
+      - Babel Gardens API: docs/internal/services/BABEL_GARDENS_API.md
       - Pattern Weavers API: docs/internal/services/PATTERN_WEAVERS_API.md
       - Codex Hunters API: docs/internal/services/CODEX_HUNTERS_API.md
       - Memory Orders API: docs/internal/services/MEMORY_ORDERS_API.md
@@ -127,6 +137,7 @@ nav:
     - Overview: infrastructure/README_INFRASTRUCTURE.md
     - Docker Setup: infrastructure/docker/README.md
     - Monitoring: infrastructure/docker/monitoring/README.md
+    - Synaptic Topology (Mermaid): infrastructure/docker/monitoring/grafana/SYNAPTIC_CONCLAVE_TOPOLOGY.md
     - KB Access Control: infrastructure/docker/mkdocs/ACCESS_CONTROL.md
     
   - Development:

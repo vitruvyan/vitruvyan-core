@@ -32,15 +32,15 @@ docker compose up -d api_memory_orders
 import requests
 
 # Check coherence
-response = requests.post("http://localhost:8000/coherence/check", json={
-    "pg_count": 1000,
-    "qdrant_count": 980
+response = requests.post("http://localhost:8016/coherence", json={
+    "table": "entities",
+    "collection": "entities_embeddings"
 })
 print(response.json())
-# {"status": "healthy", "drift_percentage": 2.0, "recommendation": "incremental_sync"}
+# {"status": "healthy", "drift_percentage": 2.0, ...}
 
 # Get health status
-response = requests.get("http://localhost:8000/health")
+response = requests.get("http://localhost:8016/health")
 print(response.json())
 ```
 
@@ -83,21 +83,11 @@ api_memory_orders/
 
 ## API Endpoints
 
-### Coherence Analysis
-- `POST /coherence/check` — Analyze drift between PostgreSQL and Qdrant
-- `GET /coherence/history` — Get coherence check history
-
-### Health Monitoring
-- `GET /health` — Overall service health
-- `GET /health/components` — Individual component health status
-
-### Synchronization
-- `POST /sync/plan` — Generate synchronization plan
-- `POST /sync/execute` — Execute planned synchronization
-
-### Events
-- `GET /events/recent` — Recent coherence events
-- `POST /events/publish` — Publish custom coherence event
+- `GET /health` — Liveness/health endpoint
+- `GET /health/rag` — Full component + coherence health report
+- `POST /coherence` — Analyze drift between PostgreSQL and Qdrant
+- `POST /sync` — Generate synchronization plan
+- `GET /` — Service metadata and endpoint listing
 
 ---
 
@@ -116,7 +106,7 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 
 # Service
-MEMORY_ORDERS_PORT=8000
+MEMORY_ORDERS_PORT=8016
 MEMORY_ORDERS_HOST=0.0.0.0
 ```
 
@@ -145,5 +135,4 @@ docker compose up -d --build api_memory_orders api_memory_orders_listener
 
 - **Core**: `vitruvyan_core/core/governance/memory_orders/` — Pure domain logic
 - **Bus**: Events published to `memory.coherence.*` channels
-- **Dependencies**: PostgreSQL, Qdrant, Redis Streams</content>
-<parameter name="filePath">/home/vitruvyan/vitruvyan-core/services/api_memory_orders/README.md
+- **Dependencies**: PostgreSQL, Qdrant, Redis Streams

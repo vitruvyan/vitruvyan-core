@@ -10,7 +10,6 @@ Layer: Service (LIVELLO 2 — adapters)
 
 import httpx
 from typing import Any
-from datetime import datetime
 
 from core.agents.postgres_agent import PostgresAgent
 from core.agents.qdrant_agent import QdrantAgent
@@ -29,6 +28,17 @@ class MemoryPersistence:
     def __init__(self):
         self.pg = PostgresAgent()
         self.qdrant = QdrantAgent()
+
+    @staticmethod
+    def _scalar_from_row(row: dict[str, Any] | None) -> Any:
+        """
+        Extract first scalar value from PostgresAgent.fetch_one() dict row.
+
+        PostgresAgent returns RealDict rows (dict), not tuple indexes.
+        """
+        if not row:
+            return None
+        return next(iter(row.values()))
     
     # ========================================
     #  Coherence I/O
@@ -47,7 +57,8 @@ class MemoryPersistence:
         """
         query = f"SELECT COUNT(*) FROM {table} WHERE {embedded_column} = true;"
         result = self.pg.fetch_one(query)
-        return result[0] if result else 0
+        count = self._scalar_from_row(result)
+        return int(count) if count is not None else 0
     
     def get_qdrant_count(self, collection: str) -> int:
         """
@@ -81,24 +92,29 @@ class MemoryPersistence:
         try:
             # Test query
             result = self.pg.fetch_one("SELECT 1;")
-            if not result or result[0] != 1:
+            ping = self._scalar_from_row(result)
+            if ping != 1:
                 return ComponentHealth(
                     component="archivarium",
                     status="unhealthy",
                     metrics=(),
                     error="Query returned unexpected result"
                 )
-            
+
             # Get entity counts
-            entities_total = self.pg.fetch_one("SELECT COUNT(*) FROM entities;")[0]
-            entities_embedded = self.pg.fetch_one("SELECT COUNT(*) FROM entities WHERE embedded = true;")[0]
-            
+            entities_total = self._scalar_from_row(
+                self.pg.fetch_one("SELECT COUNT(*) FROM entities;")
+            )
+            entities_embedded = self._scalar_from_row(
+                self.pg.fetch_one("SELECT COUNT(*) FROM entities WHERE embedded = true;")
+            )
+
             return ComponentHealth(
                 component="archivarium",
                 status="healthy",
                 metrics=(
-                    ("entities_total", entities_total),
-                    ("entities_embedded", entities_embedded),
+                    ("entities_total", int(entities_total or 0)),
+                    ("entities_embedded", int(entities_embedded or 0)),
                 ),
                 error=None,
                 response_time_ms=10.0  # Approximate
@@ -232,8 +248,14 @@ class MemoryPersistence:
             Tuple of record dicts
         """
         query = f"SELECT id, embedded FROM {table} WHERE embedded = true LIMIT {limit};"
-        rows = self.pg.fetch_all(query)
-        return tuple({"id": row[0], "embedded": row[1]} for row in rows)
+        rows = self.pg.fetch(query)
+        return tuple(
+            {
+                "id": row.get("id"),
+                "embedded": row.get("embedded", True),
+            }
+            for row in rows
+        )
     
     def fetch_qdrant_sync_data(self, collection: str, limit: int = 1000) -> tuple[dict, ...]:
         """
@@ -260,36 +282,3 @@ class MemoryPersistence:
         except Exception:
             return ()
     
-    # ========================================
-    #  Audit I/O
-    # ========================================
-    
-    def store_audit_record(self, operation: str, result: dict) -> None:
-        """
-        Store audit record in memory_audit_log table.
-        
-        Args:
-            operation: Operation type ('coherence_check', 'health_check', 'sync')
-            result: Operation result dict
-        """
-        timestamp = datetime.utcnow().isoformat() + "Z"
-        
-        # Create table if not exists
-        self.pg.execute(f"""
-            CREATE TABLE IF NOT EXISTS {settings.MEMORY_AUDIT_TABLE} (
-                id SERIAL PRIMARY KEY,
-                operation VARCHAR(100) NOT NULL,
-                status VARCHAR(50) NOT NULL,
-                timestamp TIMESTAMP DEFAULT NOW(),
-                metadata JSONB
-            );
-        """)
-        
-        # Insert record
-        self.pg.execute(
-            f"""
-            INSERT INTO {settings.MEMORY_AUDIT_TABLE} (operation, status, metadata)
-            VALUES (%s, %s, %s);
-            """,
-            (operation, result.get("status", "completed"), str(result))
-        )

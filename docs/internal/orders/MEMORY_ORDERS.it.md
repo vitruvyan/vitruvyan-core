@@ -2,6 +2,12 @@
 
 <p class="kb-subtitle">Coerenza dual-memory: drift detection, health aggregation e sync planning tra Archivarium (PostgreSQL) e Mnemosyne (Qdrant).</p>
 
+## A cosa serve
+
+- **Drift calculation**: rileva divergenze tra Postgres e Qdrant (drift di conteggi/copertura)
+- **Health aggregation**: produce uno snapshot di salute complessivo dai segnali componenti
+- **Sync planning**: genera un piano di operazioni (insert/delete/clear) senza eseguirlo
+
 - **Layer epistemico**: Truth (Memory & Coherence)
 - **Mandato**: proteggere l’integrità epistemica della conoscenza salvata su due sistemi di memoria
 - **Output**: `CoherenceReport`, `SystemHealth`, `SyncPlan` *(solo planning)*

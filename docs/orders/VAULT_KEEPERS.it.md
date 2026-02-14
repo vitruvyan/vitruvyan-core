@@ -1,5 +1,11 @@
 # Vault Keepers
 
+## A cosa serve
+
+- Validazione integrità Postgres/Qdrant
+- Pianificazione backup/recovery + direttive di archiviazione
+- Generazione audit trail immutabile (il service esegue l’I/O)
+
 - **Livello epistemico**: Truth (Memoria & Archival)
 - **Mandato**: integrità, backup/recovery, audit trail immutabile
 - **Output**: report integrità, snapshot metadata, piani recovery (LIVELLO 1 è pure)
@@ -43,4 +49,3 @@ Definiti in `vitruvyan_core/core/governance/vault_keepers/events/vault_events.py
 ## Verticalizzazione (pilota finanza)
 
 Il dominio definisce retention, target critici (`finance.tickers`, `ticker_embeddings`) e priorità di restore.
-

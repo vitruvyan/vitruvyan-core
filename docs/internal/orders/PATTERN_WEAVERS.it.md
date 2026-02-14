@@ -2,6 +2,12 @@
 
 <p class="kb-subtitle">Contestualizzazione semantica: weaving su tassonomie, estrazione concetti, struttura pronta per i downstream.</p>
 
+## A cosa serve
+
+- **Risoluzione su tassonomie**: mappa testo libero in categorie strutturate (concepts, sectors, regions, …)
+- **Estrazione concetti**: ritorna nomi concetto deduplicati per pipeline downstream
+- **Fallback**: keyword matching quando embedding/Qdrant non sono disponibili
+
 - **Layer epistemico**: Reason (Semantic)
 - **Mandato**: risolvere query non strutturate dentro **tassonomie di dominio** (concepts, sectors, regions, intents, …)
 - **Output**: `WeaveResult` con `PatternMatch[]` + concetti estratti
@@ -134,4 +140,3 @@ Esempi finanza:
   - Neural Engine (feature generation)
   - Orthodoxy Wardens (guardrails/compliance)
   - Vault Keepers (archiviazione risultati weaving)
-

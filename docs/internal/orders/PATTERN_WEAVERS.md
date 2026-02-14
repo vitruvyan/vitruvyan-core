@@ -2,6 +2,12 @@
 
 <p class="kb-subtitle">Semantic contextualization: taxonomy weaving, concept extraction, and signal-ready structure.</p>
 
+## What it does
+
+- **Weaves queries into taxonomies**: resolves free text into structured categories (concepts, sectors, regions, …)
+- **Extracts concepts**: returns deduped concept names for downstream pipelines
+- **Provides fallback**: keyword matching when embedding/Qdrant semantic search is unavailable
+
 - **Epistemic layer**: Reason (Semantic)
 - **Mandate**: resolve unstructured queries into **domain taxonomies** (concepts, sectors, regions, intents, …)
 - **Outputs**: `WeaveResult` with `PatternMatch[]` + extracted concepts

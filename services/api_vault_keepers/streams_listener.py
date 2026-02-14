@@ -31,6 +31,10 @@ def _channel_from_stream(stream: str) -> str:
 
 
 async def _handle_event(adapter: VaultBusAdapter, channel: str, payload: Dict[str, Any], correlation_id: str | None):
+    if channel == "audit.vault.requested":
+        adapter.ingest_external_audit(payload=payload, correlation_id=correlation_id)
+        return
+
     if channel == "vault.archive.requested":
         content_type = payload.get("content_type") or payload.get("entity_type") or "generic"
         source_order = payload.get("source_order") or payload.get("source") or "unknown"

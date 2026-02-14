@@ -2,6 +2,12 @@
 
 <p class="kb-subtitle">Tribunale epistemico: findings, verdetti, piani di correzione (advisory) e direttive di audit.</p>
 
+## A cosa serve
+
+- **Intake e strutturazione**: trasforma eventi/richieste in casi strutturati (`Confession`)
+- **Audit e giudizio**: produce findings e rende un `Verdict` (incluso `non_liquet`)
+- **Dichiara azioni**: piani correzione (advisory) + direttive log/archive (il service esegue l’I/O)
+
 Orthodoxy Wardens è il **tribunale di governance epistemica**: audita eventi/output, produce findings, rende verdetti e dichiara cosa va loggato o corretto.
 
 ## Mappa del codice

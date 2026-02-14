@@ -1,5 +1,11 @@
 # Memory Orders
 
+## What it does
+
+- Drift calculation (PostgreSQL ↔ Qdrant)
+- Health aggregation across memory dependencies
+- Sync planning (planning-only; execution lives in LIVELLO 2)
+
 - **Epistemic Layer**: Memory & Coherence
 - **Mandate**: maintain coherence between **Archivarium** (PostgreSQL) and **Mnemosyne** (Qdrant)
 - **Outputs**: coherence reports, health snapshots, sync plans (no I/O in LIVELLO 1)
@@ -48,4 +54,3 @@ Memory Orders remains domain-agnostic; a vertical “binds” it by choosing:
 - the canonical entity storage/table naming (e.g. finance `tickers`)
 - which Qdrant collections represent the vertical memory (e.g. `ticker_embeddings`)
 - how sync operations are executed in service/adapters (batch size, retries, scheduling)
-

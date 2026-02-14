@@ -1,5 +1,11 @@
 # Orthodoxy Wardens
 
+## A cosa serve
+
+- Trasforma trigger di audit in casi strutturati
+- Produce findings e rende verdetti (incluso `non_liquet`)
+- Dichiara direttive di correzione/logging (il service esegue l’I/O)
+
 - **Livello epistemico**: Truth & Governance
 - **Mandato**: validare output e rendere verdetti epistemici (blessed / heretical / non_liquet)
 - **Confine**: il giudice non esegue correzioni (solo richieste/reporting)
@@ -45,4 +51,3 @@ Definiti in `vitruvyan_core/core/governance/orthodoxy_wardens/events/orthodoxy_e
 ## Verticalizzazione (pilota finanza)
 
 Il dominio contribuisce regole/constraint come evidenze (numeri, unità, compliance, posture istituzionale).
-

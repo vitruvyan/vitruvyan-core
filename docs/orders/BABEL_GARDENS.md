@@ -1,5 +1,11 @@
 # Babel Gardens
 
+## What it does
+
+- Extracts structured semantic signals from text (with confidence + traceability)
+- Produces embeddings/features that downstream components can consume safely
+- Exposes a clean boundary via events/API (service executes I/O)
+
 - **Epistemic Layer**: Perception (Linguistic Processing / Signal Extraction)
 - **Mandate**: transform unstructured text into **structured, explainable semantic signals**
 - **Verticalization**: YAML-driven signal definitions + optional model plugins
@@ -52,4 +58,3 @@ Finance defines a signal set (YAML) and, optionally, a plugin:
 
 Rule:
 the **signal schema** belongs to the domain pack, not to the Babel Gardens core.
-

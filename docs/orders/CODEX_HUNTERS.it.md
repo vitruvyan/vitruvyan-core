@@ -1,5 +1,11 @@
 # Codex Hunters
 
+## A cosa serve
+
+- Esegue discovery/validazione da sorgenti e trasforma payload in oggetti canonici
+- Normalizza e assegna segnali di qualità prima della persistenza
+- Prepara il binding per lo storage (dedupe keys + storage refs; il service esegue l’I/O)
+
 - **Livello epistemico**: Perception (Data Acquisition / Canonicalization)
 - **Mandato**: acquisire dati da sorgenti e normalizzarli in record canonici
 - **Verticalizzazione**: il domain pack lega `entity_id`, sorgenti e namespace streams
@@ -28,4 +34,3 @@ Artefatti:
 
 - Config: `examples/verticals/finance/config/codex_hunters_finance.yaml`
 - Esempio normalizer: `examples/verticals/finance/codex_hunters_domain_pack.py`
-

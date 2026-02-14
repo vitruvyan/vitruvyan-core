@@ -2,6 +2,13 @@
 
 <p class="kb-subtitle">Discovery, normalizzazione, deduplica e binding “storage-ready” di payload grezzi.</p>
 
+## A cosa serve
+
+- **Gestisce la discovery**: valida richieste e mappa payload grezzi in oggetti dominio
+- **Normalizza e valuta qualità**: pulisce i dati e produce segnali di qualità
+- **Prepara la persistenza**: dedupe keys + storage refs/payload (il service esegue l’I/O)
+- **Ispeziona coerenza**: calcola report di allineamento cross-store da count/ID (solo planning)
+
 Codex Hunters è l’ordine di **data acquisition e canonicalizzazione**: trasforma payload grezzi in **entità deterministiche, deduplicate e pronte per la persistenza**.
 
 > Questa pagina documenta **l’implementazione attuale** (consumer LIVELLO 1 + ciò che il LIVELLO 2 orchestri attorno).
@@ -9,7 +16,7 @@ Codex Hunters è l’ordine di **data acquisition e canonicalizzazione**: trasfo
 ## Mappa del codice
 
 - **LIVELLO 1 (dominio puro, niente I/O)**: `vitruvyan_core/core/governance/codex_hunters/`
-  - Consumers: `consumers/tracker.py`, `consumers/restorer.py`, `consumers/binder.py`
+  - Consumers: `consumers/tracker.py`, `consumers/restorer.py`, `consumers/binder.py`, `consumers/inspector.py`
   - Modello dominio: `domain/entities.py`, `domain/config.py`
   - Esempi: `examples/*_example.py`
 - **LIVELLO 2 (service + adapters + bus + persistenza)**: `services/api_codex_hunters/`
@@ -28,6 +35,7 @@ Codex Hunters è l’ordine di **data acquisition e canonicalizzazione**: trasfo
 1. **Tracker** valida la richiesta di discovery e costruisce un `DiscoveredEntity`
 2. **Restorer** normalizza e calcola un quality score producendo un `RestoredEntity`
 3. **Binder** “lega” l’entità a riferimenti di storage e produce un `BoundEntity`
+4. **Inspector** *(opzionale)* ispeziona coerenza cross-store da count/ID e produce un `InspectionReport`
 
 Il livello service esegue l’I/O (Postgres/Qdrant, emissione bus, rate limiting).
 
@@ -129,3 +137,21 @@ Riferimento: `examples/verticals/finance/CODEX_HUNTERS_DOMAIN_PACK.md`
 
 - Il `_normalized_at` di default rende `normalized_data` **non deterministico**.
   - Se usi `dedupe_key` del Binder per dedup reale, conviene rimuovere `_normalized_at` (o spostarlo in metadata) nel service/verticale.
+
+---
+
+### `InspectorConsumer` — ispezione coerenza cross-store (puro)
+
+- File: `vitruvyan_core/core/governance/codex_hunters/consumers/inspector.py`
+- Funzioni:
+  - valuta la coerenza tra due store “specchiati” (es. Postgres ↔ Qdrant) **a partire da count/ID forniti**
+  - rileva orfani (ID presenti in A ma non in B, e viceversa)
+  - classifica lo stato (`excellent`/`good`/`poor`/`critical`) via soglie
+  - produce `InspectionReport` con `overall_score`, score per-collection e hint `needs_healing`
+- Input (atteso):
+  - `collections: list[{collection_name, source_a_count, source_b_count, source_a_ids?, source_b_ids?}]`
+- Output:
+  - `data["report"] = InspectionReport`
+  - `data["report_dict"] = dict` (JSON-friendly)
+
+> Nota: oggi il service Codex Hunters (`services/api_codex_hunters/`) non espone ancora un endpoint HTTP per inspection. Gli adapter LIVELLO 2 dovrebbero chiamare InspectorConsumer quando serve governance di coerenza.

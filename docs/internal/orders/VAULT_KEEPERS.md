@@ -2,6 +2,12 @@
 
 <p class="kb-subtitle">Backup and recovery planning, integrity checks, and immutable audit trails.</p>
 
+## What it does
+
+- **Integrity validation**: judges health/coherence signals and outputs integrity reports
+- **Backup & recovery planning**: produces snapshot/restore plans (service executes operations)
+- **Audit trail**: emits immutable audit records and archival directives
+
 Vault Keepers is the **archival + integrity + backup/restore planning** order. It produces pure decisions and plans; the service layer executes I/O.
 
 ## Code map

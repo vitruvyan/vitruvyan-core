@@ -294,6 +294,7 @@ def intent_detection_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "language": result["language_detected"],
             "language_confidence": result.get("language_confidence", 0.0),
             "cultural_context": result.get("cultural_context", ""),
+            "babel_status": result.get("babel_status", "unknown"),
             "intent": result["intent"],
             "screening_filters": result.get("screening_filters", {}),
             "route": "intent_detection",

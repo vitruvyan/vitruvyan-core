@@ -19,6 +19,9 @@ from .domain import (
     SyncInput,
     SyncOperation,
     SyncPlan,
+    DriftType,
+    ConflictType,
+    ReconciliationPlan,
 )
 
 # Consumers
@@ -76,6 +79,9 @@ __all__ = [
     "SyncInput",
     "SyncOperation",
     "SyncPlan",
+    "DriftType",
+    "ConflictType",
+    "ReconciliationPlan",
     # Consumers
     "MemoryRole",
     "CoherenceAnalyzer",

@@ -45,13 +45,21 @@ class GraphOrchestrationAdapter:
         
         logger.info(f"GraphOrchestrationAdapter initialized (audit={self.audit_enabled}, minimal={settings.ENABLE_MINIMAL_GRAPH})")
     
-    async def execute_graph(self, input_text: str, user_id: str) -> Dict[str, Any]:
+    async def execute_graph(
+        self,
+        input_text: str,
+        user_id: str,
+        validated_entities: list = None,
+        language: str = None,
+    ) -> Dict[str, Any]:
         """
-        Execute graph with input_text and user_id.
+        Execute graph with input_text, user_id, and optional validated_entities.
         
         Args:
             input_text: User input text to process
             user_id: User identifier
+            validated_entities: Client-validated entity list (authoritative)
+            language: Language hint
         
         Returns:
             Graph execution result transformed to GraphResponseSchema
@@ -64,11 +72,19 @@ class GraphOrchestrationAdapter:
             if self.audit_enabled:
                 # Execute with audit monitoring
                 async with self.monitor.monitor_graph_execution(context):
-                    raw_result = run_graph_once(input_text, user_id=user_id)
+                    raw_result = run_graph_once(
+                        input_text, user_id=user_id,
+                        validated_entities=validated_entities,
+                        language=language,
+                    )
                     audit_monitored = True
             else:
                 # Execute without audit
-                raw_result = run_graph_once(input_text, user_id=user_id)
+                raw_result = run_graph_once(
+                    input_text, user_id=user_id,
+                    validated_entities=validated_entities,
+                    language=language,
+                )
                 audit_monitored = False
             
             # Transform core domain output → service API schema (GraphResponseSchema)

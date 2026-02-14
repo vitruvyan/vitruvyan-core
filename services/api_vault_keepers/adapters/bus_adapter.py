@@ -601,6 +601,119 @@ class VaultBusAdapter:
             "timeseries_count": len(results),
             "timeseries": results
         }
+
+    def ingest_external_audit(
+        self,
+        payload: Dict[str, Any],
+        correlation_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Persist external Sacred Order audit request into vault_audit_log.
+
+        Expects payload compatible with MemoryEvent envelope:
+          {
+            "stream": "...",
+            "payload": {...},
+            "timestamp": "...",
+            "correlation_id": "...",
+            "source": "memory_orders.api"
+          }
+        """
+        envelope_payload = payload.get("payload", payload)
+        if not isinstance(envelope_payload, dict):
+            envelope_payload = {}
+
+        order = str(envelope_payload.get("order", "unknown"))
+        source = str(payload.get("source", "unknown"))
+        action = str(envelope_payload.get("action", "external_audit"))
+        effective_correlation_id = (
+            correlation_id
+            or envelope_payload.get("correlation_id")
+            or payload.get("correlation_id")
+            or f"audit_ingest_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        )
+        operation = self._map_external_operation(
+            action=action,
+            explicit_operation=envelope_payload.get("operation"),
+        )
+
+        resource_type = (
+            "memory_orders"
+            if order == "memory_orders" or source.startswith("memory_orders")
+            else str(envelope_payload.get("resource_type", "external_order"))
+        )
+
+        audit_input = {
+            "operation": operation,
+            "performed_by": source if source != "unknown" else order,
+            "resource_type": resource_type,
+            "resource_id": str(effective_correlation_id),
+            "action": action,
+            "status": str(envelope_payload.get("status", "completed")),
+            "correlation_id": str(effective_correlation_id),
+            "metadata": {
+                "origin_order": order,
+                "origin_source": source,
+                "origin_stream": payload.get("stream"),
+                "origin_timestamp": payload.get("timestamp"),
+                "summary": envelope_payload.get("summary"),
+                "drift_metrics": envelope_payload.get("drift_metrics", {}),
+                "mode": envelope_payload.get("mode"),
+            },
+        }
+
+        audit_record = self.chamberlain.process(audit_input)
+        result = self.persistence.store_audit_record(audit_record)
+
+        return {
+            "status": result.get("status", "failed"),
+            "record_id": result.get("record_id"),
+            "correlation_id": str(effective_correlation_id),
+            "resource_type": resource_type,
+        }
+
+    @staticmethod
+    def _map_external_operation(action: str, explicit_operation: Any = None) -> str:
+        """
+        Map external actions to valid Vault Keepers Chamberlain operations.
+
+        Chamberlain/AuditRecord only accepts:
+        backup, restore, integrity_check, archive, coherence_check.
+        """
+        allowed = {"backup", "restore", "integrity_check", "archive", "coherence_check"}
+
+        if isinstance(explicit_operation, str) and explicit_operation in allowed:
+            return explicit_operation
+
+        action_to_operation = {
+            "coherence": "coherence_check",
+            "health": "integrity_check",
+            "sync": "coherence_check",
+            "reconciliation": "coherence_check",
+        }
+
+        if action in allowed:
+            return action
+        return action_to_operation.get(action, "archive")
+
+    def get_vault_status(self) -> Dict[str, Any]:
+        """Build comprehensive status payload for /vault/status route."""
+        integrity = self.handle_integrity_check(scope="full")
+        audit_summary = self.persistence.get_audit_summary(limit=10)
+
+        return {
+            "vault_status": integrity.get("overall_status", "unknown"),
+            "integrity_status": integrity,
+            "audit_summary": audit_summary,
+            "sacred_roles": {
+                "guardian": "active",
+                "sentinel": "active",
+                "archivist": "active",
+                "chamberlain": "active",
+            },
+            "synaptic_conclave": "connected",
+            "sacred_timestamp": datetime.utcnow().isoformat(),
+        }
     
     # ═══════════════════════════════════════════════════════════════════════
     # EVENT EMISSION

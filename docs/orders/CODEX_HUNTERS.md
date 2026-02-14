@@ -1,5 +1,11 @@
 # Codex Hunters
 
+## What it does
+
+- Discovers/validates entities from sources and turns payloads into canonical domain objects
+- Normalizes and quality-scores data before persistence
+- Binds entities for storage (dedupe keys + storage refs; service executes I/O)
+
 - **Epistemic Layer**: Perception (Data Acquisition / Canonicalization)
 - **Mandate**: acquire raw knowledge from sources and normalize it into canonical records
 - **Verticalization**: domain pack binds `entity_id`, sources, and stream namespace
@@ -28,4 +34,3 @@ Concrete artifacts:
 
 - Config: `examples/verticals/finance/config/codex_hunters_finance.yaml`
 - Normalizer example: `examples/verticals/finance/codex_hunters_domain_pack.py`
-

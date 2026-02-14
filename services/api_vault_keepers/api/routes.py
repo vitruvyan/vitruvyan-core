@@ -104,7 +104,11 @@ async def integrity_check(request: IntegrityCheckRequest):
     """
     try:
         adapter = get_adapter()
-        result = adapter.handle_integrity_check(request.dict())
+        scope = request.scope if request.scope in {"full", "postgresql", "qdrant"} else "full"
+        result = adapter.handle_integrity_check(
+            scope=scope,
+            correlation_id=request.correlation_id,
+        )
         return IntegrityStatus(**result)
     except Exception as e:
         logger.error(f"Integrity check failed: {e}", exc_info=True)

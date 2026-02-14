@@ -40,13 +40,19 @@ _ENABLE_MINIMAL = os.getenv("ENABLE_MINIMAL_GRAPH", "false").lower() == "true"
 _GRAPH = build_minimal_graph() if _ENABLE_MINIMAL else build_graph()
 
 
-def run_graph_once(input_text: str, user_id: str = "demo", return_full: bool = False) -> Dict[str, Any]:
+def run_graph_once(
+    input_text: str,
+    user_id: str = "demo",
+    return_full: bool = False,
+    validated_entities: list = None,
+    language: str = None,
+) -> Dict[str, Any]:
     """
     Execute the graph once for a given user input.
     
     Pipeline:
     1. Load last known conversation state (RAM → Postgres).
-    2. Merge with new input (slots, language).
+    2. Merge with new input (slots, language, validated_entities).
     3. 🆕 Generate trace_id for VSGS audit trail.
     4. Run the LangGraph.
     5. Persist final state to RAM (cache) and Postgres/Qdrant.
@@ -58,6 +64,14 @@ def run_graph_once(input_text: str, user_id: str = "demo", return_full: bool = F
     state = _SESSION_STATE.get(user_id) or {}
     state["input_text"] = input_text
     state["user_id"] = user_id
+    
+    # Golden Rule: validated_entities are authoritative (client validation contract)
+    # None → server may attempt extraction; [] → user chose "no entities"; [...] → trust list
+    if validated_entities is not None:
+        state["entity_ids"] = validated_entities
+        state["validated_entities"] = validated_entities
+    if language:
+        state["language"] = language
     
     # 🆕 2) Generate trace_id for VSGS audit trail (propagated through all nodes)
     state["trace_id"] = generate_trace_id()
