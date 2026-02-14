@@ -18,7 +18,7 @@ The first domain specialization (codename **Mercator**) is financial analysis. B
 
 ```mermaid
 graph TB
-    subgraph PERCEPTION["🔭 PERCEPTION — Babel Gardens · Codex Hunters"]
+    subgraph PERCEPTION["🔭 PERCEPTION — Babel Gardens · Codex Hunters · Pattern Weavers"]
         direction TB
         TRACKER["Tracker<br/><i>multi-source data collection</i>"]
         RESTORER["Restorer<br/><i>dedup, clean, normalize</i>"]
@@ -26,6 +26,7 @@ graph TB
         SCRIBE["Scribe<br/><i>derived indicators</i>"]
         CARTOGRAPHER["Cartographer<br/><i>consistency audits</i>"]
         LEADER["Expedition Leader<br/><i>coordination</i>"]
+        WEAVERS_P["Pattern Weavers<br/><i>ontology resolution</i>"]
 
         TRACKER --> RESTORER --> BINDER
         BINDER --> SCRIBE
@@ -47,7 +48,7 @@ graph TB
         MO -.->|reconciles| QD
     end
 
-    subgraph REASON["⚙️ REASON — Pattern Weavers"]
+    subgraph REASON["⚙️ REASON — Neural Engine"]
         direction TB
         NE["Neural Engine<br/><i>factor evaluation<br/>normalize → aggregate → rank</i><br/>(vertical hook: EXEC_DOMAIN)"]
         PLAST["Plasticity<br/><i>bounded adaptation</i>"]
@@ -150,6 +151,8 @@ Two canonical storage systems with **mandatory access patterns**:
 
 - **Pattern Weavers** — Contextual enrichment via vector search. Transforms vague human queries into structured context: *"analyze European banks"* becomes `{concepts: ["Banking"], regions: ["Europe"], countries: [IT, FR, DE...]}`. Reduces conversational friction by 50-66%.
 
+  > **Note**: Pattern Weavers is architecturally a **Perception** Sacred Order (ontology resolution via taxonomy matching), but appears in the Discourse layer during conversational understanding. This dual-use reflects its role: pure semantic mapping (Perception) applied to conversational enrichment (Discourse).
+
 - **VEE (Vitruvyan Explainability Engine)** — Three-level narrative generation:
   1. **Summary**: Plain language, zero jargon
   2. **Detailed**: Operational depth, strategy implications
@@ -227,6 +230,7 @@ graph LR
     I --> O["output<br/>normalizer"]
     J --> O
     K --> O
+    M -.->|error| O
     N --> O
 
     O --> P["orthodoxy<br/>wardens"]
@@ -242,7 +246,7 @@ graph LR
 
 Key design decisions:
 - **Sacred Flow**: analysis results pass through `orthodoxy → vault → compose → CAN` before reaching the user — every output is validated and archived
-- **Codex bypass**: data collection routes directly to END (it's background work, not part of the conversation)
+- **Codex conditional routing** (updated Dec 27, 2025): Codex Hunters success routes directly to END (background work bypass), but errors route through `output_normalizer → Sacred Flow` for governance validation
 - **Hook injection points (runtime)**: `entity_resolver` and `exec` are domain-agnostic and routed via registries (hook pattern). Without a configured vertical they degrade to stub behavior; with a vertical they execute domain logic.
 - **`USE_MCP` flag**: can route execution through the MCP bridge for tool calling
 
@@ -333,4 +337,4 @@ The core never changes. The vertical plugs in.
 
 ## TL;DR
 
-Vitruvyan is a **cognitive operating system** that separates *how to think* from *what to think about*. Five epistemic orders (Perception, Memory, Reason, Discourse, Truth) communicate through a deliberately unintelligent event bus. A domain-neutral LangGraph pipeline orchestrates 23 processing stages. Domain knowledge is injected through verticals, not hardcoded. Every output is validated, archived, and explainable at three depth levels.
+Vitruvyan is a **cognitive operating system** that separates *how to think* from *what to think about*. Five epistemic orders (Perception, Memory, Reason, Discourse, Truth) communicate through a deliberately unintelligent event bus. A domain-neutral LangGraph pipeline orchestrates 19 nodes (full graph). Domain knowledge is injected through verticals, not hardcoded. Every output is validated, archived, and explainable at three depth levels.

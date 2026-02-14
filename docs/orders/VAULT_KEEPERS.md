@@ -1,5 +1,7 @@
 # Vault Keepers
 
+> **Last Updated**: February 14, 2026
+
 ## What it does
 
 - Integrity validation across Postgres/Qdrant

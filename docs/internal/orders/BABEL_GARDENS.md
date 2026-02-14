@@ -1,5 +1,7 @@
 # Babel Gardens
 
+> **Last Updated**: February 14, 2026
+
 <p class="kb-subtitle">Text-to-signal extraction: embeddings, sentiment/signals, and explainable linguistic outputs.</p>
 
 ## What it does

@@ -1,5 +1,7 @@
 # Memory Orders
 
+> **Last Updated**: February 14, 2026
+
 <p class="kb-subtitle">Dual-memory coherence: drift detection, health aggregation, and sync planning between Archivarium (PostgreSQL) and Mnemosyne (Qdrant).</p>
 
 ## What it does

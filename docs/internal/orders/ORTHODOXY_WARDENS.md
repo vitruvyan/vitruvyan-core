@@ -1,5 +1,7 @@
 # Orthodoxy Wardens
 
+> **Last Updated**: February 14, 2026
+
 <p class="kb-subtitle">Epistemic tribunal: findings, verdicts, corrections plans (advisory), and audit directives.</p>
 
 ## What it does

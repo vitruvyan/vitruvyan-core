@@ -1,5 +1,7 @@
 # Vault Keepers
 
+> **Last Updated**: February 14, 2026
+
 <p class="kb-subtitle">Backup and recovery planning, integrity checks, and immutable audit trails.</p>
 
 ## What it does

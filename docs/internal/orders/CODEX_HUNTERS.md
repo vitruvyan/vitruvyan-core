@@ -1,5 +1,7 @@
 # Codex Hunters
 
+> **Last Updated**: February 14, 2026
+
 <p class="kb-subtitle">Discovery, normalization, deduplication, and storage-ready binding for raw source payloads.</p>
 
 ## What it does

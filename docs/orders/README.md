@@ -1,5 +1,7 @@
 # Sacred Orders — Documentation Index
 
+> **Last Updated**: February 14, 2026
+
 These pages document the **Sacred Orders** of Vitruvyan OS as production components:
 
 - **What the Order does** (mandate) and **what it must not do** (hard boundaries)

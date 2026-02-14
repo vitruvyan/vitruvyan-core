@@ -1,5 +1,7 @@
 # Babel Gardens
 
+> **Last Updated**: February 14, 2026
+
 ## What it does
 
 - Extracts structured semantic signals from text (with confidence + traceability)

@@ -1,5 +1,7 @@
 # Sacred Orders (Admin)
 
+> **Last Updated**: February 14, 2026
+
 This section is the **internal** (admin) view of the Sacred Orders: deeper implementation notes, code map, agent-level responsibilities, and operational behavior.
 
 !!! note "Public vs admin"

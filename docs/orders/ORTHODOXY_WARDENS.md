@@ -1,5 +1,7 @@
 # Orthodoxy Wardens
 
+> **Last Updated**: February 14, 2026
+
 ## What it does
 
 - Turns audit triggers into structured cases

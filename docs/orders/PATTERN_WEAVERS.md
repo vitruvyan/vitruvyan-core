@@ -1,5 +1,7 @@
 # Pattern Weavers
 
+> **Last Updated**: February 14, 2026
+
 ## What it does
 
 - Resolves free text into taxonomy categories (concepts, sectors, regions, …)

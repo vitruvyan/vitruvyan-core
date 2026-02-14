@@ -1,5 +1,7 @@
 # Pattern Weavers
 
+> **Last Updated**: February 14, 2026
+
 <p class="kb-subtitle">Semantic contextualization: taxonomy weaving, concept extraction, and signal-ready structure.</p>
 
 ## What it does

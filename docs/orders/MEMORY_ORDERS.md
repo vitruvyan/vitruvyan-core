@@ -1,5 +1,7 @@
 # Memory Orders
 
+> **Last Updated**: February 14, 2026
+
 ## What it does
 
 - Drift calculation (PostgreSQL ↔ Qdrant)

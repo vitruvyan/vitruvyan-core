@@ -1,5 +1,7 @@
 # Codex Hunters
 
+> **Last Updated**: February 14, 2026
+
 ## What it does
 
 - Discovers/validates entities from sources and turns payloads into canonical domain objects
