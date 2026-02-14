@@ -125,6 +125,55 @@ h3 {
   font-weight: 700;
 }
 
+/* Header brand: make site title clickable (JS rewrites it to <a>). */
+a#component-site-name {
+  cursor: pointer;
+  color: inherit;
+  text-decoration: none;
+}
+
+a#component-site-name:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* Search autocomplete (simple-blog does not ship jQuery UI autocomplete). */
+.kb-search-suggest {
+  position: relative;
+  margin-top: 0.35rem;
+}
+
+.kb-search-suggest__list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  padding: 0.35rem 0;
+  margin: 0;
+  list-style: none;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
+}
+
+.kb-search-suggest__item {
+  margin: 0;
+  padding: 0;
+}
+
+.kb-search-suggest__link {
+  display: block;
+  padding: 0.4rem 0.75rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.kb-search-suggest__link:hover,
+.kb-search-suggest__link:focus {
+  background: rgba(0, 0, 0, 0.05);
+}
+
 [data-md-color-scheme="lantana"] {
   --md-default-bg-color: #0b1220;
   --md-default-fg-color: #e8eefc;

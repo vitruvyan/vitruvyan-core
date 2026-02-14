@@ -26,11 +26,26 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Any, Optional, Callable, Tuple
 from datetime import datetime
 
+
+# ─── Mock config.api_config BEFORE any imports ────────────────────
+# This is needed for tests that import nodes which import config
+mock_api_config = MagicMock()
+mock_api_config.get_embedding_url.return_value = "http://mock_embedding:8000"
+mock_api_config.get_embedding_endpoint.return_value = "/embeddings"
+sys.modules['config'] = MagicMock()
+sys.modules['config.api_config'] = mock_api_config
+
+
 # ─── Ensure vitruvyan_core is importable ────────────────────────────
 # This mirrors what Docker containers do via PYTHONPATH=/app/vitruvyan_core
 _core_path = os.path.join(os.path.dirname(__file__), "..", "vitruvyan_core")
 if _core_path not in sys.path:
     sys.path.insert(0, os.path.abspath(_core_path))
+
+# Also add config/ for services that import config.api_config
+_config_path = os.path.join(os.path.dirname(__file__), "..", "config")
+if _config_path not in sys.path:
+    sys.path.insert(0, os.path.abspath(_config_path))
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -313,3 +328,93 @@ def sample_risk_data():
         "values": [10.0, 12.0, 9.5, 11.0, 13.0, 10.5, 14.0, 8.5],
         "weight": [0.15, 0.25, 0.10, 0.20, 0.05, 0.10, 0.10, 0.05],
     }
+
+
+# ═══════════════════════════════════════════════════════════════════
+# CONVERSATIONAL FIXTURES — For CAN node testing
+# ═══════════════════════════════════════════════════════════════════
+
+@pytest.fixture
+def mock_llm_agent():
+    """Mock LLMAgent for CAN node testing (deterministic responses)."""
+    mock_agent = MagicMock()
+    mock_agent.complete.return_value = "This is a generated conversational response."
+    mock_agent.default_model = "gpt-4o-mini"
+    return mock_agent
+
+
+@pytest.fixture
+def base_graph_state():
+    """Minimal GraphState for conversational tests."""
+    return {
+        "input_text": "test query",
+        "user_id": "test_user_001",
+        "intent": "unknown",
+        "conversation_type": "chat",
+        "language": "en",
+        "emotion_detected": None,
+        "emotion_confidence": 0.0,
+        "semantic_matches": [],
+        "weaver_context": {"status": "completed", "matches": []},
+        "vsgs_context_used": False,
+        "narrative": None,
+        "follow_ups": [],
+    }
+
+
+@pytest.fixture
+def state_with_semantic_context(base_graph_state):
+    """GraphState with VSGS semantic grounding results."""
+    base_graph_state["semantic_matches"] = [
+        {
+            "text": "Vitruvyan OS is an epistemic operating system...",
+            "score": 0.88,
+            "metadata": {"source": "docs/overview.md", "chunk_id": "chunk_001"}
+        },
+        {
+            "text": "LangGraph orchestration enables cognitive state transitions...",
+            "score": 0.82,
+            "metadata": {"source": "docs/langgraph.md", "chunk_id": "chunk_042"}
+        },
+        {
+            "text": "Sacred Orders implement domain-agnostic governance...",
+            "score": 0.75,
+            "metadata": {"source": "docs/sacred_orders.md", "chunk_id": "chunk_018"}
+        }
+    ]
+    return base_graph_state
+
+
+@pytest.fixture
+def state_with_emotion(base_graph_state):
+    """GraphState with Babel Gardens emotion detection."""
+    base_graph_state["emotion_detected"] = "curious"
+    base_graph_state["emotion_confidence"] = 0.82
+    base_graph_state["language"] = "en"
+    return base_graph_state
+
+
+# ═══════════════════════════════════════════════════════════════════
+# EXPLAINABILITY FIXTURES — For VEE testing
+# ═══════════════════════════════════════════════════════════════════
+
+@pytest.fixture
+def sample_entity_metrics():
+    """Realistic entity metrics for VEE explainability tests."""
+    return {
+        "momentum_score": 0.75,
+        "rsi": 62.5,
+        "volume_ratio": 1.35,
+        "volatility": 0.42,
+        "sentiment_score": 0.68,
+        "price_change_7d": 0.08,
+    }
+
+
+@pytest.fixture
+def vee_test_provider():
+    """Minimal explainability provider for VEE integration tests."""
+    if MockExplainabilityProvider is None:
+        pytest.skip("ExplainabilityProvider contract not available")
+    return MockExplainabilityProvider()
+

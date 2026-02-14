@@ -16,6 +16,18 @@ tests/
 │   ├── orchestration/       ← IntentRegistry, PromptRegistry, GraphState
 │   └── llm/                 ← Cache manager, prompt formatting
 │
+├── conversational/          ← Test CAPACITÀ DISCORSIVE — CAN node, follow-up, routing
+│   ├── test_can_context_integration.py
+│   ├── test_can_followup_quality.py (futuro)
+│   ├── test_can_empathy.py (futuro)
+│   └── test_can_routing.py (futuro)
+│
+├── explainability/          ← Test EXPLAINABILITY ENGINE — VEE multi-livello
+│   ├── test_vee_narrative_levels.py
+│   ├── test_vee_provider_contract.py (futuro)
+│   ├── test_vee_templates.py (futuro)
+│   └── test_vee_memory.py (futuro)
+│
 ├── integration/             ← Test CROSS-MODULE — mock di servizi, no Docker
 │   ├── test_neural_engine_pipeline.py
 │   ├── test_langgraph_flow.py
@@ -49,8 +61,15 @@ pytest -m "not e2e" -v
 pytest -m algorithms -v
 pytest -m agents -v
 
+# Test conversazionali (CAN node + discourse)
+pytest tests/conversational/ -v
+
+# Test explainability (VEE engine)
+pytest tests/explainability/ -v
+
 # Un singolo file
 pytest tests/unit/algorithms/test_vee_engine.py -v
+pytest tests/conversational/test_can_context_integration.py -v
 ```
 
 ## Fixtures disponibili (da conftest.py)

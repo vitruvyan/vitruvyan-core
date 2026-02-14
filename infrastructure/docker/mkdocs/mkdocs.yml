@@ -82,13 +82,36 @@ markdown_extensions:
 
 # Navigation structure
 nav:
-  - Home: docs/index.md
-  
   - Getting Started:
     - Overview: docs/foundational/VITRUVYAN_OVERVIEW.md
     - Quick Start: docs/foundational/QUICK_START.md
     - Epistemic Charter: docs/foundational/Vitruvyan_Epistemic_Charter.md
     - Pipeline Walkthrough: docs/foundational/VITRUVYAN_PIPELINE_WALKTHROUGH.md
+
+  - System Core:
+    - Orchestration:
+      - Overview: vitruvyan_core/core/orchestration/README.md
+      - Slot Filling Alignment: vitruvyan_core/core/orchestration/langgraph/docs/SLOT_FILLING_ARCHITECTURE_ALIGNMENT.md
+      - API Graph (Service): services/api_graph/README.md
+    - Cognitive Bus (Synaptic Conclave):
+      - Overview: vitruvyan_core/core/synaptic_conclave/docs/README.md
+      - Topology (Mermaid): infrastructure/docker/monitoring/grafana/SYNAPTIC_CONCLAVE_TOPOLOGY.md
+    - Core Agents:
+      - Index: docs/internal/platform/README.md
+      - Dual Memory & RAG: docs/internal/platform/DUAL_MEMORY_RAG.md
+      - LLM / AI Layer: docs/internal/platform/LLM_LAYER.md
+    - Sacred Orders:
+      - Introduction: docs/foundational/SACRED_ORDERS_INTRO.md
+      - Index: docs/internal/orders/README.md
+      - Codex Hunters: docs/internal/orders/CODEX_HUNTERS.md
+      - Orthodoxy Wardens: docs/internal/orders/ORTHODOXY_WARDENS.md
+      - Vault Keepers: docs/internal/orders/VAULT_KEEPERS.md
+      - Memory Orders: docs/internal/orders/MEMORY_ORDERS.md
+      - Babel Gardens: docs/internal/orders/BABEL_GARDENS.md
+      - Pattern Weavers: docs/internal/orders/PATTERN_WEAVERS.md
+    - Compute (Neural Engine):
+      - Overview: vitruvyan_core/core/neural_engine/README.md
+      - Neural Engine API: docs/internal/services/NEURAL_ENGINE_API.md
 
   - Installation:
     - Overview: docs/installation/README.md
@@ -102,24 +125,8 @@ nav:
   - Architecture:
     - Overview: docs/architecture/README.md
     - Sacred Orders Pattern: vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md
-    - Cognitive Bus: vitruvyan_core/core/synaptic_conclave/docs/README.md
     - Technical Debt Audit: docs/architecture/TECHNICAL_DEBT_AUDIT.md
 
-  - Core Agents:
-    - Index: docs/internal/platform/README.md
-    - Dual Memory & RAG: docs/internal/platform/DUAL_MEMORY_RAG.md
-    - LLM / AI Layer: docs/internal/platform/LLM_LAYER.md
-    
-  - Sacred Orders:
-    - Introduction: docs/foundational/SACRED_ORDERS_INTRO.md
-    - Index: docs/internal/orders/README.md
-    - Codex Hunters: docs/internal/orders/CODEX_HUNTERS.md
-    - Orthodoxy Wardens: docs/internal/orders/ORTHODOXY_WARDENS.md
-    - Vault Keepers: docs/internal/orders/VAULT_KEEPERS.md
-    - Memory Orders: docs/internal/orders/MEMORY_ORDERS.md
-    - Babel Gardens: docs/internal/orders/BABEL_GARDENS.md
-    - Pattern Weavers: docs/internal/orders/PATTERN_WEAVERS.md
-    
   - Services:
     - Overview: services/README_SERVICES.md
     - API Graph: services/api_graph/README.md
@@ -166,6 +173,9 @@ extra:
 
 extra_css:
   - docs/stylesheets/vitruvyan.css
+
+extra_javascript:
+  - docs/javascripts/vitruvyan.js
 
 # Copyright
 copyright: Copyright &copy; 2026 Vitruvyan Team
