@@ -82,7 +82,10 @@ def pattern_weavers_node(state: Dict[str, Any]) -> Dict[str, Any]:
             # Parse response
             result = response.json()
             
-            # Store opaque result (full payload)
+            # Store weaver_context (primary field for downstream nodes)
+            state["weaver_context"] = result
+            
+            # Store opaque result (full payload) - backward compatibility
             state["weave_result"] = result
             
             # Extract convenience fields (no calculation)
@@ -120,7 +123,14 @@ def _create_fallback(state: Dict[str, Any], reason: str) -> Dict[str, Any]:
     """Create fallback state when API fails."""
     logger.warning(f"pattern_weavers_node: Using fallback (reason: {reason})")
     
-    state["weave_result"] = {"error": reason}
+    fallback_result = {
+        "error": reason,
+        "matches": [],
+        "status": "fallback"
+    }
+    
+    state["weaver_context"] = fallback_result  # Primary field
+    state["weave_result"] = fallback_result    # Backward compatibility
     state["matched_concepts"] = []
     state["semantic_context"] = []
     state["weave_confidence"] = 0.0

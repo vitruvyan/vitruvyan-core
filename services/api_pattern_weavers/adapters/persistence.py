@@ -80,13 +80,26 @@ class PersistenceAdapter:
             return []
         
         try:
-            results = self.qdrant_agent.search(
-                collection_name=collection_name,
+            result = self.qdrant_agent.search(
+                collection=collection_name,
                 query_vector=query_vector,
-                limit=limit,
-                score_threshold=score_threshold,
+                top_k=limit,
+                qfilter=None,  # No filtering by default
+                with_payload=True,
             )
-            return results
+            
+            # QdrantAgent returns {"status": "ok", "results": [...]} or {"status": "error", ...}
+            if result.get("status") == "ok":
+                raw_results = result.get("results", [])
+                # Filter by score_threshold
+                filtered_results = [
+                    r for r in raw_results 
+                    if r.get("score", 0) >= score_threshold
+                ]
+                return filtered_results
+            else:
+                logger.error(f"Qdrant search error: {result.get('error')}")
+                return []
         except Exception as e:
             logger.error(f"Qdrant search failed: {e}")
             return []
@@ -110,11 +123,12 @@ class PersistenceAdapter:
             return False
         
         try:
-            self.qdrant_agent.upsert(
-                collection_name=collection_name,
+            result = self.qdrant_agent.upsert(
+                collection=collection_name,
                 points=points,
             )
-            return True
+            # QdrantAgent.upsert returns {"status": "ok", "count": N} or raises
+            return result.get("status") == "ok"
         except Exception as e:
             logger.error(f"Qdrant upsert failed: {e}")
             return False

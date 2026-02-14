@@ -622,6 +622,9 @@ services:
       # Redis (Cognitive Bus)
       - REDIS_HOST=core_redis
       - REDIS_PORT=6379
+      # Embedding Service
+      - EMBEDDING_URL=http://embedding:8010
+      - EMBEDDING_ENDPOINT=/v1/embeddings/create
       # OpenAI
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:

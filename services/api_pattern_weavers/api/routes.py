@@ -76,7 +76,7 @@ async def weave_patterns(request: WeaveRequest):
     config = get_config()
     
     raw_results = persistence.search_similar(
-        collection_name=config.qdrant.collection_name,
+        collection_name=config.qdrant.collection,
         query_vector=query_vector,
         limit=request.limit,
         score_threshold=request.threshold,

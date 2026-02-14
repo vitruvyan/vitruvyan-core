@@ -177,13 +177,16 @@ def _request_divine_protection(protection_type: str, state: Dict[str, Any]) -> D
         
         logger.info(f"[VAULT][GRAPH] 📡 Protection request published: {event_channel}")
         
-        # Wait for divine response
-        vault_response = _await_divine_protection(correlation_id, timeout=5.0)
+        # TODO: Implement async protection retrieval via Postgres polling
+        # Current: Synchronous pub/sub pattern incompatible with Redis Streams
+        # Future: Poll vault_protection table with correlation_id or use HTTP callback
+        # For now: Apply local blessing immediately (async processing by vault_listener)
+        vault_response = None  # Disabled: _await_divine_protection(correlation_id, timeout=5.0)
         
         if vault_response:
             return vault_response
         else:
-            logger.warning(f"[VAULT][GRAPH] ⚠️ Divine protection timeout, applying local blessing")
+            logger.info(f"[VAULT][GRAPH] 🏰 Applying standard blessing (async protection in progress)")
             return _create_fallback_protection()
             
     except Exception as e:

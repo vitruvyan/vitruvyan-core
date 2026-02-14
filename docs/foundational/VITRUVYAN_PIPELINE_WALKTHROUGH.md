@@ -162,7 +162,83 @@ This keeps vision and implementation aligned without losing roadmap context.
 
 ---
 
-## 4) Quick Verification Commands
+## 4) Technical-Functional Walkthrough (Code-Oriented)
+
+This section is written for engineers: it maps the diagrams above to **concrete modules, processes, and interfaces** in the repository. It is intentionally **technical-functional** (runtime behavior, boundaries, extension points) rather than epistemic framing.
+
+### 4.1 Why this pipeline exists (engineering drivers)
+
+- **Two execution modalities, one system**: a synchronous request/response graph for user queries (Path B) plus an asynchronous event bus for ingestion and background work (Path A).
+- **Strict separation of concerns**: pure logic lives in `vitruvyan_core/` (LIVELLO 1, no I/O); deployment/runtime concerns live in `services/` (LIVELLO 2, FastAPI, Redis, Postgres, Qdrant).
+- **Durability + replay**: Redis Streams + consumer groups provide at-least-once delivery; events survive process downtime.
+- **Observability by construction**: listeners explicitly `ACK` only on success; failures remain in the pending entries list (PEL) and are retryable.
+- **Plug-in model**: intent routing and domain behavior are configured by environment variables (e.g. `INTENT_DOMAIN`) and domain packages under `vitruvyan_core/domains/`.
+
+### 4.2 Code map: “named blocks” → implementation
+
+| Block in diagrams | What it is in code | Where |
+|---|---|---|
+| **API Graph (/run)** | FastAPI service that executes LangGraph synchronously | `services/api_graph/` (see `services/api_graph/api/routes.py` and `services/api_graph/adapters/graph_adapter.py`) |
+| **LangGraph orchestration** | `StateGraph` definition + compiled graph runner | `vitruvyan_core/core/orchestration/langgraph/` (see `vitruvyan_core/core/orchestration/langgraph/graph_flow.py` and `vitruvyan_core/core/orchestration/langgraph/graph_runner.py`) |
+| **Cognitive Bus (Redis Streams)** | Transport layer (`StreamBus`) + canonical event envelope (`TransportEvent`) | `vitruvyan_core/core/synaptic_conclave/transport/streams.py` and `vitruvyan_core/core/synaptic_conclave/events/event_envelope.py` |
+| **Codex Hunters (Tracker/Restorer/Binder)** | Pure consumers (LIVELLO 1) + service adapter + optional listener | `vitruvyan_core/core/governance/codex_hunters/consumers/` and `services/api_codex_hunters/` (listener: `services/api_codex_hunters/streams_listener.py`) |
+| **Babel Gardens** | Service + listener (currently ACK/log) + HTTP adapters used by graph nodes | `services/api_babel_gardens/` (listener: `services/api_babel_gardens/streams_listener.py`) and LangGraph node `vitruvyan_core/core/orchestration/langgraph/node/emotion_detector.py` |
+| **Pattern Weavers** | HTTP adapter node that calls the Pattern Weavers service | `vitruvyan_core/core/orchestration/langgraph/node/pattern_weavers_node.py` and `services/api_pattern_weavers/` |
+| **VSGS semantic grounding** | Thin node delegating to `VSGSEngine` (feature-flagged) | `vitruvyan_core/core/orchestration/langgraph/node/semantic_grounding_node.py` |
+| **Orthodoxy / Vault in Sacred Flow** | LangGraph nodes + dedicated services/listeners for streams-based processing | LangGraph nodes: `vitruvyan_core/core/orchestration/langgraph/node/orthodoxy_node.py`, `vitruvyan_core/core/orchestration/langgraph/node/vault_node.py`; services: `services/api_orthodoxy_wardens/streams_listener.py`, `services/api_vault_keepers/streams_listener.py` |
+| **Synaptic Conclave API** | Thin Streams emitter + “observatory” listener | `services/api_conclave/api/routes.py` and `services/api_conclave/streams_listener.py` |
+
+### 4.3 Path A (async) — execution model in code
+
+**Transport semantics (Redis Streams)**:
+- Stream name is derived by prefixing the channel with `vitruvyan:` (see `StreamBus._stream_name()` in `vitruvyan_core/core/synaptic_conclave/transport/streams.py`).
+- Consumers run under a **consumer group**; most listeners enforce the convention `group:<name>` via `_ensure_group_prefix()` in each `services/*/streams_listener.py`.
+- Delivery is **at-least-once**: a message is removed from the group only after `ACK`; unacked messages remain pending (PEL) and are retried.
+- Correlation is **optional metadata** (`correlation_id`) carried in the envelope (`TransportEvent`); the bus does not interpret it.
+
+**Runtime listeners (what actually runs as a worker process)**:
+- `services/api_codex_hunters/streams_listener.py` consumes `codex.*.requested` streams and dispatches to the Codex Hunters HTTP API (`/expedition/run`); on success it emits `codex.expedition.completed`.
+- `services/api_babel_gardens/streams_listener.py` currently **ACKs + logs** key streams (including `codex.discovery.mapped`) but does not guarantee end-to-end enrichment from streams yet (see runtime table above).
+- `services/api_vault_keepers/streams_listener.py` consumes vault/archival requests (e.g. `vault.archive.requested`) and cross-order completion events (e.g. `orthodoxy.audit.completed`), then delegates to `VaultBusAdapter` for persistence + bus emission.
+- `services/api_orthodoxy_wardens/streams_listener.py` consumes `orthodoxy.audit.requested` (and other configured sacred channels) and emits completion events such as `orthodoxy.audit.completed`.
+- `services/api_conclave/streams_listener.py` is an “observatory”: it consumes configured streams and logs/ACKs for monitoring, without dispatch.
+
+### 4.4 Path B (sync) — how the LangGraph pipeline executes
+
+**Call stack**:
+1. HTTP request hits `POST /run` (`services/api_graph/api/routes.py`).
+2. `GraphOrchestrationAdapter.execute_graph()` calls `run_graph_once()` (`services/api_graph/adapters/graph_adapter.py` → `vitruvyan_core/core/orchestration/langgraph/graph_runner.py`).
+3. `run_graph_once()` builds/updates the initial `GraphState`, then invokes the compiled graph from `build_graph()` (`vitruvyan_core/core/orchestration/langgraph/graph_flow.py`).
+
+**Graph structure (as wired today)**:
+- Node chain (happy path): `parse` → `intent_detection` → `weaver` → `entity_resolver` → `babel_emotion` → `semantic_grounding` → `params_extraction` → `decide` → `exec|qdrant|compose|llm_soft|codex_hunters|llm_mcp` → `output_normalizer` → `orthodoxy` → `vault` → `compose` → `can` → `[advisor]` → `END`.
+- Routing is implemented as a conditional edge out of `decide` based on `state["route"]` (see `route_from_decide()` in `vitruvyan_core/core/orchestration/langgraph/graph_flow.py`).
+
+**Feature flags / configuration knobs that change behavior**:
+- `INTENT_DOMAIN` selects which intent registry is configured at import time in `vitruvyan_core/core/orchestration/langgraph/graph_flow.py` (default: `finance`).
+- `ENABLE_MINIMAL_GRAPH=true` swaps `build_graph()` for a reduced `build_minimal_graph()` in `vitruvyan_core/core/orchestration/langgraph/graph_runner.py`.
+- `USE_MCP=1` can reroute `dispatcher_exec` to `llm_mcp` in `route_from_decide()` (MCP tool-calling gateway).
+- `VSGS_ENABLED=1` enables semantic grounding inside `semantic_grounding_node` (`vitruvyan_core/core/orchestration/langgraph/node/semantic_grounding_node.py`).
+
+### 4.5 What this pipeline can offer (in practical engineering terms)
+
+- **A stable integration surface**: HTTP (`/run`) for interactive work; Streams for background ingestion and governance/archival.
+- **Composable extension points**:
+  - add/replace LangGraph nodes under `vitruvyan_core/core/orchestration/langgraph/node/`;
+  - add new listeners under `services/<service>/streams_listener.py`;
+  - implement domain plugins under `vitruvyan_core/domains/<vertical>/` and select via env vars.
+- **Governance hooks**: orthodoxy/vault processing can run as stream-driven services (replayable) even if the LangGraph nodes fall back locally.
+
+### 4.6 Notes on “current runtime” gaps (important for engineers)
+
+- `entity_resolver_node` is explicitly a **domain-agnostic stub** (see `vitruvyan_core/core/orchestration/langgraph/node/entity_resolver_node.py`).
+- `exec_node` is currently **domain-neutral / not implemented** and returns an empty structure (see `vitruvyan_core/core/orchestration/langgraph/node/exec_node.py`).
+- `orthodoxy_node` / `vault_node` still depend on a legacy “Herald compatibility shim” (`vitruvyan_core/core/synaptic_conclave/transport/redis_client.py`) and may degrade to local fallbacks; the Streams-native integration path is via the dedicated services/listeners listed in section 4.3.
+- Babel Gardens streams listener is currently ACK/log oriented; enrichment is primarily reached via HTTP adapters from LangGraph nodes (emotion/pattern weaving), and full stream-driven enrichment is still being consolidated.
+
+---
+
+## 5) Quick Verification Commands
 
 ```bash
 # Path B check

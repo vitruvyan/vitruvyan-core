@@ -90,17 +90,20 @@ def orthodoxy_node(state: Dict[str, Any]) -> Dict[str, Any]:
         
         logger.info(f"[ORTHODOXY][GRAPH] 📡 Audit request transmitted to Sacred Order")
         
-        # Await divine verdict (with timeout) - sync version
-        verdict = _await_divine_verdict_sync(redis_bus, correlation_id, timeout=10.0)
+        # TODO: Implement async verdict retrieval via Postgres polling
+        # Current: Synchronous pub/sub pattern incompatible with Redis Streams
+        # Future: Poll verdicts table with correlation_id or use dedicated HTTP callback
+        # For now: Apply local blessing immediately (async processing by orthodoxy_listener)
+        verdict = None  # Disabled: _await_divine_verdict_sync(redis_bus, correlation_id, timeout=10.0)
         
         if verdict:
             # Sacred verdict received
             logger.info(f"[ORTHODOXY][GRAPH] ✨ Divine verdict received: {verdict.get('verdict', 'unknown')}")
             state = _apply_sacred_verdict(state, verdict, session_start)
         else:
-            # Divine timeout - apply emergency blessing
-            logger.warning("[ORTHODOXY][GRAPH] ⏰ Divine verdict timeout - applying emergency blessing")
-            state = _apply_local_blessing(state, "divine_timeout")
+            # Apply local blessing (audit continues async via orthodoxy_listener)
+            logger.info("[ORTHODOXY][GRAPH] 🕯️ Applying local blessing (async audit in progress)")
+            state = _apply_local_blessing(state, "async_processing")
         
         # Log sacred completion
         execution_time = (time.time() - session_start) * 1000
