@@ -4,7 +4,7 @@
 > 1) the **target architecture** (design intent), and  
 > 2) the **current runtime snapshot** (what is active today).
 
-> Snapshot date: **February 14, 2026**
+> Snapshot date: **February 14, 2026** (updated post-Priority 2B: hook pattern implementation)
 
 ---
 
@@ -144,10 +144,12 @@ graph TB
 | Item | Status | Note |
 |---|---|---|
 | Parse → Intent → Weavers → Resolver → Emotion → Grounding → Params → Decide | IMPLEMENTED | Present in compiled graph |
-| Execution node domain logic | PARTIAL | `exec_node` currently domain-neutral stub |
-| Entity resolver full validation | PARTIAL | Current resolver is stub passthrough |
+| Execution node domain logic | IMPLEMENTED (HOOK) | `exec_node` uses `ExecutionRegistry` (domain-configurable via `EXEC_DOMAIN`) |
+| Entity resolver validation | IMPLEMENTED (HOOK) | `entity_resolver_node` uses `EntityResolverRegistry` (domain-configurable via `ENTITY_DOMAIN`) |
+| Params extraction domain-agnostic | IMPLEMENTED | Finance terms removed (Feb 14, 2026), domain-neutral temporal patterns |
 | Sacred Flow (`output_normalizer -> orthodoxy -> vault -> compose -> can`) | IMPLEMENTED | Wired and active |
 | Proactive Suggestions node | REMOVED | Removed from active graph |
+| Hook pattern (intent/entity/exec) | IMPLEMENTED | Registry-based domain plugin architecture (3/3 nodes migrated) |
 
 ---
 
@@ -186,8 +188,9 @@ This section is written for engineers: it maps the diagrams above to **concrete 
 | **Pattern Weavers** | HTTP adapter node that calls the Pattern Weavers service | `vitruvyan_core/core/orchestration/langgraph/node/pattern_weavers_node.py` and `services/api_pattern_weavers/` |
 | **VSGS semantic grounding** | Thin node delegating to `VSGSEngine` (feature-flagged) | `vitruvyan_core/core/orchestration/langgraph/node/semantic_grounding_node.py` |
 | **Orthodoxy / Vault in Sacred Flow** | LangGraph nodes + dedicated services/listeners for streams-based processing | LangGraph nodes: `vitruvyan_core/core/orchestration/langgraph/node/orthodoxy_node.py`, `vitruvyan_core/core/orchestration/langgraph/node/vault_node.py`; services: `services/api_orthodoxy_wardens/streams_listener.py`, `services/api_vault_keepers/streams_listener.py` |
-| **Synaptic Conclave API** | Thin Streams emitter + “observatory” listener | `services/api_conclave/api/routes.py` and `services/api_conclave/streams_listener.py` |
-
+| **Synaptic Conclave API** | Thin Streams emitter + “observatory” listener | `services/api_conclave/api/routes.py` and `services/api_conclave/streams_listener.py` || **Intent Registry** | Domain-configurable intent detection (hook pattern) | `vitruvyan_core/core/orchestration/intent_registry.py` + `vitruvyan_core/domains/finance/intent_config.py` (env: `INTENT_DOMAIN`) |
+| **Entity Resolver Registry** | Domain-configurable entity resolution (hook pattern) | `vitruvyan_core/core/orchestration/entity_resolver_registry.py` + `vitruvyan_core/domains/finance/entity_resolver_config.py` (env: `ENTITY_DOMAIN`) |
+| **Execution Registry** | Domain-configurable execution handlers (hook pattern) | `vitruvyan_core/core/orchestration/execution_registry.py` + `vitruvyan_core/domains/finance/execution_config.py` (env: `EXEC_DOMAIN`) |
 ### 4.3 Path A (async) — execution model in code
 
 **Transport semantics (Redis Streams)**:
@@ -216,6 +219,8 @@ This section is written for engineers: it maps the diagrams above to **concrete 
 
 **Feature flags / configuration knobs that change behavior**:
 - `INTENT_DOMAIN` selects which intent registry is configured at import time in `vitruvyan_core/core/orchestration/langgraph/graph_flow.py` (default: `finance`).
+- `ENTITY_DOMAIN` selects which entity resolver is used by `entity_resolver_node` (hook pattern, default: stub passthrough).
+- `EXEC_DOMAIN` selects which execution handler is used by `exec_node` (hook pattern, default: fake success stub).
 - `ENABLE_MINIMAL_GRAPH=true` swaps `build_graph()` for a reduced `build_minimal_graph()` in `vitruvyan_core/core/orchestration/langgraph/graph_runner.py`.
 - `USE_MCP=1` can reroute `dispatcher_exec` to `llm_mcp` in `route_from_decide()` (MCP tool-calling gateway).
 - `VSGS_ENABLED=1` enables semantic grounding inside `semantic_grounding_node` (`vitruvyan_core/core/orchestration/langgraph/node/semantic_grounding_node.py`).
@@ -229,10 +234,62 @@ This section is written for engineers: it maps the diagrams above to **concrete 
   - implement domain plugins under `vitruvyan_core/domains/<vertical>/` and select via env vars.
 - **Governance hooks**: orthodoxy/vault processing can run as stream-driven services (replayable) even if the LangGraph nodes fall back locally.
 
-### 4.6 Notes on “current runtime” gaps (important for engineers)
+### 4.6 Hook Pattern Architecture (Domain Plugin System)
 
-- `entity_resolver_node` is explicitly a **domain-agnostic stub** (see `vitruvyan_core/core/orchestration/langgraph/node/entity_resolver_node.py`).
-- `exec_node` is currently **domain-neutral / not implemented** and returns an empty structure (see `vitruvyan_core/core/orchestration/langgraph/node/exec_node.py`).
+**Implemented as of February 14, 2026** (Priority 2B completion)
+
+Vitruvyan uses a **registry-based hook pattern** for domain-specific extension points. This architecture mirrors the proven `IntentRegistry` design and provides graceful degradation when domain plugins are absent.
+
+**Three hook points**:
+
+1. **Intent Detection** (`intent_detection_node.py`)
+   - Registry: `IntentRegistry` (`core/orchestration/intent_registry.py`)
+   - Domain config: `domains/finance/intent_config.py` (`create_finance_registry()`)
+   - Env var: `INTENT_DOMAIN=finance` (default)
+   - Behavior: Finance intents (trend, momentum, risk, etc.) vs. core-only (soft, unknown)
+   - Status: **ACTIVE** (finance domain loaded by default)
+
+2. **Entity Resolution** (`entity_resolver_node.py`)
+   - Registry: `EntityResolverRegistry` (`core/orchestration/entity_resolver_registry.py`)
+   - Domain config: `domains/finance/entity_resolver_config.py` (`register_finance_entity_resolver()`)
+   - Env var: `ENTITY_DOMAIN=finance` (optional)
+   - Default behavior: Passthrough stub (preserves `entity_ids`, sets `flow='direct'`)
+   - Finance behavior (if registered): Ticker symbol → company entity resolution
+   - Status: **STUB** (no domain registered, graceful passthrough)
+
+3. **Execution Handler** (`exec_node.py`)
+   - Registry: `ExecutionRegistry` (`core/orchestration/execution_registry.py`)
+   - Domain config: `domains/finance/execution_config.py` (`register_finance_execution_handler()`)
+   - Env var: `EXEC_DOMAIN=finance` (optional)
+   - Default behavior: Fake success stub (empty ranking, `route='ne_valid'`, `ok=True`)
+   - Finance behavior (if registered): Neural Engine ranking for finance entities
+   - Status: **STUB** (no domain registered, graceful fake success)
+
+**Guarantees**:
+- ✅ Zero breaking changes (stub behavior matches previous domain-neutral behavior)
+- ✅ Type-safe via dataclasses (`IntentDefinition`, `EntityResolverDefinition`, `ExecutionHandlerDefinition`)
+- ✅ Singleton registry pattern (`get_entity_resolver_registry()`, `get_execution_registry()`)
+- ✅ Graceful degradation if domain plugin missing
+- ✅ Testable in isolation (LIVELLO 1 pure, no I/O)
+
+**Migration path** (to enable finance domain):
+```python
+# In services/api_graph/main.py (startup)
+if os.getenv("ENTITY_DOMAIN") == "finance":
+    from domains.finance.entity_resolver_config import register_finance_entity_resolver
+    register_finance_entity_resolver()
+
+if os.getenv("EXEC_DOMAIN") == "finance":
+    from domains.finance.execution_config import register_finance_execution_handler
+    register_finance_execution_handler()
+```
+
+See `vitruvyan_core/domains/finance/README_HOOK_PATTERN.md` for complete usage examples.
+
+### 4.7 Notes on remaining runtime gaps (important for engineers)
+
+- `entity_resolver_node` and `exec_node` use **hook pattern with stub defaults** (domain registration required for domain-specific behavior).
+- `params_extraction_node` is now **fully domain-agnostic** (finance terms removed Feb 14, 2026; uses generic temporal patterns).
 - `orthodoxy_node` / `vault_node` still depend on a legacy “Herald compatibility shim” (`vitruvyan_core/core/synaptic_conclave/transport/redis_client.py`) and may degrade to local fallbacks; the Streams-native integration path is via the dedicated services/listeners listed in section 4.3.
 - Babel Gardens streams listener is currently ACK/log oriented; enrichment is primarily reached via HTTP adapters from LangGraph nodes (emotion/pattern weaving), and full stream-driven enrichment is still being consolidated.
 

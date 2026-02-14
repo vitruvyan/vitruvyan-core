@@ -2,21 +2,22 @@
 
 **Domain-Agnostic Agentic AI Framework**
 
-> **Last Updated**: February 12, 2026  
+> **Last Updated**: February 14, 2026 (Priority 2B: Hook Pattern Implementation)  
 > **Version**: 0.1.0-alpha  
-> **Status**: Foundation Phase — Post-Refactoring (SACRED_ORDER_PATTERN 100% Conformance)
+> **Status**: Foundation Phase — Consolidation (SACRED_ORDER_PATTERN 100%, Hook Pattern 3/3 nodes)
 
-Vitruvyan Core is the foundation of an epistemic AI system built around cognitive architecture principles. It provides orchestration, reasoning, memory, and governance layers that can be specialized for ANY domain through a plugin-based contract system.
+Vitruvyan Core is an **opinionated architectural framework** for multi-domain agentic AI systems. It provides LangGraph orchestration, Redis Streams event bus, Sacred Orders governance, and domain-agnostic primitives that can be specialized through a **registry-based plugin pattern**.
 
 ---
 
 ## 📖 New to Vitruvyan?
 
 **Quick Orientation**:
-1. Read [🎯 What is Vitruvyan Core?](#-what-is-vitruvyan-core) to understand the philosophy
-2. Review [🗂️ Repository Structure](#-repository-structure) to navigate the codebase
-3. Check [📚 Documentation Organization](#-documentation-organization) to find relevant docs
-4. Explore [🏗️ Architecture](#-architecture) to understand the Sacred Orders pattern
+1. Read [🔌 Domain Extension System (Hook Pattern)](#-domain-extension-system) to understand the plugin architecture
+2. Check [📊 Module Status Map](docs/foundational/MODULE_STATUS_MAP.md) for complete inventory (nodes, services, registries)
+3. Read [🔍 Pipeline Walkthrough](docs/foundational/VITRUVYAN_PIPELINE_WALKTHROUGH.md) for technical deep-dive
+4. Review [🗂️ Repository Structure](#-repository-structure) to navigate the codebase
+5. Try [🚀 Quick Start](#-quick-start) to run the system locally
 
 ---
 
@@ -34,92 +35,63 @@ Vitruvyan Core **IS**:
 
 ---
 
-## 🧠 Philosophy: Structure, Not Solution
+## 🧠 Core Philosophy: Domain-Agnostic Framework
 
-### What Vitruvyan Core Is NOT
+**Vitruvyan Core is NOT**:
+- A chatbot toolkit
+- A finance-specific AI system
+- A ready-to-deploy product
 
-Vitruvyan Core is not a framework with ready-made components.  
-It is not a library of best practices.  
-It is not a collection of domain-specific tools.
+**Vitruvyan Core IS**:
+- An **architectural framework** for building multi-service agentic systems
+- A **domain-agnostic orchestration layer** (LangGraph + Redis Streams + Sacred Orders)
+- A **plugin pattern** for domain specialization (hook-based registries)
 
-**It is a blank cognitive substrate.**
+### What Core Provides
 
-Think of it as:
-- A CPU without an operating system
-- An empty factory floor with conveyor belts, but no workers or products
-- A spreadsheet with formula support, but no data
+1. **LangGraph Orchestration** (20 nodes, 6 route branches)
+   - Domain-agnostic cognitive pipeline (parse → intent → weaver → resolver → grounding → decision)
+   - Hook pattern for domain-specific nodes (intent, entity resolution, execution)
+   - Sacred Flow governance (output_normalizer → orthodoxy → vault → compose → CAN)
 
-### Core Has Zero Opinions
+2. **Redis Streams Event Bus** (StreamBus, 641L)
+   - At-least-once delivery (consumer groups + ACK/PEL)
+   - Payload-blind transport (no semantic routing)
+   - Durable replay + correlation tracking
 
-The core has **zero opinions** about:
+3. **Sacred Orders** (6 governance subsystems, 100% SACRED_ORDER_PATTERN conformance)
+   - Memory Orders: RAG, coherence analysis
+   - Vault Keepers: Archival persistence
+   - Orthodoxy Wardens: Validation, audit
+   - Babel Gardens: Emotion, language detection
+   - Codex Hunters: System maintenance, discovery
+   - Pattern Weavers: Ontology mapping
 
-- What makes an entity "good" or "bad"
-- Which factors matter in your domain
-- How to weigh different dimensions of quality
-- What "normal" or "optimal" means
-- How to interpret scores or rankings
+4. **Infrastructure Agents**
+   - PostgresAgent (relational data)
+   - QdrantAgent (vector memory)
+   - LLMAgent (centralized OpenAI gateway with caching)
 
-It provides **no domain knowledge**:
-- No entity entity_ids, sectors, or financial ratios
-- No patient symptoms, diagnoses, or treatments
-- No routes, vehicles, or delivery windows
-- No weapons systems, threat levels, or readiness scores
+5. **Hook Pattern** (domain plugin system)
+   - IntentRegistry (ACTIVE: finance intents loaded)
+   - EntityResolverRegistry (STUB: passthrough default)
+   - ExecutionRegistry (STUB: fake success default)
 
-### What The Core DOES Provide
+### What Core Does NOT Provide
 
-The core provides **structure without content**:
+- **Domain knowledge**: No finance, logistics, healthcare logic in core
+- **Execution logic**: Stub defaults (empty ranking, passthrough entity resolution)
+- **Pre-built verticals**: Finance examples exist but are **not mandatory**
 
-1. **Abstract contracts** that define what evaluation means
-2. **Orchestration flows** that coordinate cognitive processes
-3. **Data structures** for inputs, outputs, and state management
-4. **One reference implementation** to show how contracts work
+Domain-specific behavior is **opt-in via registration**:
+```python
+# Example: Finance domain plugin
+if os.getenv("ENTITY_DOMAIN") == "finance":
+    from domains.finance.entity_resolver_config import register_finance_entity_resolver
+    register_finance_entity_resolver()  # Now entity_resolver uses finance logic
+```
 
-### Ontological Neutrality
-
-The core does not teach you **what to evaluate**.  
-It teaches you **how to structure evaluation**.
-
-It says: "If you have dimensions of quality, here's how to:
-- Normalize them to comparable scales
-- Combine them into composites
-- Track contributions and explanations"
-
-But it never tells you:
-- Which dimensions matter
-- How to compute them
-- What the results mean
-
-### Verticals Are Epistemologically Specific
-
-Your vertical makes the **epistemological choices**:
-
-- **Mercator** says: "Quality = momentum + trend + volatility"
-- **AEGIS** says: "Readiness = training + equipment + morale"
-- **Your domain** says: "[YOUR DEFINITION OF QUALITY]"
-
-The core doesn't care. It executes the structure you define.
-
-### Anti-Framework Design
-
-Most systems are frameworks that suggest what to do.  
-Vitruvyan Core inverts this: it provides zero suggestions.
-
-By providing **only structure**, the core forces you to think:
-- What does "better" mean in my domain?
-- How do I measure the qualities that matter?
-- What tradeoffs am I making?
-
-You can't cargo-cult from the core. You must understand your domain.
-
-### The Inevitable Discomfort
-
-Using Vitruvyan Core **should feel uncomfortable at first**.
-
-You will think: "But where are the examples?"  
-You will ask: "What's the best way to do X?"
-
-**This discomfort is intentional.**  
-It's the discomfort of taking responsibility for your domain's conceptual model.
+See [🔌 Domain Extension System](#-domain-extension-system) for complete pattern documentation.
 
 ---
 
@@ -282,29 +254,101 @@ vitruvyan_core/
 
 ---
 
-## 🔌 Domain Extension System
+## 🔌 Domain Extension System (Hook Pattern)
 
-Vitruvyan Core uses a **Domain Contract** pattern to remain agnostic while enabling vertical specialization.
+**Implemented**: February 14, 2026 (Priority 2B completion)
 
-### Domain Contract
+Vitruvyan uses a **registry-based hook pattern** for domain-specific extension points. This mirrors the proven `IntentRegistry` design and provides **graceful degradation** when domain plugins are absent.
 
-Any domain must implement:
+### Three Hook Points
 
-1. **Entity Schema** — What are the "things"?
-2. **Signal Schema** — What measurable attributes exist?
-3. **Scoring Factors** — What dimensions drive decisions?
-4. **Policies** — What domain rules apply?
-5. **Explanation Templates** — How to explain outcomes?
+#### 1. Intent Detection (`intent_detection_node.py`)
+- **Registry**: `IntentRegistry` (`core/orchestration/intent_registry.py`)
+- **Domain Config**: `domains/finance/intent_config.py`
+- **Env Var**: `INTENT_DOMAIN=finance` (default)
+- **Behavior**:
+  - **With finance**: `trend`, `momentum`, `risk`, `volatility`, `backtest`, `allocate`, etc.
+  - **Without finance**: Core intents only (`soft`, `unknown`)
+- **Status**: ✅ **ACTIVE** (finance domain loaded by default)
+
+#### 2. Entity Resolution (`entity_resolver_node.py`)
+- **Registry**: `EntityResolverRegistry` (`core/orchestration/entity_resolver_registry.py`)
+- **Domain Config**: `domains/finance/entity_resolver_config.py`
+- **Env Var**: `ENTITY_DOMAIN=finance` (optional)
+- **Behavior**:
+  - **Default**: Passthrough stub (preserves `entity_ids`, sets `flow='direct'`)
+  - **With finance**: Ticker symbol → company entity resolution
+- **Status**: 🟡 **STUB** (no domain registered, graceful passthrough)
+
+#### 3. Execution Handler (`exec_node.py`)
+- **Registry**: `ExecutionRegistry` (`core/orchestration/execution_registry.py`)
+- **Domain Config**: `domains/finance/execution_config.py`
+- **Env Var**: `EXEC_DOMAIN=finance` (optional)
+- **Behavior**:
+  - **Default**: Fake success stub (empty ranking, `route='ne_valid'`, `ok=True`)
+  - **With finance**: Neural Engine ranking for finance entities
+- **Status**: 🟡 **STUB** (no domain registered, graceful fake success)
+
+### Hook Pattern Guarantees
+
+- ✅ **Zero breaking changes** (stub behavior matches previous domain-neutral behavior)
+- ✅ **Type-safe** via dataclasses (`IntentDefinition`, `EntityResolverDefinition`, `ExecutionHandlerDefinition`)
+- ✅ **Singleton registry pattern** (`get_entity_resolver_registry()`, `get_execution_registry()`)
+- ✅ **Graceful degradation** if domain plugin missing
+- ✅ **Testable in isolation** (LIVELLO 1 pure, no I/O)
+
+### How to Add a Domain Plugin
+
+**Step 1**: Create domain configs
+```python
+# vitruvyan_core/domains/logistics/entity_resolver_config.py
+from core.orchestration.entity_resolver_registry import (
+    EntityResolverDefinition, get_entity_resolver_registry
+)
+
+def logistics_entity_resolver(state):
+    # Resolve route_ids to route objects
+    route_ids = state.get("entity_ids", [])
+    # ... domain-specific logic ...
+    return state
+
+def register_logistics_entity_resolver():
+    registry = get_entity_resolver_registry()
+    registry.register(EntityResolverDefinition(
+        domain="logistics",
+        resolver_fn=logistics_entity_resolver,
+        description="Resolve route IDs to route objects",
+        requires_fields=["entity_ids"]
+    ))
+```
+
+**Step 2**: Register in service startup
+```python
+# services/api_graph/main.py
+import os
+
+if os.getenv("ENTITY_DOMAIN") == "logistics":
+    from domains.logistics.entity_resolver_config import register_logistics_entity_resolver
+    register_logistics_entity_resolver()
+```
+
+**Step 3**: Set environment variable
+```bash
+export ENTITY_DOMAIN=logistics
+```
+
+**See**: `vitruvyan_core/domains/finance/README_HOOK_PATTERN.md` for complete examples
 
 ### Example Domains (Future)
 
-- **Trade**: entities=entities, signals=momentum/volatility, factors=RSI/MACD
-- **Logistics**: entities=routes, signals=traffic/weather, factors=cost/time  
-- **Healthcare**: entities=patients, signals=vitals, factors=risk_scores
-- **Defense**: entities=assets, signals=threats, factors=readiness
-- **Legal**: entities=cases, signals=precedents, factors=probability
+| Domain | Entities | Intent Examples | Execution Logic |
+|--------|----------|----------------|----------------|
+| **Finance** | Tickers (AAPL, MSFT) | trend, momentum, risk | Neural Engine ranking |
+| **Logistics** | Routes (route_123) | optimize, forecast, reroute | Route optimization scoring |
+| **Healthcare** | Patients (patient_456) | diagnose, monitor, predict | Patient risk assessment |
+| **Legal** | Cases (case_789) | precedent, probability | Case outcome prediction |
 
-None of these are implemented in Core. They would be separate plugins.
+**Finance** is the only domain with example configs currently (`domains/finance/`). Other domains are **not implemented** in core.
 
 ---
 
@@ -322,21 +366,108 @@ Nodes remain domain-neutral - they operate on generic entities and signals.
 
 ---
 
-## 🚀 Quick Start (Placeholder)
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Docker + Docker Compose
+- Python 3.11+
+- Git
+
+### 1. Start Infrastructure
+
+```bash
+# Clone repository
+git clone https://github.com/yourusername/vitruvyan-core.git
+cd vitruvyan-core
+
+# Start all services (36 containers)
+cd infrastructure/docker
+docker compose up -d
+
+# Verify containers
+docker ps --filter "name=core_" --format "table {{.Names}}\t{{.Status}}"
+# Expected: 32/32 UP, 31/32 healthy (redis_streams_exporter unhealthy is known issue)
+```
+
+### 2. Test LangGraph Pipeline
+
+```bash
+# Basic query (default: finance domain for intent detection)
+curl -X POST http://localhost:9004/run \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input_text": "analyze momentum trends",
+    "user_id": "test_user"
+  }'
+
+# Expected response:
+{
+  "status": "success",
+  "intent": "momentum",
+  "route": "dispatcher_exec",
+  "output": {
+    "ranking": [],  # Empty (exec_node is stub)
+    "metadata": {"stub": true}
+  }
+}
+```
+
+### 3. Explore Documentation
+
+```bash
+# Start MkDocs site
+mkdocs serve
+# Access at http://localhost:8000
+```
+
+**Key Docs**:
+- [📊 Module Status Map](docs/foundational/MODULE_STATUS_MAP.md) — Complete inventory (nodes, services, Sacred Orders)
+- [🔍 Pipeline Walkthrough](docs/foundational/VITRUVYAN_PIPELINE_WALKTHROUGH.md) — Technical deep-dive
+- [📖 Copilot Instructions](.github/copilot-instructions.md) — Architecture invariants
+
+### 4. Check Logs
+
+```bash
+# API Graph (main orchestration)
+docker logs --tail=50 core_graph
+
+# Sacred Orders listeners
+docker logs --tail=50 core_babel_listener
+docker logs --tail=50 core_vault_keepers_listener
+docker logs --tail=50 core_orthodoxy_wardens_listener
+
+# Event bus
+docker exec core_redis redis-cli XLEN vitruvyan:conclave.mcp.actions
+```
+
+### 5. Enable Domain Plugins (Optional)
+
+**Finance example** (entity resolution + execution):
 
 ```python
-from vitruvyan_core.domains import get_domain, GenericDomain
+# Uncomment in services/api_graph/main.py:
+if os.getenv("ENTITY_DOMAIN") == "finance":
+    from domains.finance.entity_resolver_config import register_finance_entity_resolver
+    register_finance_entity_resolver()
 
-# Use generic domain (no specialization)
-domain = get_domain("generic")
-
-# Future: Load a specific domain plugin
-# domain = get_domain("logistics")
-
-# Run analysis
-entity = domain.get_entity_schema()
-signal = domain.compute_signal(entity, "example_signal")
+if os.getenv("EXEC_DOMAIN") == "finance":
+    from domains.finance.execution_config import register_finance_execution_handler
+    register_finance_execution_handler()
 ```
+
+```bash
+# Set environment variables
+export ENTITY_DOMAIN=finance
+export EXEC_DOMAIN=finance
+
+# Rebuild container
+cd infrastructure/docker
+docker compose build graph
+docker compose up -d graph
+```
+
+Now `entity_resolver_node` and `exec_node` use finance-specific logic instead of stubs.
 
 ---
 
@@ -445,7 +576,13 @@ This is the clean fork from the original Vitruvyan trading system. All finance-s
 
 ### Quick Links
 
-**Getting Started**:
+**Start Here** (New Developer Onboarding):
+- [📊 Module Status Map](docs/foundational/MODULE_STATUS_MAP.md) — **Single-source-of-truth inventory** (nodes, services, Sacred Orders, test coverage)
+- [🔍 Pipeline Walkthrough](docs/foundational/VITRUVYAN_PIPELINE_WALKTHROUGH.md) — **Technical deep-dive** (code maps, flow diagrams, hook pattern)
+- [📖 Copilot Instructions](.github/copilot-instructions.md) — **Architecture invariants** (Sacred Orders, hook pattern, LIVELLO 1/2)
+- [🔌 Hook Pattern README](vitruvyan_core/domains/finance/README_HOOK_PATTERN.md) — **Domain plugin examples** (entity resolution, execution)
+
+**Foundational Documents**:
 - [📚 Documentation Portal](docs/index.md) — Entry point to all documentation
 - [🏛️ Epistemic Charter](docs/foundational/Vitruvyan_Epistemic_Charter.md) — Philosophy & principles
 - [🔗 Bus Invariants](docs/foundational/Vitruvyan_Bus_Invariants.md) — Cognitive Bus constraints
