@@ -86,6 +86,44 @@ sequenceDiagram
     CAN->>RESP: user-facing answer
 ```
 
+### Unified Block View — Target (High-Level)
+
+```mermaid
+graph TB
+    subgraph A["Path A — Async Ingestion"]
+        TRK[Tracker]
+        RST[Restorer]
+        BND[Binder]
+        BBL[Babel Gardens]
+        VLT_A[Vault Keepers]
+        TRK --> RST --> BND --> BBL --> VLT_A
+    end
+
+    subgraph STORE["Shared Knowledge Layer"]
+        PG[(PostgreSQL via PostgresAgent)]
+        QD[(Qdrant via QdrantAgent)]
+    end
+
+    subgraph B["Path B — Sync Query"]
+        API[API Graph /run]
+        UND[Understanding Nodes]
+        EXE[Execution Node]
+        GOV[Sacred Flow]
+        CMP[Compose + CAN]
+        API --> UND --> EXE --> GOV --> CMP
+    end
+
+    BND --> PG
+    BND --> QD
+    BBL --> PG
+    BBL --> QD
+    VLT_A --> PG
+
+    PG --> EXE
+    QD --> UND
+    QD --> EXE
+```
+
 ---
 
 ## 2) Current Runtime Snapshot (as of 2026-02-14)
