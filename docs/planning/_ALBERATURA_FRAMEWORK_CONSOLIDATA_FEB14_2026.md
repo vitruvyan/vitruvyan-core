@@ -76,7 +76,6 @@ vitruvyan-core/
 │   │   │       ├── _legacy/               Archived code
 │   │   │       ├── scripts/               test scripts
 │   │   │       └── (same 10-dir structure)
-│   │   │
 │   │   ├── llm/                            LLM infrastructure
 │   │   │   ├── cache_api.py               269L — Cache API
 │   │   │   ├── cache_manager.py           444L — LLMCacheManager
@@ -85,7 +84,6 @@ vitruvyan-core/
 │   │   │       ├── registry.py            330L — PromptRegistry (domain-aware)
 │   │   │       └── version.py             Prompt versioning
 │   │   │
-│   │   ├── monitoring/                     (empty — solo __init__.py)
 │   │   │
 │   │   ├── neural_engine/                  Scoring framework (contract-driven)
 │   │   │   ├── engine.py                  Engine principale
@@ -117,7 +115,6 @@ vitruvyan-core/
 │   │   │       │   └── conversation_context.py  146L — DomainContextProvider
 │   │   │       ├── shared/
 │   │   │       │   └── state_preserv.py   112L — UX field preservation
-│   │   │       ├── utilities/             (empty — solo __init__.py)
 │   │   │       │
 │   │   │       └── node/                  22 active nodes + _legacy/
 │   │   │           ├── base_node.py       ABC base
@@ -185,9 +182,6 @@ vitruvyan-core/
 │   │   │   ├── monitoring/
 │   │   │   │   ├── metrics.py             338L — Bus metrics
 │   │   │   │   └── metrics_server.py      45L — Prometheus server
-│   │   │   │
-│   │   │   ├── client/                    (empty — solo __init__.py)
-│   │   │   ├── listeners/                 (empty — solo __init__.py)
 │   │   │   │
 │   │   │   ├── utils/
 │   │   │   │   ├── lexicon.py             438L — Schema templates
@@ -312,7 +306,6 @@ LAYER 0 — Infrastructure
 ├── cache/               MnemosyneCache
 ├── llm/                 Cache, PromptRegistry, Gemma client
 ├── synaptic_conclave/   StreamBus, events, consumers, plasticity, monitoring
-└── monitoring/          (placeholder)
 
 LAYER 1 — Cognitive Engines
 ├── neural_engine/       Scoring, ranking, composite (contract-driven)
@@ -356,15 +349,10 @@ LAYER 4 — Services
 
 L'architettura attuale è solida. Non serve una ristrutturazione. Servono solo pulizie puntuali:
 
-### Directories vuote da eliminare
+### ~~Directories vuote~~ — ELIMINATE (commit ef28808+)
 
-| Directory | Content | Action |
-|-----------|---------|--------|
-| `synaptic_conclave/client/` | solo `__init__.py` | **DELETE** |
-| `synaptic_conclave/listeners/` | solo `__init__.py` | **DELETE** |
-| `orchestration/langgraph/utilities/` | solo `__init__.py` | **DELETE** |
-| `core/monitoring/` | solo `__init__.py` | **DELETE** o riproporre per metriche generiche |
-| `governance/memory_orders/scripts/` | vuoto | **DELETE** |
+Tutte le 5 directory vuote identificate sono state eliminate:
+`client/`, `listeners/`, `utilities/`, `monitoring/`, `memory_orders/scripts/`
 
 ### Compatibility shims da valutare
 
