@@ -263,7 +263,7 @@ graph TD
 - **Integration**: Babel Gardens 84-language support (validated with 20/20 multilingual tests)
 - **Accuracy**: 95%+ intent detection, 100% user action detection across all languages
 
-#### 3. **weaver_node** (Pattern Weavers - Sacred Order #5)
+#### 3. **weaver_node** (Pattern Weavers - Sacred Order: REASON)
 - **Purpose**: Semantic context extraction (concepts, regions, sectors, risk patterns)
 - **Output**: `weaver_context` with matched patterns
 - **Use Case**: Investment strategy concept extraction

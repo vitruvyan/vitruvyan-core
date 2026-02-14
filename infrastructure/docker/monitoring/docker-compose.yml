@@ -19,6 +19,34 @@ services:
       - monitoring-net
       - core-net
 
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    container_name: core_oauth2_proxy
+    restart: unless-stopped
+    env_file:
+      - ./oauth2-proxy/oauth2-proxy.env
+    command:
+      - --http-address=0.0.0.0:4180
+      - --provider=oidc
+      - --oidc-issuer-url=https://auth.vitruvyan.com/realms/vitruvyan-core
+      - --client-id=kb
+      - --scope=openid email profile groups
+      - --code-challenge-method=S256
+      - --email-domain=*
+      - --redirect-url=https://kb.vitruvyan.com/oauth2/callback
+      - --upstream=static://200
+      - --reverse-proxy=true
+      - --skip-provider-button=true
+      - --set-xauthrequest=true
+      - --cookie-name=_vitruvyan_kb
+      - --cookie-domain=kb.vitruvyan.com
+      - --cookie-path=/
+      - --cookie-secure=true
+      - --cookie-samesite=lax
+      - --whitelist-domain=kb.vitruvyan.com
+    networks:
+      - monitoring-net
+
   certbot:
     image: certbot/certbot:latest
     container_name: core_certbot
