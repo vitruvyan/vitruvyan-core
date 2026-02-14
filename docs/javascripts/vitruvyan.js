@@ -47,6 +47,88 @@
     return `${base}/${path}`;
   }
 
+  function computeLanguageLinks() {
+    const { pathname, search, hash } = window.location;
+
+    const suffix = `${search || ""}${hash || ""}`;
+
+    // Prefer the production routing scheme (/admin/ and /it/admin/).
+    if (pathname.includes("/it/admin/")) {
+      return {
+        en: pathname.replace("/it/admin/", "/admin/") + suffix,
+        it: pathname + suffix,
+        active: "it",
+      };
+    }
+    if (pathname.includes("/admin/")) {
+      return {
+        en: pathname + suffix,
+        it: pathname.replace("/admin/", "/it/admin/") + suffix,
+        active: "en",
+      };
+    }
+
+    // Fallback for static/local routes (/docs/ and /it/docs/).
+    if (pathname.startsWith("/it/")) {
+      return {
+        en: pathname.replace(/^\/it\//, "/") + suffix,
+        it: pathname + suffix,
+        active: "it",
+      };
+    }
+
+    return {
+      en: pathname + suffix,
+      it: `/it${pathname}` + suffix,
+      active: "en",
+    };
+  }
+
+  function setupLanguageSwitch() {
+    const navbar = document.querySelector("nav.navbar");
+    if (!navbar) return;
+
+    if (document.getElementById("kb-lang-switch")) return;
+
+    const outerNav = navbar.querySelector("#navbarsMenu > ul.navbar-nav");
+    if (!outerNav) return;
+
+    const searchItem = outerNav.querySelector(".md-search-icon")?.closest("li.nav-item") || null;
+
+    const { en, it, active } = computeLanguageLinks();
+
+    const li = document.createElement("li");
+    li.className = "nav-item kb-lang-switch";
+    li.id = "kb-lang-switch";
+
+    const enLink = document.createElement("a");
+    enLink.className = `nav-link text-decoration-none kb-lang-switch__link${active === "en" ? " is-active" : ""}`;
+    enLink.href = en;
+    enLink.textContent = "EN";
+    enLink.setAttribute("aria-label", "Switch language to English");
+
+    const sep = document.createElement("span");
+    sep.className = "kb-lang-switch__sep";
+    sep.textContent = "/";
+    sep.setAttribute("aria-hidden", "true");
+
+    const itLink = document.createElement("a");
+    itLink.className = `nav-link text-decoration-none kb-lang-switch__link${active === "it" ? " is-active" : ""}`;
+    itLink.href = it;
+    itLink.textContent = "IT";
+    itLink.setAttribute("aria-label", "Cambia lingua in Italiano");
+
+    li.appendChild(enLink);
+    li.appendChild(sep);
+    li.appendChild(itLink);
+
+    if (searchItem) {
+      outerNav.insertBefore(li, searchItem);
+    } else {
+      outerNav.appendChild(li);
+    }
+  }
+
   function setupSearchSuggest() {
     const input = document.getElementById("mkdocs-search-query");
     if (!input) return;
@@ -132,5 +214,11 @@
     document.addEventListener("DOMContentLoaded", setupSearchSuggest, { once: true });
   } else {
     setupSearchSuggest();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupLanguageSwitch, { once: true });
+  } else {
+    setupLanguageSwitch();
   }
 })();

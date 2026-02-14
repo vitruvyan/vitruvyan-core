@@ -174,6 +174,34 @@ a#component-site-name:hover {
   background: rgba(0, 0, 0, 0.05);
 }
 
+/* Language switch (EN/IT) in header navbar. */
+#kb-lang-switch {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.15rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+#kb-lang-switch .kb-lang-switch__link {
+  padding-left: 0.2rem;
+  padding-right: 0.2rem;
+  opacity: 0.75;
+}
+
+#kb-lang-switch .kb-lang-switch__link.is-active {
+  opacity: 1;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+#kb-lang-switch .kb-lang-switch__sep {
+  opacity: 0.4;
+  user-select: none;
+}
+
 [data-md-color-scheme="lantana"] {
   --md-default-bg-color: #0b1220;
   --md-default-fg-color: #e8eefc;
