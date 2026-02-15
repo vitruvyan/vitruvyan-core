@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from dataclasses import dataclass
 from datetime import datetime
@@ -46,7 +47,7 @@ def test_store_audit_record_is_idempotent_by_correlation_id(monkeypatch):
     monkeypatch.setenv("POSTGRES_PORT", "9432")
     monkeypatch.setenv("POSTGRES_DB", "vitruvyan_core")
     monkeypatch.setenv("POSTGRES_USER", "vitruvyan_core_user")
-    monkeypatch.setenv("POSTGRES_PASSWORD", "@Caravaggio971_core")
+    monkeypatch.setenv("POSTGRES_PASSWORD", os.getenv("POSTGRES_PASSWORD", ""))
 
     from api_vault_keepers.adapters import persistence as persistence_module
 

@@ -4,4 +4,8 @@ import os
 
 PORT = int(os.getenv("PORT", "8003"))
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
+CORS_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+    if origin.strip()
+]

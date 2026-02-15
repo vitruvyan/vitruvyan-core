@@ -882,7 +882,7 @@ class OrthodoxConfig:
     narrative_max_words: int = int(os.getenv("MCP_NARRATIVE_MAX_WORDS", "300"))
 
 class PostgresConfig:
-    host: str = os.getenv("POSTGRES_HOST", "161.97.140.157")
+    host: str = os.getenv("POSTGRES_HOST", "${POSTGRES_HOST}")
     port: int = int(os.getenv("POSTGRES_PORT", "5432"))
     database: str = os.getenv("POSTGRES_DB", "vitruvyan")
     user: str = os.getenv("POSTGRES_USER", "vitruvyan_user")
@@ -974,7 +974,7 @@ Update docs, remove credentials, verify full refactoring compliance.
 **Appendix K** (`.github/Vitruvyan_Appendix_K_MCP_Integration.md:260`):
 ```markdown
 # BEFORE
-POSTGRES_PASSWORD=@Caravaggio971  # ❌ CRITICAL SECURITY VIOLATION
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD}  # ❌ CRITICAL SECURITY VIOLATION
 
 # AFTER
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}  # ✅ Environment variable
@@ -983,7 +983,7 @@ POSTGRES_PASSWORD=${POSTGRES_PASSWORD}  # ✅ Environment variable
 **Archive Compose** (`infrastructure/docker/archive/docker-compose.omni.yml.OBSOLETE_DEC29:139`):
 ```yaml
 # BEFORE
-POSTGRES_PASSWORD: "@Caravaggio971"  # ❌ CRITICAL SECURITY VIOLATION
+POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"  # ❌ CRITICAL SECURITY VIOLATION
 
 # AFTER (or delete file if truly obsolete)
 POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"  # ✅ Environment variable

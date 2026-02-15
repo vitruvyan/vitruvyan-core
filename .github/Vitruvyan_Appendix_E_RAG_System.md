@@ -665,7 +665,7 @@ QDRANT_API_KEY=  # Optional, not used in Docker network
 QDRANT_TIMEOUT=30.0
 
 # PostgreSQL
-POSTGRES_HOST=161.97.140.157  # ⚠️ CRITICAL: localhost on VPS, NOT in Docker
+POSTGRES_HOST=${POSTGRES_HOST}  # ⚠️ CRITICAL: localhost on VPS, NOT in Docker
 POSTGRES_PORT=5432
 POSTGRES_DB=vitruvyan
 POSTGRES_USER=vitruvyan_user
@@ -699,7 +699,7 @@ services:
     environment:
       - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
       - QDRANT_HOST=vitruvyan_qdrant
-      - POSTGRES_HOST=161.97.140.157  # ⚠️ Host machine
+      - POSTGRES_HOST=${POSTGRES_HOST}  # ⚠️ Host machine
     depends_on:
       - vitruvyan_qdrant
       - vitruvyan_redis

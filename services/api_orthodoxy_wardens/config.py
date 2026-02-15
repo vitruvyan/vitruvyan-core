@@ -34,8 +34,8 @@ class Settings:
         "langgraph.response.completed",
     ]
 
-    # PostgreSQL (host machine — NOT in Docker)
-    PG_HOST = os.getenv("PG_HOST", "161.97.140.157")
+    # PostgreSQL
+    PG_HOST = os.getenv("PG_HOST", "core_postgres")
     PG_PORT = int(os.getenv("PG_PORT", "5432"))
     PG_DB = os.getenv("PG_DB", "vitruvyan")
     PG_USER = os.getenv("PG_USER", "vitruvyan_user")

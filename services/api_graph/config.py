@@ -21,15 +21,15 @@ class Settings:
     SERVICE_PORT: int = int(os.getenv("SERVICE_PORT", "8004"))
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     
-    # CORS origins (Vercel UI + production)
+    # CORS origins — configure via CORS_ORIGINS env var (comma-separated)
+    # Default: local dev only. Set CORS_ORIGINS in .env for production.
     CORS_ORIGINS: List[str] = [
-        "http://localhost:3000",            # Local dev (port 3000)
-        "http://localhost:3001",            # Local dev (port 3001)
-        "https://*.vercel.app",             # Vercel deployments
-        "https://vitruvyan-ui.vercel.app",  # Production Vercel
-        "https://dev.vitruvyan.com",        # Production UI (Nginx SSL)
-        "http://161.97.140.157:3000",       # VPS UI (if needed)
-        "http://161.97.140.157:3001",       # VPS UI port 3001
+        origin.strip()
+        for origin in os.getenv(
+            "CORS_ORIGINS",
+            "http://localhost:3000,http://localhost:3001"
+        ).split(",")
+        if origin.strip()
     ]
     
     # PostgreSQL (for semantic clusters + entity search)
@@ -37,7 +37,7 @@ class Settings:
     POSTGRES_PORT: int = int(os.getenv("POSTGRES_PORT", "5432"))
     POSTGRES_DB: str = os.getenv("POSTGRES_DB", "vitruvyan_core")
     POSTGRES_USER: str = os.getenv("POSTGRES_USER", "vitruvyan")
-    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "your_password")
+    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "")
     
     # Redis (if bus integration needed)
     REDIS_HOST: str = os.getenv("REDIS_HOST", "core_redis")

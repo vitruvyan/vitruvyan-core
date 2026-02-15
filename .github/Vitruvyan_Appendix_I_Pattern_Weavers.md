@@ -1216,7 +1216,7 @@ docker exec vitruvyan_redis redis-cli PUBLISH "pattern_weavers:weave_request" \
   '{"request_id":"test123","query_text":"analizza banche europee","user_id":"test","top_k":5,"similarity_threshold":0.25}'
 
 # Check PostgreSQL logging
-PGPASSWORD='@Caravaggio971' psql -h 172.17.0.1 -U vitruvyan_user -d vitruvyan \
+PGPASSWORD='${POSTGRES_PASSWORD}' psql -h 172.17.0.1 -U vitruvyan_user -d vitruvyan \
   -c "SELECT user_id, query_text, concepts, latency_ms FROM weaver_queries ORDER BY created_at DESC LIMIT 5;"
 ```
 

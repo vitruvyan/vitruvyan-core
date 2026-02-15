@@ -114,9 +114,9 @@
 #### Security Fixes (3 Documents Sanitized)
 | File | Line | Violation | Fix |
 |------|------|-----------|-----|
-| `.github/Vitruvyan_Appendix_K_MCP_Integration.md` | 260 | `POSTGRES_PASSWORD=@Caravaggio971` | `POSTGRES_PASSWORD=${POSTGRES_PASSWORD}` + comment |
-| `.github/Vitruvyan_Appendix_E_RAG_System.md` | 669 | `POSTGRES_PASSWORD=@Caravaggio971` | `POSTGRES_PASSWORD=${POSTGRES_PASSWORD}` |
-| `vitruvyan_core/core/synaptic_conclave/docs/API_REFERENCE.md` | 576 | `POSTGRES_PASSWORD=@Caravaggio971` | `POSTGRES_PASSWORD=${POSTGRES_PASSWORD}` |
+| `.github/Vitruvyan_Appendix_K_MCP_Integration.md` | 260 | `POSTGRES_PASSWORD=${POSTGRES_PASSWORD}` | `POSTGRES_PASSWORD=${POSTGRES_PASSWORD}` + comment |
+| `.github/Vitruvyan_Appendix_E_RAG_System.md` | 669 | `POSTGRES_PASSWORD=${POSTGRES_PASSWORD}` | `POSTGRES_PASSWORD=${POSTGRES_PASSWORD}` |
+| `vitruvyan_core/core/synaptic_conclave/docs/API_REFERENCE.md` | 576 | `POSTGRES_PASSWORD=${POSTGRES_PASSWORD}` | `POSTGRES_PASSWORD=${POSTGRES_PASSWORD}` |
 
 **Security posture**: 🔒 **ZERO hardcoded credentials** (all ENV vars, never committed)
 

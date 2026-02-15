@@ -571,7 +571,7 @@ redis-cli SLOWLOG GET 10
 REDIS_URL=redis://vitruvyan_redis_master:6379
 
 # PostgreSQL (for Scribe)
-POSTGRES_HOST=161.97.140.157
+POSTGRES_HOST=${POSTGRES_HOST}
 POSTGRES_USER=vitruvyan_user
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}  # From environment (NEVER commit credentials)
 POSTGRES_DB=vitruvyan

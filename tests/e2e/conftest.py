@@ -40,7 +40,7 @@ POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
 POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "9432"))
 POSTGRES_DB = os.getenv("POSTGRES_DB", "vitruvyan_core")
 POSTGRES_USER = os.getenv("POSTGRES_USER", "vitruvyan_core_user")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "@Caravaggio971_core")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "")
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "9379"))

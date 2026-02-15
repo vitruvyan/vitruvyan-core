@@ -180,31 +180,21 @@ response = formatter.format(state)
 Domains are **plugins**, not hardcoded into core:
 
 ```python
-# domains/finance/finance_plugin.py
+# domains/finance/graph_plugin.py
 
-class FinancePlugin:
-    def register_intents(self, registry: IntentRegistry):
-        """Register finance-specific intents"""
-        registry.add_intent("investment_verdict", ...)
-        registry.add_intent("portfolio_diversification", ...)
-        
-    def get_response_formatter(self) -> ResponseFormatter:
-        """Return finance-specific formatter"""
-        return FinanceResponseFormatter()
-        
-    def get_slot_filler(self) -> SlotFiller:
-        """Return finance-specific slot filler"""
-        return FinanceSlotFiller()
+from core.orchestration.graph_engine import GraphPlugin
+
+class FinanceGraphPlugin(GraphPlugin):
+    ...
 ```
 
 **Usage:**
 ```python
-from domains.finance.finance_plugin import FinancePlugin
+from core.orchestration.graph_engine import GraphEngine
+from domains.finance.graph_plugin import FinanceGraphPlugin
 
-# Register plugin
-registry = IntentRegistry()
-plugin = FinancePlugin()
-plugin.register_intents(registry)
+engine = GraphEngine().register_plugin(FinanceGraphPlugin())
+config = engine.get_build_config()
 ```
 
 **Benefits:**
@@ -219,7 +209,7 @@ plugin.register_intents(registry)
 ```
 domains/finance/
 ├── __init__.py
-├── finance_plugin.py          # Plugin registration
+├── graph_plugin.py            # GraphPlugin (nodes/routes/state)
 ├── response_formatter.py      # Verdict/gauge/comparison formatting
 └── slot_filler.py             # Investment-specific slot questions
 ```

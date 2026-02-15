@@ -451,7 +451,7 @@ vitruvyan_mcp:
   environment:
     - REDIS_HOST=vitruvyan_redis
     - REDIS_PORT=6379
-    - POSTGRES_HOST=161.97.140.157
+    - POSTGRES_HOST=${POSTGRES_HOST}
     - POSTGRES_PORT=5432
     - POSTGRES_DB=vitruvyan
     - POSTGRES_USER=vitruvyan_user
@@ -1214,7 +1214,7 @@ curl -X POST http://localhost:8020/execute \
 
 2. **Tool execution failing?**
    - Check Orthodoxy logs: `grep "Orthodoxy" docker logs vitruvyan_mcp`
-   - Verify PostgreSQL: `PGPASSWORD='@Caravaggio971' psql -h 161.97.140.157 -U vitruvyan_user -d vitruvyan -c "SELECT 1"`
+   - Verify PostgreSQL: `PGPASSWORD='${POSTGRES_PASSWORD}' psql -h ${POSTGRES_HOST} -U vitruvyan_user -d vitruvyan -c "SELECT 1"`
    - Test tool directly: `curl -X POST localhost:8020/execute -d '{"tool":"screen_tickers","args":{"tickers":["AAPL"]},"user_id":"test"}'`
 
 3. **Vault not archiving?**

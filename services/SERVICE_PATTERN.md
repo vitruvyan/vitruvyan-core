@@ -66,7 +66,7 @@ import os
 class Settings:
     SERVICE_NAME = "api_orthodoxy_wardens"
     REDIS_URL = os.getenv("REDIS_URL", "redis://vitruvyan_redis_master:6379")
-    PG_HOST = os.getenv("PG_HOST", "161.97.140.157")
+    PG_HOST = os.getenv("PG_HOST", "${POSTGRES_HOST}")
     PG_PORT = int(os.getenv("PG_PORT", "5432"))
     PG_DB = os.getenv("PG_DB", "vitruvyan")
     PG_USER = os.getenv("PG_USER", "vitruvyan_user")

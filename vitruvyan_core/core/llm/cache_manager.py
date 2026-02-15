@@ -8,7 +8,6 @@ from typing import Dict, Any, Optional, List, Tuple
 from datetime import datetime, timedelta
 import logging
 from dataclasses import dataclass, asdict
-import pickle
 import os
 from dotenv import load_dotenv
 

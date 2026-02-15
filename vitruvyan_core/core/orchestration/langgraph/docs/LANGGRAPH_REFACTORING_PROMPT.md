@@ -129,7 +129,7 @@ pg = PostgresAgent()
 
 # ❌ VIETATO
 import psycopg2
-conn = psycopg2.connect(host="161.97.140.157", ...)
+conn = psycopg2.connect(host="${POSTGRES_HOST}", ...)
 ```
 
 ### 4. Il Cognitive Bus (Synaptic Conclave) è CONGELATO

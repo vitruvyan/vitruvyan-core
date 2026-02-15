@@ -2315,7 +2315,7 @@ docker logs vitruvyan_api_neural --tail 20 | grep "fundamental"
 **Debugging Steps**:
 ```bash
 # 1. Verify PostgreSQL data exists
-PGPASSWORD='...' psql -h 161.97.140.157 -U vitruvyan_user -d vitruvyan \
+PGPASSWORD='...' psql -h ${POSTGRES_HOST} -U vitruvyan_user -d vitruvyan \
   -c "SELECT ticker, revenue_growth_yoy, eps_growth_yoy FROM fundamentals WHERE ticker='AAPL';"
 
 # 2. Check get_fundamentals_z() execution

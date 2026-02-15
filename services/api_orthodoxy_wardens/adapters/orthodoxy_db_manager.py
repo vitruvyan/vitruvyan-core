@@ -1,6 +1,8 @@
 """
 Orthodoxy Wardens Database Manager
-Handles PostgreSQL interactions for audit confessions and sacred records
+Handles PostgreSQL interactions for audit confessions and sacred records.
+
+Uses PostgresAgent for connection management (env vars, no hardcoded credentials).
 """
 import asyncio
 from datetime import datetime
@@ -9,6 +11,8 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import structlog
 
+from core.agents.postgres_agent import PostgresAgent
+
 logger = structlog.get_logger(__name__)
 
 
@@ -16,53 +20,34 @@ class OrthodoxyDatabaseManager:
     """
     Database manager for Orthodoxy Wardens.
     Handles confessions, audit findings, and sacred records.
+
+    Delegates connection management to PostgresAgent (env vars:
+    POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD).
     """
     
     def __init__(self, connection_params: Optional[Dict[str, str]] = None):
         """
-        Initialize database manager with connection params.
+        Initialize database manager.
         
         Args:
-            connection_params: Dict with host, port, database, user, password
-                             If None, uses environment variables via PostgresAgent pattern
+            connection_params: Dict with host, port, database, user, password.
+                             If None, PostgresAgent reads from environment variables.
         """
         if connection_params:
-            self.conn_params = connection_params
+            self.pg = PostgresAgent(
+                host=connection_params.get("host"),
+                port=str(connection_params.get("port", "5432")),
+                dbname=connection_params.get("database"),
+                user=connection_params.get("user"),
+                password=connection_params.get("password")
+            )
         else:
-            # Use environment variables (Docker networking)
-            import os
-            self.conn_params = {
-                "host": os.getenv("POSTGRES_HOST", "omni_postgres"),
-                "port": int(os.getenv("POSTGRES_PORT", "5432")),
-                "database": os.getenv("POSTGRES_DB", "vitruvyan_omni_omni"),
-                "user": os.getenv("POSTGRES_USER", "vitruvyan_omni_user"),
-                "password": os.getenv("POSTGRES_PASSWORD", "@Caravaggio971_omni")
-            }
-        
-        self._connection = None
-        self._connect()
-    
-    def _connect(self):
-        """Establish database connection."""
-        try:
-            self._connection = psycopg2.connect(**self.conn_params)
-            logger.info("✅ Orthodoxy Database connected", 
-                       host=self.conn_params["host"],
-                       database=self.conn_params["database"])
-        except Exception as e:
-            logger.error(f"💀 Failed to connect to Orthodoxy Database: {e}")
-            raise
-    
-    def _ensure_connection(self):
-        """Ensure connection is alive, reconnect if needed."""
-        if self._connection is None or self._connection.closed:
-            self._connect()
+            self.pg = PostgresAgent()
     
     @property
     def connection(self):
-        """Get active database connection."""
-        self._ensure_connection()
-        return self._connection
+        """Get active database connection (delegates to PostgresAgent)."""
+        return self.pg.connection
     
     # =========================================================================
     # CONFESSION MANAGEMENT
@@ -453,16 +438,12 @@ class OrthodoxyDatabaseManager:
             True if connected and responsive
         """
         try:
-            with self.connection.cursor() as cur:
-                cur.execute("SELECT 1")
-                cur.fetchone()
-            return True
+            result = self.pg.fetch_scalar("SELECT 1")
+            return result == 1
         except Exception as e:
             logger.error(f"💀 Database health check failed: {e}")
             return False
     
     def close(self):
         """Close database connection."""
-        if self._connection and not self._connection.closed:
-            self._connection.close()
-            logger.info("🔒 Orthodoxy Database connection closed")
+        self.pg.close()

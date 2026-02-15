@@ -275,7 +275,7 @@ class Settings:
     ]
 
     # PostgreSQL (host machine)
-    PG_HOST = os.getenv("PG_HOST", "161.97.140.157")
+    PG_HOST = os.getenv("PG_HOST", "${POSTGRES_HOST}")
     PG_PORT = int(os.getenv("PG_PORT", "5432"))
     PG_DB = os.getenv("PG_DB", "vitruvyan")
     PG_USER = os.getenv("PG_USER", "vitruvyan_user")
@@ -435,7 +435,7 @@ sys.path.insert(0, '/app')               # Global core/ imports
 **CRITICAL**: `/app` MUST be first in path so global `core/` (symlink) takes priority over local `api_<order>/core/` package (if the service has a core/ subdirectory).
 
 ### 7. PostgreSQL is on HOST MACHINE
-- Host: `161.97.140.157:5432` (NOT in Docker, NOT `omni_postgres` for production data)
+- Host: `${POSTGRES_HOST}:5432` (NOT in Docker, NOT `omni_postgres` for production data)
 - `omni_postgres` is the vitruvyan-core local PostgreSQL (different from production)
 - Always use `PostgresAgent()` from `core/agents/postgres_agent.py`
 - NEVER use direct `psycopg2.connect()`

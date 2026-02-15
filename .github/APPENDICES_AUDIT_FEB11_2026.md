@@ -31,7 +31,7 @@
 | **M - Shadow Trading** | Jan 7, 2026 | 910 | **NEEDS UPDATE** | 🟡 MEDIUM | References `cognitive_bus:events` → should be Synaptic Conclave StreamBus. Path `core/langgraph/node/` DOESN'T EXIST. |
 | **N - Portfolio Architects** | Jan 18, 2026 | 796 | **NEEDS UPDATE** | 🟡 MEDIUM | Path `core/portfolio_architects/` DOESN'T EXIST. References `cognitive_bus:portfolio_architects` (stale terminology). Hardcoded IP line 778. |
 | **C - Epistemic Roadmap** | Oct 26, 2025 | 93 | **NEEDS UPDATE** | 🟢 LOW | Roadmap obsolete. Q4 2025 mentions CrewAI (removed). No mention LIVELLO 1+2, contracts, Feb 2026 architecture milestones. |
-| **F - Conversational Layer** | ~2025 | 402 | **MINOR UPDATE** | 🔴 SECURITY | Historical/archival doc. **⚠️ SECURITY ISSUE: Plaintext password line 375 (`@Caravaggio971`)** — MUST REMOVE IMMEDIATELY. |
+| **F - Conversational Layer** | ~2025 | 402 | **MINOR UPDATE** | 🔴 SECURITY | Historical/archival doc. **⚠️ SECURITY ISSUE: Plaintext password line 375 (`${POSTGRES_PASSWORD}`)** — MUST REMOVE IMMEDIATELY. |
 | **B - Proprietary Algorithms** | Dec 23, 2025 | 213 | **MINOR UPDATE** | 🟢 LOW | Conceptual docs (VEE, VARE). Finance terminology OK (are proprietary algorithms). Should add note on domain-agnostic evolution path. |
 | **L - UI Architecture** | Dec 24, 2025 | 938 | **MINOR UPDATE** | 🟢 LOW | Frontend documentation, largely self-contained. Backend path references stale (`core/langgraph/`, `core/logic/neural_engine/`). Update import examples. |
 | **O - Orthodoxy Wardens** | Feb 9, 2026 | 644 | **OK AS-IS** | ✅ CURRENT | Written post-refactoring. Correctly documents LIVELLO 1+2, StreamBus, SacredRole ABC. Minor: line 182 "Cognitive Bus" → "Synaptic Conclave". |
@@ -89,7 +89,7 @@
 
 | Appendix | Line | Issue | Remediation |
 |----------|------|-------|-------------|
-| F - Conversational Layer | 375 | Password `@Caravaggio971` in plain text | Replace with env var reference (`${ADMIN_PASSWORD}`) or remove entirely |
+| F - Conversational Layer | 375 | Password `${POSTGRES_PASSWORD}` in plain text | Replace with env var reference (`${ADMIN_PASSWORD}`) or remove entirely |
 
 ---
 

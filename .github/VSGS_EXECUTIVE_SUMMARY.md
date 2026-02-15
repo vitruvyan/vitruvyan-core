@@ -728,7 +728,7 @@ else:
 │           │                                          │          │
 │           ▼                                          ▼          │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │  PostgreSQL (161.97.140.157:5432)                        │  │
+│  │  PostgreSQL (${POSTGRES_HOST}:5432)                        │  │
 │  │  ⚠️ CRITICAL: Runs on HOST, NOT in Docker                │  │
 │  │                                                           │  │
 │  │  Tables:                                                  │  │
@@ -771,7 +771,7 @@ services:
       - VSGS_COLLECTION_NAME=semantic_states
       - EMBEDDING_API_URL=http://vitruvyan_api_embedding:8010
       - QDRANT_HOST=vitruvyan_qdrant
-      - POSTGRES_HOST=161.97.140.157           # ⚠️ Host IP (not localhost)
+      - POSTGRES_HOST=${POSTGRES_HOST}           # ⚠️ Host IP (not localhost)
     depends_on:
       - vitruvyan_qdrant
       - vitruvyan_redis

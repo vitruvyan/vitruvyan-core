@@ -311,17 +311,21 @@ pytest -v
 
 LangGraph core is **domain-agnostic**. Finance is a **plugin**, not hardcoded:
 
+```bash
+# Default: generic domain
+export INTENT_DOMAIN=finance   # enable finance intents (auto-loaded by graph_flow.py)
+export ENTITY_DOMAIN=finance   # optional (defaults to INTENT_DOMAIN)
+export EXEC_DOMAIN=finance     # optional (requires explicit registration today)
+```
+
+If you want `EXEC_DOMAIN=finance`, register the handler at service startup:
+
 ```python
-# Core orchestration (domain-agnostic)
-from core.orchestration.langgraph.graph_engine import GraphEngine
-from core.orchestration.intent_registry import IntentRegistry
+import os
+from domains.finance.execution_config import register_finance_execution_handler
 
-# Finance plugin (domain-specific)
-from domains.finance.finance_plugin import FinancePlugin
-
-# Register plugin
-registry = IntentRegistry()
-registry.register_plugin(FinancePlugin())
+if os.getenv("EXEC_DOMAIN") == "finance":
+    register_finance_execution_handler()
 ```
 
 **Benefits:**

@@ -42,7 +42,7 @@ services:
     environment:
       POSTGRES_DB: vitruvyan_core
       POSTGRES_USER: vitruvyan_core_user
-      POSTGRES_PASSWORD: "@Caravaggio971_core"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
     ports:
       - "9432:5432"
@@ -144,7 +144,7 @@ services:
       - POSTGRES_PORT=5432
       - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
       - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GRAPH_LLM_MODEL=gpt-4o-mini
       - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
@@ -201,7 +201,7 @@ services:
       - POSTGRES_PORT=5432
       - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
       - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       # Redis (StreamBus)
       - REDIS_HOST=core_redis
       - REDIS_PORT=6379
@@ -246,7 +246,7 @@ services:
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}
       - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
       - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - QDRANT_URL=${QDRANT_URL:-http://core_qdrant:6333}
       - REDIS_URL=${REDIS_URL:-redis://core_redis:6379}
     depends_on:
@@ -275,7 +275,7 @@ services:
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
       POSTGRES_DB: ${POSTGRES_DB:-vitruvyan_core}
       POSTGRES_USER: ${POSTGRES_USER:-vitruvyan_core_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-@Caravaggio971_core}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       REDIS_HOST: core_redis
       REDIS_PORT: 6379
@@ -318,7 +318,7 @@ services:
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}
       - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
       - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       # Vector DB
       - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
       - QDRANT_PORT=${QDRANT_PORT:-6333}
@@ -429,7 +429,7 @@ services:
       - POSTGRES_PORT=5432
       - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
       - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - QDRANT_URL=${QDRANT_URL:-http://core_qdrant:6333}
       # Service URLs
       - NEURAL_ENGINE_URL=http://neural_engine:8003
@@ -480,7 +480,7 @@ services:
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}
       - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
       - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       # Vector DB (Mnemosyne)
       - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
       - QDRANT_PORT=${QDRANT_PORT:-6333}
@@ -532,7 +532,7 @@ services:
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}
       - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
       - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       # Vector DB (Mnemosyne)
       - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
       - QDRANT_PORT=${QDRANT_PORT:-6333}
@@ -578,7 +578,7 @@ services:
       - POSTGRES_PORT=5432
       - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
       - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       # Vector DB
       - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
       - QDRANT_PORT=${QDRANT_PORT:-6333}
@@ -617,7 +617,7 @@ services:
       - POSTGRES_PORT=5432
       - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
       - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       # Vector DB
       - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
       - QDRANT_PORT=${QDRANT_PORT:-6333}
@@ -700,7 +700,7 @@ services:
       - POSTGRES_PORT=5432
       - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
       - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - ./logs/vault_listener:/app/logs
     depends_on:
@@ -733,7 +733,7 @@ services:
       - POSTGRES_PORT=5432
       - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
       - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - ./logs/babel_listener:/app/logs
     depends_on:
@@ -766,7 +766,7 @@ services:
       - POSTGRES_PORT=5432
       - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
       - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-@Caravaggio971_core}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - ./logs/codex_listener:/app/logs
     depends_on:
@@ -881,7 +881,7 @@ services:
     container_name: core_postgres_exporter
     restart: always
     environment:
-      - DATA_SOURCE_NAME=postgresql://vitruvyan_user:@Caravaggio971@172.17.0.1:5432/vitruvyan?sslmode=disable
+      - DATA_SOURCE_NAME=postgresql://vitruvyan_user:${POSTGRES_PASSWORD}@172.17.0.1:5432/vitruvyan?sslmode=disable
       - PG_EXPORTER_EXTEND_QUERY_PATH=/etc/postgres_exporter/queries.yml
     ports:
       - "9187:9187"

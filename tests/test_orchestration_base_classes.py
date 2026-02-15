@@ -518,7 +518,7 @@ class TestFinanceGraphPlugin:
     
     def test_plugin_implements_contract(self):
         """FinanceGraphPlugin should implement full GraphPlugin contract."""
-        from vitruvyan_core.domains.finance_plugin import FinanceGraphPlugin
+        from domains.finance.graph_plugin import FinanceGraphPlugin
         
         plugin = FinanceGraphPlugin()
         
@@ -530,7 +530,7 @@ class TestFinanceGraphPlugin:
     
     def test_plugin_has_compose_components(self):
         """FinanceGraphPlugin should provide ResponseFormatter and SlotFiller."""
-        from vitruvyan_core.domains.finance_plugin import FinanceGraphPlugin
+        from domains.finance.graph_plugin import FinanceGraphPlugin
         from core.orchestration.compose.response_formatter import ResponseFormatter
         from core.orchestration.compose.slot_filler import SlotFiller
         
@@ -547,7 +547,7 @@ class TestFinanceGraphPlugin:
     
     def test_parser_extracts_budget(self):
         """FinanceParser should extract budget from queries."""
-        from vitruvyan_core.domains.finance_plugin import FinanceGraphPlugin
+        from domains.finance.graph_plugin import FinanceGraphPlugin
         
         plugin = FinanceGraphPlugin()
         parser = plugin.get_parser()
@@ -562,7 +562,7 @@ class TestFinanceGraphPlugin:
     
     def test_state_extensions(self):
         """Finance state extensions should include all required fields."""
-        from vitruvyan_core.domains.finance_plugin import FinanceGraphPlugin
+        from domains.finance.graph_plugin import FinanceGraphPlugin
         
         plugin = FinanceGraphPlugin()
         extensions = plugin.get_state_extensions()

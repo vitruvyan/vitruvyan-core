@@ -1,7 +1,7 @@
 # Finance Domain Configuration — Hook Pattern Examples
 
 > **Created**: February 14, 2026  
-> **Status**: Example implementations (not auto-loaded)  
+> **Status**: Example implementations (hook pattern reference)  
 > **Pattern**: Domain-specific plugin registration for entity resolution and execution
 
 ---
@@ -75,25 +75,27 @@ export EXEC_DOMAIN=finance
 
 ### 3. Intent Detection (finance intents)
 
-**Registration** (in `services/api_graph/main.py` — ALREADY IMPLEMENTED):
-```python
-import os
-from domains.finance.intent_config import create_finance_registry
-
-intent_domain = os.getenv("INTENT_DOMAIN", "finance")
-if intent_domain == "finance":
-    registry = create_finance_registry()
-    intent_detection_node.configure(registry)
-```
+**Auto-load** (current implementation):
+- Set `INTENT_DOMAIN=finance`
+- `core/orchestration/langgraph/graph_flow.py` dynamically imports `domains.finance.intent_config`
+  and calls `create_finance_registry()`.
 
 **Environment**:
 ```bash
-export INTENT_DOMAIN=finance  # Current default
+export INTENT_DOMAIN=finance  # default is "generic"
+```
+
+**Domain contract** (in `domains/finance/intent_config.py`):
+```python
+from core.orchestration.intent_registry import IntentRegistry
+
+def create_finance_registry() -> IntentRegistry:
+    ...
 ```
 
 **Behavior**:
-- **With registration**: Finance intents (trend, momentum, risk, etc.)
-- **Without registration**: Core intents only (soft, unknown)
+- `INTENT_DOMAIN=finance`: Finance intents (trend, momentum, risk, etc.)
+- `INTENT_DOMAIN=generic` (default): Core intents only (soft, unknown)
 
 ---
 
@@ -129,13 +131,13 @@ from core.orchestration.langgraph.node.exec_node import exec_node
 state = {"entity_ids": ["AAPL"], "intent": "trend"}
 
 # Should passthrough with flow=direct
-result1 = entity_resolver_node(state.copy())
-print(f"entity_resolver (stub): flow={result1.get('flow')}")
-
-# Should return fake success with empty ranking
-result2 = exec_node(state.copy())
-print(f"exec_node (stub): ok={result2.get('ok')}, ranking={len(result2['raw_output']['ranking'])}")
-EOF
+	result1 = entity_resolver_node(state.copy())
+	print(f"entity_resolver (stub): flow={result1.get('flow')}")
+	
+	# Should return fake success with empty results
+	result2 = exec_node(state.copy())
+	print(f"exec_node (stub): ok={result2.get('ok')}, results={len(result2['raw_output']['results'])}, route={result2.get('route')}")
+	EOF
 ```
 
 **Domain behavior** (with finance registration):
@@ -156,10 +158,10 @@ state = {"entity_ids": ["AAPL"], "intent": "trend"}
 result1 = entity_resolver_node(state.copy())
 print(f"entity_resolver (finance): resolved={len(result1.get('resolved_entities', []))}")
 
-# Should execute finance handler (Neural Engine stub)
-result2 = exec_node(state.copy())
-print(f"exec_node (finance): ranking={len(result2['raw_output']['ranking'])}")
-EOF
+	# Should execute finance handler (Neural Engine stub)
+	result2 = exec_node(state.copy())
+	print(f"exec_node (finance): results={len(result2['raw_output']['results'])}, route={result2.get('route')}")
+	EOF
 ```
 
 ---
@@ -185,18 +187,20 @@ EOF
 
 ## Status: EXAMPLE ONLY
 
-⚠️ **These files are NOT auto-loaded** in the current implementation.
+⚠️ **Auto-loading depends on the entrypoint**:
+- When running the full LangGraph pipeline (`core/orchestration/langgraph/graph_flow.py`), the intent registry is auto-loaded when `INTENT_DOMAIN != "generic"` and the entity resolver config is auto-loaded when `ENTITY_DOMAIN` resolves to a non-generic domain (defaults to `INTENT_DOMAIN`).
+- `execution_config.py` is currently **NOT auto-loaded**: you must register it explicitly at service startup when `EXEC_DOMAIN=finance`.
 
 To enable finance domain handlers:
-1. Uncomment registration calls in `services/api_graph/main.py`
-2. Set environment variables (`ENTITY_DOMAIN=finance`, `EXEC_DOMAIN=finance`)
+1. Set environment variables (`INTENT_DOMAIN=finance`, `ENTITY_DOMAIN=finance`, `EXEC_DOMAIN=finance`)
+2. Register handlers in your service startup/entrypoint (at minimum: `register_finance_execution_handler()`)
 3. Restart api_graph service
 
-Current behavior (as of Feb 14, 2026):
+Current behavior (as of Feb 15, 2026):
 - `INTENT_DOMAIN=generic` → default (core intents only)
-- `INTENT_DOMAIN=finance` → **ACTIVE** (finance intents loaded)
-- `ENTITY_DOMAIN=finance` → **DISABLED** (stub passthrough)
-- `EXEC_DOMAIN=finance` → **DISABLED** (fake success stub)
+- `INTENT_DOMAIN=finance` → **ACTIVE** (finance intents auto-loaded)
+- `ENTITY_DOMAIN=finance` → **ACTIVE** in pipeline (auto-registered by graph_flow.py)
+- `EXEC_DOMAIN=finance` → **DISABLED** unless explicitly registered (fake success stub)
 
 ---
 

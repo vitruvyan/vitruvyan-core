@@ -540,10 +540,10 @@ python3 scripts/check_tron_wallet.py
 ### 8.3 Database Setup
 ```bash
 # Apply schema
-PGPASSWORD='@Caravaggio971' psql -h 161.97.140.157 -U vitruvyan_user -d vitruvyan -f core/ledger/schema.sql
+PGPASSWORD='${POSTGRES_PASSWORD}' psql -h ${POSTGRES_HOST} -U vitruvyan_user -d vitruvyan -f core/ledger/schema.sql
 
 # Verify tables
-PGPASSWORD='@Caravaggio971' psql -h 161.97.140.157 -U vitruvyan_user -d vitruvyan -c "\d ledger_anchors"
+PGPASSWORD='${POSTGRES_PASSWORD}' psql -h ${POSTGRES_HOST} -U vitruvyan_user -d vitruvyan -c "\d ledger_anchors"
 ```
 
 ### 8.4 Dependencies
@@ -693,7 +693,7 @@ python3 scripts/test_real_anchoring.py
 ### 10.3 Manual Verification
 ```bash
 # 1. Check database
-PGPASSWORD='@Caravaggio971' psql -h 161.97.140.157 -U vitruvyan_user -d vitruvyan \
+PGPASSWORD='${POSTGRES_PASSWORD}' psql -h ${POSTGRES_HOST} -U vitruvyan_user -d vitruvyan \
   -c "SELECT * FROM ledger_anchors ORDER BY anchored_at DESC LIMIT 1;"
 
 # 2. Check blockchain explorer
@@ -833,7 +833,7 @@ python3 scripts/test_real_anchoring.py
 python3 -c "from core.ledger import batch_and_anchor; batch_and_anchor()"
 
 # Check database
-PGPASSWORD='@Caravaggio971' psql -h 161.97.140.157 -U vitruvyan_user -d vitruvyan \
+PGPASSWORD='${POSTGRES_PASSWORD}' psql -h ${POSTGRES_HOST} -U vitruvyan_user -d vitruvyan \
   -c "SELECT * FROM ledger_recent_activity;"
 
 # Check balance
