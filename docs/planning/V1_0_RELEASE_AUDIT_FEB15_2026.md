@@ -1,8 +1,9 @@
 # VITRUVYAN CORE V1.0 — STATE OF THE ART
 
-> **Date**: 2026-02-15T22:30Z (February 15, 2026 — 23:30 CET)  
-> **Release Readiness Score**: **97.0%** (target 90%)  
-> **Purpose**: Canonical reference document for AI analysis of the Vitruvyan Core codebase
+> **Date**: 2026-02-15T23:45Z (February 16, 2026 — 00:45 CET)  
+> **Release Readiness Score**: **97.5%** (target 90%)  
+> **Purpose**: Canonical reference document for AI analysis of the Vitruvyan Core codebase  
+> **Certification**: Final Closure Certification PASSED (5/5 sections) — see `V1_FINAL_CLOSURE_CERTIFICATION_FEB15_2026.md`
 
 ---
 
@@ -78,6 +79,9 @@ vitruvyan_core/
 │   └── vpar/                     # Vitruvyan Probabilistic Assessment
 ├── domains/
 │   ├── finance/                  # Reference vertical (intent_config, prompts, slots)
+│   ├── energy/                   # Test vertical (grid, renewables) — V1.0 certification
+│   ├── facility/                 # Test vertical (building mgmt) — V1.0 certification
+│   ├── dummy_test/               # Minimal test vertical — V1.0 certification
 │   ├── base_domain.py            # Domain ABC
 │   ├── aggregation_contract.py
 │   ├── explainability_contract.py
@@ -166,6 +170,7 @@ from core.contracts import (
 - No finance/trading terms in core code (legacy remnants fully purged from active code paths)
 - Intent detection, emotion detection, entity extraction all delegate to LLM as primary engine (regex fallback only)
 - `domains/finance/` exists as reference implementation, zero imports from core into it
+- **Multi-vertical proven**: 4 domains (finance, energy, facility, dummy_test) load dynamically via `importlib`, with 0 naming collisions and full config isolation
 
 ---
 
@@ -210,7 +215,8 @@ from core.contracts import (
 
 ### 4.5 Configuration Hygiene
 
-- Zero `load_dotenv()` in `vitruvyan_core/core/` — called **only** in service entrypoints (`services/api_*/main.py`)
+- Zero `load_dotenv()` in **all production code** — core and services
+- Removed from all service entrypoints during hardening + final certification
 - Prevents `.env` files from silently overriding production environment variables
 
 ### 4.6 CORS
@@ -410,7 +416,7 @@ These rules are enforced across the codebase and must be preserved by any future
 6. **Bus is payload-blind** — transport layer never inspects, routes, or correlates event content.
 7. **Validated lists are authoritative** — if client sends `validated_entities`, backend respects it (including explicit `[]`).
 8. **LLM-first, never heuristics-first** — intent, emotion, entity extraction delegate to LLM. Regex is only fallback.
-9. **No `load_dotenv()` in core** — configuration exclusively via environment variables in `vitruvyan_core/core/`. `load_dotenv()` is called only in service entrypoints (`main.py`).
+9. **No `load_dotenv()` anywhere** — configuration exclusively via environment variables. Zero `load_dotenv()` calls in core and services.
 10. **Failed events to DLQ** — events exceeding `DLQ_MAX_RETRIES` must be routed to the Dead Letter Queue, not left in PEL indefinitely.
 
 ---
@@ -425,6 +431,15 @@ These rules are enforced across the codebase and must be preserved by any future
 | Hardening tests (`tests/test_hardening_fixes.py`) | 29 | ✅ All passing |
 | Auth middleware tests | 14 | ✅ All passing |
 | Skipped (infrastructure-dependent) | 12 | Expected (need Docker) |
+
+**Final Closure Certification** (5 sections, all passed):
+- S1 Structural: 256 files AST-scanned, 0 import violations
+- S2 Performance: Neural Engine O(n) scaling, 24K entities/sec, no memory leaks
+- S3 Concurrency: 50 concurrent pipelines, fault injection, no deadlocks
+- S4 Multi-Vertical: 4 domains loaded dynamically, 0 collisions
+- S5 Security: 642 files secret-scanned, 8/8 cold boot imports, 0 load_dotenv()
+
+Full report: `docs/planning/V1_FINAL_CLOSURE_CERTIFICATION_FEB15_2026.md`
 
 **Hardening test breakdown** (29 tests, 6 classes):
 - `TestNodeExecutionGuard` — 7 tests (success, timeout, exception, per-call override, env config, singleton, state preservation)
@@ -460,12 +475,12 @@ These items are documented for completeness. None block V1.0 release.
 
 | Criterion | Score | Description |
 |:---|:---:|:---|
-| **Domain-Agnostic** | **97%** | Core fully agnostic; 0 hard imports core→finance. Finance tests isolated in `tests/verticals/` with `importorskip`. Babel plugin imports conditional. Residual: cosmetic docstring mentions. |
-| **No Hard-Coded** | **97%** | All via env vars. Zero `load_dotenv()` in core. Residual: 3 Qdrant collection defaults. |
+| **Domain-Agnostic** | **98%** | Core fully agnostic; 0 hard imports core→finance. Finance tests isolated in `tests/verticals/` with `importorskip`. Babel plugin imports conditional. 4 verticals proven (finance, energy, facility, dummy_test). Residual: cosmetic docstring mentions. |
+| **No Hard-Coded** | **98%** | All via env vars. Zero `load_dotenv()` in core AND services. Residual: 3 Qdrant collection defaults. |
 | **Security** | **94%** | Auth middleware, Redis TLS/password, CORS, structured audit logging. Residual: git history purge. |
 | **Scalability** | **96%** | Pooling, SCAN (complete), lazy init, execution guard, DLQ, trace ID collision-safe. Residual: async LLM. |
 | **Plugin-Ready** | **97%** | `contracts/`, `ILLMProvider`, `BaseGraphState`, `IntentRegistry`, `PromptRegistry`. |
-| **TOTAL** | **97.0%** | **RELEASE READY** |
+| **TOTAL** | **97.5%** | **RELEASE READY — Final Closure Certified** |
 
 ---
 
@@ -481,7 +496,9 @@ These items are documented for completeness. None block V1.0 release.
 | `dc5c1b9` | FASE 4 | Scalability (pooling, SCAN, lazy init, env vars, ILLMProvider) | 9 | +286/-77 |
 | `5e214eb` | HARDENING | Execution guard, DLQ, KEYS→SCAN, audit logging, load_dotenv removal | 17 | +1421/-31 |
 | `b61d848` | COUPLING | Finance test isolation (`tests/verticals/`), babel plugin conditional imports | 8 | +384/-250 |
+| `26f4a95` | CERTIFICATION | V1.0 structural certification — PASS (5 criteria verified) | 1 | +254 |
+| `743a54d` | **FINAL CERT** | **Final Closure Certification — ALL 5 SECTIONS PASSED** (S1-S5) | 8 | +399/-3 |
 
-**Score progression**: 79% → 96% (remediation) → **97%** (hardening + coupling fixes).
+**Score progression**: 79% → 96% (remediation) → 97% (hardening) → **97.5%** (final closure).
 
-All phases completed (0, 1, 2, 3, 4, 5) + Hardening + Finance Coupling Fixes.
+All phases completed (0, 1, 2, 3, 4, 5) + Hardening + Coupling + Structural Cert + **Final Closure Certification**.
