@@ -56,7 +56,8 @@ signals:
 ### 3. Plugin Architecture
 Wrap ANY HuggingFace model → SignalExtractionResult:
 ```python
-from plugins.finance_signals import FinanceSignalsPlugin
+# Service-level import (LIVELLO 2 — conditional, fails gracefully if not installed)
+from api_babel_gardens.plugins.finance_signals import FinanceSignalsPlugin
 
 plugin = FinanceSignalsPlugin()
 signals = plugin.extract_signals(
@@ -231,7 +232,8 @@ patterns = correlate_signals(
 ### 1. Extract Finance Signals
 ```python
 from core.cognitive.babel_gardens.domain import load_config_from_yaml
-from plugins.finance_signals import FinanceSignalsPlugin
+# Service-level import (LIVELLO 2 — conditional, fails gracefully if not installed)
+from api_babel_gardens.plugins.finance_signals import FinanceSignalsPlugin
 
 # Load config
 config = load_config_from_yaml("examples/signals_finance.yaml")

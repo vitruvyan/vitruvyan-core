@@ -18,14 +18,36 @@ Structure:
 
 Sacred Law: "Signals are inferred, never invented"
 All extractions must provide explainability traces for Orthodoxy Wardens.
+
+Plugin loading is conditional — each vertical plugin is imported only if
+its module is present. This allows deploying Babel Gardens without every
+vertical installed.
 """
 
-from .finance_signals import (
-    FinanceSignalsPlugin,
-    extract_finance_signals,
-)
+__all__: list[str] = []
 
-__all__ = [
-    "FinanceSignalsPlugin",
-    "extract_finance_signals",
-]
+# --- Finance vertical (FinBERT-based signals) ---
+try:
+    from .finance_signals import (
+        FinanceSignalsPlugin,
+        extract_finance_signals,
+    )
+    __all__ += ["FinanceSignalsPlugin", "extract_finance_signals"]
+except ImportError:
+    pass
+
+# --- Cybersecurity vertical (SecBERT-based signals) ---
+# Uncomment when cybersecurity_signals.py is ready:
+# try:
+#     from .cybersecurity_signals import CybersecuritySignalsPlugin
+#     __all__ += ["CybersecuritySignalsPlugin"]
+# except ImportError:
+#     pass
+
+# --- Maritime vertical (MaritimeBERT-based signals) ---
+# Uncomment when maritime_signals.py is ready:
+# try:
+#     from .maritime_signals import MaritimeSignalsPlugin
+#     __all__ += ["MaritimeSignalsPlugin"]
+# except ImportError:
+#     pass

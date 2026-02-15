@@ -178,14 +178,18 @@
 | `integration/` | ~80 | PostgreSQL, Qdrant, Redis interactions |
 | `graph/` | ~50 | LangGraph node execution |
 | `e2e/` | ~30 | Full pipeline (/run endpoint) |
-| `architectural/` | ~15 | Import checks, LIVELLO 1 purity |
+| `architectural/` | 165 | Import checks, LIVELLO 1 purity, domain-agnostic guardrails |
+| `verticals/` | 12 | Finance vertical tests (guarded with `importorskip`) |
+| `hardening/` | 29 | Execution guard, DLQ, audit, SCAN, load_dotenv |
+| `auth/` | 14 | AuthMiddleware unit tests |
+| `mcp/` | 13 | MCP integration tests |
+| `orchestration/` | 19 | Base class contracts (core-only) |
 
-**Total**: 449 test functions, 7.7K LOC (~11% test-to-code ratio for 71K core+services)
+**Total**: 706 test functions collected (as of Feb 15, 2026)
 
 **Key Gaps**:
 - Hook pattern registries (EntityResolverRegistry, ExecutionRegistry) — unit tests pending
 - Finance domain configs (entity_resolver_config, execution_config) — integration tests pending
-- MCP integration tests (currently manual verification only)
 
 ---
 

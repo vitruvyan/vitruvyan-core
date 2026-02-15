@@ -1,6 +1,6 @@
 # tests/ — Test Suite
 
-> **Last Updated**: February 12, 2026  
+> **Last Updated**: February 15, 2026  
 > **Purpose**: Unit tests, integration tests, test helpers  
 > **Type**: pytest-based test suite (unit + integration + e2e)
 
@@ -36,6 +36,13 @@ tests/
 │   ├── test_postgres/           → PostgresAgent, database ops
 │   ├── test_qdrant/             → QdrantAgent, vector ops
 │   └── test_e2e/                → Full flow tests
+│
+├── verticals/                   # Domain-vertical tests (guarded)
+│   └── test_finance_vertical.py → Finance plugin tests (importorskip)
+│
+├── architectural/               # Structural guardrail tests
+│   ├── test_domain_agnostic_guardrails.py
+│   └── test_import_boundaries.py
 │
 ├── helpers/                     # Test utilities
 │   ├── fixtures.py              → pytest fixtures (bus, db, mock data)
