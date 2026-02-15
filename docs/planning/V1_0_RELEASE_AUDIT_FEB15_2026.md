@@ -1,268 +1,416 @@
-# VITRUVYAN CORE V1.0 — AUDIT DI RILASCIO
+# VITRUVYAN CORE V1.0 — STATE OF THE ART
 
-> **Data**: 15 Febbraio 2026  
-> **Score attuale**: **96.0%** — Target minimo: **90%** ✅ RAGGIUNTO  
-> **FASE 0 completata**: Sicurezza emergenza (password, IP, CORS, pickle, .env untracked)  
-> **FASE 1 completata**: Core domain-agnostic al 95% (~45 file, ~90 violazioni risolte)  
-> **FASE 2 completata**: Sacred Orders cleanup (agents → _legacy/, import fix, MetricNames)  
-> **FASE 5 completata**: Qualità & Polish (contracts/, BaseGraphState, print→logger, lifespan, qdrant)  
-> **FASE 3 completata**: Sicurezza infrastrutturale (Redis TLS/password, auth middleware, CORS, hostname)  
-> **FASE 4 completata**: Scalabilità (connection pooling, paginated fetch, SCAN, lazy graph, env vars, ILLMProvider)  
-> **Tutte le FASI completate.** Score 79% → 96%.
+> **Date**: February 15, 2026  
+> **Release Readiness Score**: **96.0%** (target 90%)  
+> **Purpose**: Canonical reference document for AI analysis of the Vitruvyan Core codebase
 
 ---
 
-## STATO PER CRITERIO
+## 1. MISSION
 
-| Criterio | Attuale | Target | Gap |
-|:---|:---:|:---:|:---:|
-| **Domain-Agnostic** | **95%** ✅ | 98% | Solo commenti/docstring residui |
-| **No Hard-Coded** | **96%** ✅ | 96% | Tutti i valori operativi configurabili via env |
-| **Sicurezza** | **92%** ✅ | 95% | Auth opt-in, Redis TLS/password, CORS completo |
-| **Scalabilità** | **93%** ✅ | 93% | Pooling, paginazione, SCAN, lazy init |
-| **Plugin-Ready** | **97%** ✅ | 95% | `contracts/` + `ILLMProvider` protocol |
+Vitruvyan Core is a **domain-agnostic epistemic operating system** that provides:
 
----
+- A governed cognitive pipeline (LangGraph orchestration, Sacred Orders)
+- Pluggable domain verticals via configuration and runtime plugins
+- A solid, secure, scalable framework that never embeds domain-specific assumptions
 
-## VIOLAZIONI CRITICHE APERTE
-
-### ✅ SEC-01: PASSWORD DATABASE — RISOLTO
-- `orthodoxy_db_manager.py` migrato a `PostgresAgent` (no psycopg2.connect diretto)
-- Password e test defaults rimossi da tutti i .py
-- `.env` untracked da git + `.env.example` creato
-- docker-compose.yml: defaults rimossi, usa `${POSTGRES_PASSWORD}`
-- Tutti i docs `.github/` e `services/` puliti da password
-
-### ✅ SEC-02: IP PRODUZIONE — RISOLTO
-- Rimosso `161.97.140.157` da api_graph/config.py, api_orthodoxy_wardens/config.py
-- CORS ora via env var in api_graph, default localhost-only
-- Rimosso IP da tutti i docs (sed → `${POSTGRES_HOST}`)
-
-### ✅ SEC-03: CORS WILDCARD — RISOLTO
-- api_neural_engine/config.py: `*` → `http://localhost:3000` default
-- api_graph/config.py: CORS configurabile via `CORS_ORIGINS` env var
-
-### ✅ SEC-04: AUTH MIDDLEWARE — RISOLTO
-- Middleware opt-in creato in `core/middleware/auth.py` (Bearer token validation)
-- Default: `VITRUVYAN_AUTH_ENABLED=false` (zero overhead quando disabilitato)
-- Integrato in tutti gli 11 servizi FastAPI
-- Supporta: custom validator, public paths configurabili, CORS preflight passthrough
-- 14 test unitari in `tests/test_auth_middleware.py`
-
-### ✅ SEC-05: REDIS TLS/PASSWORD — RISOLTO
-- `REDIS_SSL` + `REDIS_PASSWORD` aggiunti a tutti e 4 i client Redis:
-  - `mnemosyne_cache.py`, `cache_manager.py`, `streams.py`, `working_memory.py`
-- Default: disabilitato (backward-compatible, nessuna regressione)
-- `working_memory.py`: rimosso `redis://localhost:6379` hardcoded → URL da env vars
-
-### ✅ STR-01: ORTHODOXY WARDENS LIVELLO 1 — RISOLTO
-- `confessor_agent.py` (1006L) e `inquisitor_agent.py` (569L) spostati in `_legacy/`
-- Stub `code_analyzer.py` e `penitent_agent.py` rimossi da `consumers/`
-- Import LIVELLO 2 aggiornati a `_legacy/`
-- Pure consumers (`confessor.py`, `inquisitor.py`, `penitent.py`, `chronicler.py`) restano in `consumers/`
+The core must remain **pure infrastructure** — any domain (finance, healthcare, legal, research) plugs in through:
+1. `domains/<domain>/` — intent config, prompts, slot definitions
+2. `contracts/` — ABCs, protocols, base state (the extensibility surface)
+3. Environment variables — all operational tuning without code changes
 
 ---
 
-## HARD-CODED VALUES (MEDIUM)
+## 2. ARCHITECTURE OVERVIEW
 
-### Hostname inconsistenti tra servizi — ✅ RISOLTO
-Tutti i default dei nodi allineati ai service name di docker-compose.
+### 2.1 Repository Layout
 
-### Hostname hard-coded nei nodi — ✅ RISOLTO
-| Nodo | Before | After |
-|------|--------|-------|
-| intent_detection_node.py | `http://vitruvyan_babel_gardens:8009` | `http://babel_gardens:8009` |
-| codex_hunters_node.py | `http://localhost:8008` | `http://codex_hunters:8008` |
-| qdrant_node.py | `http://localhost:8010` | `http://embedding:8010` |
-| llm_mcp_node.py | `http://omni_mcp:8020` | `http://mcp:8020` |
-| emotion_detector.py | `http://babel_gardens:8009` | (già corretto) |
+```
+vitruvyan_core/
+├── core/
+│   ├── agents/               # Singleton gateways to external systems
+│   │   ├── postgres_agent.py     # PostgreSQL (ThreadedConnectionPool)
+│   │   ├── qdrant_agent.py       # Qdrant vector DB
+│   │   ├── llm_agent.py          # LLM gateway (OpenAI, pluggable via ILLMProvider)
+│   │   └── alchemist_agent.py    # Schema migrations (Alembic)
+│   ├── cache/
+│   │   └── mnemosyne_cache.py    # Multi-tier vector-aware cache (Redis SCAN)
+│   ├── cognitive/                # Perception Sacred Orders
+│   │   ├── babel_gardens/            # Language detection, NLU, translation
+│   │   └── pattern_weavers/          # Ontology mapping, pattern classification
+│   ├── contracts/                # PUBLIC EXTENSIBILITY SURFACE
+│   │   ├── __init__.py               # Single import point for all ABCs/protocols
+│   │   └── llm_provider.py           # ILLMProvider — runtime_checkable Protocol
+│   ├── governance/               # Governance Sacred Orders
+│   │   ├── codex_hunters/            # System discovery, maintenance
+│   │   ├── memory_orders/            # Coherence analysis, RAG
+│   │   ├── orthodoxy_wardens/        # Validation, audit, invariant enforcement
+│   │   └── vault_keepers/            # Archival, persistence, snapshots
+│   ├── llm/
+│   │   ├── cache_api.py              # LLM response caching + cost tracking
+│   │   ├── cache_manager.py          # Redis-backed LLM cache
+│   │   └── prompts/                  # PromptRegistry (domain-aware)
+│   ├── middleware/
+│   │   └── auth.py                   # Opt-in AuthMiddleware (Bearer token)
+│   ├── neural_engine/            # Computation engine (batch scoring)
+│   ├── orchestration/            # LangGraph pipeline + plugin system
+│   │   ├── base_state.py             # BaseGraphState (37 fields, extensible)
+│   │   ├── graph_engine.py           # GraphPlugin, NodeContract, GraphEngine
+│   │   ├── parser.py                 # Parser ABC, BaseParser, ParsedSlots
+│   │   ├── intent_registry.py        # IntentRegistry (domain plugin pattern)
+│   │   ├── route_registry.py         # Route definitions
+│   │   ├── entity_resolver_registry.py
+│   │   ├── execution_registry.py
+│   │   └── langgraph/                # Graph nodes, runner, flow
+│   │       ├── graph_runner.py           # Entry point (lazy init)
+│   │       ├── graph_flow.py             # Pipeline wiring
+│   │       └── node/                     # 15+ cognitive nodes
+│   ├── synaptic_conclave/        # Cognitive Bus (Redis Streams)
+│   │   ├── transport/streams.py      # StreamBus (TLS, password, env-configured)
+│   │   ├── events/                   # TransportEvent, CognitiveEvent, EventAdapter
+│   │   ├── plasticity/               # Adaptive learning
+│   │   └── governance/               # Bus-level governance
+│   └── vpar/                     # Vitruvyan Probabilistic Assessment
+├── domains/
+│   ├── finance/                  # Reference vertical (intent_config, prompts, slots)
+│   ├── base_domain.py            # Domain ABC
+│   ├── aggregation_contract.py
+│   ├── explainability_contract.py
+│   └── risk_contract.py
+services/                         # 12 FastAPI microservices (LIVELLO 2)
+├── api_graph/                    # LangGraph orchestration service
+├── api_babel_gardens/            # NLU service
+├── api_codex_hunters/            # System maintenance service
+├── api_memory_orders/            # Coherence + RAG service
+├── api_orthodoxy_wardens/        # Governance service
+├── api_pattern_weavers/          # Ontology service
+├── api_vault_keepers/            # Archival service
+├── api_neural_engine/            # Computation service
+├── api_embedding/                # Vector embedding service
+├── api_conclave/                 # Bus management service
+├── api_mcp/                      # Model Context Protocol service
+└── redis_streams_exporter/       # Prometheus metrics exporter
+```
 
-### Valori operativi fissi
-| Valore | File | Fix |
-|--------|------|-----|
-| ~~`timeout=30` (ignora env var)~~ | ~~qdrant_agent.py L46~~ | ✅ Fixato: `timeout=timeout` |
-| `top_k` cap 50 | [qdrant_agent.py](vitruvyan_core/core/agents/qdrant_agent.py) L131 | Rendere configurabile |
-| Collection `"phrases_embeddings"` | [qdrant_agent.py](vitruvyan_core/core/agents/qdrant_agent.py) L153 | Rendere obbligatorio |
-| Collection `"semantic_states"` | [qdrant_agent.py](vitruvyan_core/core/agents/qdrant_agent.py) L241, L323 | Idem |
-| ~~Stream retention 100K / 7gg~~ | ~~streams.py L100-101~~ | ✅ Env vars `STREAM_MAX_LEN`, `STREAM_MAX_AGE_DAYS` |
-| ~~`cost_per_token = 0.0001`~~ | ~~cache_api.py L180~~ | ✅ Env var `LLM_COST_PER_TOKEN` |
-| ~~`rpm=500, tpm=30_000`~~ | ~~llm_agent.py L101-102~~ | ✅ Env vars `LLM_RATE_LIMIT_RPM`, `LLM_RATE_LIMIT_TPM` |
-| ~~`"vitruvyan"` stream prefix~~ | ~~streams.py L137~~ | ✅ Env var `STREAM_PREFIX` |
-| ~~Cache prefix `"vitruvyan:mnemosyne_cache"`~~ | ~~mnemosyne_cache.py L91~~ | ✅ Env var `MNEMOSYNE_CACHE_PREFIX` |
-| Alembic path hard-coded | [alchemist_agent.py](vitruvyan_core/core/agents/alchemist_agent.py) L30 | Parametro obbligatorio |
-| `POSTGRES_PASSWORD = ""` | [api_graph/config.py](services/api_graph/config.py) L40 | ✅ Risolto |
+### 2.2 Sacred Orders (Epistemic Hierarchy)
 
----
+| Order | Domain | Location | Responsibility |
+|:---|:---|:---|:---|
+| **Babel Gardens** | Perception | `core/cognitive/babel_gardens/` | Language detection, NLU, translation |
+| **Pattern Weavers** | Perception | `core/cognitive/pattern_weavers/` | Ontology mapping, pattern classification |
+| **Codex Hunters** | Perception | `core/governance/codex_hunters/` | System discovery, codebase maintenance |
+| **Memory Orders** | Memory | `core/governance/memory_orders/` | Coherence analysis, RAG, semantic state |
+| **Vault Keepers** | Memory | `core/governance/vault_keepers/` | Archival, persistence, snapshots |
+| **Orthodoxy Wardens** | Truth | `core/governance/orthodoxy_wardens/` | Validation, audit, invariant enforcement |
 
-## SCALABILITÀ — ✅ RISOLTO (FASE 4)
+Each Sacred Order follows the **mandatory two-level pattern**:
+- **LIVELLO 1** (pure domain): 10 directories, zero I/O, pure Python, testable standalone
+- **LIVELLO 2** (service): FastAPI, Docker, adapters, `main.py < 100 lines`
 
-| Problema | File | Status |
-|----------|------|--------|
-| ~~`fetchall()` senza paginazione~~ | postgres_agent.py | ✅ `fetch_paginated()` con server-side cursor |
-| ~~No connection pooling PostgreSQL~~ | postgres_agent.py | ✅ `ThreadedConnectionPool` (min=2, max=10, env vars) |
-| ~~`get_postgres()` crea connessione ogni call~~ | postgres_agent.py | ✅ Shared pool, connessioni riusate |
-| ~~`redis.keys()` O(N) blocking~~ | mnemosyne_cache.py | ✅ `_scan_keys()` con `SCAN` (O(1) per call) |
-| `acomplete()` non è vero async | llm_agent.py L540 | ⚠️ Minor (low priority) |
-| ~~Graph compilato a import-time~~ | graph_runner.py | ✅ `_get_graph()` lazy init |
-| httpx I/O in LIVELLO 1 VSGS | vsgs_engine.py L93-101 | ⚠️ Minor (low priority) |
+### 2.3 LangGraph Pipeline (Cognitive Kernel)
 
----
+```
+parse → intent_detection → weaver → entity_resolver → babel_emotion
+  → semantic_grounding → params_extraction → decide → [route branches]
+  → output_normalizer → orthodoxy → vault → compose → can → [advisor] → END
+```
 
-## PLUGIN — ✅ COMPLETATO
+Route branches from `decide` node:
+- `dispatcher_exec` → direct execution
+- `semantic_fallback` → Qdrant vector search
+- `llm_soft` → conversational LLM (cached)
+- `slot_filler` → missing parameter negotiation
+- `codex_expedition` → system maintenance
+- `llm_mcp` → MCP tools (when `USE_MCP=1`)
 
-| Problema | Status |
-|----------|--------|
-| ~~Directory `contracts/` non esiste~~ | ✅ Creato (re-exports da graph_engine, parser, base_state) |
-| ~~`GraphState` estende `TypedDict` direttamente~~ | ✅ Estende `BaseGraphState`, campi duplicati rimossi |
-| ~~Nessun `ILLMProvider` protocol~~ | ✅ `contracts/llm_provider.py` — `runtime_checkable` Protocol |
-
----
-
-## SACRED ORDERS CONFORMANCE
-
-| Sacred Order | Location | Problemi | Conformance |
-|:---|:---|:---|---:|
-| **Babel Gardens** | `core/cognitive/` | Manca `_legacy/` dir | **95%** |
-| **Pattern Weavers** | `core/cognitive/` | Manca `_legacy/` dir | **95%** |
-| **Codex Hunters** | `core/governance/` | Import yaml in consumers | **93%** |
-| **Vault Keepers** | `core/governance/` | ✅ MetricNames aggiunto | **90%** |
-| **Memory Orders** | `core/governance/` | ✅ `.bak` rimosso, test rotto → `_legacy/` | **90%** |
-| **Orthodoxy Wardens** | `core/governance/` | ✅ Agents impuri → `_legacy/`, stubs rimossi | **85%** |
-
-**Note**:
-- `copilot-instructions.md` indica erroneamente `governance/babel_gardens/` e `governance/pattern_weavers/` — sono in `cognitive/`
-- LIVELLO 2: tutti i 6 servizi conformi (main.py < 100 righe, adapters/ completo)
-
----
-
-## SERVIZI — SICUREZZA
-
-| Servizio | Sicurezza | Priorità |
-|:---|:---|:---:|
-| api_orthodoxy_wardens | ✅ PostgresAgent, no password, CORS + Auth middleware | **Done** |
-| api_graph | ✅ No IP, no password, CORS + Auth middleware | **Done** |
-| api_neural_engine | ✅ CORS localhost default + Auth middleware | **Done** |
-| api_mcp | ✅ CORS + Auth middleware | **Done** |
-| api_conclave | ✅ CORS + Auth middleware | **Done** |
-| api_babel_gardens | ✅ CORS + Auth middleware | **Done** |
-| api_codex_hunters | ✅ CORS + Auth middleware | **Done** |
-| api_memory_orders | ✅ CORS + Auth middleware | **Done** |
-| api_pattern_weavers | ✅ CORS + Auth middleware | **Done** |
-| api_vault_keepers | ✅ CORS + Auth middleware | **Done** |
-| api_embedding | ✅ CORS + Auth middleware | **Done** |
-| redis_streams_exporter | ⚠️ No auth metrics | **P3** |
-
----
-
-## PROBLEMI ARCHITETTURALI
-
-### Import rotti
-| File | Problema |
-|------|----------|
-| [plasticity/observer.py](vitruvyan_core/core/synaptic_conclave/plasticity/observer.py) L37 | ~~`from core.leo.postgres_agent`~~ ✅ Fixato → `core.agents` |
-| [plasticity/outcome_tracker.py](vitruvyan_core/core/synaptic_conclave/plasticity/outcome_tracker.py) L21 | ~~Stesso path stale `core.leo`~~ ✅ Fixato |
-| [governance/rite_of_validation.py](vitruvyan_core/core/synaptic_conclave/governance/rite_of_validation.py) | ~~**Rotto**~~ ✅ Spostato in `_legacy/` |
-
-### Qualità codice
-| Problema | Dove |
-|----------|------|
-| ~~21 `print()` di debug~~ | ~~graph_runner.py (7), graph_flow.py (14)~~ ✅ → logger |
-| ~~`import pickle` inutilizzato~~ | ~~cache_manager.py L11~~ ✅ Rimosso |
-| `logging.basicConfig()` in modulo libreria | [vault_node.py](vitruvyan_core/core/orchestration/langgraph/node/vault_node.py) L22 |
-| `load_dotenv()` in 4+ nodi individuali | compose_node, can_node, params_extraction_node, cached_llm_node |
-| `nest_asyncio.apply()` globale | [llm_mcp_node.py](vitruvyan_core/core/orchestration/langgraph/node/llm_mcp_node.py) L24 |
-| ~~Docstring `"Vitruvyan AI Trading Advisor"`~~ | ~~langgraph/__init__.py L8~~ ✅ → "Vitruvyan OS" |
-| ~~Test file dentro `node/`~~ | ~~test_route_node.py~~ ✅ → `tests/` |
-| ~~Commenti italiano nel core~~ | ~~qdrant_agent.py~~ ✅ Tradotti |
-| ~~`@app.on_event("startup")` deprecato~~ | ~~5 servizi~~ ✅ → `lifespan` |
-| `foundation/` vuoto | 3 sottodirectory vuote (dead scaffolding) |
-| `__all__` duplicato + phantom exports | [synaptic_conclave/__init__.py](vitruvyan_core/core/synaptic_conclave/__init__.py) L35-53 |
-| ~~Cross-service ref in docstring~~ | ~~babel_to_neural.py L268~~ ✅ Rimosso |
+Intent detection is **100% domain-agnostic**: domains register via `INTENT_DOMAIN` env var and `domains/<domain>/intent_config.py`.
 
 ---
 
-## PIANO DI REMEDIATION
+## 3. EXTENSIBILITY CONTRACTS
 
-### FASE 0 — EMERGENZA SICUREZZA ✅ COMPLETATA
+### 3.1 Plugin Surface (`core/contracts/`)
 
-| # | Azione | File | Status |
-|:---:|--------|------|:---:|
-| 1 | ~~Rimuovere password `@Caravaggio971_omni`~~ | orthodoxy_db_manager.py | ✅ |
-| 2 | ~~Rimuovere IP `161.97.140.157`~~ | api_graph, api_orthodoxy_wardens config.py | ✅ |
-| 3 | ~~CORS `"*"` → env var whitelist~~ | api_neural_engine/config.py | ✅ |
-| 4 | ~~Default `"your_password"` → `""`~~ | api_graph/config.py | ✅ |
-| 5 | ~~`psycopg2.connect()` → `PostgresAgent`~~ | orthodoxy_db_manager.py | ✅ |
-| 6 | ~~Rimuovere `import pickle` inutilizzato~~ | cache_manager.py | ✅ |
-| + | ~~`.env` + `infrastructure/docker/.env` untracked da git~~ | .gitignore | ✅ |
-| + | ~~`.env.example` template creato~~ | root + infrastructure/docker/ | ✅ |
-| + | ~~Password removed da docker-compose.yml~~ | 15 occorrenze | ✅ |
-| + | ~~Password/IP removed da tutti i docs~~ | 14 file .md | ✅ |
-| + | ~~Password defaults test files~~ | conftest.py, test_audit_idempotency_db.py | ✅ |
+```python
+from core.contracts import (
+    # Graph state
+    BaseGraphState, GraphStateType,
+    ESSENTIAL_FIELDS, INTENT_FIELDS, LANGUAGE_FIELDS, EMOTION_FIELDS,
+    ORTHODOXY_FIELDS, VAULT_FIELDS, TRACING_FIELDS, WEAVER_FIELDS,
+    CAN_FIELDS, ALL_BASE_FIELDS,
+    get_base_field_count, is_base_field, get_domain_fields,
+    # Engine
+    GraphPlugin, NodeContract, GraphEngine,
+    # Parser
+    Parser, BaseParser, ParsedSlots,
+    # LLM
+    ILLMProvider,
+)
+```
 
-### FASE 2 — SACRED ORDERS CLEANUP ✅ COMPLETATA
+### 3.2 How a Domain Vertical Plugs In
 
-| # | Azione | Status |
-|:---:|--------|:---:|
-| 18 | ~~Spostare `confessor_agent.py` (1006L) in `_legacy/`~~ | ✅ |
-| 19 | ~~Spostare `inquisitor_agent.py` (569L) in `_legacy/`~~ | ✅ |
-| 20 | ~~Rimuovere stub re-export da `code_analyzer.py`, `penitent_agent.py`~~ | ✅ |
-| 21 | ~~Spostare `test_memory_orders_cycle.py` (692L, imports rotti) in `_legacy/`~~ | ✅ |
-| 22 | ~~Spostare `test_vault_cycle.py` in `_legacy/`~~ | ✅ |
-| 23 | ~~Spostare `rite_of_validation.py` (rotto) in `_legacy/`~~ | ✅ |
-| 24 | ~~Fix import `core.leo.postgres_agent` → `core.agents.postgres_agent`~~ | ✅ |
-| 25 | ~~Definire `MetricNames` in vault_keepers/monitoring/~~ | ✅ |
-| 26 | ~~Rimuovere `__init__.py.bak` da memory_orders~~ | ✅ |
+1. **Intent detection**: Create `domains/<domain>/intent_config.py` with `create_<domain>_registry()`. Set `INTENT_DOMAIN=<domain>`.
+2. **Prompts**: Register domain prompts via `PromptRegistry.register_domain()` in `core/llm/prompts/registry.py`.
+3. **Graph state**: Extend `BaseGraphState` with domain-specific fields — the core's 37 fields are inherited automatically.
+4. **LLM provider**: Implement `ILLMProvider` protocol (5 methods: `complete`, `complete_json`, `complete_with_messages`, `complete_with_tools`, `acomplete`) to swap OpenAI for any provider.
+5. **Entities**: Define domain entities that flow through `validated_entities` contract.
 
-### FASE 3 — SICUREZZA INFRASTRUTTURALE ✅ COMPLETATA
+### 3.3 Domain-Agnostic Guarantees
 
-| # | Azione | Status |
-|:---:|--------|:---:|
-| 27 | ~~Supporto `REDIS_SSL` in StreamBus, WorkingMemory, LLMCacheManager~~ | ✅ |
-| 28 | ~~`REDIS_PASSWORD` in LLMCacheManager, MnemosyneCache~~ | ✅ |
-| 29 | ~~Middleware auth condiviso (opt-in Bearer token)~~ | ✅ |
-| 30 | ~~CORS middleware a 5 servizi mancanti~~ | ✅ |
-| 31 | ~~Standardizzare hostname nodi su service names docker-compose~~ | ✅ |
-| 32 | ~~Centralizzare hostname nodi~~ | ✅ |
-| 32b | Purge storia git (BFG/filter-branch) + rotare credenziali | ⬜ Deferred |
-
-### FASE 4 — SCALABILITÀ ✅ COMPLETATA
-
-| # | Azione | Status |
-|:---:|--------|:---:|
-| 33 | ~~`PostgresAgent`: connection pooling (`ThreadedConnectionPool`)~~ | ✅ |
-| 34 | ~~`PostgresAgent`: `fetch_paginated()` con server-side cursor~~ | ✅ |
-| 35 | ~~`mnemosyne_cache.py`: `KEYS` → `SCAN` (3 occorrenze)~~ | ✅ |
-| 36 | ~~Lazy init graph in `graph_runner.py` (`_get_graph()`)~~ | ✅ |
-| 37 | ~~Fix `qdrant_agent.py` timeout env var ignorato~~ | ✅ (FASE 5) |
-| 38 | ~~Stream retention, rate limits, cache prefix, cost_per_token via env~~ | ✅ |
-| 39 | ~~`ILLMProvider` protocol per multi-provider~~ | ✅ |
-
-### FASE 5 — QUALITÀ & POLISH ✅ COMPLETATA
-
-| # | Azione | Status |
-|:---:|--------|:---:|
-| 40 | ~~`print()` → `logger` in graph_runner.py / graph_flow.py~~ | ✅ |
-| 41 | ~~Migrare 5 servizi da `@app.on_event()` a `lifespan`~~ | ✅ |
-| 42 | ~~`GraphState` → estendere `BaseGraphState`~~ | ✅ |
-| 44 | ~~Fix cross-service ref docstring in babel_to_neural.py~~ | ✅ |
-| 45 | ~~Tradurre commenti italiano → inglese (qdrant_agent.py)~~ | ✅ |
-| 46 | ~~Spostare test da `node/` a `tests/`~~ | ✅ |
-| 48 | ~~Creare `contracts/` package (re-exports ABCs)~~ | ✅ |
-| 37 | ~~Fix `qdrant_agent.py` timeout env var ignorato~~ | ✅ |
-| + | ~~Fix `load_dotenv()` + stale path comment in qdrant_agent.py~~ | ✅ |
-| + | ~~Fix "Trading Advisor" docstring → "Vitruvyan OS"~~ | ✅ |
+- No finance/trading terms in core code (legacy remnants fully purged from active code paths)
+- Intent detection, emotion detection, entity extraction all delegate to LLM as primary engine (regex fallback only)
+- `domains/finance/` exists as reference implementation, zero imports from core into it
 
 ---
 
-## SCORE PREVISTO
+## 4. SECURITY POSTURE
 
-| Criterio | Attuale |
-|:---|:---:|
-| Domain-Agnostic | **95%** |
-| No Hard-Coded | **96%** |
-| Sicurezza | **92%** |
-| Scalabilità | **93%** |
-| Plugin-Ready | **97%** |
-| **Totale** | **96.0%** ✅ |
+### 4.1 Credentials & Secrets
+
+| Aspect | Status |
+|:---|:---|
+| No passwords in source code | ✅ All via `${ENV_VARS}` |
+| No production IPs in code | ✅ Removed from all configs and docs |
+| `.env` files gitignored | ✅ `.env.example` templates provided |
+| docker-compose.yml | ✅ All secrets from env vars, no defaults |
+| Git history | ⚠️ BFG purge deferred to pre-public release |
+
+### 4.2 Authentication
+
+- **Middleware**: `core/middleware/auth.py` — opt-in `AuthMiddleware`
+- **Activation**: `VITRUVYAN_AUTH_ENABLED=true` + `VITRUVYAN_AUTH_SECRET` or `VITRUVYAN_KEYCLOAK_URL`
+- **Coverage**: All 11 FastAPI services have middleware integrated
+- **Default**: Disabled (zero overhead) — enables gradual rollout
+- **Features**: Bearer token validation, configurable public paths, CORS preflight passthrough, custom validator injection
+- **Tests**: 14 unit tests in `tests/test_auth_middleware.py`
+
+### 4.3 Transport Security
+
+| Client | TLS Support | Password Support |
+|:---|:---:|:---:|
+| `StreamBus` (streams.py) | ✅ `REDIS_SSL` | ✅ `REDIS_PASSWORD` |
+| `MnemosyneCache` (mnemosyne_cache.py) | ✅ `REDIS_SSL` | ✅ `REDIS_PASSWORD` |
+| `LLMCacheManager` (cache_manager.py) | ✅ `REDIS_SSL` | ✅ `REDIS_PASSWORD` |
+| `WorkingMemory` (working_memory.py) | ✅ `REDIS_SSL` | ✅ `REDIS_PASSWORD` |
+
+### 4.4 CORS
+
+- All 11 FastAPI services have `CORSMiddleware` configured
+- Default: `http://localhost:3000` (restrictive)
+- Configurable via `CORS_ORIGINS` env var (comma-separated)
+
+---
+
+## 5. SCALABILITY
+
+### 5.1 PostgreSQL
+
+| Feature | Implementation |
+|:---|:---|
+| Connection pooling | `psycopg2.pool.ThreadedConnectionPool` (env vars: `POSTGRES_POOL_MIN=2`, `POSTGRES_POOL_MAX=10`) |
+| Paginated queries | `fetch_paginated(sql, params, page_size=500)` — server-side cursor, yields pages |
+| Connection reuse | Shared pool via `_get_pool()` singleton — no connection-per-call overhead |
+
+### 5.2 Redis
+
+| Feature | Implementation |
+|:---|:---|
+| No blocking `KEYS` calls | `_scan_keys(pattern)` — uses `SCAN` with count=200 (O(1) per iteration) |
+| Stream retention | `STREAM_MAX_LEN` (default 100K), `STREAM_MAX_AGE_DAYS` (default 7) |
+| Cache prefix | `MNEMOSYNE_CACHE_PREFIX` env var (default `vitruvyan:mnemosyne_cache`) |
+| Stream prefix | `STREAM_PREFIX` env var (default `vitruvyan`) |
+
+### 5.3 LangGraph
+
+| Feature | Implementation |
+|:---|:---|
+| Lazy graph compilation | `_get_graph()` — builds on first call, not at import time |
+| Minimal graph mode | `ENABLE_MINIMAL_GRAPH=true` — 4-node graph for lightweight deployments |
+
+### 5.4 LLM Rate Control
+
+| Parameter | Env Var | Default |
+|:---|:---|:---|
+| Requests per minute | `LLM_RATE_LIMIT_RPM` | 500 |
+| Tokens per minute | `LLM_RATE_LIMIT_TPM` | 30000 |
+| Cost per token | `LLM_COST_PER_TOKEN` | 0.0001 |
+| Model selection | `VITRUVYAN_LLM_MODEL` → `GRAPH_LLM_MODEL` → `OPENAI_MODEL` | `gpt-4o-mini` |
+
+---
+
+## 6. CONFIGURATION REFERENCE
+
+All operational values are configurable via environment variables. No code changes required for tuning.
+
+### 6.1 Infrastructure
+
+| Env Var | Purpose | Default |
+|:---|:---|:---|
+| `POSTGRES_HOST` | PostgreSQL hostname | `core_postgres` |
+| `POSTGRES_PORT` | PostgreSQL port | `5432` |
+| `POSTGRES_DB` | Database name | `vitruvyan` |
+| `POSTGRES_USER` | Database user | (required) |
+| `POSTGRES_PASSWORD` | Database password | (required) |
+| `POSTGRES_POOL_MIN` | Min pool connections | `2` |
+| `POSTGRES_POOL_MAX` | Max pool connections | `10` |
+| `REDIS_HOST` | Redis hostname | `core_redis` |
+| `REDIS_PORT` | Redis port | `6379` |
+| `REDIS_SSL` | Enable TLS | `false` |
+| `REDIS_PASSWORD` | Redis password | (empty) |
+| `QDRANT_HOST` | Qdrant hostname | `core_qdrant` |
+| `QDRANT_PORT` | Qdrant port | `6333` |
+| `QDRANT_TIMEOUT` | Qdrant timeout seconds | `30` |
+
+### 6.2 LLM & AI
+
+| Env Var | Purpose | Default |
+|:---|:---|:---|
+| `VITRUVYAN_LLM_MODEL` | Primary model selector | (falls through chain) |
+| `GRAPH_LLM_MODEL` | Graph-specific model | (falls through) |
+| `OPENAI_MODEL` | OpenAI model | `gpt-4o-mini` |
+| `OPENAI_API_KEY` | API key | (required) |
+| `LLM_RATE_LIMIT_RPM` | Requests/minute limit | `500` |
+| `LLM_RATE_LIMIT_TPM` | Tokens/minute limit | `30000` |
+| `LLM_COST_PER_TOKEN` | Cost tracking rate | `0.0001` |
+
+### 6.3 Cognitive Bus (Synaptic Conclave)
+
+| Env Var | Purpose | Default |
+|:---|:---|:---|
+| `STREAM_MAX_LEN` | Max entries per stream | `100000` |
+| `STREAM_MAX_AGE_DAYS` | Stream retention in days | `7` |
+| `STREAM_PREFIX` | Stream name prefix | `vitruvyan` |
+| `MNEMOSYNE_CACHE_PREFIX` | Cache key prefix | `vitruvyan:mnemosyne_cache` |
+
+### 6.4 Orchestration
+
+| Env Var | Purpose | Default |
+|:---|:---|:---|
+| `INTENT_DOMAIN` | Domain plugin for intent detection | `generic` |
+| `QDRANT_FILTER_DOMAIN` | Enable domain-specific Qdrant filtering | `1` |
+| `USE_MCP` | Route to MCP node | `0` |
+| `ENABLE_MINIMAL_GRAPH` | Use 4-node minimal graph | `false` |
+| `DISABLE_SLOT_FILLING` | Skip slot-filling dialogue | (not set = active) |
+
+### 6.5 Security
+
+| Env Var | Purpose | Default |
+|:---|:---|:---|
+| `VITRUVYAN_AUTH_ENABLED` | Enable auth middleware | `false` |
+| `VITRUVYAN_AUTH_SECRET` | JWT secret for local validation | (required if auth enabled) |
+| `VITRUVYAN_KEYCLOAK_URL` | Keycloak endpoint | (optional) |
+| `CORS_ORIGINS` | Allowed CORS origins (comma-separated) | `http://localhost:3000` |
+
+---
+
+## 7. SERVICES MATRIX
+
+All services follow the `SERVICE_PATTERN.md` convention: `main.py < 100 lines`, `adapters/`, `api/routes.py`, `config.py`.
+
+| Service | Port | Sacred Order | Auth | CORS | Lifespan |
+|:---|:---:|:---|:---:|:---:|:---:|
+| `api_graph` | 8000 | Orchestration | ✅ | ✅ | ✅ |
+| `api_babel_gardens` | 8009 | Babel Gardens | ✅ | ✅ | ✅ |
+| `api_pattern_weavers` | 8011 | Pattern Weavers | ✅ | ✅ | ✅ |
+| `api_codex_hunters` | 8008 | Codex Hunters | ✅ | ✅ | ✅ |
+| `api_memory_orders` | 8012 | Memory Orders | ✅ | ✅ | ✅ |
+| `api_vault_keepers` | 8013 | Vault Keepers | ✅ | ✅ | ✅ |
+| `api_orthodoxy_wardens` | 8014 | Orthodoxy Wardens | ✅ | ✅ | ✅ |
+| `api_neural_engine` | 8001 | Computation | ✅ | ✅ | ✅ |
+| `api_embedding` | 8010 | Vector ops | ✅ | ✅ | ✅ |
+| `api_conclave` | 8015 | Bus management | ✅ | ✅ | ✅ |
+| `api_mcp` | 8020 | MCP tools | ✅ | ✅ | ✅ |
+| `redis_streams_exporter` | 9091 | Monitoring | — | — | — |
+
+---
+
+## 8. SACRED ORDERS CONFORMANCE
+
+| Sacred Order | LIVELLO 1 | LIVELLO 2 | Conformance | Notes |
+|:---|:---:|:---:|:---:|:---|
+| **Babel Gardens** | ✅ 10/10 dirs | ✅ main.py < 100L | **95%** | Missing `_legacy/` dir (no legacy code to archive) |
+| **Pattern Weavers** | ✅ 10/10 dirs | ✅ main.py < 100L | **95%** | Missing `_legacy/` dir (no legacy code to archive) |
+| **Codex Hunters** | ✅ 10/10 dirs | ✅ main.py < 100L | **93%** | `yaml` import in consumers (data-driven config) |
+| **Vault Keepers** | ✅ 10/10 dirs | ✅ main.py < 100L | **90%** | MetricNames defined |
+| **Memory Orders** | ✅ 10/10 dirs | ✅ main.py < 100L | **90%** | Legacy tests archived |
+| **Orthodoxy Wardens** | ✅ 10/10 dirs | ✅ main.py < 100L | **85%** | Impure agents archived to `_legacy/` |
+
+All 6 Sacred Orders have complete LIVELLO 2 service implementations with adapters, routes, and models.
+
+---
+
+## 9. INVARIANTS (NON-NEGOTIABLE RULES)
+
+These rules are enforced across the codebase and must be preserved by any future work:
+
+1. **Core stays generic** — no domain logic in `vitruvyan_core/core/`. Domains plug in via `domains/` and `contracts/`.
+2. **No cross-service imports** — services communicate via REST or StreamBus events only.
+3. **Agents for all external access** — `PostgresAgent`, `QdrantAgent`, `LLMAgent` only. No raw `psycopg2.connect()`, `qdrant_client.QdrantClient()`, or `from openai import OpenAI`.
+4. **No secrets in source** — all credentials via env vars with `${PLACEHOLDER}` in docs.
+5. **Streams, not Pub/Sub** — Redis Streams is canonical transport. Acknowledge after handling. Generator consumption.
+6. **Bus is payload-blind** — transport layer never inspects, routes, or correlates event content.
+7. **Validated lists are authoritative** — if client sends `validated_entities`, backend respects it (including explicit `[]`).
+8. **LLM-first, never heuristics-first** — intent, emotion, entity extraction delegate to LLM. Regex is only fallback.
+
+---
+
+## 10. TESTING
+
+| Test Suite | Count | Status |
+|:---|:---:|:---|
+| Architectural tests (`tests/architectural/`) | 165 | ✅ All passing |
+| Orchestration base class tests | 31 | ✅ All passing |
+| Auth middleware tests | 14 | ✅ All passing |
+| Skipped (infrastructure-dependent) | 12 | Expected (need Docker) |
+
+---
+
+## 11. KNOWN RESIDUAL ITEMS (Low Priority, Non-Blocking)
+
+These items are documented for completeness. None block V1.0 release.
+
+| Item | Location | Impact |
+|:---|:---|:---|
+| `acomplete()` not truly async | `llm_agent.py` L540 | Minor — wraps sync in thread |
+| `httpx` I/O in LIVELLO 1 | `vsgs_engine.py` L93-101 | Minor — edge case module |
+| `load_dotenv()` in 4 individual nodes | compose_node, can_node, params_extraction_node, cached_llm_node | Cosmetic |
+| `logging.basicConfig()` in library module | `vault_node.py` L22 | Cosmetic |
+| `nest_asyncio.apply()` global | `llm_mcp_node.py` L24 | Pragmatic (MCP requirement) |
+| `foundation/` empty subdirectories | 3 dead scaffolding dirs | Cosmetic |
+| `__all__` duplicated exports | `synaptic_conclave/__init__.py` | Cosmetic |
+| Qdrant `top_k` cap 50 hard-coded | `qdrant_agent.py` L131 | Minor |
+| Qdrant default collection names | `qdrant_agent.py` L153, L241, L323 | Minor |
+| Alembic path hard-coded | `alchemist_agent.py` L30 | Minor |
+| BFG git history purge | Pre-public release task | Deferred |
+| `redis_streams_exporter` no auth | Monitoring endpoint | P3 |
+
+---
+
+## 12. RELEASE READINESS SCORE
+
+| Criterion | Score | Description |
+|:---|:---:|:---|
+| **Domain-Agnostic** | **95%** | Core fully agnostic. Finance only in `domains/finance/`. Residual: docstring artifacts. |
+| **No Hard-Coded** | **96%** | All operational values via env vars. Residual: 3 Qdrant collection defaults. |
+| **Security** | **92%** | Auth middleware, Redis TLS/password, CORS on all services. Residual: git history purge. |
+| **Scalability** | **93%** | Connection pooling, paginated fetch, SCAN, lazy graph init. Residual: async LLM. |
+| **Plugin-Ready** | **97%** | `contracts/`, `ILLMProvider`, `BaseGraphState`, `IntentRegistry`, `PromptRegistry`. |
+| **TOTAL** | **96.0%** | **RELEASE READY** |
+
+---
+
+## 13. COMMIT HISTORY (Remediation Arc)
+
+| Commit | Phase | Description | Files | Delta |
+|:---|:---|:---|:---:|:---|
+| `eae8c0e` | FASE 0 | Security emergency (passwords, IPs, CORS, .env) | 31 | Critical fixes |
+| `a16ff1f` | FASE 1 | Domain-agnostic core (~90 violations resolved) | ~45 | +/- extensive |
+| `c11f0a0` | FASE 2 | Sacred Orders cleanup (legacy archival, imports) | 13 | Structural |
+| `b1c8870` | FASE 5 | Quality & Polish (contracts, BaseGraphState, logging) | 34 | +444/-310 |
+| `4ddf0e9` | FASE 3 | Security infrastructure (Redis TLS, auth, CORS, hostnames) | 25 | +510/-70 |
+| `dc5c1b9` | FASE 4 | Scalability (pooling, SCAN, lazy init, env vars, ILLMProvider) | 9 | +286/-77 |
+
+**Starting score**: 79% → **Final score**: 96%
 
 **Tutte le FASI completate (0, 1, 2, 3, 4, 5).** Score finale: **79% → 96%**.
