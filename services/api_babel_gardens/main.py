@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
+from core.middleware.auth import AuthMiddleware
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 from .config import get_config
@@ -54,6 +55,7 @@ app = FastAPI(
     version="2.0.0",
     lifespan=lifespan,
 )
+app.add_middleware(AuthMiddleware)
 app.add_middleware(CORSMiddleware,
                    allow_origins=os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(","),
                    allow_credentials=True,

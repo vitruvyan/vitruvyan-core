@@ -47,7 +47,7 @@ def _ensure_nest_asyncio():
 
 # Environment configuration
 USE_MCP = os.getenv("USE_MCP", "0") == "1"  # Master switch for MCP integration
-MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://omni_mcp:8020")  # FIXED: Correct port 8020 (was 8021)
+MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://mcp:8020")
 
 # ----- MCP State Mapper Registry (domain-agnostic) -----
 # Domain plugins register their tool→state mapping functions here.

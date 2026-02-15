@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import Response
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from fastapi.middleware.cors import CORSMiddleware
+from core.middleware.auth import AuthMiddleware
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -47,6 +48,7 @@ app = FastAPI(
 )
 
 _ALLOWED_ORIGINS = os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+app.add_middleware(AuthMiddleware)
 app.add_middleware(CORSMiddleware, allow_origins=_ALLOWED_ORIGINS, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.include_router(router)
 

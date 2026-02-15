@@ -3,9 +3,12 @@ Vault Keepers — Sacred Order API (LIVELLO 2)
 FastAPI bootstrap. Logic delegated to adapters/bus_adapter.py.
 """
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from core.middleware.auth import AuthMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 
 sys.path.append("/app")
@@ -41,6 +44,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.include_router(router)
+app.add_middleware(AuthMiddleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:3000").split(","),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 Instrumentator().instrument(app).expose(app)
 
 @app.get("/health")

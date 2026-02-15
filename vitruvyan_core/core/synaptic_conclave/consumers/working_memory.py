@@ -22,6 +22,7 @@ Date: January 18, 2026
 from typing import Any, Optional, Dict, List
 import json
 import logging
+import os
 import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)
@@ -57,10 +58,25 @@ class WorkingMemory:
         
         logger.debug(f"WorkingMemory initialized: {self.namespace}")
     
-    async def connect(self, redis_url: str = "redis://localhost:6379") -> None:
-        """Connect to Redis backend."""
+    async def connect(self, redis_url: str = None) -> None:
+        """Connect to Redis backend.
+        
+        Args:
+            redis_url: Redis URL. If None, built from REDIS_HOST/PORT/PASSWORD/SSL env vars.
+        """
         if self._connected:
             return
+        
+        if redis_url is None:
+            _host = os.getenv('REDIS_HOST', 'localhost')
+            _port = os.getenv('REDIS_PORT', '6379')
+            _password = os.getenv('REDIS_PASSWORD', '')
+            _ssl = os.getenv('REDIS_SSL', 'false').lower() in ('true', '1', 'yes')
+            _scheme = 'rediss' if _ssl else 'redis'
+            if _password:
+                redis_url = f"{_scheme}://:{_password}@{_host}:{_port}"
+            else:
+                redis_url = f"{_scheme}://{_host}:{_port}"
         
         self._client = await redis.from_url(
             redis_url,

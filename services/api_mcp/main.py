@@ -5,6 +5,7 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from core.middleware.auth import AuthMiddleware
 
 from config import get_config
 from api import router
@@ -35,6 +36,7 @@ app = FastAPI(
 )
 
 _ALLOWED_ORIGINS = os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+app.add_middleware(AuthMiddleware)
 app.add_middleware(CORSMiddleware, allow_origins=_ALLOWED_ORIGINS, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.include_router(router)
 

@@ -13,6 +13,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from core.middleware.auth import AuthMiddleware
 
 from .config import get_config
 from .api import router
@@ -46,6 +47,7 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+app.add_middleware(AuthMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(","),

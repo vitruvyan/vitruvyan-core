@@ -134,7 +134,8 @@ class StreamBus:
         port: int = None,
         db: int = 0,
         password: str = None,
-        prefix: str = "vitruvyan"
+        prefix: str = "vitruvyan",
+        ssl: bool = None,
     ):
         """
         Initialize Stream Bus.
@@ -145,12 +146,14 @@ class StreamBus:
             db: Redis database number
             password: Redis password (env: REDIS_PASSWORD)
             prefix: Stream name prefix (default: "vitruvyan")
+            ssl: Enable TLS (env: REDIS_SSL, default: false)
         """
         self.host = host or os.getenv('REDIS_HOST', 'localhost')
         self.port = port or int(os.getenv('REDIS_PORT', '6379'))
         self.db = db
         self.password = password or os.getenv('REDIS_PASSWORD')
         self.prefix = prefix
+        self.ssl = ssl if ssl is not None else os.getenv('REDIS_SSL', 'false').lower() in ('true', '1', 'yes')
         
         self._client: Optional[redis.Redis] = None
         self._connect()
@@ -163,6 +166,7 @@ class StreamBus:
                 port=self.port,
                 db=self.db,
                 password=self.password,
+                ssl=self.ssl,
                 decode_responses=False,  # We handle decoding manually
                 socket_timeout=10.0,  # Must be > block_ms in consume (5000ms)
                 socket_connect_timeout=5.0,

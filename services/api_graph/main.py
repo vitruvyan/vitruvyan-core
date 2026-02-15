@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from core.middleware.auth import AuthMiddleware
 
 from .config import settings
 from .api import router, set_adapters
@@ -60,6 +61,9 @@ app = FastAPI(
 
 # Prometheus middleware
 app.middleware("http")(prometheus_middleware)
+
+# Auth middleware (opt-in — disabled unless VITRUVYAN_AUTH_ENABLED=true)
+app.add_middleware(AuthMiddleware)
 
 # CORS middleware
 app.add_middleware(

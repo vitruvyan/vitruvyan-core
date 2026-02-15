@@ -53,7 +53,7 @@ class CodexHuntersNode(BaseNode):
         super().__init__("codex_hunters")
         
         # Configuration
-        self.codex_api_base = os.getenv("CODEX_API_BASE", "http://localhost:8008")
+        self.codex_api_base = os.getenv("CODEX_API_BASE", "http://codex_hunters:8008")
         self.max_wait_seconds = int(os.getenv("CODEX_MAX_WAIT_SECONDS", "300"))  # 5 minutes
         self.poll_interval = int(os.getenv("CODEX_POLL_INTERVAL", "10"))  # 10 seconds
         self.max_retries = int(os.getenv("CODEX_MAX_RETRIES", "3"))

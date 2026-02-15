@@ -71,11 +71,15 @@ class MnemosyneCacheManager:
         # Redis connection
         redis_host = os.getenv("REDIS_HOST", "localhost")
         redis_port = int(os.getenv("REDIS_PORT", "6379"))
+        redis_password = os.getenv("REDIS_PASSWORD") or None
+        redis_ssl = os.getenv("REDIS_SSL", "false").lower() in ("true", "1", "yes")
         
         try:
             self.redis_client = redis.Redis(
                 host=redis_host,
                 port=redis_port,
+                password=redis_password,
+                ssl=redis_ssl,
                 decode_responses=True,
                 socket_timeout=5,
                 socket_connect_timeout=5

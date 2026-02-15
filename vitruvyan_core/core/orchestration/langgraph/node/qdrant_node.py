@@ -7,7 +7,7 @@ from core.agents.qdrant_agent import QdrantAgent
 _agent = QdrantAgent()
 
 # Embedding API endpoint (configurable via env var)
-EMBEDDING_API = os.getenv("EMBEDDING_API_URL", "http://localhost:8010/v1/embeddings/batch")
+EMBEDDING_API = os.getenv("EMBEDDING_API_URL", "http://embedding:8010/v1/embeddings/batch")
 
 def _get_embedding(text: str):
     """Generate embedding via localhost API (avoid loading SentenceTransformer)."""

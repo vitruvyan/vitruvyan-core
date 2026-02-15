@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from core.middleware.auth import AuthMiddleware
 
 from api_neural_engine.api.routes import router
 from api_neural_engine.config import PORT, LOG_LEVEL, CORS_ORIGINS
@@ -44,6 +45,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(AuthMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,

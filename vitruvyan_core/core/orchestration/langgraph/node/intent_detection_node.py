@@ -44,7 +44,7 @@ intent_override_counter = Counter(
 # ---------------------------------------------------------------------------
 # Babel Gardens configuration
 # ---------------------------------------------------------------------------
-BABEL_API_URL = os.getenv("SENTIMENT_API_URL", "http://vitruvyan_babel_gardens:8009")
+BABEL_API_URL = os.getenv("SENTIMENT_API_URL", "http://babel_gardens:8009")
 
 # ---------------------------------------------------------------------------
 # Registry (loaded once at import time; domain plugin can replace it)
