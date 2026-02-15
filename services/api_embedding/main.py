@@ -8,9 +8,6 @@ from fastapi.responses import Response
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from fastapi.middleware.cors import CORSMiddleware
 from core.middleware.auth import AuthMiddleware
-from dotenv import load_dotenv
-
-load_dotenv()
 
 from .config import get_config
 from .api import router
