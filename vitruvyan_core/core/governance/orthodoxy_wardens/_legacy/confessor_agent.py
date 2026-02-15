@@ -19,10 +19,10 @@ from langgraph.graph import StateGraph, END
 from core.agents.llm_agent import get_llm_agent
 
 # Import monitoring tools (NEW GOVERNANCE STRUCTURE)
-from core.governance.orthodoxy_wardens.consumers.code_analyzer import CodeAnalyzer
+from core.governance.orthodoxy_wardens._legacy.code_analyzer import CodeAnalyzer
 # NOTE: SystemMonitor, DockerManager, GitMonitor are injected via config (LIVELLO 2 responsibility)
-from core.governance.orthodoxy_wardens.consumers.inquisitor_agent import ComplianceValidator
-from core.governance.orthodoxy_wardens.consumers.penitent_agent import AutoCorrector
+from core.governance.orthodoxy_wardens._legacy.inquisitor_agent import ComplianceValidator
+from core.governance.orthodoxy_wardens._legacy.penitent_agent import AutoCorrector
 # TODO: disaster_prevention moved to different location - to be implemented
 # from domains.trade.agents.disaster_prevention import get_disaster_prevention_agent
 

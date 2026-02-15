@@ -18,9 +18,9 @@ from api_orthodoxy_wardens.adapters.roles import (
     OrthodoxConfessor, OrthodoxPenitent, OrthodoxChronicler, OrthodoxInquisitor, OrthodoxAbbot
 )
 from api_orthodoxy_wardens.adapters.workflows import set_agents
-from core.governance.orthodoxy_wardens.consumers.confessor_agent import AutonomousAuditAgent
-from core.governance.orthodoxy_wardens.consumers.inquisitor_agent import ComplianceValidator
-from core.governance.orthodoxy_wardens.consumers.penitent_agent import AutoCorrector
+from core.governance.orthodoxy_wardens._legacy.confessor_agent import AutonomousAuditAgent
+from core.governance.orthodoxy_wardens._legacy.inquisitor_agent import ComplianceValidator
+from core.governance.orthodoxy_wardens._legacy.penitent_agent import AutoCorrector
 from core.agents.llm_agent import get_llm_agent
 from core.agents.postgres_agent import PostgresAgent
 from api_orthodoxy_wardens.adapters.orthodoxy_db_manager import OrthodoxyDatabaseManager

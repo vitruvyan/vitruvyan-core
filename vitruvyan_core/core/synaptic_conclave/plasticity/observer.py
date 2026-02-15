@@ -34,7 +34,7 @@ from typing import Dict, List, Optional, Any, Tuple
 from enum import Enum
 import statistics
 
-from core.leo.postgres_agent import PostgresAgent
+from core.agents.postgres_agent import PostgresAgent
 from vitruvyan_core.core.synaptic_conclave.events.event_envelope import CognitiveEvent
 from vitruvyan_core.core.synaptic_conclave.plasticity import metrics as plasticity_metrics
 

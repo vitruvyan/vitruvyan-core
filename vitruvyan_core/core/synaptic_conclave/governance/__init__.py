@@ -1,4 +1,6 @@
-"""Epistemic governance and validation"""
-from .rite_of_validation import *
+"""Epistemic governance and validation
 
-__all__ = ['rite_of_validation']
+rite_of_validation moved to _legacy/ (broken imports — Feb 2026).
+"""
+
+__all__ = []
