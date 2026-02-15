@@ -98,7 +98,7 @@ Already cleaned during refactoring:
 - ✅ Removed `create_finance_registry()` from `core/orchestration/route_registry.py`
 - ✅ Cleaned AAPL/MSFT references in `core/neural_engine/scoring.py`
 - ✅ Cleaned AAPL/MSFT references in `core/neural_engine/engine.py`
-- ✅ Created `domains/finance_plugin.py` with `FinanceGraphPlugin`
+- ✅ Created `domains/finance/graph_plugin.py` with `FinanceGraphPlugin`
 - ✅ Created `domains/finance/` with ResponseFormatter, SlotFiller
 
 ## Success Criteria

@@ -218,7 +218,7 @@ This section is written for engineers: it maps the diagrams above to **concrete 
 - Routing is implemented as a conditional edge out of `decide` based on `state["route"]` (see `route_from_decide()` in `vitruvyan_core/core/orchestration/langgraph/graph_flow.py`).
 
 **Feature flags / configuration knobs that change behavior**:
-- `INTENT_DOMAIN` selects which intent registry is configured at import time in `vitruvyan_core/core/orchestration/langgraph/graph_flow.py` (default: `finance`).
+- `INTENT_DOMAIN` selects which intent registry is configured at import time in `vitruvyan_core/core/orchestration/langgraph/graph_flow.py` (default: `generic`).
 - `ENTITY_DOMAIN` selects which entity resolver is used by `entity_resolver_node` (hook pattern, default: stub passthrough).
 - `EXEC_DOMAIN` selects which execution handler is used by `exec_node` (hook pattern, default: fake success stub).
 - `ENABLE_MINIMAL_GRAPH=true` swaps `build_graph()` for a reduced `build_minimal_graph()` in `vitruvyan_core/core/orchestration/langgraph/graph_runner.py`.

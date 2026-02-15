@@ -47,7 +47,7 @@ Core philosophy, charter, invariants, overview:
 
 ### 🎯 Planning (2 files)
 Strategic blueprints, TODO patterns:
-- [**ALBERATURA Framework**](planning/_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md) — 🚀 Post-refactoring reorganization roadmap
+- [**ALBERATURA Framework**](planning/_ALBERATURA_FRAMEWORK_CONSOLIDATA_FEB14_2026.md) — 🚀 Post-refactoring reorganization roadmap
 - [TODO Examples Pattern](planning/TODO_EXAMPLES_PATTERN.md)
 
 ### 📝 Prompts (6 files)
@@ -111,4 +111,3 @@ Tutti i Sacred Orders seguono il **pattern a due livelli obbligatorio**:
 - **LIVELLO 2** (Service): I/O adapters, REST API, Docker deployment
 
 **Status**: ✅ 100% conformance (6/6 Sacred Orders refactored, Feb 2026)
-

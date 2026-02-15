@@ -26,7 +26,7 @@ Domain pack pilota finanza:
 - `services/api_codex_hunters/`
 
 ### Hook orchestrazione (finanza)
-- `vitruvyan_core/domains/finance_plugin.py` instrada su `codex_expedition` in modalità discovery.
+- `vitruvyan_core/domains/finance/graph_plugin.py` instrada su `codex_expedition` in modalità discovery.
 
 ## Verticalizzazione (pilota finanza)
 

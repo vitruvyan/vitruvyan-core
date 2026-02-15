@@ -1,6 +1,6 @@
 # Codex Hunters
 
-> **Last Updated**: February 14, 2026
+> **Last Updated**: February 15, 2026
 
 ## What it does
 
@@ -28,7 +28,7 @@ Finance pilot “domain pack”:
 - `services/api_codex_hunters/` — API + adapters + Streams listener
 
 ### Orchestration hook (finance)
-- `vitruvyan_core/domains/finance_plugin.py` routes to `codex_expedition` when discovery is required.
+- `vitruvyan_core/domains/finance/graph_plugin.py` routes to `codex_expedition` when discovery is required.
 
 ## Verticalization (finance pilot)
 

@@ -155,7 +155,7 @@ for event in bus.consume("codex.discovery.mapped", "vault_keepers", "vault_1"):
 - **[Docs Portal](../docs/index.md)** — Entry point documentazione
 - **[Services](../services/README_SERVICES.md)** — Microservizi che usano questo core
 - **[Epistemic Charter](../docs/foundational/Vitruvyan_Epistemic_Charter.md)** — Filosofia core
-- **[SACRED_ORDER_PATTERN](../docs/planning/_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md)** — Pattern tecnico completo
+- **[SACRED_ORDER_PATTERN](core/governance/SACRED_ORDER_PATTERN.md)** — Pattern tecnico completo
 
 ---
 

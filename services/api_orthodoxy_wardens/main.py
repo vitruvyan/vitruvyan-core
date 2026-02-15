@@ -5,6 +5,7 @@ FastAPI bootstrap. Logic delegated to adapters/.
 import logging
 import os
 import sys
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 sys.path.append("/app")
@@ -28,9 +29,6 @@ from api_orthodoxy_wardens.adapters.orthodoxy_db_manager import OrthodoxyDatabas
 logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL))
 logger = logging.getLogger("OrthodoxyWardens")
 
-app = FastAPI(title="Orthodoxy Wardens", version="2.0.0")
-app.include_router(router)
-
 # Module globals (routes.py reads via `import __main__`)
 confessor_agent = penitent_agent = chronicler_agent = inquisitor_agent = abbot_agent = None
 llm_interface = orthodoxy_db_manager = orthodoxy_vector_manager = None
@@ -38,8 +36,9 @@ orthodoxy_analytics = sacred_guardrails = divine_healing_integrator = None
 sacred_confessor = sacred_penitent = sacred_chronicler = sacred_inquisitor = sacred_abbot = None
 bus_adapter: OrthodoxyBusAdapter | None = None
 
-@app.on_event("startup")
-async def startup():
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     global confessor_agent, penitent_agent, chronicler_agent, inquisitor_agent, abbot_agent
     global llm_interface, orthodoxy_db_manager, bus_adapter, sacred_confessor, sacred_penitent
     global sacred_chronicler, sacred_inquisitor, sacred_abbot
@@ -81,6 +80,11 @@ async def startup():
         logger.info("TEST_MODE: Skipping Sacred Roles + Conclave")
 
     logger.info("Orthodoxy Wardens ready")
+    yield
+
+
+app = FastAPI(title="Orthodoxy Wardens", version="2.0.0", lifespan=lifespan)
+app.include_router(router)
 
 
 @app.get("/metrics")

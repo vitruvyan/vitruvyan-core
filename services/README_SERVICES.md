@@ -261,7 +261,7 @@ Ogni service ha `docs/` subdirectory (locality-first):
 - **[Vitruvyan Core](../vitruvyan_core/README_VITRUVYAN_CORE.md)** — Core library che questi servizi wrappano
 - **[Infrastructure](../infrastructure/README_INFRASTRUCTURE.md)** — Docker Compose, Grafana, Prometheus
 - **[Docs Portal](../docs/index.md)** — Entry point documentazione
-- **[SACRED_ORDER_PATTERN](../docs/planning/_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md)** — Pattern tecnico completo
+- **[SACRED_ORDER_PATTERN](../vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md)** — Pattern tecnico completo
 
 ---
 

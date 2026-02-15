@@ -72,7 +72,7 @@ The `docs/` folder has been verified for MkDocs publication and is **state-of-th
 | Services | `services/README_SERVICES.md` | ✅ Exists |
 | Infrastructure | `infrastructure/README_INFRASTRUCTURE.md` | ✅ Exists |
 | Development | `tests/README_TESTS.md` | ✅ Exists |
-| Planning | `docs/planning/_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md` | ✅ Exists |
+| Planning | `docs/planning/_ALBERATURA_FRAMEWORK_CONSOLIDATA_FEB14_2026.md` | ✅ Exists |
 
 **All navigation links verified** — no broken references.
 

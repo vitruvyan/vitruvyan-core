@@ -45,7 +45,7 @@
 |-------|-----------|
 | **Posizione** | `core/agents/postgres_agent.py` (244 righe) |
 | **Come viene ingaggiato** | `from core.agents.postgres_agent import PostgresAgent`; istanziazione diretta `pg = PostgresAgent()`, poi `pg.fetch()`, `pg.execute()` |
-| **Da chi viene ingaggiato** | 20+ consumatori: tutti i `adapters/persistence.py` dei Sacred Orders e servizi, `domains/finance_plugin.py`, middleware MCP |
+| **Da chi viene ingaggiato** | 20+ consumatori: tutti i `adapters/persistence.py` dei Sacred Orders e servizi, `domains/finance/graph_plugin.py`, middleware MCP |
 | **Input** | Query SQL parametrizzate (`sql: str`, `params: tuple`) |
 | **Funzionalità** | Wrapper PostgreSQL con connection pooling, transazioni context-managed, query parametrizzate (anti SQL injection). Unico punto di accesso al database relazionale |
 | **Output** | `List[Dict]` (fetch), `Dict|None` (fetch_one), `Any` (fetch_scalar), `bool` (execute) |
@@ -229,7 +229,7 @@
 | **Input** | Nessuno (legge env vars per configurazione) |
 | **Funzionalità** | Definisce `GraphState` (TypedDict ~90 campi) e costruisce il `StateGraph` LangGraph. Pipeline: `parse → intent_detection → weaver → entity_resolver → babel_emotion → semantic_grounding → params_extraction → decide → [route branches] → output_normalizer → orthodoxy → vault → compose → can → [advisor] → END` |
 | **Output** | `StateGraph` compilato, pronto per esecuzione |
-| **Parametri env** | `INTENT_DOMAIN` (default `"finance"`), `USE_MCP` (default `"0"`) |
+| **Parametri env** | `INTENT_DOMAIN` (default `"generic"`), `USE_MCP` (default `"0"`) |
 | **Contiene prompt AI?** | No (orchestra nodi che contengono prompt) |
 
 ### 5.2 GraphRunner (Punto di Ingresso)

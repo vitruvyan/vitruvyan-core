@@ -265,18 +265,14 @@ def signals_to_features(
     Convert signal results to features dict (simple API).
     
     Example:
-        from api_babel_gardens.plugins import FinanceSignalsPlugin
-        from services.adapters.babel_to_neural import signals_to_features
-        
-        # Extract signals
-        plugin = FinanceSignalsPlugin()
+        # Extract signals using a domain-specific signals plugin
         signals = plugin.extract_signals(text="...", config=config)
         
         # Convert to features
         features = signals_to_features(signals, legacy_sentiment=True)
         
         # Use in Neural Engine
-        neural_engine.run(entity_features={"AAPL": features})
+        neural_engine.run(entity_features={"ENTITY": features})
     """
     adapter = SignalToFeatureAdapter(
         include_confidence_features=include_confidence,

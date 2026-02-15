@@ -192,7 +192,7 @@ vitruvyan_core/
 vitruvyan/                           (PRODUZIONE — FINANCE VERTICAL)
 ├── core/
 │   └── langgraph/
-│       ├── finance_plugin.py        ← NEW: FinanceGraphPlugin
+│       ├── graph_plugin.py          ← NEW: FinanceGraphPlugin (moved to `vitruvyan_core/domains/finance/graph_plugin.py`)
 │       ├── finance_state.py         ← NEW: FinanceState extension (+85 campi)
 │       └── node/
 │           ├── ticker_resolver_node.py  ← STAY (finanza pura)
@@ -347,9 +347,9 @@ class GraphEngine:
         # ... implementazione ...
 ```
 
-#### C) FinanceGraphPlugin (in vitruvyan, NON in vitruvyan-core)
+#### C) FinanceGraphPlugin (in `vitruvyan_core/domains/finance/`, NON in `vitruvyan_core/core/`)
 ```python
-# vitruvyan/core/langgraph/finance_plugin.py
+# vitruvyan_core/domains/finance/graph_plugin.py
 
 from vitruvyan_core.core.orchestration.graph_engine import GraphPlugin
 

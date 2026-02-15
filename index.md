@@ -34,7 +34,7 @@ Explore the docs:
 - [Pattern Weavers](docs/orders/PATTERN_WEAVERS.md) — Ontology resolution
 
 ### Planning & Roadmap
-- [ALBERATURA Framework](docs/planning/_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md) — Strategic blueprint
+- [ALBERATURA Framework](docs/planning/_ALBERATURA_FRAMEWORK_CONSOLIDATA_FEB14_2026.md) — Strategic blueprint
 - [Sacred Orders Refactoring Plan](docs/architecture/SACRED_ORDERS_REFACTORING_PLAN.md) — Implementation roadmap
 
 ## 🚀 Status

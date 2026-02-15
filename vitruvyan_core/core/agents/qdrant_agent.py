@@ -1,10 +1,9 @@
-# core/leo/qdrant_agent.py
+# core/agents/qdrant_agent.py
 
 import os
 import logging
 import time
 from typing import List, Optional, Dict, Any
-from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import (
     Distance,
@@ -17,16 +16,13 @@ from qdrant_client.http.models import (
     SearchRequest
 )
 
-# 🔐 Carica env
-load_dotenv()
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
 class QdrantAgent:
     def __init__(self):
-        # Priorità: HOST+PORT → URL
+        # Priority: HOST+PORT > URL
         host = os.getenv("QDRANT_HOST")
         port = os.getenv("QDRANT_PORT")
         url = os.getenv("QDRANT_URL")
@@ -42,9 +38,9 @@ class QdrantAgent:
         self.client = QdrantClient(
             url=url,
             api_key=api_key,
-            timeout=30,  # Hardcoded timeout for robustness
+            timeout=timeout,
         )
-        logger.info(f"QdrantAgent inizializzato su {url}")
+        logger.info(f"QdrantAgent initialized on {url}")
 
     # 🔍 Health check
     def health(self) -> Dict[str, Any]:
@@ -55,7 +51,7 @@ class QdrantAgent:
             logger.error(f"Health check fallito: {e}")
             return {"status": "error", "error": str(e)}
 
-    # 🛠 Assicura collezione (SAFE MODE - no data loss)
+    # Ensure collection (SAFE MODE - no data loss)
     def ensure_collection(self, name: str, vector_size: int, distance: str = "Cosine", force_recreate: bool = False):
         """
         Ensure collection exists. By default, creates only if missing.
@@ -101,7 +97,7 @@ class QdrantAgent:
             logger.error(f"❌ Error ensure_collection: {e}")
             return {"status": "error", "error": str(e)}
 
-    # ⬆️ Upsert punti
+    # Upsert points
     def upsert(self, collection: str, points: List[Dict[str, Any]]):
         start = time.time()
         try:
@@ -118,7 +114,7 @@ class QdrantAgent:
             logger.error(f"❌ Qdrant upsert failed after {elapsed:.2f}s (collection={collection}, points={len(points)}): {e}")
             raise
 
-    # 🔎 Ricerca
+    # Search
     def search(
         self,
         collection: str,
@@ -139,7 +135,7 @@ class QdrantAgent:
             results = [{"id": r.id, "score": r.score, "payload": r.payload} for r in res]
             return {"status": "ok", "results": results}
         except Exception as e:
-            logger.error(f"Errore search: {e}")
+            logger.error(f"Search error: {e}")
             return {"status": "error", "error": str(e)}
 
     # Search seed phrases with optional source filtering
@@ -209,7 +205,7 @@ class QdrantAgent:
             logger.error(f"❌ search_phrases error: {e}")
             return {"status": "error", "error": str(e), "results": []}
 
-    # ❌ Delete by IDs
+    # Delete by IDs
     def delete_by_ids(self, collection: str, ids: List[str]):
         try:
             self.client.delete(
@@ -218,10 +214,10 @@ class QdrantAgent:
             )
             return {"status": "ok", "deleted": len(ids)}
         except Exception as e:
-            logger.error(f"Errore delete_by_ids: {e}")
+            logger.error(f"delete_by_ids error: {e}")
             return {"status": "error", "error": str(e)}
 
-    # ❌ Delete by filter
+    # Delete by filter
     def delete_by_filter(self, collection: str, qfilter: Filter):
         try:
             self.client.delete(
@@ -230,7 +226,7 @@ class QdrantAgent:
             )
             return {"status": "ok"}
         except Exception as e:
-            logger.error(f"Errore delete_by_filter: {e}")
+            logger.error(f"delete_by_filter error: {e}")
             return {"status": "error", "error": str(e)}
 
     # ============================================================

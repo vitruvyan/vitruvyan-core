@@ -80,7 +80,7 @@ def run_graph_once(
     
     # 🆕 2) Generate trace_id for VSGS audit trail (propagated through all nodes)
     state["trace_id"] = generate_trace_id()
-    print(f"🔍 [graph_runner] Request trace_id: {state['trace_id']}")
+    logger.debug("[graph_runner] Request trace_id: %s", state['trace_id'])
 
     # 2) Detect and set language (fallback if babel_emotion_node hasn't run yet)
     lang = _detect_language(input_text) if input_text else state.get("language")
@@ -89,7 +89,7 @@ def run_graph_once(
 
     # Merge slots (budget, entity_ids, horizon, language)
     state = merge_slots(state, state)
-    print(f"➡️ [run_graph_once] Initial merged state: {state}")
+    logger.debug("[run_graph_once] Initial merged state: %s", state)
 
     # 3) Run the LangGraph
     final_state = _GRAPH.invoke(state)
@@ -116,12 +116,11 @@ def run_graph_once(
         logger.info(f"[graph_runner] Language from Babel Gardens: {babel_lang} → {final_state['language']}")
 
     # Debug log (safe truncation)
-    print("🟢 [graph_runner] Final state after invoke:",
-          json.dumps(final_state, indent=2, default=str)[:1000])
-    
-    # 🎭 DEBUG: Check emotion_detected presence
-    print(f"🎭 [graph_runner] emotion_detected in final_state: {final_state.get('emotion_detected')}")
-    print(f"🎭 [graph_runner] Keys in final_state: {list(final_state.keys()) if isinstance(final_state, dict) else 'NOT A DICT'}")
+    logger.debug("[graph_runner] Final state after invoke: %s",
+                  json.dumps(final_state, indent=2, default=str)[:1000])
+    logger.debug("[graph_runner] emotion_detected=%s keys=%s",
+                 final_state.get('emotion_detected'),
+                 list(final_state.keys()) if isinstance(final_state, dict) else 'NOT A DICT')
 
     # 4) Persist results
     _SESSION_STATE[user_id] = final_state
@@ -336,13 +335,13 @@ def run_graph(payload: Dict[str, Any]) -> Dict[str, Any]:
     - { "input_text": "..." }
     - { "user_id": "..." }
     """
-    print(f"➡️ [run_graph] Incoming payload: {payload}")
+    logger.debug("[run_graph] Incoming payload: %s", payload)
 
     if not payload:
         return run_graph_once("", "demo")
 
     text = payload.get("input") or payload.get("input_text") or ""
     user_id = payload.get("user_id", "demo")
-    print(f"➡️ [run_graph] user_id={user_id}, input_text={text.strip()}")
+    logger.debug("[run_graph] user_id=%s, input_text=%s", user_id, text.strip())
 
     return run_graph_once(text.strip(), user_id)

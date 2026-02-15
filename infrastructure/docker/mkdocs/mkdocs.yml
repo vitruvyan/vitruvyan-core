@@ -1,7 +1,7 @@
 # ============================================================================
 # MkDocs Configuration — Vitruvyan Core Knowledge Base
 # ============================================================================
-# Last Updated: February 12, 2026
+# Last Updated: February 15, 2026
 # Purpose: User & administrator documentation (domain-agnostic epistemic OS)
 # Deploy: docker compose up -d mkdocs → http://localhost:9800
 # Build:  mkdocs build → site/ (static HTML)
@@ -163,7 +163,7 @@ nav:
     - Scripts: scripts/README_SCRIPTS.md
     
   - Planning:
-    - Roadmap: docs/planning/_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md
+    - Roadmap: docs/planning/_ALBERATURA_FRAMEWORK_CONSOLIDATA_FEB14_2026.md
     - Refactoring Plan: docs/architecture/SACRED_ORDERS_REFACTORING_PLAN.md
 
 # Extra

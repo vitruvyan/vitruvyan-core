@@ -202,7 +202,6 @@ vitruvyan-core/
 │   └── domains/                            Domain plugin system
 │       ├── base_domain.py                 Domain contract ABC
 │       ├── example_domain.py              Template/placeholder
-│       ├── finance_plugin.py              Finance plugin loader
 │       ├── aggregation_contract.py        AggregationProvider (VWRE)
 │       ├── explainability_contract.py     ExplainabilityProvider (VEE)
 │       ├── risk_contract.py               RiskProvider (VARE)
@@ -211,6 +210,7 @@ vitruvyan-core/
 │           ├── entity_resolver_config.py
 │           ├── execution_config.py
 │           ├── governance_rules.py
+│           ├── graph_plugin.py            742L — GraphPlugin + custom router
 │           ├── response_formatter.py
 │           ├── slot_filler.py
 │           ├── prompts/                   Finance prompt templates

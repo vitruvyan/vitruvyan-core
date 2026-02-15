@@ -5,7 +5,7 @@ vitruvyan_os.core.orchestration.langgraph
 Sacred Order: Orchestration (Order II)
 Tier: 2 - Orchestration Layer
 
-LangGraph-based conversational workflow orchestration for Vitruvyan AI Trading Advisor.
+LangGraph-based conversational workflow orchestration for Vitruvyan OS.
 
 Architecture:
 -------------

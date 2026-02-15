@@ -200,7 +200,7 @@ docs/
 │   ├── VITRUVYAN_OVERVIEW.md
 │   └── Vitruvyan_Octopus_Mycelium_Architecture.md (research paper)
 ├── planning/                         # Strategic blueprints (2 files)
-│   ├── _ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md  # 🎯 Reorganization blueprint
+│   ├── _ALBERATURA_FRAMEWORK_CONSOLIDATA_FEB14_2026.md  # 🎯 Reorganization blueprint
 │   └── TODO_EXAMPLES_PATTERN.md
 ├── prompts/                          # Session work logs (6 files)
 ├── services/                         # Service descriptions (2 files)
@@ -210,7 +210,7 @@ docs/
 **Key Documents**:
 - **[Epistemic Charter](docs/foundational/Vitruvyan_Epistemic_Charter.md)** — Philosophy & principles
 - **[Bus Invariants](docs/foundational/Vitruvyan_Bus_Invariants.md)** — Cognitive Bus constraints
-- **[Architecture Audit](docs/planning/_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md)** — 🎯 Post-refactoring roadmap
+- **[Architecture Audit](docs/planning/_ALBERATURA_FRAMEWORK_CONSOLIDATA_FEB14_2026.md)** — 🎯 Post-refactoring roadmap
 - **[Changelog](docs/changelog/)** — Phase-by-phase evolution history
 
 ---
@@ -586,7 +586,7 @@ This is the clean fork from the original Vitruvyan trading system. Core executio
 - [📚 Documentation Portal](docs/index.md) — Entry point to all documentation
 - [🏛️ Epistemic Charter](docs/foundational/Vitruvyan_Epistemic_Charter.md) — Philosophy & principles
 - [🔗 Bus Invariants](docs/foundational/Vitruvyan_Bus_Invariants.md) — Cognitive Bus constraints
-- [📋 Architecture Audit](docs/planning/_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md) — Reorganization roadmap
+- [📋 Architecture Audit](docs/planning/_ALBERATURA_FRAMEWORK_CONSOLIDATA_FEB14_2026.md) — Reorganization roadmap
 
 **Module Documentation** (see [📚 Documentation Organization](#-documentation-organization)):
 - **LangGraph**: [vitruvyan_core/core/orchestration/langgraph/docs/](vitruvyan_core/core/orchestration/langgraph/docs/)
@@ -682,7 +682,7 @@ Key contributions:
 - ⚠️ **Domain-Agnostic Refactoring**: 30/55 files verified agnostic, 13 mixed, 9 finance-specific
 
 **Active Roadmaps**:
-- [Architecture Audit](docs/planning/_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md) — Full tree reorganization plan
+- [Architecture Audit](docs/planning/_ALBERATURA_FRAMEWORK_CONSOLIDATA_FEB14_2026.md) — Full tree reorganization plan
 - [Architecture Docs](docs/architecture/) — Refactoring plans, technical debt audits, cleanup reports
 
 **Historical Evolution**:

@@ -355,7 +355,7 @@ Pattern:
 
 The core orchestration supports domain plugins; finance is the reference pattern:
 
-- `vitruvyan_core/domains/finance_plugin.py` (GraphPlugin + custom router → `"codex_expedition"`)
+- `vitruvyan_core/domains/finance/graph_plugin.py` (GraphPlugin + custom router → `"codex_expedition"`)
 - `examples/verticals/README.md` (vertical extension philosophy)
 
 Rule of thumb:

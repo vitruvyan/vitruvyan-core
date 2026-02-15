@@ -57,10 +57,10 @@ Pattern:
 
 ## 4) Routing hook (when to trigger Codex expeditions)
 
-Finance integrates with orchestration through the finance plugin:
+Finance integrates with orchestration through the finance graph plugin:
 
-- `vitruvyan_core/domains/finance_plugin.py:478` (route `codex_expedition`)
-- `vitruvyan_core/domains/finance_plugin.py:515` (custom router)
+- `vitruvyan_core/domains/finance/graph_plugin.py:478` (route `codex_expedition`)
+- `vitruvyan_core/domains/finance/graph_plugin.py:515` (custom router)
 
 Current rule (finance pilot):
 
@@ -68,7 +68,7 @@ Current rule (finance pilot):
 - and `screening_filters.mode == "discovery"`
 - then route to `"codex_expedition"`
 
-This is intentionally domain-specific and belongs in the **finance plugin**, not in Codex Hunters core.
+This is intentionally domain-specific and belongs in the **finance graph plugin**, not in Codex Hunters core.
 
 ---
 
@@ -77,4 +77,3 @@ This is intentionally domain-specific and belongs in the **finance plugin**, not
 - Replace prototype source(s) with authenticated providers (still via LIVELLO 2 adapters).
 - Define a canonical finance schema for `normalized_data` (minimal, versioned).
 - Remove “ticker” language from shared event channels (keep it in domain pack + plugin only).
-

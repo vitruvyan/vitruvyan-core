@@ -57,7 +57,7 @@ docs/
 │   └── Vitruvyan_Octopus_Mycelium_Architecture.md  → Research paper
 │
 ├── planning/                    # 🎯 Planning (2 files)
-│   ├── _ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md  ⭐ Reorganization roadmap
+│   ├── _ALBERATURA_FRAMEWORK_CONSOLIDATA_FEB14_2026.md  ⭐ Reorganization roadmap
 │   └── TODO_EXAMPLES_PATTERN.md
 │
 ├── prompts/                     # 📝 Prompts (6 files)
@@ -87,7 +87,7 @@ docs/
 2. **[Epistemic Charter](foundational/Vitruvyan_Epistemic_Charter.md)** — Filosofia e principi fondamentali
 3. **[Bus Invariants](foundational/Vitruvyan_Bus_Invariants.md)** — Cognitive Bus constraints (non-negoziabili)
 4. **[VITRUVYAN_OVERVIEW.md](foundational/VITRUVYAN_OVERVIEW.md)** — Cos'è Vitruvyan e come funziona
-5. **[ALBERATURA Framework](planning/_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md)** — 🚀 Post-refactoring reorganization roadmap
+5. **[ALBERATURA Framework](planning/_ALBERATURA_FRAMEWORK_CONSOLIDATA_FEB14_2026.md)** — 🚀 Post-refactoring reorganization roadmap
 
 ---
 
@@ -129,7 +129,7 @@ docs/
 **Purpose**: Strategic blueprints, master plans, TODO patterns
 
 **Key Documents** 🚀:
-- [_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md](planning/_ALBERATURA_FRAMEWORK_DA-IMPLEMENTARE_FEB12_2026.md) — **Master reorganization plan** (post-refactoring roadmap)
+- [_ALBERATURA_FRAMEWORK_CONSOLIDATA_FEB14_2026.md](planning/_ALBERATURA_FRAMEWORK_CONSOLIDATA_FEB14_2026.md) — **Master reorganization plan** (post-refactoring roadmap)
 - [TODO_EXAMPLES_PATTERN.md](planning/TODO_EXAMPLES_PATTERN.md) — Examples directory pattern
 
 ### 📝 Prompts (6 files)

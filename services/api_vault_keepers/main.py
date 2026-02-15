@@ -4,6 +4,7 @@ FastAPI bootstrap. Logic delegated to adapters/bus_adapter.py.
 """
 import logging
 import sys
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from prometheus_fastapi_instrumentator import Instrumentator
 
@@ -16,34 +17,31 @@ from api_vault_keepers.adapters.bus_adapter import VaultBusAdapter
 logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL))
 logger = logging.getLogger("VaultKeepers")
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Vault Keepers awakening...")
+    logger.info("Port: %s | Redis: %s:%s", settings.SERVICE_PORT, settings.REDIS_HOST, settings.REDIS_PORT)
+    logger.info("PostgreSQL: %s:%s/%s", settings.POSTGRES_HOST, settings.POSTGRES_PORT, settings.POSTGRES_DB)
+    logger.info("Qdrant: %s:%s", settings.QDRANT_HOST, settings.QDRANT_PORT)
+    bus_adapter = VaultBusAdapter()
+    set_bus_adapter(bus_adapter)
+    logger.info("Sacred Channels: %s", ", ".join(settings.SACRED_CHANNELS))
+    logger.info("Vault Keepers ready")
+    yield
+    logger.info("Vault Keepers entering dormancy...")
+
+
 app = FastAPI(
-    title="🏰 Vitruvyan Vault Keepers",
+    title="Vitruvyan Vault Keepers",
     description="Sacred Memory Custodians",
     version=settings.SERVICE_VERSION,
     docs_url="/vault/docs",
     redoc_url="/vault/redoc",
+    lifespan=lifespan,
 )
 app.include_router(router)
 Instrumentator().instrument(app).expose(app)
-
-bus_adapter: VaultBusAdapter | None = None
-@app.on_event("startup")
-async def startup():
-    global bus_adapter
-    logger.info("🏰 Vault Keepers awakening...")
-    logger.info(f"Port: {settings.SERVICE_PORT} | Redis: {settings.REDIS_HOST}:{settings.REDIS_PORT}")
-    logger.info(f"PostgreSQL: {settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}")
-    logger.info(f"Qdrant: {settings.QDRANT_HOST}:{settings.QDRANT_PORT}")
-    
-    bus_adapter = VaultBusAdapter()
-    set_bus_adapter(bus_adapter)
-    
-    logger.info(f"📻 Sacred Channels: {', '.join(settings.SACRED_CHANNELS)}")
-    logger.info("✅ Vault Keepers ready")
-
-@app.on_event("shutdown")
-async def shutdown():
-    logger.info("🏰 Vault Keepers entering dormancy...")
 
 @app.get("/health")
 async def root_health():

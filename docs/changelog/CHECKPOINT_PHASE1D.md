@@ -31,7 +31,7 @@ Remove finance-specific logic from **5 critical LangGraph nodes** (updated) whil
 - ❌ Removed: 70+ lines of screening filter extraction (risk_tolerance, momentum_breakout, value_screening, divergence_detection)
 - ❌ Removed: Mode detection logic (analyze/sector/discovery)
 - ❌ Removed: Neural Engine API call with 10+ parameters
-- ✅ Preserved: State routing logic (`route="ne_valid"`)
+- ✅ Preserved: State routing logic (`route="exec_valid"`; renamed from `ne_valid`)
 - ✅ Preserved: Error handling structure (ok/error flags)
 - ✅ Preserved: Raw output format (empty ranking dict)
 - ✅ Added: DOMAIN_NEUTRAL logging
