@@ -52,6 +52,9 @@ from core.orchestration.parser import (
     ParsedSlots,
 )
 
+# ── LLM Provider Protocol ──
+from core.contracts.llm_provider import ILLMProvider
+
 __all__ = [
     # State
     "BaseGraphState",
@@ -77,4 +80,6 @@ __all__ = [
     "Parser",
     "BaseParser",
     "ParsedSlots",
+    # LLM Provider
+    "ILLMProvider",
 ]

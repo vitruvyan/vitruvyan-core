@@ -94,9 +94,9 @@ class StreamBus:
     The bus is deliberately "dumb" — it moves bytes, nothing more.
     """
     
-    # Stream retention: 7 days or 100K messages (whichever first)
-    DEFAULT_MAX_LEN = 100_000
-    DEFAULT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000  # 7 days in ms
+    # Stream retention: configurable via env vars
+    DEFAULT_MAX_LEN = int(os.getenv("STREAM_MAX_LEN", "100000"))
+    DEFAULT_MAX_AGE_MS = int(os.getenv("STREAM_MAX_AGE_DAYS", "7")) * 24 * 60 * 60 * 1000
     
     # ========================================================================
     # BUS INVARIANTS (Enforced structurally - Phase 4, Jan 24, 2026)
@@ -134,7 +134,7 @@ class StreamBus:
         port: int = None,
         db: int = 0,
         password: str = None,
-        prefix: str = "vitruvyan",
+        prefix: str = None,
         ssl: bool = None,
     ):
         """
@@ -152,7 +152,7 @@ class StreamBus:
         self.port = port or int(os.getenv('REDIS_PORT', '6379'))
         self.db = db
         self.password = password or os.getenv('REDIS_PASSWORD')
-        self.prefix = prefix
+        self.prefix = prefix or os.getenv('STREAM_PREFIX', 'vitruvyan')
         self.ssl = ssl if ssl is not None else os.getenv('REDIS_SSL', 'false').lower() in ('true', '1', 'yes')
         
         self._client: Optional[redis.Redis] = None

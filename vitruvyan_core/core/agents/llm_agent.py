@@ -98,12 +98,12 @@ class RateLimiter:
     
     def __init__(
         self,
-        rpm: int = 500,           # OpenAI tier 2: 500 RPM
-        tpm: int = 30_000,        # OpenAI tier 2: 30K TPM for gpt-4o-mini
+        rpm: int = None,
+        tpm: int = None,
         window_seconds: int = 60
     ):
-        self.rpm = rpm
-        self.tpm = tpm
+        self.rpm = rpm or int(os.getenv("LLM_RATE_LIMIT_RPM", "500"))
+        self.tpm = tpm or int(os.getenv("LLM_RATE_LIMIT_TPM", "30000"))
         self.window_seconds = window_seconds
         self._lock = Lock()
         self._request_times: deque = deque()

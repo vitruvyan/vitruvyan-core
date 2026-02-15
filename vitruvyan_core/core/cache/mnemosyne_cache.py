@@ -92,7 +92,7 @@ class MnemosyneCacheManager:
             self.redis_client = None
         
         # Cache configuration
-        self.prefix = "vitruvyan:mnemosyne_cache"
+        self.prefix = os.getenv("MNEMOSYNE_CACHE_PREFIX", "vitruvyan:mnemosyne_cache")
         self.default_ttl_hours = int(os.getenv("MNEMOSYNE_CACHE_TTL_HOURS", "6"))  # 6 hours default
         
         # Vector similarity threshold for cache matching
@@ -227,6 +227,17 @@ class MnemosyneCacheManager:
             self.logger.error(f"❌ Cache set error: {e}")
             return False
     
+    def _scan_keys(self, pattern: str) -> list:
+        """Iterate keys via SCAN (non-blocking, O(1) per call)."""
+        keys = []
+        cursor = 0
+        while True:
+            cursor, batch = self.redis_client.scan(cursor=cursor, match=pattern, count=200)
+            keys.extend(batch)
+            if cursor == 0:
+                break
+        return keys
+
     def invalidate_collection(self, collection: str) -> int:
         """
         Invalidate all cache entries for a specific collection
@@ -243,7 +254,7 @@ class MnemosyneCacheManager:
         try:
             search_pattern = f"{self.prefix}:{collection}:*"
             
-            keys = self.redis_client.keys(search_pattern)
+            keys = self._scan_keys(search_pattern)
             
             if not keys:
                 self.logger.debug(f"🔍 No keys found for collection: {collection}")
@@ -274,7 +285,7 @@ class MnemosyneCacheManager:
         try:
             search_pattern = f"{self.prefix}:*"
             
-            keys = self.redis_client.keys(search_pattern)
+            keys = self._scan_keys(search_pattern)
             
             if not keys:
                 self.logger.debug(f"🔍 No cache entries found")
@@ -331,7 +342,7 @@ class MnemosyneCacheManager:
         try:
             # Search all cache entries for this collection and top_k
             pattern = f"{self.prefix}:{collection}:{top_k}:*"
-            keys = self.redis_client.keys(pattern)
+            keys = self._scan_keys(pattern)
             
             if not keys:
                 return None

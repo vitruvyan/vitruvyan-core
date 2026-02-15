@@ -33,15 +33,47 @@ Each vertical should:
 import os
 import logging
 from contextlib import contextmanager
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Generator, List, Optional, Tuple
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from psycopg2 import pool as pg_pool
 from dotenv import load_dotenv
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Module-level connection pool (shared by all PostgresAgent instances)
+# ---------------------------------------------------------------------------
+_pool: Optional[pg_pool.ThreadedConnectionPool] = None
+_pool_db_params: Optional[Dict[str, str]] = None
+
+
+def _get_pool(db_params: Dict[str, str]) -> pg_pool.ThreadedConnectionPool:
+    """Get or create a module-level threaded connection pool."""
+    global _pool, _pool_db_params
+
+    # Reuse existing pool if params haven't changed
+    if _pool is not None and not _pool.closed and _pool_db_params == db_params:
+        return _pool
+
+    min_conn = int(os.getenv("POSTGRES_POOL_MIN", "2"))
+    max_conn = int(os.getenv("POSTGRES_POOL_MAX", "10"))
+
+    _pool = pg_pool.ThreadedConnectionPool(
+        minconn=min_conn,
+        maxconn=max_conn,
+        **db_params,
+    )
+    _pool_db_params = db_params
+    logger.info(
+        "PostgreSQL pool created: %s:%s/%s (min=%d, max=%d)",
+        db_params.get("host"), db_params.get("port"),
+        db_params.get("dbname"), min_conn, max_conn,
+    )
+    return _pool
 
 
 class PostgresAgent:
@@ -61,6 +93,11 @@ class PostgresAgent:
         """
         Initialize connection using params or environment variables.
         
+        Uses a module-level ThreadedConnectionPool for efficient 
+        connection reuse.  Pool size is controlled by:
+            POSTGRES_POOL_MIN (default 2)
+            POSTGRES_POOL_MAX (default 10)
+        
         Environment variables (fallback):
             POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DB, 
             POSTGRES_USER, POSTGRES_PASSWORD
@@ -73,24 +110,25 @@ class PostgresAgent:
             "password": password or os.getenv("POSTGRES_PASSWORD"),
         }
         
+        self._pool = _get_pool(self.db_params)
         self._connection = None
-        self._connect()
     
-    def _connect(self):
-        """Establish database connection."""
-        try:
-            self._connection = psycopg2.connect(**self.db_params)
-            logger.info(f"✅ PostgreSQL connected: {self.db_params['host']}:{self.db_params['port']}/{self.db_params['dbname']}")
-        except Exception as e:
-            logger.error(f"❌ PostgreSQL connection failed: {e}")
-            raise
+    def _get_conn(self):
+        """Get a connection from the pool (or reuse the held one)."""
+        if self._connection is None or self._connection.closed:
+            self._connection = self._pool.getconn()
+        return self._connection
+
+    def _put_conn(self):
+        """Return the held connection to the pool."""
+        if self._connection is not None and not self._connection.closed:
+            self._pool.putconn(self._connection)
+            self._connection = None
     
     @property
     def connection(self):
-        """Get active connection, reconnect if needed."""
-        if self._connection is None or self._connection.closed:
-            self._connect()
-        return self._connection
+        """Get active connection from pool, reconnect if needed."""
+        return self._get_conn()
     
     def execute(self, sql: str, params: Tuple = None) -> bool:
         """
@@ -195,6 +233,41 @@ class PostgresAgent:
             self.connection.rollback()
             logger.error(f"Fetch scalar error: {e}")
             return None
+
+    def fetch_paginated(
+        self,
+        sql: str,
+        params: Tuple = None,
+        page_size: int = 500,
+    ) -> Generator[List[Dict[str, Any]], None, None]:
+        """
+        Fetch rows in pages using a server-side cursor.
+
+        Avoids loading the entire result set into memory — essential
+        for large tables.  Yields lists of ``page_size`` dicts.
+
+        Args:
+            sql: SELECT statement
+            params: Query parameters
+            page_size: Rows per page (default 500)
+
+        Yields:
+            List[Dict] — one page at a time
+        """
+        cur_name = f"pg_paginated_{id(self)}_{os.getpid()}"
+        try:
+            with self.connection.cursor(name=cur_name, cursor_factory=RealDictCursor) as cur:
+                cur.itersize = page_size
+                cur.execute(sql, params)
+                while True:
+                    rows = cur.fetchmany(page_size)
+                    if not rows:
+                        break
+                    yield [dict(r) for r in rows]
+        except Exception as e:
+            self.connection.rollback()
+            logger.error(f"Fetch paginated error: {e}")
+            return
     
     @contextmanager
     def transaction(self):
@@ -224,10 +297,8 @@ class PostgresAgent:
         return result.get("exists", False) if result else False
     
     def close(self):
-        """Close connection."""
-        if self._connection and not self._connection.closed:
-            self._connection.close()
-            logger.info("PostgreSQL connection closed")
+        """Return connection to the pool."""
+        self._put_conn()
     
     def __enter__(self):
         return self
@@ -239,5 +310,5 @@ class PostgresAgent:
 
 # Convenience function for quick queries
 def get_postgres() -> PostgresAgent:
-    """Get a PostgresAgent instance."""
+    """Get a PostgresAgent instance (uses shared connection pool)."""
     return PostgresAgent()

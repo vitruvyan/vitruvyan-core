@@ -4,6 +4,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Dict, Any, List, Optional
 import logging
+import os
 from datetime import datetime, timedelta
 
 from .cache_manager import get_cache_manager, CacheEntry
@@ -176,8 +177,8 @@ async def get_cost_analysis(days: int = 30) -> Dict[str, Any]:
         cache_manager = get_cache_manager()
         stats = cache_manager.get_cache_statistics(days)
         
-        # Cost calculations (approximate)
-        cost_per_token = 0.0001  # $0.0001 per token for GPT-4o-mini
+        # Cost calculations (configurable per-token cost)
+        cost_per_token = float(os.getenv("LLM_COST_PER_TOKEN", "0.0001"))
         
         analysis = {
             "period_days": days,

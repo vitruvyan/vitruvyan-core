@@ -40,9 +40,19 @@ def _detect_language(text: str) -> str:
 # In-memory session cache (fast, but not persistent)
 _SESSION_STATE: Dict[str, Dict[str, Any]] = {}
 
-# Compile the LangGraph once at module load
+# Lazy graph compilation — deferred to first use instead of import-time
 _ENABLE_MINIMAL = os.getenv("ENABLE_MINIMAL_GRAPH", "false").lower() == "true"
-_GRAPH = build_minimal_graph() if _ENABLE_MINIMAL else build_graph()
+_GRAPH = None
+
+
+def _get_graph():
+    """Return the compiled graph, building it on first call (lazy init)."""
+    global _GRAPH
+    if _GRAPH is None:
+        logger.info("Compiling LangGraph (minimal=%s)...", _ENABLE_MINIMAL)
+        _GRAPH = build_minimal_graph() if _ENABLE_MINIMAL else build_graph()
+        logger.info("LangGraph compiled successfully")
+    return _GRAPH
 
 
 def run_graph_once(
@@ -92,7 +102,7 @@ def run_graph_once(
     logger.debug("[run_graph_once] Initial merged state: %s", state)
 
     # 3) Run the LangGraph
-    final_state = _GRAPH.invoke(state)
+    final_state = _get_graph().invoke(state)
 
     # ✅ Override language with Babel Gardens detection (more accurate than langdetect)
     if final_state.get("emotion_metadata") and final_state["emotion_metadata"].get("language"):
