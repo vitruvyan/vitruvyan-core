@@ -110,27 +110,53 @@
     const li = document.createElement("li");
     li.className = "nav-item kb-lang-switch";
     li.id = "kb-lang-switch";
+    li.dataset.open = "false";
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "nav-link kb-lang-switch__toggle";
+    toggle.setAttribute("aria-haspopup", "menu");
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-label", "Language menu");
+    toggle.innerHTML = `<span class="kb-lang-switch__icon" aria-hidden="true">🌐</span><span>${active.toUpperCase()}</span>`;
+
+    const menu = document.createElement("div");
+    menu.className = "kb-lang-switch__menu";
+    menu.setAttribute("role", "menu");
 
     const enLink = document.createElement("a");
-    enLink.className = `nav-link text-decoration-none kb-lang-switch__link${active === "en" ? " is-active" : ""}`;
+    enLink.className = `kb-lang-switch__item${active === "en" ? " is-active" : ""}`;
     enLink.href = en;
-    enLink.textContent = "EN";
-    enLink.setAttribute("aria-label", "Switch language to English");
-
-    const sep = document.createElement("span");
-    sep.className = "kb-lang-switch__sep";
-    sep.textContent = "/";
-    sep.setAttribute("aria-hidden", "true");
+    enLink.textContent = "English";
+    enLink.setAttribute("role", "menuitem");
 
     const itLink = document.createElement("a");
-    itLink.className = `nav-link text-decoration-none kb-lang-switch__link${active === "it" ? " is-active" : ""}`;
+    itLink.className = `kb-lang-switch__item${active === "it" ? " is-active" : ""}`;
     itLink.href = it;
-    itLink.textContent = "IT";
-    itLink.setAttribute("aria-label", "Cambia lingua in Italiano");
+    itLink.textContent = "Italiano";
+    itLink.setAttribute("role", "menuitem");
 
-    li.appendChild(enLink);
-    li.appendChild(sep);
-    li.appendChild(itLink);
+    menu.appendChild(enLink);
+    menu.appendChild(itLink);
+    li.appendChild(toggle);
+    li.appendChild(menu);
+
+    const setOpen = (open) => {
+      li.dataset.open = open ? "true" : "false";
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    };
+
+    toggle.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(li.dataset.open !== "true");
+    });
+
+    document.addEventListener("click", () => setOpen(false));
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") setOpen(false);
+    });
+    menu.addEventListener("click", () => setOpen(false));
 
     if (searchItem) {
       outerNav.insertBefore(li, searchItem);

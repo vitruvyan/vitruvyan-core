@@ -23,6 +23,27 @@ body {
     "Liberation Mono", "Courier New", monospace;
 }
 
+/* Sidebar TOC containment (simple-blog) */
+#component-sidebar .sidebar {
+  overflow: hidden;
+}
+
+#component-sidebar .sidebar .nav-link {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+#component-sidebar .sidebar .nav-item {
+  min-width: 0;
+}
+
+/* Primary navbar entries */
+nav.navbar .navbar-nav .nav-link {
+  font-size: 1rem;
+}
+
 .headerlink {
   display: none !important;
 }
@@ -174,32 +195,65 @@ a#component-site-name:hover {
   background: rgba(0, 0, 0, 0.05);
 }
 
-/* Language switch (EN/IT) in header navbar. */
+/* Language switch (dropdown) in header navbar. */
 #kb-lang-switch {
+  position: relative;
   display: flex;
-  flex-direction: row;
   align-items: center;
-  gap: 0.15rem;
   padding-left: 0.25rem;
   padding-right: 0.25rem;
 }
 
-#kb-lang-switch .kb-lang-switch__link {
-  padding-left: 0.2rem;
-  padding-right: 0.2rem;
-  opacity: 0.75;
+#kb-lang-switch .kb-lang-switch__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  background: #fff;
+  line-height: 1.1;
+  cursor: pointer;
 }
 
-#kb-lang-switch .kb-lang-switch__link.is-active {
-  opacity: 1;
+#kb-lang-switch .kb-lang-switch__icon {
+  font-size: 0.95em;
+}
+
+#kb-lang-switch .kb-lang-switch__menu {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  right: 0;
+  min-width: 130px;
+  z-index: 100;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 10px;
+  padding: 0.3rem;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  display: none;
+}
+
+#kb-lang-switch[data-open="true"] .kb-lang-switch__menu {
+  display: block;
+}
+
+#kb-lang-switch .kb-lang-switch__item {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+}
+
+#kb-lang-switch .kb-lang-switch__item:hover,
+#kb-lang-switch .kb-lang-switch__item:focus {
+  text-decoration: none;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+#kb-lang-switch .kb-lang-switch__item.is-active {
   font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-}
-
-#kb-lang-switch .kb-lang-switch__sep {
-  opacity: 0.4;
-  user-select: none;
 }
 
 /* Auth controls (Sign in / Sign out) in header navbar. */
