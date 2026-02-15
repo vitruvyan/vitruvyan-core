@@ -28,9 +28,9 @@ Contract Compliance:
 from typing import Dict, Any
 import os
 from core.agents.llm_agent import get_llm_agent
-from dotenv import load_dotenv
 
-load_dotenv()
+# NOTE: Configuration via environment variables only.
+# load_dotenv() is called in service entrypoints (main.py), not in core modules.
 
 
 def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:

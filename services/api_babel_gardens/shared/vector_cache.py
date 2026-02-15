@@ -411,7 +411,10 @@ class UnifiedVectorCache(GemmaServiceBase):
         
         try:
             full_pattern = f"{self.prefix}:{pattern}"
-            keys = await self.redis_client.keys(full_pattern)
+            # SCAN-based iteration (cluster-safe, non-blocking)
+            keys = []
+            async for key in self.redis_client.scan_iter(match=full_pattern, count=100):
+                keys.append(key)
             
             if keys:
                 deleted = await self.redis_client.delete(*keys)

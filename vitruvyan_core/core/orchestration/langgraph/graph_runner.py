@@ -3,18 +3,19 @@
 import os
 import json
 import logging
+import uuid
 from typing import Dict, Any
 from core.orchestration.langgraph.graph_flow import build_graph, build_minimal_graph
 from core.orchestration.langgraph.memory_utils import merge_slots
+from core.orchestration.execution_guard import get_execution_guard
+from core.logging.audit import AuditLogger, get_audit_logger
 
 logger = logging.getLogger(__name__)
 # proactive_suggestions: ARCHIVED (was domain-specific finance feature)
-# from core.logging.audit import  # TODO: audit module not available generate_trace_id  # 🆕 VSGS trace_id generation
 
-# Stub for generate_trace_id
-import uuid
+# Full UUID4 trace_id (not truncated — collision-safe at high volume)
 def generate_trace_id():
-    return str(uuid.uuid4())[:8]
+    return str(uuid.uuid4())
 
 from langdetect import detect
 from langdetect import DetectorFactory
@@ -101,8 +102,33 @@ def run_graph_once(
     state = merge_slots(state, state)
     logger.debug("[run_graph_once] Initial merged state: %s", state)
 
-    # 3) Run the LangGraph
-    final_state = _get_graph().invoke(state)
+    # 3) Run the LangGraph with hard timeout protection
+    _graph_timeout = int(os.getenv("GRAPH_EXEC_TIMEOUT_SECONDS", "120"))
+    guard = get_execution_guard()
+    result = guard.execute_node(
+        node_name="langgraph_pipeline",
+        handler=lambda s: _get_graph().invoke(s),
+        state=state,
+        timeout=_graph_timeout,
+    )
+
+    if result.timed_out:
+        logger.error("[graph_runner] Pipeline timed out after %ds", _graph_timeout)
+        # Emit audit event for timeout
+        try:
+            audit = get_audit_logger()
+            audit.log(
+                event_id=state.get("trace_id", "unknown"),
+                correlation_id=state.get("trace_id", ""),
+                node_id="langgraph_pipeline",
+                status="timeout",
+                execution_time_ms=result.execution_time_ms,
+                error_code="PIPELINE_TIMEOUT",
+            )
+        except Exception:
+            pass
+
+    final_state = result.state
 
     # ✅ Override language with Babel Gardens detection (more accurate than langdetect)
     if final_state.get("emotion_metadata") and final_state["emotion_metadata"].get("language"):

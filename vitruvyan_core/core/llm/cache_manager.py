@@ -9,9 +9,9 @@ from datetime import datetime, timedelta
 import logging
 from dataclasses import dataclass, asdict
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+# NOTE: Configuration via environment variables only.
+# load_dotenv() is called in service entrypoints (main.py), not in core modules.
 
 @dataclass
 class CacheEntry:
@@ -209,9 +209,9 @@ class LLMCacheManager:
             entity_ids = set(state.get("entity_ids", []))
             language = state.get("language", "en")
             
-            # Search pattern
+            # Search pattern (SCAN-based, cluster-safe)
             pattern = f"llm_cache:*"
-            keys = self.redis_client.keys(pattern)
+            keys = list(self.redis_client.scan_iter(match=pattern, count=100))
             
             similar_entries = []
             
@@ -356,7 +356,7 @@ class LLMCacheManager:
         """Clean up expired cache entries"""
         try:
             pattern = "llm_cache:*"
-            keys = self.redis_client.keys(pattern)
+            keys = list(self.redis_client.scan_iter(match=pattern, count=100))
             
             cleaned = 0
             for key in keys:
@@ -386,7 +386,7 @@ class LLMCacheManager:
         """Invalidate cache entries for specific entity_ids (e.g., after data updates)"""
         try:
             pattern = "llm_cache:*"
-            keys = self.redis_client.keys(pattern)
+            keys = list(self.redis_client.scan_iter(match=pattern, count=100))
             
             invalidated = 0
             for key in keys:

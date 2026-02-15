@@ -27,9 +27,9 @@ import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
 from core.agents.llm_agent import get_llm_agent
-from dotenv import load_dotenv
 
-load_dotenv()
+# NOTE: Configuration via environment variables only.
+# load_dotenv() is called in service entrypoints (main.py), not in core modules.
 logger = logging.getLogger(__name__)
 
 # Default values

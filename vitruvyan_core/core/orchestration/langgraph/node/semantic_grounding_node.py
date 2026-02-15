@@ -15,7 +15,6 @@ Placement: babel_emotion → semantic_grounding → params_extraction
 import os
 import logging
 from typing import Dict, Any
-from dotenv import load_dotenv
 
 from core.vpar.vsgs import VSGSEngine, GroundingConfig
 
@@ -32,7 +31,8 @@ except ImportError:
     def record_qdrant_latency(*a, **kw): pass
     def record_error(*a, **kw): pass
 
-load_dotenv()
+# NOTE: Configuration via environment variables only.
+# load_dotenv() is called in service entrypoints (main.py), not in core modules.
 logger = logging.getLogger(__name__)
 
 # ── Configuration from environment ───────────────────────────────────────────

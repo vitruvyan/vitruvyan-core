@@ -9,14 +9,14 @@ import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
 import os
-from dotenv import load_dotenv
 
 # Import our cache manager
 from core.llm.cache_manager import get_cache_manager, CacheEntry
 # Import LLMAgent
 from core.agents.llm_agent import get_llm_agent
 
-load_dotenv()
+# NOTE: Configuration via environment variables only.
+# load_dotenv() is called in service entrypoints (main.py), not in core modules.
 
 # Core personality prompt to inject consistent voice and behavior
 VITRUVYAN_PERSONALITY_PROMPT = """

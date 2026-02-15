@@ -107,9 +107,8 @@ async def cache_health_check() -> Dict[str, Any]:
         
         redis_healthy = retrieved_value == test_value
         
-        # Get current cache size (approximate)
-        cache_keys = cache_manager.redis_client.keys("llm_cache:*")
-        cache_size = len(cache_keys)
+        # Get current cache size (approximate, SCAN-based, cluster-safe)
+        cache_size = sum(1 for _ in cache_manager.redis_client.scan_iter(match="llm_cache:*", count=100))
         
         return {
             "status": "healthy" if redis_healthy else "unhealthy",

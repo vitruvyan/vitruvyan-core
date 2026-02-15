@@ -67,6 +67,7 @@ from redis.exceptions import ConnectionError, ResponseError
 
 # Import canonical event envelope (from events/ directory after refactoring)
 from ..events.event_envelope import TransportEvent
+from .dlq import DeadLetterQueue
 
 logger = logging.getLogger(__name__)
 
@@ -156,6 +157,7 @@ class StreamBus:
         self.ssl = ssl if ssl is not None else os.getenv('REDIS_SSL', 'false').lower() in ('true', '1', 'yes')
         
         self._client: Optional[redis.Redis] = None
+        self._dlq: Optional[DeadLetterQueue] = None
         self._connect()
     
     def _connect(self) -> None:
@@ -173,10 +175,18 @@ class StreamBus:
                 retry_on_timeout=True
             )
             self._client.ping()
+            self._dlq = DeadLetterQueue(self._client, self.prefix)
             logger.info(f"✅ StreamBus connected: {self.host}:{self.port}")
         except ConnectionError as e:
             logger.error(f"❌ StreamBus connection failed: {e}")
             raise
+    
+    @property
+    def dlq(self) -> DeadLetterQueue:
+        """Get the Dead Letter Queue manager."""
+        if self._dlq is None:
+            self._dlq = DeadLetterQueue(self.client, self.prefix)
+        return self._dlq
     
     @property
     def client(self) -> redis.Redis:

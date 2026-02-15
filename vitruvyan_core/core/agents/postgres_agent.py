@@ -38,9 +38,9 @@ from typing import Any, Dict, Generator, List, Optional, Tuple
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from psycopg2 import pool as pg_pool
-from dotenv import load_dotenv
 
-load_dotenv()
+# NOTE: Configuration via environment variables only.
+# load_dotenv() is called in service entrypoints (main.py), not in core modules.
 
 logger = logging.getLogger(__name__)
 

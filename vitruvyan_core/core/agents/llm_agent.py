@@ -76,9 +76,8 @@ except ImportError:
     OPENAI_AVAILABLE = False
     OpenAI = None  # Type hint compatibility
 
-from dotenv import load_dotenv
-
-load_dotenv()
+# NOTE: Configuration via environment variables only.
+# load_dotenv() is called in service entrypoints (main.py), not in core modules.
 
 logger = logging.getLogger(__name__)
 
