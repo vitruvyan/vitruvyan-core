@@ -4,7 +4,7 @@
 > 1) the **target architecture** (design intent), and  
 > 2) the **current runtime snapshot** (what is active today).
 
-> Snapshot date: **February 14, 2026** (updated post-Priority 2B: hook pattern implementation)
+> Snapshot date: **February 15, 2026** (updated post-FASE 1 domain-agnostic remediation)
 
 ---
 
@@ -245,9 +245,9 @@ Vitruvyan uses a **registry-based hook pattern** for domain-specific extension p
 1. **Intent Detection** (`intent_detection_node.py`)
    - Registry: `IntentRegistry` (`core/orchestration/intent_registry.py`)
    - Domain config: `domains/finance/intent_config.py` (`create_finance_registry()`)
-   - Env var: `INTENT_DOMAIN=finance` (default)
+   - Env var: `INTENT_DOMAIN=generic` (default; set to `finance` to load finance intents)
    - Behavior: Finance intents (trend, momentum, risk, etc.) vs. core-only (soft, unknown)
-   - Status: **ACTIVE** (finance domain loaded by default)
+   - Status: **ACTIVE** (generic by default; domain plugins loaded via `INTENT_DOMAIN`)
 
 2. **Entity Resolution** (`entity_resolver_node.py`)
    - Registry: `EntityResolverRegistry` (`core/orchestration/entity_resolver_registry.py`)
@@ -261,7 +261,7 @@ Vitruvyan uses a **registry-based hook pattern** for domain-specific extension p
    - Registry: `ExecutionRegistry` (`core/orchestration/execution_registry.py`)
    - Domain config: `domains/finance/execution_config.py` (`register_finance_execution_handler()`)
    - Env var: `EXEC_DOMAIN=finance` (optional)
-   - Default behavior: Fake success stub (empty ranking, `route='ne_valid'`, `ok=True`)
+   - Default behavior: Fake success stub (empty results, `route='exec_valid'`, `ok=True`)
    - Finance behavior (if registered): Neural Engine ranking for finance entities
    - Status: **STUB** (no domain registered, graceful fake success)
 

@@ -56,7 +56,7 @@ async def test_memory_write_dual_system_roundtrip():
     start_time = time.time()
     
     # Prepare memory write payload
-    test_text = f"AAPL technical analysis: bullish divergence detected on RSI (test_{int(time.time())})"
+    test_text = f"ENTITY_A detailed analysis: positive divergence detected on score (test_{int(time.time())})"
     payload = {
         "text": test_text,
         "source": "memory_orders",
@@ -238,7 +238,7 @@ async def test_vector_match_from_mnemosyne():
     
     # Prepare vector match payload
     payload = {
-        "query_text": "Apple entity technical analysis bullish pattern",
+        "query_text": "Entity detailed analysis positive pattern",
         "top_k": 5,
         "filters": {
             "source": "memory_orders"
@@ -315,7 +315,7 @@ async def test_dual_memory_coherence():
     print("="*70)
     
     # Write a test memory
-    test_text = f"Coherence test memory: MSFT bullish pattern (test_{int(time.time())})"
+    test_text = f"Coherence test memory: ENTITY_C positive pattern (test_{int(time.time())})"
     
     # Step 1: Write to dual-memory system
     write_payload = {
@@ -505,11 +505,11 @@ async def test_mnemosyne_node_telemetry():
         "conclave_event": {
             "event_type": "memory.vector.match.fulfilled",
             "payload": {
-                "query_text": "Apple entity analysis",
+                "query_text": "Entity detailed analysis",
                 "matches": [
                     {
                         "phrase_id": 2001,
-                        "text": "AAPL bullish pattern detected",
+                        "text": "ENTITY_A positive pattern detected",
                         "similarity_score": 0.92,
                         "source": "memory_orders",
                         "language": "en",
@@ -517,7 +517,7 @@ async def test_mnemosyne_node_telemetry():
                     },
                     {
                         "phrase_id": 2002,
-                        "text": "Apple shows strong momentum",
+                        "text": "Entity shows strong signal",
                         "similarity_score": 0.85,
                         "source": "memory_orders",
                         "language": "en",
@@ -525,7 +525,7 @@ async def test_mnemosyne_node_telemetry():
                     },
                     {
                         "phrase_id": 2003,
-                        "text": "AAPL technical analysis complete",
+                        "text": "ENTITY_A detailed analysis complete",
                         "similarity_score": 0.78,
                         "source": "memory_orders",
                         "language": "en",
@@ -599,7 +599,7 @@ async def test_memory_orders_full_cycle_rtt():
     cycle_start = time.time()
     
     # Step 1: Write memory
-    test_text = f"Full cycle test: GOOGL technical signal (test_{int(time.time())})"
+    test_text = f"Full cycle test: ENTITY_B signal (test_{int(time.time())})"
     write_payload = {
         "text": test_text,
         "source": "memory_orders",

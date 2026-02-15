@@ -347,9 +347,9 @@ def _create_fallback_protection() -> Dict[str, Any]:
 def test_vault_node():
     """Test the vault node functionality"""
     test_state = {
-        "human_input": "Show me collection allocation for retirement with backup protection",
-        "intent": "allocate", 
-        "entity_ids": ["EXAMPLE_ENTITY_1", "EXAMPLE_ENTITY_4"],
+        "human_input": "Show me analysis results with backup protection",
+        "intent": "analysis", 
+        "entity_ids": ["ENTITY_001", "ENTITY_002"],
         "route": "vault"
     }
     

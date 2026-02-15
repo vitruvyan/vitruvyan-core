@@ -52,14 +52,14 @@ def test_direct_signal_archival():
     ]
     
     payload = {
-        "entity_id": "AAPL",
+        "entity_id": "ENTITY_A",
         "signal_results": signal_results_finance,
         "vertical": "finance",
         "schema_version": "2.1",
         "retention_days": 365
     }
     
-    print(f"Archiving {len(signal_results_finance)} signal data points for AAPL (finance)...")
+    print(f"Archiving {len(signal_results_finance)} signal data points for ENTITY_A (finance)...")
     
     # Note: This endpoint needs to be added to api/routes.py
     # For now, we'll test the adapter directly
@@ -167,9 +167,9 @@ def test_adapter_directly():
         adapter = VaultBusAdapter()
         
         # Test finance archival
-        print("\n📊 Archiving finance signals (AAPL)...")
+        print("\n📊 Archiving finance signals (ENTITY_A)...")
         result_finance = adapter.handle_signal_timeseries_archival(
-            entity_id="AAPL",
+            entity_id="ENTITY_A",
             signal_results=[
                 {
                     "signal_name": "sentiment_valence",
@@ -219,9 +219,9 @@ def test_adapter_directly():
         print(f"   - Status: {result_cyber['status']}")
         
         # Test query
-        print("\n🔍 Querying signals for AAPL...")
+        print("\n🔍 Querying signals for ENTITY_A...")
         query_result = adapter.query_signal_timeseries(
-            entity_id="AAPL",
+            entity_id="ENTITY_A",
             signal_name="sentiment_valence",
             vertical="finance"
         )

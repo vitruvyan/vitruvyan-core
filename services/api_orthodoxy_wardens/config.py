@@ -27,7 +27,7 @@ class Settings:
     SACRED_CHANNELS = [
         "orthodoxy.audit.requested",
         "orthodoxy.validation.requested",
-        "neural_engine.screening.completed",
+        "engine.eval.completed",
         "babel.sentiment.completed",
         "memory.write.completed",
         "vee.explanation.completed",

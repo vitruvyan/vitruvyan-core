@@ -2,9 +2,12 @@
 
 import os
 import json
+import logging
 from typing import Dict, Any
 from core.orchestration.langgraph.graph_flow import build_graph, build_minimal_graph
 from core.orchestration.langgraph.memory_utils import merge_slots
+
+logger = logging.getLogger(__name__)
 # proactive_suggestions: ARCHIVED (was domain-specific finance feature)
 # from core.logging.audit import  # TODO: audit module not available generate_trace_id  # 🆕 VSGS trace_id generation
 
@@ -19,17 +22,19 @@ from langdetect import DetectorFactory
 # Deterministic language detection
 DetectorFactory.seed = 0
 
-# --- Language detection (normalized to {en, it, es}) ---
+# --- Language detection (returns ISO-639-1 code directly) ---
 def _detect_language(text: str) -> str:
     """
-    Detect ISO-639-1 code and normalize to supported set.
-    Defaults to 'en' if unknown.
+    Detect ISO-639-1 language code from text.
+    Returns the raw detected code (e.g., 'fr', 'de', 'ja', 'zh-cn').
+    Babel Gardens will provide more accurate detection downstream.
+    Defaults to 'en' if detection fails.
     """
     try:
         code = (detect(text or "") or "en").lower()
     except Exception:
         code = "en"
-    return "it" if code.startswith("it") else ("es" if code.startswith("es") else "en")
+    return code
 
 
 # In-memory session cache (fast, but not persistent)
@@ -91,15 +96,24 @@ def run_graph_once(
 
     # ✅ Override language with Babel Gardens detection (more accurate than langdetect)
     if final_state.get("emotion_metadata") and final_state["emotion_metadata"].get("language"):
-        babel_lang = final_state["emotion_metadata"]["language"]
-        # Normalize Babel Gardens language codes to our 3-lang system
-        if babel_lang.lower() in ["it", "italian", "ita"]:
-            final_state["language"] = "it"
-        elif babel_lang.lower() in ["es", "spanish", "esp", "spa"]:
-            final_state["language"] = "es"
-        else:
-            final_state["language"] = "en"
-        print(f"🌍 [graph_runner] Language overridden from Babel Gardens: {babel_lang} → {final_state['language']}")
+        babel_lang = final_state["emotion_metadata"]["language"].lower()
+        # Use Babel Gardens language directly — supports 100+ languages (ISO-639-1)
+        # Map common long-form names to ISO codes
+        _LANG_NAME_MAP = {
+            "italian": "it", "ita": "it",
+            "spanish": "es", "esp": "es", "spa": "es",
+            "english": "en", "eng": "en",
+            "french": "fr", "fra": "fr",
+            "german": "de", "deu": "de",
+            "portuguese": "pt", "por": "pt",
+            "japanese": "ja", "jpn": "ja",
+            "chinese": "zh", "zho": "zh",
+            "arabic": "ar", "ara": "ar",
+            "russian": "ru", "rus": "ru",
+            "korean": "ko", "kor": "ko",
+        }
+        final_state["language"] = _LANG_NAME_MAP.get(babel_lang, babel_lang)
+        logger.info(f"[graph_runner] Language from Babel Gardens: {babel_lang} → {final_state['language']}")
 
     # Debug log (safe truncation)
     print("🟢 [graph_runner] Final state after invoke:",
@@ -169,11 +183,12 @@ def run_graph_once(
             response["vault_blessing"] = final_state.get("vault_blessing")
             response["vault_status"] = final_state.get("vault_status")
         
-        # ✅ FIX (Nov 2, 2025): Add intent, route, entity_ids, horizon to API response
+        # ✅ FIX (Nov 2, 2025): Add intent, route, entity_ids to API response
         response["intent"] = final_state.get("intent")
         response["route"] = final_state.get("route")
         response["entity_ids"] = final_state.get("entity_ids")
-        response["horizon"] = final_state.get("horizon")
+        response["domain_params"] = final_state.get("domain_params", {})
+        response["horizon"] = final_state.get("horizon")  # DEPRECATED backward-compat
         response["user_id"] = final_state.get("user_id")
         response["needed_slots"] = final_state.get("needed_slots", [])
         
@@ -230,11 +245,12 @@ def run_graph_once(
             "theological_metadata": final_state.get("theological_metadata"),
             "vault_blessing": final_state.get("vault_blessing"),
             "vault_status": final_state.get("vault_status"),
-            # ✅ FIX (Nov 2, 2025): Add intent, route, entity_ids, horizon to API response
+            # ✅ FIX (Nov 2, 2025): Add intent, route, entity_ids to API response
             "intent": final_state.get("intent"),
             "route": final_state.get("route"),
             "entity_ids": final_state.get("entity_ids"),
-            "horizon": final_state.get("horizon"),
+            "domain_params": final_state.get("domain_params", {}),
+            "horizon": final_state.get("horizon"),  # DEPRECATED backward-compat
             # ✅ FIX (Nov 4, 2025): Add VSGS fields to API response
             "vsgs_status": final_state.get("vsgs_status"),
             "vsgs_elapsed_ms": final_state.get("vsgs_elapsed_ms"),

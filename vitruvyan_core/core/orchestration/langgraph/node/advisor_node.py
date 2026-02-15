@@ -3,7 +3,7 @@ Advisor Node (Sacred Order: DISCOURSE)
 Domain-agnostic decision advisory layer.
 
 Architecture:
-- Reads: numerical_panel, screening_data, comparison_matrix, collection_data
+- Reads: numerical_panel, filter_data, comparison_matrix, collection_data
 - Produces: advisor_recommendation (action, confidence, rationale, factors_considered)
 - Activates: Only when user explicitly requests action
 
@@ -50,9 +50,9 @@ def advisor_node(state: Dict[str, Any]) -> Dict[str, Any]:
     comparison_matrix = state.get("comparison_matrix", {})
     collection_data = state.get("collection_data", {})
     recommendation_data = state.get("recommendation_data", {})
-    screening_data = state.get("screening_data", {})
+    filter_data = state.get("filter_data", {})
     vee_explanations = state.get("vee_explanations", {})
-    horizon = state.get("horizon", "medio")
+    horizon = state.get("horizon", "medium")
     conversation_type = state.get("conversation_type", "single")
     
     logger.info(f"[decision_advisor] Data available: panel={len(numerical_panel)}, type={conversation_type}")
@@ -61,7 +61,7 @@ def advisor_node(state: Dict[str, Any]) -> Dict[str, Any]:
     # Domain plugin would implement:
     # - _advisor_comparison() for entity comparisons
     # - _advisor_collection() for collection analysis
-    # - _advisor_screening() for filtering results
+    # - _advisor_filtering() for filtering results
     # - _advisor_single_entity() for individual decisions
     
     logger.info("[decision_advisor] PASSTHROUGH: no recommendation generated (domain plugin required)")
@@ -128,12 +128,12 @@ def _advisor_recommendation(recommendation_data: Dict[str, Any], numerical_panel
     }
 
 
-def _advisor_screening(screening_data: Dict[str, Any], numerical_panel: List[Dict[str, Any]], horizon: str) -> Dict[str, Any]:
-    """PRESERVED HELPER: Screening advisory structure (not implemented)"""
+def _advisor_filtering(filter_data: Dict[str, Any], numerical_panel: List[Dict[str, Any]], horizon: str) -> Dict[str, Any]:
+    """PRESERVED HELPER: Filtering advisory structure (not implemented)"""
     return {
         "action": "NO_ACTION",
         "confidence": 0.0,
-        "rationale": "Domain plugin required for screening-based recommendations",
+        "rationale": "Domain plugin required for filter-based recommendations",
         "factors_considered": [],
         "domain_neutral": True
     }

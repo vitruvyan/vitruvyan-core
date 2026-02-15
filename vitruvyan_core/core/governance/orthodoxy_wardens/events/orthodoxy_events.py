@@ -67,7 +67,7 @@ PUBLISH_CHANNELS = (
 # Channels this order CONSUMES from (external events)
 CONSUME_CHANNELS = (
     "codex.discovery.mapped",           # New data discovered
-    "neural_engine.screen.completed",   # Screening results ready
+    "engine.eval.completed",              # Evaluation results ready (was: neural_engine.screen.completed)
     "langgraph.output.ready",           # LLM output awaiting validation
     "synaptic.conclave.broadcast",      # System-wide announcements
     "conclave.mcp.actions",             # MCP tool executions

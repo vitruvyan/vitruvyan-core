@@ -69,7 +69,7 @@ export EXEC_DOMAIN=finance
 
 **Behavior**:
 - **With registration**: `exec_node` calls `finance_execution_handler()` (Neural Engine ranking)
-- **Without registration**: fake success stub (empty ranking)
+- **Without registration**: fake success stub (empty results)
 
 ---
 
@@ -193,10 +193,11 @@ To enable finance domain handlers:
 3. Restart api_graph service
 
 Current behavior (as of Feb 14, 2026):
+- `INTENT_DOMAIN=generic` → default (core intents only)
 - `INTENT_DOMAIN=finance` → **ACTIVE** (finance intents loaded)
 - `ENTITY_DOMAIN=finance` → **DISABLED** (stub passthrough)
 - `EXEC_DOMAIN=finance` → **DISABLED** (fake success stub)
 
 ---
 
-**Last updated**: February 14, 2026
+**Last updated**: February 15, 2026

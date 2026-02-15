@@ -66,10 +66,10 @@ def main():
 
     # Create a restored entity (normally from Restorer)
     restored_entity = RestoredEntity(
-        entity_id="AAPL",
+        entity_id="ENTITY_A",
         source="api_source",
         normalized_data={
-            "symbol": "AAPL",
+            "symbol": "ENTITY_A",
             "name": "Apple Inc.",
             "sector": "Technology",
             "price": 150.25,

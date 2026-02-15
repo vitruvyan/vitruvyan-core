@@ -35,7 +35,7 @@ class TestSignalArchivist:
     
     def test_can_handle_signal_timeseries(self):
         """Test event routing"""
-        event = {"operation": "archive_signal_timeseries", "entity_id": "AAPL"}
+        event = {"operation": "archive_signal_timeseries", "entity_id": "ENTITY_A"}
         assert self.archivist.can_handle(event) is True
     
     def test_cannot_handle_other_operations(self):
@@ -47,7 +47,7 @@ class TestSignalArchivist:
         """Test archiving finance signals (sentiment_valence)"""
         event = {
             "operation": "archive_signal_timeseries",
-            "entity_id": "AAPL",
+            "entity_id": "ENTITY_A",
             "signal_results": [
                 {
                     "signal_name": "sentiment_valence",
@@ -82,7 +82,7 @@ class TestSignalArchivist:
         
         # Validate timeseries structure
         assert isinstance(timeseries, SignalTimeseries)
-        assert timeseries.entity_id == "AAPL"
+        assert timeseries.entity_id == "ENTITY_A"
         assert timeseries.signal_name == "sentiment_valence"
         assert timeseries.vertical == "finance"
         assert timeseries.schema_version == "2.1"
@@ -190,7 +190,7 @@ class TestSignalArchivist:
         """Test that mixed signal names in batch are rejected"""
         event = {
             "operation": "archive_signal_timeseries",
-            "entity_id": "AAPL",
+            "entity_id": "ENTITY_A",
             "signal_results": [
                 {"signal_name": "sentiment_valence", "value": 0.65, "confidence": 0.88},
                 {"signal_name": "market_fear_index", "value": 0.35, "confidence": 0.90}  # DIFFERENT signal
@@ -205,7 +205,7 @@ class TestSignalArchivist:
         """Test that empty signal results are rejected"""
         event = {
             "operation": "archive_signal_timeseries",
-            "entity_id": "AAPL",
+            "entity_id": "ENTITY_A",
             "signal_results": [],
             "vertical": "finance"
         }
@@ -228,7 +228,7 @@ class TestSignalArchivist:
         """Test unique timeseries ID generation"""
         event = {
             "operation": "archive_signal_timeseries",
-            "entity_id": "AAPL",
+            "entity_id": "ENTITY_A",
             "signal_results": [
                 {"signal_name": "sentiment_valence", "value": 0.65, "confidence": 0.88}
             ],
@@ -238,14 +238,14 @@ class TestSignalArchivist:
         timeseries = self.archivist.process(event)
         
         # Validate ID format: signal_ts_<entity>_<signal>_<timestamp>
-        assert timeseries.timeseries_id.startswith("signal_ts_AAPL_sentiment_valence_")
+        assert timeseries.timeseries_id.startswith("signal_ts_ENTITY_A_sentiment_valence_")
         assert len(timeseries.timeseries_id) > 30  # Includes timestamp
     
     def test_serialization_roundtrip(self):
         """Test to_dict() and from_dict() roundtrip"""
         event = {
             "operation": "archive_signal_timeseries",
-            "entity_id": "AAPL",
+            "entity_id": "ENTITY_A",
             "signal_results": [
                 {
                     "signal_name": "sentiment_valence",
@@ -265,7 +265,7 @@ class TestSignalArchivist:
         # Serialize to dict
         data = original.to_dict()
         assert isinstance(data, dict)
-        assert data["entity_id"] == "AAPL"
+        assert data["entity_id"] == "ENTITY_A"
         assert data["signal_name"] == "sentiment_valence"
         assert len(data["data_points"]) == 1
         
@@ -298,13 +298,13 @@ class TestConvenienceFunction:
         ]
         
         timeseries = archive_signal_timeseries(
-            entity_id="AAPL",
+            entity_id="ENTITY_A",
             signal_results=signal_results,
             vertical="finance"
         )
         
         assert isinstance(timeseries, SignalTimeseries)
-        assert timeseries.entity_id == "AAPL"
+        assert timeseries.entity_id == "ENTITY_A"
         assert timeseries.signal_name == "sentiment_valence"
         assert timeseries.vertical == "finance"
         assert timeseries.schema_version == "2.1"  # Default

@@ -30,7 +30,7 @@ Examples:
 
 **Consumes from:**
 - `codex.discovery.mapped` — New data from Codex Hunters
-- `neural_engine.screen.completed` — Screening results
+- `engine.eval.completed` — Evaluation results ready
 - `langgraph.output.ready` — LLM output awaiting validation
 - `synaptic.conclave.broadcast` — System announcements
 - `conclave.mcp.actions` — MCP tool executions

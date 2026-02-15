@@ -25,7 +25,7 @@ CHANNEL_AUDIT_VAULT_REQUESTED = "audit.vault.requested"
 
 # Inbound from other orders
 CHANNEL_ORTHODOXY_AUDIT_COMPLETED = "orthodoxy.audit.completed"
-CHANNEL_NEURAL_SCREENING_COMPLETED = "neural_engine.screening.completed"
+CHANNEL_ENGINE_EVAL_COMPLETED = "engine.eval.completed"  # Was: neural_engine.screening.completed
 
 # Outbound channels (events Vault Keepers emits)
 CHANNEL_ARCHIVE_COMPLETED = "vault.archive.completed"

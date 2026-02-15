@@ -40,8 +40,8 @@ def main():
         timestamp="2026-02-09T14:30:00Z",
         correlation_id="req_abc123",
         metadata=(
-            ("ticker", "AAPL"),
-            ("query", "analyze AAPL momentum"),
+            ("entity_id", "ENTITY_A"),
+            ("query", "analyze ENTITY_A signal"),
             ("model", "gpt-4o-mini"),
         ),
     )
@@ -93,7 +93,7 @@ def main():
         finding_type="violation",
         severity="critical",
         category="hallucination",
-        message="LLM claimed AAPL revenue of $10 trillion (actual: $383B)",
+        message="LLM claimed ENTITY_A metric of 10 trillion (actual: 383B)",
         source_rule="rule_numeric_bounds_v1",
         context=(("claimed", "10T"), ("actual", "383B")),
     )
@@ -109,10 +109,10 @@ def main():
     # Case C: Non liquet (uncertain)
     verdict_non_liquet = Verdict.non_liquet(
         confidence=0.35,
-        what_we_know=("AAPL momentum z-score is 0.86", "Based on 12 data points"),
+        what_we_know=("ENTITY_A signal z-score is 0.86", "Based on 12 data points"),
         what_is_uncertain=("Whether 12 points is statistically significant",),
         uncertainty_sources=("Insufficient data for z-score normalization",),
-        best_guess="Momentum appears positive but confidence is low",
+        best_guess="Signal appears positive but confidence is low",
     )
     print(f"\n3c. Verdict: {verdict_non_liquet.status} (confidence: {verdict_non_liquet.confidence})")
     print(f"    Send to user: {verdict_non_liquet.should_send} (with uncertainty caveat)")
@@ -128,7 +128,7 @@ def main():
     )
     log_routine = LogDecision.standard(
         category="routine_validation",
-        reason="Blessed verdict on standard momentum query",
+        reason="Blessed verdict on standard signal query",
     )
     log_skip = LogDecision.skip(
         reason="Duplicate confession within 5-second window",

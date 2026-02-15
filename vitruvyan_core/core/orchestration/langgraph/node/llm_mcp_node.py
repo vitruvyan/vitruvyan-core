@@ -49,6 +49,25 @@ def _ensure_nest_asyncio():
 USE_MCP = os.getenv("USE_MCP", "0") == "1"  # Master switch for MCP integration
 MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://omni_mcp:8020")  # FIXED: Correct port 8020 (was 8021)
 
+# ----- MCP State Mapper Registry (domain-agnostic) -----
+# Domain plugins register their tool→state mapping functions here.
+# Signature: mapper(state: dict, tool_data: dict, tool_args: dict) -> None (mutates state)
+_MCP_STATE_MAPPERS: Dict[str, Any] = {}
+
+
+def register_mcp_state_mapper(tool_name: str, mapper_fn) -> None:
+    """
+    Register a state mapper for an MCP tool.
+    
+    Domain plugins call this to map MCP tool results to LangGraph state keys.
+    
+    Args:
+        tool_name: MCP tool name (e.g., "screen_entities")
+        mapper_fn: Function(state, tool_data, tool_args) -> None (mutates state in-place)
+    """
+    _MCP_STATE_MAPPERS[tool_name] = mapper_fn
+    logger.info(f"[MCP] Registered state mapper for tool: {tool_name}")
+
 
 async def get_mcp_tools() -> List[Dict[str, Any]]:
     """
@@ -242,58 +261,22 @@ Note: Entity type and domain are deployment-configured (finance, documents, user
             **state,
             "mcp_tool_used": tool_name,
             "mcp_result": mcp_result,
-            # FIXED: Parse orthodoxy_status from top-level (line 262 in MCP response)
             "mcp_orthodoxy": mcp_result.get("orthodoxy_status", "unknown")
         }
         
-        # Map MCP result to LangGraph state keys
+        # Map MCP result to LangGraph state keys via registry (domain-agnostic)
         if mcp_result.get("status") == "success":
             tool_data = mcp_result.get("data", {})
             
-            if tool_name == "screen_entities":
-                # Update numerical_panel with screening results
-                updated_state["numerical_panel"] = tool_data.get("entity_ids", [])
-                updated_state["screening_data"] = {
-                    "profile": tool_data.get("profile"),
-                    "universe_size": tool_data.get("universe_size"),
-                    "orthodoxy_status": tool_data.get("orthodoxy_status")
-                }
-            
-            elif tool_name == "generate_vee_summary":
-                # Update VEE explanations
-                entity_id = tool_args.get("entity_id")
-                if entity_id:
-                    if "vee_explanations" not in updated_state:
-                        updated_state["vee_explanations"] = {}
-                    updated_state["vee_explanations"][entity_id] = {
-                        "summary": tool_data.get("narrative", "")
-                    }
-            
-            elif tool_name == "query_sentiment":
-                # Update sentiment data
-                updated_state["sentiment_data"] = {
-                    "entity_id": tool_args.get("entity_id"),
-                    "avg_sentiment": tool_data.get("avg_sentiment"),
-                    "trend": tool_data.get("trend"),
-                    "sample_count": tool_data.get("sample_count")
-                }
-            
-            elif tool_name == "compare_entities":
-                # Update comparison matrix
-                updated_state["comparison_matrix"] = {
-                    "winner": tool_data.get("winner"),
-                    "loser": tool_data.get("loser"),
-                    "deltas": tool_data.get("deltas", {})
-                }
-            
-            elif tool_name == "extract_semantic_context":
-                # Update weaver context
-                updated_state["weaver_context"] = {
-                    "concepts": tool_data.get("concepts", []),
-                    "regions": tool_data.get("regions", []),
-                    "sectors": tool_data.get("sectors", []),
-                    "risk_profile": tool_data.get("risk_profile", {})
-                }
+            mapper = _MCP_STATE_MAPPERS.get(tool_name)
+            if mapper:
+                mapper(updated_state, tool_data, tool_args)
+            else:
+                # Generic fallback: store tool result in context dict
+                logger.info(f"ℹ️ No state mapper for tool '{tool_name}', storing in context")
+                ctx = updated_state.get("context") or {}
+                ctx[f"mcp_{tool_name}"] = tool_data
+                updated_state["context"] = ctx
         
         else:
             # Tool execution failed

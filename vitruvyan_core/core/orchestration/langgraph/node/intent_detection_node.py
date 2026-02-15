@@ -154,14 +154,14 @@ async def _call_llm_intent(input_text: str, timeout: float = 10.0) -> Dict[str, 
         intent, filters = _registry.parse_classification_response(parsed)
 
         logger.info(f"[INTENT_DETECTION] LLM: intent={intent}, filters={filters}")
-        return {"intent": intent, "screening_filters": filters, "intent_status": "success"}
+        return {"intent": intent, "query_filters": filters, "intent_status": "success"}
 
     except json.JSONDecodeError:
         logger.warning(f"[INTENT_DETECTION] JSON decode error from LLM")
-        return {"intent": "unknown", "screening_filters": {}, "intent_status": "fallback"}
+        return {"intent": "unknown", "query_filters": {}, "intent_status": "fallback"}
     except Exception as e:
         logger.error(f"[INTENT_DETECTION] LLM error: {e}")
-        return {"intent": "unknown", "screening_filters": {}, "intent_status": "failed"}
+        return {"intent": "unknown", "query_filters": {}, "intent_status": "failed"}
 
 
 # ===================================================================
@@ -184,7 +184,7 @@ async def _parallel_processing(input_text: str) -> Dict[str, Any]:
                  "cultural_context": "", "babel_status": "failed"}
     if isinstance(intent, Exception):
         logger.error(f"[INTENT_DETECTION] LLM exception: {intent}")
-        intent = {"intent": "unknown", "screening_filters": {}, "intent_status": "failed"}
+        intent = {"intent": "unknown", "query_filters": {}, "intent_status": "failed"}
 
     duration = (datetime.now() - t0).total_seconds() * 1000
     return {**babel, **intent, "processing_duration_ms": duration}
@@ -232,11 +232,11 @@ def intent_detection_node(state: Dict[str, Any]) -> Dict[str, Any]:
     1. Extracts language (Babel Gardens — parallel)
     2. Classifies intent (LLM — parallel)
     3. Validates professional boundaries (domain plugin keywords)
-    4. Updates state with language + intent + screening_filters
+    4. Updates state with language + intent + query_filters
 
     State updates:
         language_detected, language_confidence, cultural_context,
-        intent, screening_filters, needs_clarification,
+        intent, query_filters, needs_clarification,
         clarification_reason, route, intent_detection_metrics
     """
     user_input = state.get("user_message", "") or state.get("input_text", "")
@@ -247,7 +247,7 @@ def intent_detection_node(state: Dict[str, Any]) -> Dict[str, Any]:
             **state,
             "language_detected": "unknown",
             "intent": "unknown",
-            "screening_filters": {},
+            "query_filters": {},
             "route": "intent_detection",
             "error": "No input text provided",
         }
@@ -266,7 +266,7 @@ def intent_detection_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "language_confidence": 0.0,
             "cultural_context": "",
             "intent": "unknown",
-            "screening_filters": {},
+            "query_filters": {},
             "babel_status": "failed",
             "intent_status": "failed",
             "processing_duration_ms": 0,
@@ -296,7 +296,7 @@ def intent_detection_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "cultural_context": result.get("cultural_context", ""),
             "babel_status": result.get("babel_status", "unknown"),
             "intent": result["intent"],
-            "screening_filters": result.get("screening_filters", {}),
+            "query_filters": result.get("query_filters", {}),
             "route": "intent_detection",
             "intent_detection_metrics": {
                 "processing_duration_ms": result.get("processing_duration_ms", 0),
@@ -309,7 +309,7 @@ def intent_detection_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
     logger.info(
         f"[INTENT_DETECTION] Done: lang={state['language_detected']}, "
-        f"intent={state['intent']}, filters={state.get('screening_filters', {})}, "
+        f"intent={state['intent']}, filters={state.get('query_filters', {})}, "
         f"duration={result.get('processing_duration_ms', 0):.1f}ms"
     )
     return state

@@ -33,7 +33,7 @@ def finance_execution_handler(state: Dict[str, Any]) -> Dict[str, Any]:
         state: LangGraph state with intent, entity_ids, etc.
         
     Returns:
-        Updated state with raw_output (ranking results)
+        Updated state with raw_output (results)
     """
     intent = state.get("intent")
     entity_ids = state.get("entity_ids", [])
@@ -65,7 +65,8 @@ def finance_execution_handler(state: Dict[str, Any]) -> Dict[str, Any]:
         })
     
     state["raw_output"] = {
-        "ranking": ranking,
+        "results": ranking,
+        "ranking": ranking,  # backward-compat shim for older composers
         "metadata": {
             "domain": "finance",
             "intent": intent,
@@ -73,7 +74,7 @@ def finance_execution_handler(state: Dict[str, Any]) -> Dict[str, Any]:
             "timestamp": "2026-02-14T18:00:00Z"  # Use actual timestamp
         }
     }
-    state["route"] = "ne_valid"
+    state["route"] = "exec_valid"
     state["ok"] = True
     state["error"] = None
     

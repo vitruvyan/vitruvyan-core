@@ -61,7 +61,7 @@ def chronicler():
 def sample_event():
     return OrthodoxyEvent(
         event_type="langgraph.output.ready",
-        payload=(("ticker", "AAPL"), ("text", "Buy now!")),
+        payload=(("entity_id", "ENTITY_A"), ("text", "Act now!")),
         timestamp=datetime.now(timezone.utc).isoformat(),
         source="test",
     )
@@ -323,7 +323,7 @@ class TestInquisitorProcess:
     def test_clean_text_no_findings(self, inquisitor, sample_confession):
         result = inquisitor.process({
             "confession": sample_confession,
-            "text": "AAPL shows momentum z-score of 1.2 based on RSI analysis.",
+            "text": "ENTITY_A shows signal z-score of 1.2 based on analysis.",
         })
         assert isinstance(result, InquisitorResult)
         assert result.text_examined is True
@@ -332,7 +332,7 @@ class TestInquisitorProcess:
     def test_hallucination_text_produces_findings(self, inquisitor, sample_confession):
         result = inquisitor.process({
             "confession": sample_confession,
-            "text": "Buy now! Guaranteed 500% returns with no risk!",
+            "text": "Act now! Guaranteed 500% returns with no risk!",
         })
         assert result.finding_count > 0
         assert result.has_violations is True
@@ -670,7 +670,7 @@ class TestFullPipeline:
         # Inquisitor
         result = inquisitor.process({
             "confession": confession,
-            "text": "Buy now! Guaranteed 500% returns! No risk at all!",
+            "text": "Act now! Guaranteed 500% returns! No risk at all!",
         })
         assert result.finding_count > 0
 
@@ -691,14 +691,14 @@ class TestFullPipeline:
     def test_blessed_pipeline(self, confessor, inquisitor, penitent, chronicler):
         """Full pipeline with clean text → blessed verdict."""
         event = {
-            "event_type": "neural_engine.screen.completed",
+            "event_type": "engine.eval.completed",
             "source": "neural_engine",
         }
 
         confession = confessor.process(event)
         result = inquisitor.process({
             "confession": confession,
-            "text": "AAPL momentum z-score is 1.2 with above-average trend strength.",
+            "text": "ENTITY_A signal z-score is 1.2 with above-average trend strength.",
         })
 
         engine = VerdictEngine()

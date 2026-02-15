@@ -36,7 +36,7 @@ class Settings:
         "vault.snapshot.requested",
         "audit.vault.requested",
         "orthodoxy.audit.completed",
-        "neural_engine.screening.completed",
+        "engine.eval.completed",
     ]
     
     # PostgreSQL (aligned with docker-compose and PostgresAgent)

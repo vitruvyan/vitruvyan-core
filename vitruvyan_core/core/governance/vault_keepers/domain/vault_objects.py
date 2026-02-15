@@ -108,7 +108,7 @@ class ArchiveMetadata:
     retention_until: Optional[str] = None
 
     def __post_init__(self):
-        _valid_types = {"audit_result", "screening_result", "system_state", "agent_log", "generic"}
+        _valid_types = {"audit_result", "eval_result", "system_state", "agent_log", "generic"}
         if self.content_type not in _valid_types:
             raise ValueError(f"Invalid content_type: {self.content_type}")
 

@@ -163,7 +163,7 @@ class BaseParser(Parser):
         This is domain-agnostic (language patterns, not domain concepts).
         
         Examples:
-        - "come prima ma con ENTITY_1" → True
+        - "same as before but with ENTITY_1" → True
         - "What about ENTITY_2?" → True
         - "Analyze ENTITY_3" → False
         
@@ -176,7 +176,7 @@ class BaseParser(Parser):
         txt_lower = text.lower()
         
         # Quick heuristic: Very short queries with follow-up markers
-        follow_up_markers = ['e ', 'and ', 'what ', 'how ', 'vs ', 'anche']
+        follow_up_markers = ['and ', 'what ', 'how ', 'vs ', 'also ']
         if len(text.strip()) < 15 and any(word in txt_lower for word in follow_up_markers):
             return True
         
@@ -192,12 +192,12 @@ Query: "{text}"
 Answer ONLY "yes" or "no".
 
 Examples:
-- "E ENTITY_1?" → yes (follow-up)
-- "E se lo confronto con Microsoft?" → yes (comparison to previous)
+- "what about ENTITY_1?" → yes (follow-up)
+- "compare it with Microsoft" → yes (comparison to previous)
 - "Analyze ENTITY_2" → no (standalone)
 - "what about Tesla?" → yes (follow-up)
-- "come prima ma con ENTITY_3" → yes (explicit reference)
-- "Quali sono i migliori titoli tech?" → no (standalone)
+- "same as before but with ENTITY_3" → yes (explicit reference)
+- "What are the best tech names?" → no (standalone)
 
 Answer:"""
             
@@ -206,17 +206,17 @@ Answer:"""
                 temperature=0.0,
                 max_tokens=5
             ).strip().lower()
-            is_contextual = answer.startswith("yes") or answer.startswith("sì") or answer.startswith("si")
+            is_contextual = answer.startswith("yes") or answer.startswith("si")
             
-            logger.info(f"🤖 [Contextual Detection] Query: '{text[:50]}...' → {answer}")
+            logger.info(f"[Contextual Detection] Query: '{text[:50]}...' → {answer}")
             return is_contextual
             
         except Exception as e:
-            logger.warning(f"⚠️ [Contextual Detection] LLM failed, using heuristic: {e}")
-            # Fallback: Simple heuristic
+            logger.warning(f"[Contextual Detection] LLM failed, using heuristic: {e}")
+            # Fallback: English heuristic (LLM handles multilingual)
             return any(word in txt_lower for word in [
-                'come prima', 'stesso', 'anche', 'e se', 'confronto', 
-                'rispetto', 'what about', 'how about', 'compared to'
+                'same as before', 'like before', 'again',
+                'what about', 'how about', 'compared to'
             ])
     
     def detect_vague_query(self, text: str) -> bool:
@@ -224,9 +224,8 @@ Answer:"""
         Detect vague queries where entity extraction may have failed.
         
         Examples:
-        - "E ENTITY_1?" → True (Italian conjunction + entity)
         - "What about ENTITY_2?" → True
-        - "ENTITY_3?" → True (solo entity)
+        - "ENTITY_3?" → True (bare entity)
         
         Returns:
             True if query looks vague but has clear entity intent
@@ -237,12 +236,11 @@ Answer:"""
         txt = text.strip().lower()
         
         patterns = [
-            r"^\s*e\s+\w+",           # "E EXAMPLE?" (Italian conjunction)
             r"what about",            # "What about Example?"
             r"how about",             # "How about Example?"
-            r"come prima",            # "Come prima ma con EXAMPLE"
-            r"anche\s+\w+",           # "anche EXAMPLE"
-            r"^\s*[A-Z]{2,5}\s*\??$"  # Solo entity_id: "EXAMPLE?"
+            r"same as before",        # "Same as before but with EXAMPLE"
+            r"also\s+\w+",            # "also EXAMPLE"
+            r"^\s*[A-Z]{2,5}\s*\??$"  # Bare entity_id: "EXAMPLE?"
         ]
         return any(re.search(p, txt, re.IGNORECASE) for p in patterns)
     
@@ -256,14 +254,14 @@ Answer:"""
         if not text:
             return []
         
-        # Pattern 1: "E ENTITY?" or "What about ENTITY?"
-        m = re.search(r"\b(e|and|what about|how about|anche)\s+([A-Z]{1,10})\b", text, re.IGNORECASE)
+        # Pattern 1: "What about ENTITY?"
+        m = re.search(r"\b(and|what about|how about|also)\s+([A-Z]{1,10})\b", text, re.IGNORECASE)
         if m:
             potential = m.group(2).upper()
             if self.validate_entity(potential):
                 return [potential]
         
-        # Pattern 2: Solo entity "EXAMPLE?"
+        # Pattern 2: Bare entity "EXAMPLE?"
         m = re.search(r"^([A-Z]{1,10})\??$", text.strip())
         if m:
             potential = m.group(1).upper()

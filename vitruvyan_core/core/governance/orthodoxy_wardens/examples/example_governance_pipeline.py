@@ -63,7 +63,7 @@ for cat in ("compliance", "security", "performance", "quality", "hallucination")
 # =============================================================================
 separator("2. CLASSIFY — Clean text")
 
-clean_text = "AAPL shows strong momentum with RSI at 65. The trend is moderately bullish."
+clean_text = "ENTITY_A shows strong positive signal with score at 65. The trend is moderately positive."
 classifier = PatternClassifier()
 findings = classifier.classify(clean_text, DEFAULT_RULESET)
 
@@ -78,7 +78,7 @@ print("✅ No findings — text is clean")
 # =============================================================================
 separator("3. CLASSIFY — Compliance violations")
 
-bad_text = "You should buy now AAPL — guaranteed returns, this stock can't lose! api_key='sk-1234'"
+bad_text = "You should act now on ENTITY_A — guaranteed returns, this entity can't lose! api_key='sk-1234'"
 findings = classifier.classify(bad_text, DEFAULT_RULESET)
 
 print(f"Text:     {bad_text!r}")
@@ -223,15 +223,15 @@ confession = Confession(
     source="can_node",
     timestamp=datetime.now(timezone.utc).isoformat(),
     metadata=(
-        ("ticker", "AAPL"),
+        ("entity_id", "ENTITY_A"),
         ("user_id", "test_user"),
-        ("query", "should I buy AAPL?"),
+        ("query", "should I act on ENTITY_A?"),
     ),
 )
 print(f"Step 1 — Confession: {confession.confession_id} ({confession.trigger_type})")
 
 # Step 2: Classify the LLM output
-llm_output = "Based on my analysis, you should definitely buy AAPL. It's guaranteed to rise."
+llm_output = "Based on my analysis, you should definitely act on ENTITY_A. It's guaranteed to rise."
 findings = classifier.classify(llm_output, DEFAULT_RULESET)
 print(f"Step 2 — Classify:   {len(findings)} finding(s)")
 

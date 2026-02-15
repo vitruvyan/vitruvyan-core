@@ -47,7 +47,7 @@ class Settings:
         "codex.news.collected",
         "codex.refresh.scheduled",
         # Neural Engine (Reason)
-        "neural_engine.screening.completed",
+        "engine.eval.completed",
         "neural_engine.comparison.completed",
         "neural_engine.risk.assessed",
         # Babel Gardens (Discourse)

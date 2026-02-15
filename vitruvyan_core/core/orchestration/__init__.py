@@ -72,7 +72,8 @@ from core.orchestration.parser import (
 from core.orchestration.intent_registry import (
     IntentRegistry,
     IntentDefinition,
-    ScreeningFilter,
+    QueryFilter,
+    ScreeningFilter,  # DEPRECATED alias → use QueryFilter
     create_generic_registry as create_generic_intent_registry,
 )
 
@@ -141,7 +142,8 @@ __all__ = [
     # Intent Registry
     "IntentRegistry",
     "IntentDefinition",
-    "ScreeningFilter",
+    "QueryFilter",
+    "ScreeningFilter",  # DEPRECATED alias → use QueryFilter
     "create_generic_intent_registry",
     # Route Registry
     "RouteRegistry",

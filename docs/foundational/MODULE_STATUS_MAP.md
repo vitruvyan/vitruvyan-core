@@ -1,6 +1,6 @@
 # Vitruvyan Core — Module Status Map
 
-> **Last updated**: February 14, 2026 (post-Priority 2B: hook pattern implementation)  
+> **Last updated**: February 15, 2026 (post-FASE 1 domain-agnostic remediation)  
 > **Purpose**: Single-source-of-truth inventory for developers onboarding to Vitruvyan  
 > **Scope**: Module-level status (active/stub/legacy), domain-specificity, test coverage
 
@@ -27,7 +27,7 @@
 | Node | Status | Domain-Specific | Env Var | Default Behavior | Notes |
 |------|--------|----------------|---------|------------------|-------|
 | `parse_node.py` | ACTIVE | No | - | Parses user input to BaseGraphState | Domain-agnostic text parsing |
-| `intent_detection_node.py` | HOOK | Yes | `INTENT_DOMAIN` | Core intents (soft, unknown) | Finance intents if `INTENT_DOMAIN=finance` |
+| `intent_detection_node.py` | HOOK | Yes | `INTENT_DOMAIN` | Core intents (soft, unknown) | Domain intents via plugin (e.g., finance if `INTENT_DOMAIN=finance`) |
 | `pattern_weavers_node.py` | ACTIVE | No (delegated) | - | Calls Pattern Weavers HTTP API | Ontology mapping, semantic context |
 | `entity_resolver_node.py` | HOOK | Yes | `ENTITY_DOMAIN` | Passthrough stub | Finance: ticker→company if registered |
 | `emotion_detector.py` (Babel) | ACTIVE | No | - | Calls Babel Gardens HTTP API | Emotion + language detection |

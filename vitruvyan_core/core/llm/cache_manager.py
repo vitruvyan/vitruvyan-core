@@ -110,11 +110,12 @@ class LLMCacheManager:
         # Extract key elements that affect LLM response
         key_data = {}
         
-        if "ranking" in raw_output:
-            ranking = raw_output["ranking"]
+        # Support both "results" (new) and "ranking" (legacy) keys
+        results = raw_output.get("results") or raw_output.get("ranking")
+        if results:
             # Hash top 5 entities and their scores
             all_items = []
-            for group in ranking.values():
+            for group in results.values():
                 all_items.extend(group)
             
             top_5 = sorted(all_items, key=lambda x: x.get("composite_score", 0), reverse=True)[:5]

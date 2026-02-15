@@ -326,8 +326,8 @@ parse → intent_detection → weaver → entity_resolver → babel_emotion
 - **Node**: `core/orchestration/langgraph/node/intent_detection_node.py` (314L, agnostic)
 - **Registry**: `core/orchestration/intent_registry.py` (370L) — `IntentRegistry`, `IntentDefinition`, `ScreeningFilter`
 - **Finance plugin**: `domains/finance/intent_config.py` (265L) — all finance intents, filters, context keywords
-- **Boot**: `graph_flow.py` reads `INTENT_DOMAIN` env var (default `"finance"`) and calls `intent_detection_node.configure(registry)`
-- **Adding a new domain**: Create `domains/<domain>/intent_config.py` with `create_<domain>_registry()`, add case in `graph_flow.py`
+- **Boot**: `graph_flow.py` reads `INTENT_DOMAIN` env var (default `"generic"`) and calls `intent_detection_node.configure(registry)`
+- **Adding a new domain**: Create `domains/<domain>/intent_config.py` with `create_<domain>_registry()`; set `INTENT_DOMAIN=<domain>` (dynamic import — no core code changes)
 
 ### Archived nodes (`node/_legacy/`)
 | Node | Reason | Date |
@@ -342,7 +342,7 @@ parse → intent_detection → weaver → entity_resolver → babel_emotion
 ### Key environment variables
 | Var | Default | Effect |
 |-----|---------|--------|
-| `INTENT_DOMAIN` | `"finance"` | Which domain plugin to load for intent detection |
+| `INTENT_DOMAIN` | `"generic"` | Which domain plugin to load for intent detection |
 | `QDRANT_FILTER_DOMAIN` | `"1"` | Enable domain-specific Qdrant filtering |
 | `USE_MCP` | `"0"` | Route `dispatcher_exec` to MCP node |
 | `ENABLE_MINIMAL_GRAPH` | `"false"` | Use 4-node minimal graph |
@@ -585,4 +585,3 @@ Prefer OS terms in new code unless you are working inside an explicitly finance 
 - MCP integration: `.github/Vitruvyan_Appendix_K_MCP_Integration.md`
 - Synaptic Conclave (bus): `.github/Vitruvyan_Appendix_L_Synaptic_Conclave.md`
 - UI architecture (example client): `.github/Vitruvyan_Appendix_L_UI_Architecture.md`
-

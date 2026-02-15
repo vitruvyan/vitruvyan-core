@@ -156,7 +156,7 @@ PATTERN_EVENTS = [
 
 NEURAL_ENGINE_EVENTS = [
     {
-        "channel": "neural_engine.screening.completed",
+        "channel": "engine.eval.completed",
         "template": {
             "event_type": "screening.result",
             "entities_screened": lambda: random.randint(10, 500),

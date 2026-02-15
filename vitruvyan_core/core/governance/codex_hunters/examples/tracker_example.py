@@ -54,10 +54,10 @@ def main():
     # Simulate discovery input (normally comes from LIVELLO 2 adapter)
     discovery_input = {
         "config": config,
-        "entity_id": "AAPL",
+        "entity_id": "ENTITY_A",
         "source": "primary",
         "raw_data": {
-            "symbol": "AAPL",
+            "symbol": "ENTITY_A",
             "name": "Apple Inc.",
             "sector": "Technology",
             "price": 150.25,

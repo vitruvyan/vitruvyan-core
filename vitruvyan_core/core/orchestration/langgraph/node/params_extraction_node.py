@@ -43,19 +43,19 @@ DEFAULT_TOP_K = 10
 
 HORIZON_PATTERNS = {
     "short": [
-        r"\b(short|breve|corto|corta|few weeks?|poche settimane?|1-3 months?|1-3 mesi)\b",
-        r"\b(immediate|immediato|subito|daily|giornaliero|intraday)\b",
-        r"\b\d+\s*(day|days|giorno|giorni|settimana|settimane|week|weeks)\b",
+        r"\b(short|few weeks?|1-3 months?)\b",
+        r"\b(immediate|daily|intraday)\b",
+        r"\b\d+\s*(day|days|week|weeks)\b",
     ],
     "medium": [
-        r"\b(medium|medio|moderato|6 months?|6 mesi|1 year|1 anno|medio periodo|medio termine)\b",
-        r"\b(quarterly|trimestrale|annual|annuale)\b",
-        r"\b\d+\s*(month|months|mese|mesi)\b",
+        r"\b(medium|6 months?|1 year|mid.?term)\b",
+        r"\b(quarterly|annual)\b",
+        r"\b\d+\s*(month|months)\b",
     ],
     "long": [
-        r"\b(long|lungo|lungo periodo|lungo termine|years?|anni|decade|decennio)\b",
-        r"\b(strategic|strategico|long.?term|a lungo)\b",
-        r"\b\d+\s*(year|years|anno|anni)\b",
+        r"\b(long|years?|decade)\b",
+        r"\b(strategic|long.?term)\b",
+        r"\b\d+\s*(year|years)\b",
     ]
 }
 
@@ -83,7 +83,7 @@ def _extract_horizon_llm(input_text: str, language: str) -> Optional[str]:
     Returns:
         Horizon type ("short"|"medium"|"long") or None
     """
-    if not any(word in input_text for word in ["horizon", "term", "periodo", "termine", "orizzonte"]):
+    if not any(word in input_text.lower() for word in ["horizon", "term", "period", "timeframe", "duration"]):
         return None
     
     try:

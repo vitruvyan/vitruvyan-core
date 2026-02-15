@@ -149,7 +149,7 @@ def _determine_route(
         weaver_context: Pre-calculated by Pattern Weavers
         
     Returns:
-        Route string (single, comparison, screening, etc.)
+        Route string (single, comparison, etc.)
     """
     entity_ids = state.get("entity_ids", [])
     
@@ -158,17 +158,15 @@ def _determine_route(
         logger.info(f"🕸️ [can_node] Routing to sector (concepts: {weaver_context.get('concepts')})")
         return "sector"
     
-    # Standard routing map (no semantic interpretation)
+    # Standard routing map (domain-agnostic, extensible via conversation_type)
     route_map = {
         "single": "single",
         "comparison": "comparison",
-        "screening": "screening",
-        "collection": "collection",
-        "allocation": "allocation",
         "onboarding": "onboarding"
     }
     
-    route = route_map.get(conversation_type, "chat")
+    # Pass through any conversation_type not in the map (domain plugins define their own)
+    route = route_map.get(conversation_type, conversation_type if conversation_type else "chat")
     logger.info(f"🔀 [can_node] Routing to {route} (conversation_type={conversation_type})")
     return route
 

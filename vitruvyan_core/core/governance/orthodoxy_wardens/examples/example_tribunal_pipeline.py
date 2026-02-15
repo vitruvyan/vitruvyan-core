@@ -48,8 +48,8 @@ def run_tribunal_pipeline():
     raw_event = OrthodoxyEvent(
         event_type="langgraph.output.ready",
         payload=(
-            ("ticker", "AAPL"),
-            ("output_text", "Buy AAPL now! Guaranteed 500% returns!"),
+            ("entity_id", "ENTITY_A"),
+            ("output_text", "Act now on ENTITY_A! Guaranteed 500% returns!"),
             ("source_node", "compose_node"),
         ),
         timestamp=datetime.now(timezone.utc).isoformat(),
@@ -70,7 +70,7 @@ def run_tribunal_pipeline():
     # --- Step 3: Inquisitor examination ---
     examination_input = {
         "confession": confession,
-        "text": "Buy AAPL now! Guaranteed 500% returns! This is a sure thing, no risk at all.",
+        "text": "Act now on ENTITY_A! Guaranteed 500% returns! This is a sure thing, no risk at all.",
         "code": None,
     }
     assert inquisitor.can_handle(examination_input), "Inquisitor should handle dict"
@@ -142,9 +142,9 @@ def run_blessed_pipeline():
 
     # Clean event
     event = {
-        "event_type": "neural_engine.screen.completed",
+        "event_type": "engine.eval.completed",
         "source": "neural_engine",
-        "metadata": {"tickers": ["AAPL", "NVDA"], "profile": "balanced_mid"},
+        "metadata": {"entity_ids": ["ENTITY_A", "ENTITY_B"], "profile": "balanced_mid"},
     }
 
     confession = confessor.process(event)
@@ -152,7 +152,7 @@ def run_blessed_pipeline():
 
     result = inquisitor.process({
         "confession": confession,
-        "text": "AAPL shows strong momentum with z-score 1.2 based on RSI analysis.",
+        "text": "ENTITY_A shows strong positive signal with z-score 1.2 based on analysis.",
     })
     print(f"🔍 Findings: {result.finding_count}")
 

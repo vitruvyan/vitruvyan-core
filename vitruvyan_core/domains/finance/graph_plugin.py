@@ -519,7 +519,7 @@ def create_finance_route_registry() -> RouteRegistry:
             return None
         
         # Trigger on discovery-mode queries
-        if state.get("screening_filters", {}).get("mode") == "discovery":
+        if state.get("query_filters", {}).get("mode") == "discovery":
             return "codex_expedition"
         
         return None
@@ -720,7 +720,7 @@ def get_finance_plugin() -> FinanceGraphPlugin:
     Get finance domain plugin instance.
     
     Usage:
-        from domains.finance_plugin import get_finance_plugin
+        from domains.finance.graph_plugin import get_finance_plugin
         
         plugin = get_finance_plugin()
         GraphEngine().with_plugin(plugin).build()

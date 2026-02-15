@@ -8,7 +8,7 @@ The IntentRegistry allows domains to:
 - Register their domain-specific intents
 - Provide synonym mappings for intent normalization
 - Configure GPT prompt templates for classification
-- Define screening filter extraction rules
+- Define query filter extraction rules
 
 Philosophy:
 ----------
@@ -54,12 +54,15 @@ class IntentDefinition:
 
 
 @dataclass
-class ScreeningFilter:
+class QueryFilter:
     """
-    Definition of a screening filter that can be extracted from queries.
+    Definition of a query filter that can be extracted from user queries.
+    
+    Domain plugins register filters to extract structured parameters
+    from natural language (e.g., priority level, time range, category).
     
     Attributes:
-        name: Filter name (e.g., "risk_tolerance", "momentum_breakout")
+        name: Filter name (e.g., "priority_level", "category")
         description: Human-readable description for GPT prompt
         value_type: Type of value ("enum", "bool", "string")
         enum_values: If value_type is "enum", the allowed values
@@ -92,8 +95,8 @@ class IntentRegistry:
             synonyms=["study", "review"],
         ))
         
-        # Register screening filters
-        registry.register_filter(ScreeningFilter(
+        # Register query filters
+        registry.register_filter(QueryFilter(
             name="priority_level",
             description="User priority preference",
             value_type="enum",
@@ -114,7 +117,7 @@ class IntentRegistry:
         """
         self.domain_name = domain_name
         self._intents: Dict[str, IntentDefinition] = {}
-        self._filters: Dict[str, ScreeningFilter] = {}
+        self._filters: Dict[str, QueryFilter] = {}
         self._synonyms: Dict[str, str] = {}  # synonym → canonical intent
         
         # Register core intents that all domains need
@@ -155,12 +158,12 @@ class IntentRegistry:
         
         logger.debug(f"[IntentRegistry:{self.domain_name}] Registered intent: {intent.name}")
     
-    def register_filter(self, filter_def: ScreeningFilter) -> None:
+    def register_filter(self, filter_def: QueryFilter) -> None:
         """
-        Register a screening filter.
+        Register a query filter.
         
         Args:
-            filter_def: ScreeningFilter to register
+            filter_def: QueryFilter to register
         """
         self._filters[filter_def.name] = filter_def
         logger.debug(f"[IntentRegistry:{self.domain_name}] Registered filter: {filter_def.name}")
@@ -169,7 +172,7 @@ class IntentRegistry:
         """Get intent definition by name."""
         return self._intents.get(name)
     
-    def get_filter(self, name: str) -> Optional[ScreeningFilter]:
+    def get_filter(self, name: str) -> Optional[QueryFilter]:
         """Get filter definition by name."""
         return self._filters.get(name)
     
@@ -318,7 +321,7 @@ class IntentRegistry:
         
         return "\n".join(prompt_parts)
     
-    def _filter_json_type(self, f: ScreeningFilter) -> str:
+    def _filter_json_type(self, f: QueryFilter) -> str:
         """Get JSON type representation for filter."""
         if f.value_type == "bool":
             return "true|false"
@@ -375,6 +378,10 @@ def create_generic_registry() -> IntentRegistry:
 __all__ = [
     "IntentRegistry",
     "IntentDefinition",
-    "ScreeningFilter",
+    "QueryFilter",
+    "ScreeningFilter",  # DEPRECATED alias → use QueryFilter
     "create_generic_registry",
 ]
+
+# Backward-compatibility alias (DEPRECATED — use QueryFilter)
+ScreeningFilter = QueryFilter

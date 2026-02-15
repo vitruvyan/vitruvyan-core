@@ -53,10 +53,10 @@ def exec_node(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.error(f"[exec_node] Execution failed: {e}", exc_info=True)
         # Fallback to fake success
         state["raw_output"] = {
-            "ranking": [],
+            "results": [],
             "metadata": {"error": str(e), "stub": True}
         }
-        state["route"] = "ne_valid"
+        state["route"] = "exec_valid"  # Domain-agnostic routing
         state["ok"] = False
         state["error"] = str(e)
     

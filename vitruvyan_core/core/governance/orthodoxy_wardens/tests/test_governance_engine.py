@@ -189,7 +189,7 @@ class TestPatternClassifier:
 
     def test_clean_text_no_findings(self):
         findings = self.classifier.classify(
-            "AAPL shows strong momentum with RSI at 65",
+            "ENTITY_A shows strong positive signal with score at 65",
             DEFAULT_RULESET,
         )
         assert len(findings) == 0
@@ -236,7 +236,7 @@ class TestPatternClassifier:
                 pass
 
     def test_findings_have_source_rule(self):
-        findings = self.classifier.classify("buy now AAPL", DEFAULT_RULESET)
+        findings = self.classifier.classify("act now on ENTITY_A", DEFAULT_RULESET)
         for f in findings:
             assert f.source_rule, f"Finding missing source_rule: {f}"
 
@@ -248,7 +248,7 @@ class TestPatternClassifier:
         assert findings[0].finding_type == "anomaly"
 
     def test_classify_by_category(self):
-        text = 'buy now AAPL, password = "secret123"'
+        text = 'act now on ENTITY_A, password = "secret123"'
         compliance_only = self.classifier.classify_by_category(
             text, DEFAULT_RULESET, "compliance"
         )
@@ -539,7 +539,7 @@ class TestFullPipeline:
 
         classifier = PatternClassifier()
         findings = classifier.classify(
-            "AAPL shows moderate bullish momentum with RSI at 58",
+            "ENTITY_A shows moderate positive signal with score at 58",
             DEFAULT_RULESET,
         )
         assert len(findings) == 0

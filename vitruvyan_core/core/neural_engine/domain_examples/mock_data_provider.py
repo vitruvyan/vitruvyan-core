@@ -6,7 +6,7 @@ for your specific domain.
 
 HOW TO USE THIS AS TEMPLATE:
 1. Copy this file to your domain package (e.g., vitruvyan_core/domains/finance/)
-2. Rename class to match your domain (e.g., TickerDataProvider)
+2. Rename class to match your domain (e.g., MyDomainDataProvider)
 3. Replace mock data generation with real data sources (PostgreSQL, APIs, files)
 4. Keep the same method signatures (contract compliance)
 5. Add domain-specific validation logic
@@ -31,7 +31,7 @@ class MockDataProvider(IDataProvider):
     Use this as a template for real domain implementations.
     
     Example domains that would implement this:
-    - Finance: Query PostgreSQL for tickers, momentum, trend, volatility
+    - Finance: Query PostgreSQL for entities, scores, trends, signals
     - Healthcare: Query EHR system for patients, vitals, labs, diagnoses
     - Logistics: Query tracking system for shipments, routes, delays
     """
@@ -171,15 +171,15 @@ class MockDataProvider(IDataProvider):
         TODO (for real implementation):
             Return actual metadata:
             
-            Finance example:
+            Example:
                 {
-                    'domain': 'finance',
+                    'domain': 'my_domain',
                     'source': 'PostgreSQL',
                     'version': '2.0',
                     'last_updated': query_last_updated_timestamp(),
-                    'entity_count': query_ticker_count(),
-                    'features': ['momentum', 'trend', 'volatility', 'sentiment'],
-                    'stratification_groups': ['Technology', 'Healthcare', 'Finance']
+                    'entity_count': query_entity_count(),
+                    'features': ['score_a', 'score_b', 'score_c', 'signal'],
+                    'stratification_groups': ['GroupA', 'GroupB', 'GroupC']
                 }
         """
         return {

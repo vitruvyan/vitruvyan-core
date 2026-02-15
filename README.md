@@ -73,14 +73,14 @@ Vitruvyan Core **IS**:
    - LLMAgent (centralized OpenAI gateway with caching)
 
 5. **Hook Pattern** (domain plugin system)
-   - IntentRegistry (ACTIVE: finance intents loaded)
+   - IntentRegistry (ACTIVE: generic by default; domain intents via plugins)
    - EntityResolverRegistry (STUB: passthrough default)
    - ExecutionRegistry (STUB: fake success default)
 
 ### What Core Does NOT Provide
 
 - **Domain knowledge**: No finance, logistics, healthcare logic in core
-- **Execution logic**: Stub defaults (empty ranking, passthrough entity resolution)
+- **Execution logic**: Stub defaults (empty results, passthrough entity resolution)
 - **Pre-built verticals**: Finance examples exist but are **not mandatory**
 
 Domain-specific behavior is **opt-in via registration**:
@@ -265,11 +265,11 @@ Vitruvyan uses a **registry-based hook pattern** for domain-specific extension p
 #### 1. Intent Detection (`intent_detection_node.py`)
 - **Registry**: `IntentRegistry` (`core/orchestration/intent_registry.py`)
 - **Domain Config**: `domains/finance/intent_config.py`
-- **Env Var**: `INTENT_DOMAIN=finance` (default)
+- **Env Var**: `INTENT_DOMAIN=generic` (default; set to `finance` to load finance intents)
 - **Behavior**:
-  - **With finance**: `trend`, `momentum`, `risk`, `volatility`, `backtest`, `allocate`, etc.
-  - **Without finance**: Core intents only (`soft`, `unknown`)
-- **Status**: ✅ **ACTIVE** (finance domain loaded by default)
+  - **With finance plugin**: `trend`, `momentum`, `risk`, `volatility`, `backtest`, `allocate`, etc.
+  - **Without plugin (generic)**: Core intents only (`soft`, `unknown`)
+- **Status**: ✅ **ACTIVE** (generic by default, domain plugins loaded dynamically via `importlib`)
 
 #### 2. Entity Resolution (`entity_resolver_node.py`)
 - **Registry**: `EntityResolverRegistry` (`core/orchestration/entity_resolver_registry.py`)
@@ -285,8 +285,8 @@ Vitruvyan uses a **registry-based hook pattern** for domain-specific extension p
 - **Domain Config**: `domains/finance/execution_config.py`
 - **Env Var**: `EXEC_DOMAIN=finance` (optional)
 - **Behavior**:
-  - **Default**: Fake success stub (empty ranking, `route='ne_valid'`, `ok=True`)
-  - **With finance**: Neural Engine ranking for finance entities
+  - **Default**: Fake success stub (empty results, `route='exec_valid'`, `ok=True`)
+  - **With finance**: Neural Engine evaluation for finance entities
 - **Status**: 🟡 **STUB** (no domain registered, graceful fake success)
 
 ### Hook Pattern Guarantees
@@ -343,7 +343,7 @@ export ENTITY_DOMAIN=logistics
 
 | Domain | Entities | Intent Examples | Execution Logic |
 |--------|----------|----------------|----------------|
-| **Finance** | Tickers (AAPL, MSFT) | trend, momentum, risk | Neural Engine ranking |
+| **Finance** | Tickers (AAPL, MSFT) | trend, momentum, risk | Neural Engine evaluation (results) |
 | **Logistics** | Routes (route_123) | optimize, forecast, reroute | Route optimization scoring |
 | **Healthcare** | Patients (patient_456) | diagnose, monitor, predict | Patient risk assessment |
 | **Legal** | Cases (case_789) | precedent, probability | Case outcome prediction |
@@ -393,7 +393,7 @@ docker ps --filter "name=core_" --format "table {{.Names}}\t{{.Status}}"
 ### 2. Test LangGraph Pipeline
 
 ```bash
-# Basic query (default: finance domain for intent detection)
+# Basic query (default: generic domain; set INTENT_DOMAIN=finance for finance intents)
 curl -X POST http://localhost:9004/run \
   -H "Content-Type: application/json" \
   -d '{
@@ -407,7 +407,7 @@ curl -X POST http://localhost:9004/run \
   "intent": "momentum",
   "route": "dispatcher_exec",
   "output": {
-    "ranking": [],  # Empty (exec_node is stub)
+    "results": [],  # Empty (exec_node is stub)
     "metadata": {"stub": true}
   }
 }

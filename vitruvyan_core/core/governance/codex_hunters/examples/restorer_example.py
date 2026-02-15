@@ -50,10 +50,10 @@ def main():
 
     # Create a discovered entity (normally from Tracker)
     discovered_entity = DiscoveredEntity(
-        entity_id="AAPL",
+        entity_id="ENTITY_A",
         source="api_source",
         raw_data={
-            "symbol": "AAPL",
+            "symbol": "ENTITY_A",
             "name": "Apple Inc.",
             "sector": "Technology",
             "price": 150.25,

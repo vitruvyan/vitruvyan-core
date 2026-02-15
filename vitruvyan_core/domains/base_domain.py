@@ -28,17 +28,40 @@ Status: ABSTRACT INTERFACE ONLY
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
-from enum import Enum
 
 
-class DomainType(Enum):
-    """Registered domain types"""
+class DomainType:
+    """
+    Domain type identifier — string-based registration (V1.0).
+    
+    No longer an Enum. Any domain can register with any string name
+    without modifying core code.
+    
+    Common domain types (predefined constants for convenience):
+    """
     GENERIC = "generic"
     EXAMPLE = "example"
-    # Future domains will register here
-    # TRADE = "trade"
-    # LOGISTICS = "logistics"
-    # HEALTHCARE = "healthcare"
+    # Domain plugins define their own type strings at registration time.
+    # E.g., DomainType.FINANCE = "finance" would be set by the finance plugin.
+    
+    def __init__(self, value: str):
+        self.value = value
+    
+    def __eq__(self, other):
+        if isinstance(other, DomainType):
+            return self.value == other.value
+        if isinstance(other, str):
+            return self.value == other
+        return NotImplemented
+    
+    def __hash__(self):
+        return hash(self.value)
+    
+    def __repr__(self):
+        return f"DomainType('{self.value}')"
+    
+    def __str__(self):
+        return self.value
 
 
 @dataclass
@@ -196,7 +219,7 @@ class GenericDomain(BaseDomain):
     """
     
     def get_domain_type(self) -> DomainType:
-        return DomainType.GENERIC
+        return DomainType(DomainType.GENERIC)
     
     def get_entity_schema(self) -> EntitySchema:
         return EntitySchema(
@@ -251,9 +274,10 @@ _DOMAIN_REGISTRY: Dict[str, BaseDomain] = {
 
 
 def register_domain(domain: BaseDomain) -> None:
-    """Register a domain plugin with the core"""
+    """Register a domain plugin with the core. Accepts any domain type string."""
     domain_type = domain.get_domain_type()
-    _DOMAIN_REGISTRY[domain_type.value] = domain
+    key = domain_type.value if hasattr(domain_type, 'value') else str(domain_type)
+    _DOMAIN_REGISTRY[key] = domain
 
 
 def get_domain(domain_name: str = "generic") -> BaseDomain:

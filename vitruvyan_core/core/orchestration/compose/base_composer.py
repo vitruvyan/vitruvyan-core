@@ -304,8 +304,8 @@ class BaseComposer(ABC):
         if not raw_output:
             return {}
         
-        ranking = raw_output.get("ranking", {})
-        for group in ["entities", "etf", "funds", "items"]:
+        ranking = raw_output.get("results", raw_output.get("ranking", {}))
+        for group in ["entities", "items", "results"]:
             items = ranking.get(group, [])
             for item in items:
                 if item.get("entity_id") == entity_id:

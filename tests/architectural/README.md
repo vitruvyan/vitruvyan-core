@@ -12,6 +12,7 @@ linee guida di Copilot. Sono **analisi statica** del codice sorgente.
 |------|-----------|
 | `test_import_boundaries.py` | Nessun import circolare tra Sacred Order; nessun import `from services.*` in LIVELLO 1; nessun `openai.OpenAI()` fuori da `llm_agent.py` |
 | `test_sacred_order_structure.py` | Presenza delle 10 directory obbligatorie per ogni Sacred Order; assenza di `.py` in root (escluso `__init__.py`); `charter.md` in `philosophy/` |
+| `test_domain_agnostic_guardrails.py` | Guardrail: nessun import/branch hard-coded su verticali (es. `finance`) dentro `vitruvyan_core/core/` |
 
 ## Marker pytest
 

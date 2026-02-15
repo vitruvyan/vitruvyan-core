@@ -128,8 +128,17 @@ class SentinelIntent(Enum):
 
 
 class CrewIntent(Enum):
-    """CrewAI Strategic Order event intents - Phase 4.6 Cognitive Integration"""
-    # Incoming requests to CrewAI
+    """
+    DEPRECATED — CrewAI Strategic Order event intents (FROZEN — DO NOT EXTEND).
+    See CREWAI_DEPRECATION_NOTICE.md. These enums are retained ONLY as a
+    backward-compatibility shim for deserialization of historical bus events.
+    
+    WARNING: Zero active references in codebase as of Feb 15, 2026.
+    New code MUST use plain strings for crew/task intents (no enum coupling).
+    Finance-specific intents belong in domains/finance/.
+    Scheduled for removal: Q2 2026.
+    """
+    # Incoming requests to CrewAI (DEPRECATED)
     STRATEGY_ANALYSIS_REQUESTED = "strategy.analysis.requested"
     TREND_ANALYSIS_REQUESTED = "trend.analysis.requested"
     MOMENTUM_ANALYSIS_REQUESTED = "momentum.analysis.requested"
@@ -138,7 +147,7 @@ class CrewIntent(Enum):
     COLLECTION_ANALYSIS_REQUESTED = "collection.analysis.requested"
     BACKTEST_REQUESTED = "backtest.requested"
     
-    # Outgoing responses from CrewAI
+    # Outgoing responses from CrewAI (DEPRECATED)
     STRATEGY_GENERATED = "strategy.generated"
     TREND_COMPLETED = "trend.completed"
     MOMENTUM_COMPLETED = "momentum.completed"
@@ -147,7 +156,7 @@ class CrewIntent(Enum):
     COLLECTION_COMPLETED = "collection.completed"
     BACKTEST_COMPLETED = "backtest.completed"
     
-    # Task lifecycle events
+    # Task lifecycle events (DEPRECATED)
     TASK_STARTED = "task.started"
     TASK_COMPLETED = "task.completed"
     TASK_FAILED = "task.failed"

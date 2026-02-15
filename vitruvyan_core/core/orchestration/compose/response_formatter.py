@@ -56,7 +56,7 @@ class RawEngineOutput(TypedDict, total=False):
     
     Domains define their own output shape, but this provides common fields.
     """
-    ranking: Dict[str, List[Dict[str, Any]]]  # e.g., {"entities": [...], "etf": [...]}
+    results: Dict[str, List[Dict[str, Any]]]  # e.g., {"entities": [...], "items": [...]}
     semantic_fallback: bool
     answer: str
 

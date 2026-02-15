@@ -20,20 +20,35 @@ from core.orchestration.langgraph.memory_utils import merge_slots
 from core.orchestration.langgraph.node.intent_detection_node import intent_detection_node
 from core.orchestration.langgraph.node import intent_detection_node as _intent_mod
 
-# Configure intent detection with finance domain (domain plugin pattern)
+# Configure intent detection with domain plugin pattern (dynamic import)
 import os as _os
-_INTENT_DOMAIN = _os.getenv("INTENT_DOMAIN", "finance")
-if _INTENT_DOMAIN == "finance":
-    from domains.finance.intent_config import (
-        create_finance_registry,
-        CONTEXT_KEYWORDS as _CTX_KW,
-        AMBIGUOUS_PATTERNS as _AMB_PAT,
-    )
-    _intent_reg = create_finance_registry()
-    _intent_mod.configure(_intent_reg, context_keywords=_CTX_KW, ambiguous_patterns=_AMB_PAT)
+import importlib as _importlib
+import logging as _logging
+
+_INTENT_DOMAIN = _os.getenv("INTENT_DOMAIN", "generic")
+_log = _logging.getLogger(__name__)
+
+def _load_domain_intent_registry(domain: str):
+    """Dynamically load intent registry from domain plugin."""
+    if domain == "generic":
+        from core.orchestration.intent_registry import create_generic_registry
+        return create_generic_registry(), {}, {}
+    try:
+        mod = _importlib.import_module(f"domains.{domain}.intent_config")
+        factory = getattr(mod, f"create_{domain}_registry")
+        registry = factory()
+        ctx_kw = getattr(mod, "CONTEXT_KEYWORDS", {})
+        amb_pat = getattr(mod, "AMBIGUOUS_PATTERNS", {})
+        return registry, ctx_kw, amb_pat
+    except (ImportError, AttributeError) as e:
+        _log.warning(f"[graph_flow] Domain '{domain}' intent_config not found: {e}. Using generic.")
+        from core.orchestration.intent_registry import create_generic_registry
+        return create_generic_registry(), {}, {}
+
+_intent_reg, _ctx_kw, _amb_pat = _load_domain_intent_registry(_INTENT_DOMAIN)
+if _ctx_kw or _amb_pat:
+    _intent_mod.configure(_intent_reg, context_keywords=_ctx_kw, ambiguous_patterns=_amb_pat)
 else:
-    from core.orchestration.intent_registry import create_generic_registry
-    _intent_reg = create_generic_registry()
     _intent_mod.configure(_intent_reg)
 
 # Configure route_node with registry-driven intent routing (domain-agnostic)
@@ -42,16 +57,15 @@ _route_mod.configure(
     soft_intents=_intent_reg.get_soft_intent_names(),
 )
 
-# 🔍 Configure EntityResolverRegistry (domain plugin pattern)
+# 🔍 Configure EntityResolverRegistry (domain plugin pattern — dynamic import)
 _ENTITY_DOMAIN = _os.getenv("ENTITY_DOMAIN", _INTENT_DOMAIN)
-if _ENTITY_DOMAIN:
+if _ENTITY_DOMAIN and _ENTITY_DOMAIN != "generic":
     try:
-        if _ENTITY_DOMAIN == "finance":
-            from domains.finance.entity_resolver_config import register_finance_entity_resolver
-            register_finance_entity_resolver()
-        # Other domains: add elif branches here
-    except ImportError:
-        pass  # No domain plugin available — entity_resolver_node uses passthrough stub
+        _entity_mod = _importlib.import_module(f"domains.{_ENTITY_DOMAIN}.entity_resolver_config")
+        _register_fn = getattr(_entity_mod, f"register_{_ENTITY_DOMAIN}_entity_resolver")
+        _register_fn()
+    except (ImportError, AttributeError) as e:
+        _log.debug(f"[graph_flow] No entity resolver for domain '{_ENTITY_DOMAIN}': {e}")
 
 # 🔍 PHASE 2.2 - Quality Check (ARCHIVED → _legacy/quality_check_node.py)
 
@@ -110,11 +124,19 @@ class GraphState(TypedDict, total=False):
     context: Optional[Dict[str, Any]]         # Vertical-specific extensible context
     top_k: Optional[int]                      # Generic parameter (top K results)
     
-    # Legacy slot fields (used by parse/compose/route nodes)
-    budget: Optional[Any]                    # Budget parameter
-    horizon: Optional[str]                   # Time horizon
-    amount: Optional[Any]                    # Amount (alias for budget in route_node)
-    companies: Optional[List[str]]           # Extracted company names
+    # Domain parameters — generic extensible dict for domain-specific slots.
+    # Domain plugins populate this via GraphPlugin.get_state_extensions() or parse_node.
+    # Example: {"budget": 10000, "horizon": "medium", "amount": 10000}
+    domain_params: Optional[Dict[str, Any]]   # Generic domain-specific parameters
+    
+    # Legacy slot fields — DEPRECATED: Use domain_params dict instead.
+    # Kept ONLY for backward compatibility with existing domain plugins.
+    # These will be removed in a future release. Domain plugins should migrate
+    # to storing/reading values from domain_params or context dict.
+    budget: Optional[Any]                    # DEPRECATED → domain_params["budget"]
+    horizon: Optional[str]                   # DEPRECATED → domain_params["horizon"]
+    amount: Optional[Any]                    # DEPRECATED → domain_params["amount"]
+    companies: Optional[List[str]]           # DEPRECATED → domain_params["companies"]
     flow: Optional[str]                      # Flow type (direct, clarification)
     language: Optional[str]                  # Language hint from client
     
@@ -141,17 +163,9 @@ class GraphState(TypedDict, total=False):
     vault_timestamp: Optional[str]           # When vault protection completed
     vault_duration_ms: Optional[float]       # Time taken for protection
     
-    # 🛡️ Sentinel Order Fields
-    sentinel_risk_score: Optional[float]     # Current risk assessment (0.0-1.0)
-    sentinel_collection_value: Optional[float] # Value of collection under protection
-    sentinel_protection_mode: Optional[str]  # conservative, balanced, aggressive, emergency
-    sentinel_alerts: Optional[List[str]]     # Active alerts
-    sentinel_status: Optional[str]           # monitoring, alert_issued, emergency, recovery
-    sentinel_escalation: Optional[bool]      # Whether escalation was triggered
-    sentinel_message: Optional[str]          # Human-readable sentinel message
-    sentinel_timestamp: Optional[str]        # When sentinel processing completed
-    sentinel_correlation_id: Optional[str]   # Event correlation ID
-    conclave_event: Optional[Dict[str, Any]] # Raw Synaptic Conclave event data
+    # 🛡️ Sentinel Order Fields — REMOVED from core state (Feb 15, 2026)
+    # Domain plugins inject these via GraphPlugin.get_state_extensions() or context dict.
+    # Finance vertical stores sentinel data in domain_params or context.
     
     # 🧠 CrewAI Strategic Order Fields — DEPRECATED (see CREWAI_DEPRECATION_NOTICE.md)
     # Removed Feb 14, 2026: crew_correlation_id, crew_analysis_type, crew_status,

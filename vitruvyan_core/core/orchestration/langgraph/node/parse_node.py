@@ -24,18 +24,17 @@ logger = logging.getLogger(__name__)
 def _detect_vague_query(text: str) -> bool:
     """
     Detects vague queries where entity extraction failed but user intent is clear.
-    Examples: 'E X?', 'What about Y?', 'anche Z', 'ENTITY_1?'
+    Examples: 'What about Y?', 'How about Z?', 'ENTITY_1?'
     """
     if not text:
         return False
     txt = text.strip().lower()
     
     patterns = [
-        r"^\s*e\s+\w+",           # "E X?" (Italian conjunction + entity)
         r"what about",            # "What about Y?"
         r"how about",             # "How about Z?"
-        r"come prima",            # "Come prima ma con X"
-        r"anche\s+\w+",           # "anche Y"
+        r"same as before",        # "Same as before but with X"
+        r"also\s+\w+",            # "also Y"
         r"^\s*[A-Z]{2,5}\s*\??$"  # Bare entity code: "ABC?" or "XYZ"
     ]
     return any(re.search(p, txt, re.IGNORECASE) for p in patterns)
@@ -50,12 +49,10 @@ def _detect_contextual_reference(text: str) -> bool:
     Philosophy: "NO regex, solo capacità semantica LLM" - Project rule
     
     Examples that should return True:
-    - 'come prima ma con X'
-    - 'E se lo confronto con Y?'
-    - 'E Z?'
+    - 'same as before but with X'
+    - 'what if I compare it with Y?'
     - 'what about ABC?'
-    - 'rispetto a XYZ come va?'
-    - 'anche quello'
+    - 'also that one'
     
     Returns:
         bool: True if query is a follow-up/contextual reference, False otherwise
@@ -64,8 +61,7 @@ def _detect_contextual_reference(text: str) -> bool:
         return False
     
     # Quick heuristic: Very short queries (< 15 chars) are often follow-ups
-    # "E X?" = 4 chars, "what about Y?" = 14 chars
-    if len(text.strip()) < 15 and any(word in text.lower() for word in ['e ', 'and ', 'what ', 'how ', 'vs ', 'anche']):
+    if len(text.strip()) < 15 and any(word in text.lower() for word in ['and ', 'what ', 'how ', 'vs ', 'also']):
         return True  # High probability follow-up, skip LLM call for speed
     
     # Use GPT-3.5 for semantic detection (fast + accurate)
@@ -79,12 +75,11 @@ Query: "{text}"
 Answer ONLY "yes" or "no".
 
 Examples:
-- "E X?" → yes (follow-up)
-- "E se lo confronto con Y?" → yes (comparison to previous)
-- "Analizza Z" → no (standalone)
 - "what about ABC?" → yes (follow-up)
-- "come prima ma con XYZ" → yes (explicit reference)
-- "Quali sono i migliori risultati?" → no (standalone)
+- "compare it with Y" → yes (comparison to previous)
+- "Analyze Z" → no (standalone)
+- "same as before but with XYZ" → yes (explicit reference)
+- "What are the best results?" → no (standalone)
 
 Answer:"""
         
@@ -93,18 +88,19 @@ Answer:"""
             temperature=0.0,
             max_tokens=5
         ).strip().lower()
-        is_contextual = answer.startswith("yes") or answer.startswith("sì") or answer.startswith("si")
+        is_contextual = answer.startswith("yes") or answer.startswith("si")
         
-        logger.info(f"🤖 [LLM Contextual Detection] Query: '{text[:50]}...' → {answer} (contextual={is_contextual})")
+        logger.info(f"[LLM Contextual Detection] Query: '{text[:50]}...' → {answer} (contextual={is_contextual})")
         return is_contextual
         
     except Exception as e:
-        logger.warning(f"⚠️ [LLM Contextual Detection] Failed, using heuristic fallback: {e}")
-        # Fallback: Simple heuristic for common cases
+        logger.warning(f"[LLM Contextual Detection] Failed, using heuristic fallback: {e}")
+        # Fallback: Simple heuristic — English only (LLM handles multilingual)
         txt_lower = text.lower()
         return any(word in txt_lower for word in [
-            'come prima', 'stesso', 'anche', 'e se', 'confronto', 
-            'rispetto', 'what about', 'how about', 'compared to'
+            'same as before', 'like before', 'again',
+            'what about', 'how about', 'compared to',
+            'similar to', 'also', 'and if'
         ])
 
 def _extract_entity_from_vague_query(text: str) -> list[str]:
@@ -117,8 +113,8 @@ def _extract_entity_from_vague_query(text: str) -> list[str]:
     if not text:
         return []
     
-    # Pattern 1: "E ENTITY?" or "What about ENTITY?" (1-5 char codes)
-    m = re.search(r"\b(e|and|what about|how about|anche)\s+([A-Z]{1,5})\b", text, re.IGNORECASE)
+    # Pattern 1: "What about ENTITY?" (1-5 char codes)
+    m = re.search(r"\b(and|what about|how about)\s+([A-Z]{1,5})\b", text, re.IGNORECASE)
     if m:
         return [m.group(2).upper()]
     
@@ -137,29 +133,29 @@ def _fallback_intent(user_input: str, entity_ids: list[str], budget: int, horizo
     """
     txt = (user_input or "").lower()
 
-    # Soft intents: emotional / conversational (domain-agnostic)
-    if any(w in txt for w in ["preoccupato", "paura", "timore", "fiducia", "dubbi", "ansia",
-                              "worry", "worried", "fear", "trust", "doubt", "concern"]):
+    # Soft intents: emotional / conversational (English fallback — LLM handles multilingual)
+    if any(w in txt for w in ["worry", "worried", "fear", "trust", "doubt", "concern",
+                              "anxious", "nervous", "scared", "afraid", "confident"]):
         return "soft"
 
-    # Generic analysis keywords (domain-agnostic)
-    if "analizza" in txt or "analyze" in txt or "study" in txt:
+    # Generic analysis keyword (English fallback)
+    if "analyze" in txt or "study" in txt or "examine" in txt:
         return "analysis"
-    if "trend" in txt:
-        return "trend"
-    if "risk" in txt or "rischio" in txt:
-        return "risk"
 
     return "unknown"
 
 def _extract_budget(text: str) -> int | None:
     """
-    Extracts a numeric budget from user input if present.
-    Examples: '5000 euro', '$10000', '2000 usd'
+    Extracts a numeric amount/budget from user input if present.
+    Domain-agnostic: looks for any numeric value followed by optional currency/unit.
+    
+    NOTE: This is a generic fallback extractor. Domain plugins should populate
+    domain_params directly via their GraphPlugin implementation for richer parsing.
     """
     try:
         txt = text or ""
-        m = re.search(r"(\d{3,})\s*(€|eur|euro|\$|usd)?", txt, flags=re.IGNORECASE)
+        # Generic numeric extraction (3+ digits, optionally followed by a unit)
+        m = re.search(r"(\d{3,})\s*\w{0,5}", txt, flags=re.IGNORECASE)
         if m:
             return int(m.group(1))
     except Exception:
@@ -179,11 +175,12 @@ def parse_node(state: dict) -> dict:
     state.pop("result", None)
 
     def _extract_horizon(text: str) -> str | None:
+        """Extract temporal horizon from text (English fallback — LLM handles multilingual)."""
         import re
         txt = (text or "").lower()
 
-        # mesi
-        m = re.search(r"(\d+)\s*(mesi|month|months|m)\b", txt)
+        # Months
+        m = re.search(r"(\d+)\s*(month|months|mo)\b", txt)
         if m:
             val = int(m.group(1))
             if val <= 6:
@@ -193,8 +190,8 @@ def parse_node(state: dict) -> dict:
             else:
                 return "long"
 
-        # anni
-        m = re.search(r"(\d+)\s*(anni|years|y)\b", txt)
+        # Years
+        m = re.search(r"(\d+)\s*(year|years|yr)\b", txt)
         if m:
             val = int(m.group(1))
             if val <= 1:
@@ -246,7 +243,7 @@ def parse_node(state: dict) -> dict:
         print(f"🔙 [parse_node] No semantic matches found in state")
     
     # --- 🧠 CONTEXTUAL REFERENCE DETECTION ---
-    # If query refers to previous context (e.g., "come prima ma con X"),
+    # If query refers to previous context (e.g., "same as before but with X"),
     # use semantic search to find similar past queries
     contextual_slots = {}
     is_contextual = _detect_contextual_reference(user_input)
@@ -281,6 +278,19 @@ def parse_node(state: dict) -> dict:
     # ❌ REMOVED: state["intent"] = intent  (delegated to GPT intent_detection_node)
     # 🎯 NUCLEAR OPTION: Don't set state["entity_ids"] here - entity_resolver_node will set it
     state["context_entities"] = merged_slots.get("context_entities", [])  # 🆕 Fallback for entity_resolver
+    
+    # 🆕 Domain params: generic extensible dict (replaces top-level budget/horizon/amount/companies)
+    domain_params = state.get("domain_params", {}) or {}
+    if merged_slots["horizon"]:
+        domain_params["horizon"] = merged_slots["horizon"]
+    if merged_slots["budget"]:
+        domain_params["budget"] = merged_slots["budget"]
+        domain_params["amount"] = merged_slots["budget"]
+    if parsed.get("companies"):
+        domain_params["companies"] = parsed.get("companies", [])
+    state["domain_params"] = domain_params
+    
+    # DEPRECATED backward-compat writes (will be removed in future release)
     state["horizon"] = merged_slots["horizon"]
     state["budget"] = merged_slots["budget"]
     state["amount"] = merged_slots["budget"]  # 🔑 ensure route_node sees amount

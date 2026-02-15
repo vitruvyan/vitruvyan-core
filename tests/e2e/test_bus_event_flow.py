@@ -46,7 +46,7 @@ class TestActiveStreams:
         "vitruvyan:codex.discovery.mapped",
         "vitruvyan:conclave.health.ping",
         "vitruvyan:memory.coherence.checked",
-        "vitruvyan:neural_engine.screening.completed",
+        "vitruvyan:engine.eval.completed",
     ]
 
     @pytest.mark.parametrize("stream", EXPECTED_STREAMS)

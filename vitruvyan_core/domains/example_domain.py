@@ -30,7 +30,7 @@ class ExampleDomain(BaseDomain):
     """
     
     def get_domain_type(self) -> DomainType:
-        return DomainType.EXAMPLE
+        return DomainType(DomainType.EXAMPLE)
     
     def get_entity_schema(self) -> EntitySchema:
         return EntitySchema(

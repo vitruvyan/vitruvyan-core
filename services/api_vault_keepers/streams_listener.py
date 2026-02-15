@@ -56,7 +56,7 @@ async def _handle_event(adapter: VaultBusAdapter, channel: str, payload: Dict[st
         return
 
     # Cross-order archival (store results as archives)
-    if channel in {"orthodoxy.audit.completed", "neural_engine.screening.completed"}:
+    if channel in {"orthodoxy.audit.completed", "engine.eval.completed"}:
         source_order = channel.split(".", 1)[0]
         adapter.handle_archive(content=payload, content_type=channel, source_order=source_order, correlation_id=correlation_id)
         return

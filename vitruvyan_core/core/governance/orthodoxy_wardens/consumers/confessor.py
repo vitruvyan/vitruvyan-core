@@ -36,7 +36,7 @@ from ..events.orthodoxy_events import (
 
 _EVENT_TO_TRIGGER = {
     "codex.discovery.mapped": "event",
-    "neural_engine.screen.completed": "event",
+    "engine.eval.completed": "event",
     "langgraph.output.ready": "output_validation",
     "synaptic.conclave.broadcast": "event",
     "conclave.mcp.actions": "output_validation",
@@ -44,7 +44,7 @@ _EVENT_TO_TRIGGER = {
 
 _EVENT_TO_SCOPE = {
     "codex.discovery.mapped": "single_event",
-    "neural_engine.screen.completed": "single_service",
+    "engine.eval.completed": "single_service",
     "langgraph.output.ready": "single_output",
     "synaptic.conclave.broadcast": "complete_realm",
     "conclave.mcp.actions": "single_output",
@@ -52,7 +52,7 @@ _EVENT_TO_SCOPE = {
 
 _EVENT_TO_URGENCY = {
     "codex.discovery.mapped": "routine",
-    "neural_engine.screen.completed": "routine",
+    "engine.eval.completed": "routine",
     "langgraph.output.ready": "high",
     "synaptic.conclave.broadcast": "low",
     "conclave.mcp.actions": "high",

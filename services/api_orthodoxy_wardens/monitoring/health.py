@@ -90,7 +90,7 @@ async def setup_synaptic_conclave_listeners():
         sacred_channels = {
             "orthodoxy.audit.requested": handle_audit_request,
             "orthodoxy.validation.requested": handle_audit_request,  # Reuse audit handler
-            "neural_engine.screening.completed": handle_system_events,
+            "engine.eval.completed": handle_system_events,
             "babel.sentiment.completed": handle_system_events,
             "memory.write.completed": handle_system_events,
             "vee.explanation.completed": handle_system_events,

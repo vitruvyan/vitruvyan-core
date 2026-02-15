@@ -133,7 +133,7 @@ class CachedLLMOrchestrator:
         
         if "analysis" in intent or "analisi" in intent:
             return "detailed_analysis"
-        elif "compare" in intent or "confronta" in intent:
+        elif "compare" in intent or "comparison" in intent:
             return "comparison"
         elif "collection" in intent:
             return "collection"
@@ -306,7 +306,7 @@ RESPONSE STRUCTURE:
         if raw_output and isinstance(raw_output, dict):
             # Extract top-level data summary
             for key, value in raw_output.items():
-                if isinstance(value, dict) and "ranking" in str(key).lower():
+                if isinstance(value, dict) and "result" in str(key).lower():
                     # Summarize ranked results
                     all_items = []
                     for group in value.values() if isinstance(value, dict) else []:

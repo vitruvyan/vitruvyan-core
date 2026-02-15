@@ -78,7 +78,7 @@ class ExecutionRegistry:
             entity_ids = state.get("entity_ids", [])
             # ... execution logic ...
             state["raw_output"] = {"ranking": [...], "metadata": {...}}
-            state["route"] = "ne_valid"
+            state["route"] = "exec_valid"
             return state
         
         registry.register(ExecutionHandlerDefinition(
@@ -184,11 +184,11 @@ class ExecutionRegistry:
         
         Returns empty ranking structure with domain_neutral flag.
         """
-        logger.debug("[ExecutionRegistry] Fake success stub - returning empty ranking")
+        logger.debug("[ExecutionRegistry] Fake success stub - returning empty results")
         
         # Preserve state passthrough (no breaking changes)
         state["raw_output"] = {
-            "ranking": [],
+            "results": [],
             "metadata": {
                 "domain_neutral": True,
                 "stub": True,
@@ -196,7 +196,7 @@ class ExecutionRegistry:
                 "message": "No domain-specific executor registered"
             }
         }
-        state["route"] = "ne_valid"  # Maintain routing compatibility
+        state["route"] = "exec_valid"  # Domain-agnostic routing (was "ne_valid")
         state["ok"] = True
         state["error"] = None
         
