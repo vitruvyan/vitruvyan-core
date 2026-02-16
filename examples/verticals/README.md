@@ -28,7 +28,6 @@ examples/verticals/
 │   │   ├── screener_node.py (stock screening)
 │   │   ├── portfolio_node.py (portfolio analysis)
 │   │   ├── sentiment_node.py (market sentiment)
-│   │   ├── crew_node.py (strategic analysis)
 │   │   └── sentinel_node.py (risk monitoring)
 │   ├── finance_graph.py (example extension)
 │   └── README.md
@@ -124,7 +123,6 @@ def build_<domain>_graph():
 - `screener_node` — Stock screening
 - `portfolio_node` — Portfolio analysis
 - `sentiment_node` — Market sentiment
-- `crew_node` — Strategic analysis (trend/momentum)
 - `sentinel_node` — Risk monitoring
 
 **Extension Pattern** (future implementation):

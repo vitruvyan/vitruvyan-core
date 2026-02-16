@@ -5,8 +5,10 @@ Prepared by: Engineering / Cognitive Architecture Division
 ---
 
 ## 🏗️ Visione generale
-Vitruvyan OS ha completato la prima fase di sviluppo — con i moduli core (CrewAI, LangGraph, Neural Engine, VEE, VARE, VSGS, Pattern Weavers) pienamente funzionanti.  
-La nuova fase prevede la creazione di test dimostrativi multi-dominio e di agenti specializzati, che espandono l’architettura epistemica verso Energy, Logistics, Health e Big Data reasoning.
+Vitruvyan OS ha completato la prima fase di sviluppo — con i moduli core (LangGraph, Neural Engine, VEE, VARE, VSGS, Pattern Weavers) pienamente funzionanti.  
+La nuova fase prevede la creazione di test dimostrativi multi-dominio e di agenti specializzati, che espandono l'architettura epistemica verso Energy, Logistics, Health e Big Data reasoning.
+
+**Note**: CrewAI was deprecated Feb 2026, replaced with domain-agnostic orchestration.
 
 L’obiettivo: **dimostrare la capacità di Vitruvyan di comprendere sistemi complessi, non solo di analizzarli.**
 

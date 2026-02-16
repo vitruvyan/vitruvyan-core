@@ -217,7 +217,6 @@ graph TD
     I -->|Screener| K[screener]
     I -->|Fallback| L[qdrant]
     I -->|LLM| M[llm_soft]
-    I -->|CrewAI| N[crew]
     I -->|Sentinel| O[sentinel]
     I -->|Portfolio| P[portfolio]
     I -->|Codex| Q[codex_hunters]
@@ -306,7 +305,6 @@ graph TD
   - `screener` → screener_node (investment screening)
   - `semantic_fallback` → qdrant (RAG fallback)
   - `llm_soft` → llm_soft_node (conversational)
-  - `crew_strategy` → crew (CrewAI strategic analysis)
   - `sentinel_monitoring` → sentinel (portfolio guardian)
   - `portfolio_review` → portfolio (portfolio analysis)
   - `codex_expedition` → codex_hunters (audit discovery)
@@ -318,7 +316,7 @@ graph TD
 
 #### 10. **exec_node**
 - **Purpose**: Neural Engine orchestration for technical analysis
-- **Calls**: Sentiment API, momentum API, CrewAI agents
+- **Calls**: Sentiment API, momentum API
 - **Output**: `raw_output` with technical data
 
 #### 11. **quality_check_node** (PHASE 2.2 Unified)
@@ -342,11 +340,7 @@ graph TD
 - **Removed**: "Leonardo" persona, over-complexity
 - **Model**: GPT-4o-mini / Gemini Flash
 
-#### 15. **crew_node** (CrewAI Strategic Order)
-- **Purpose**: Asynchronous CrewAI agent orchestration
-- **Agents**: Trend, momentum, volatility, backtest, portfolio
-- **Output**: `crew_strategy_result`, `crew_correlation_id`
-- **Pattern**: Async acknowledgment → background processing
+#### 15. ~~**crew_node** (CrewAI Strategic Order)~~ **[REMOVED FEB 2026]**
 
 #### 16. **sentinel_node** (Portfolio Guardian - Sentinel Order)
 - **Purpose**: Risk monitoring + emergency response
@@ -510,19 +504,7 @@ parse → intent_detection (intent=risk_assessment)
 
 ---
 
-### Scenario 5: CrewAI Strategic Analysis
-**Input**: "analisi completa NVDA con backtest"
-
-```
-parse → intent_detection (intent=backtest)
-→ weavers → ticker_resolver (tickers=[NVDA])
-→ babel_emotion → semantic_grounding
-→ params_extraction → decide (route=crew_strategy)
-→ crew_node (async CrewAI agents: trend + backtest + portfolio)
-→ END (acknowledgment: "Sto elaborando l'analisi...")
-```
-
-**Async Pattern**: User receives immediate acknowledgment, full report delivered via webhook/polling
+### ~~Scenario 5: CrewAI Strategic Analysis~~ **[REMOVED FEB 2026]**
 
 ---
 
@@ -640,11 +622,6 @@ class GraphState(TypedDict, total=False):
     sentinel_risk_score: float
     sentinel_alerts: List[str]
     
-    # CrewAI
-    crew_correlation_id: str
-    crew_status: str
-    crew_strategy_result: Dict[str, Any]
-    
     # Pattern Weavers
     weaver_context: Dict[str, Any]
     weaver_status: str
@@ -667,7 +644,6 @@ class GraphState(TypedDict, total=False):
 | Conversational | 1.2s | 1.8s | llm_soft_node (LLM call) |
 | Single Ticker | 2.1s | 3.2s | exec_node (Neural Engine) |
 | Multi-Ticker | 2.8s | 4.1s | sentiment_node (batch processing) |
-| CrewAI Strategy | 0.8s* | 1.2s* | crew_node (async acknowledgment) |
 | Portfolio Review | 3.5s | 5.2s | portfolio_node (LLM reasoning) |
 | **Advisor Recommendation** 🆕 | **2.3s** | **3.5s** | **advisor_node + compose** |
 

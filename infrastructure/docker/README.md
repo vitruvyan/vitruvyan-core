@@ -23,7 +23,6 @@ All service Dockerfiles for container builds:
 - `Dockerfile.orthodoxy_wardens` (port 8006) - Schema validation
 - `Dockerfile.vault_keepers` (port 8007) - Memory custodians
 - `Dockerfile.portfolio_guardian` (port 8011) - Collection risk monitoring
-- `Dockerfile.api_crewai` (port 8005) - CrewAI orchestration
 - `Dockerfile.api_memory_orders` (port 8016) - Memory operations
 - `Dockerfile.api_codex_hunters` (port 8008) - Data ingestion
 - `Dockerfile.api_notion` - Notion integration
@@ -35,7 +34,7 @@ Python dependency specifications for all services:
 
 - Core services: api_graph, api_neural, api_semantic
 - Governance services: vault_keepers, orthodoxy_wardens, api_conclave
-- Trade services: portfolio_guardian, api_crewai
+- Trade services: portfolio_guardian
 - Memory services: api_memory_orders
 - Cognitive services: babel_gardens, api_embedding
 - Perception services: codex_hunters
