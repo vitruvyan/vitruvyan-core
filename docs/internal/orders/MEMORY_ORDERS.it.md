@@ -1,3 +1,11 @@
+---
+tags:
+  - sacred-orders
+  - memory
+  - governance
+  - admin
+---
+
 # Memory Orders
 
 <p class="kb-subtitle">Coerenza dual-memory: drift detection, health aggregation e sync planning tra Archivarium (PostgreSQL) e Mnemosyne (Qdrant).</p>

@@ -266,7 +266,10 @@ class SyncPlanner(MemoryRole):
     def _extract_id(self, record: Any) -> str:
         """Extract ID from record (dict or tuple)."""
         if isinstance(record, dict):
-            return str(record.get("id", hash(record)))
+            record_id = record.get("id")
+            if record_id is None:
+                return str(id(record))
+            return str(record_id)
         elif isinstance(record, tuple):
             # Assume first element is ID
             return str(record[0]) if record else ""

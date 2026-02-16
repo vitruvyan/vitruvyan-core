@@ -1,19 +1,27 @@
-# Memory Orders API
+---
+tags:
+  - api
+  - memory
+  - sacred-orders
+  - admin
+---
+
+# 🌐 Memory Orders API
 
 <p class="kb-subtitle">Service LIVELLO 2 per coherence check, health aggregation (RAG) e sync planning.</p>
 
-## Location
+## 📍 Location
 
 - Service: `services/api_memory_orders/`
 - Core puro: `vitruvyan_core/core/governance/memory_orders/`
 
-## Base URL / Porta
+## 🚪 Base URL / Porta
 
 - Default config: `MEMORY_API_PORT=8016` (`services/api_memory_orders/config.py`)
 
 > Nota deploy: altri documenti possono citare una “fleet port” diversa. In deploy fa fede docker-compose.
 
-## Endpoint (implementati)
+## 🧭 Endpoint (implementati)
 
 Definiti in `services/api_memory_orders/api/routes.py`:
 
@@ -24,11 +32,11 @@ Definiti in `services/api_memory_orders/api/routes.py`:
 - `POST /sync` — sync planning (solo planning, nessuna esecuzione)
 - `GET /metrics` — Prometheus (definito in `services/api_memory_orders/main.py`)
 
-## Modelli request/response
+## 🧾 Modelli request/response
 
 Vedi `services/api_memory_orders/models/schemas.py`.
 
-### `POST /coherence`
+### 📉 `POST /coherence`
 
 Request (`CoherenceRequest`):
 
@@ -48,7 +56,7 @@ Response (`CoherenceResponse`):
 - `table: str`
 - `collection: str`
 
-### `POST /sync`
+### 🔁 `POST /sync`
 
 Request (`SyncRequest`):
 
@@ -64,7 +72,7 @@ Response (`SyncResponse`):
 - `mode: str`
 - `total_operations: int`
 
-## Env vars (service)
+## ⚙️ Env vars (service)
 
 Caricate in `services/api_memory_orders/config.py`:
 
@@ -76,4 +84,3 @@ Caricate in `services/api_memory_orders/config.py`:
 - Soglie coerenza: `COHERENCE_THRESHOLD_HEALTHY`, `COHERENCE_THRESHOLD_WARNING`
 - Audit: `MEMORY_AUDIT_TABLE`
 - Flag: `ENABLE_AUTO_SYNC`, `ENABLE_PROMETHEUS`
-

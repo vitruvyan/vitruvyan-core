@@ -20,6 +20,9 @@ from api_memory_orders.models.schemas import (
     SyncRequest,
     SyncResponse,
     HealthCheckResponse,
+    ReconciliationRequest,
+    ReconciliationResponse,
+    ReconciliationExecutionResponse,
 )
 from api_memory_orders.adapters.bus_adapter import MemoryBusAdapter
 from api_memory_orders.config import settings
@@ -172,6 +175,48 @@ async def root():
             "health": "/health",
             "rag_health": "/health/rag",
             "coherence": "POST /coherence",
-            "sync": "POST /sync"
+            "sync": "POST /sync",
+            "reconcile": "POST /reconcile",
         }
     }
+
+
+@router.post("/reconcile", response_model=ReconciliationResponse)
+async def reconcile(request: ReconciliationRequest):
+    """
+    Build and optionally execute reconciliation plan with enforcement mode.
+    """
+    if bus_adapter is None:
+        raise HTTPException(status_code=503, detail="Bus adapter not initialized")
+
+    try:
+        result = await bus_adapter.handle_reconciliation(
+            table=request.table,
+            collection=request.collection,
+            limit=request.limit,
+            execute=request.execute,
+            idempotency_key=request.idempotency_key,
+            allow_mass_delete=request.allow_mass_delete,
+        )
+        execution = result.get("execution")
+        execution_model = None
+        if isinstance(execution, dict):
+            execution_model = ReconciliationExecutionResponse(**execution)
+
+        return ReconciliationResponse(
+            status=result["status"],
+            severity=result["severity"],
+            drift_types=result["drift_types"],
+            operations_count=result["operations_count"],
+            requires_execution=result["requires_execution"],
+            execution=execution_model,
+            recommendation=result["recommendation"],
+            correlation_id=result["correlation_id"],
+            idempotent_replay=bool(result.get("idempotent_replay", False)),
+        )
+    except RuntimeError as e:
+        logger.warning(f"Reconciliation concurrency blocked: {e}")
+        raise HTTPException(status_code=409, detail=str(e))
+    except Exception as e:
+        logger.error(f"Reconciliation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Reconciliation failed: {str(e)}")

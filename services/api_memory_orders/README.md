@@ -87,7 +87,13 @@ api_memory_orders/
 - `GET /health/rag` — Full component + coherence health report
 - `POST /coherence` — Analyze drift between PostgreSQL and Qdrant
 - `POST /sync` — Generate synchronization plan
+- `POST /reconcile` — Build reconciliation plan and optionally execute (mode-enforced)
 - `GET /` — Service metadata and endpoint listing
+
+`POST /reconcile` key options:
+- `execute` → apply operations (only if mode allows)
+- `idempotency_key` → safe retry without duplicate execution
+- `allow_mass_delete` → explicit override when delete ratio policy blocks execution
 
 ---
 
@@ -108,6 +114,15 @@ REDIS_PORT=6379
 # Service
 MEMORY_ORDERS_PORT=8016
 MEMORY_ORDERS_HOST=0.0.0.0
+
+# Reconciliation hardening
+MEMORY_RECONCILIATION_MODE=dry_run
+MEMORY_RECONCILIATION_LOCK_TTL_S=300
+MEMORY_RECONCILIATION_IDEMPOTENCY_TTL_S=900
+MEMORY_RECONCILIATION_MAX_DELETE_RATIO=0.20
+MEMORY_RECONCILIATION_RETRY_MAX=2
+MEMORY_RECONCILIATION_RETRY_BACKOFF_MS=250
+MEMORY_RECONCILIATION_DEAD_LETTER_CHANNEL=memory.reconciliation.dead_letter
 ```
 
 ---

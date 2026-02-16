@@ -1,40 +1,48 @@
-# Memory Orders
+---
+tags:
+  - sacred-orders
+  - memory
+  - governance
+  - admin
+---
+
+# 🗂️ Memory Orders
 
 > **Last Updated**: February 14, 2026
 
 <p class="kb-subtitle">Dual-memory coherence: drift detection, health aggregation, and sync planning between Archivarium (PostgreSQL) and Mnemosyne (Qdrant).</p>
 
-## What it does
+## 🎯 What it does
 
-- **Drift calculation**: detects divergence between Postgres and Qdrant (counts/coverage drift)
-- **Health aggregation**: produces an overall health snapshot from component signals
-- **Sync planning**: outputs a plan of operations (insert/delete/clear) without executing it
+- 📉 **Drift calculation**: detects divergence between Postgres and Qdrant (counts/coverage drift)
+- 🩺 **Health aggregation**: produces an overall health snapshot from component signals
+- 🧭 **Sync planning**: outputs a plan of operations (insert/delete/clear) without executing it
 
-- **Epistemic layer**: Truth (Memory & Coherence)
-- **Mandate**: protect epistemic integrity of stored knowledge across two memory systems
-- **Outputs**: `CoherenceReport`, `SystemHealth`, `SyncPlan` *(planning-only)*
+- ⚖️ **Epistemic layer**: Truth (Memory & Coherence)
+- 🛡️ **Mandate**: protect epistemic integrity of stored knowledge across two memory systems
+- 📦 **Outputs**: `CoherenceReport`, `SystemHealth`, `SyncPlan` *(planning-only)*
 
-## Charter (mandate + non-goals)
+## 📜 Charter (mandate + non-goals)
 
-### Mandate
+### ✅ Mandate
 
 - monitor **coherence** (drift) between Postgres and Qdrant
 - aggregate **health** across memory dependencies (datastores + bus + embedding service)
 - produce **sync plans** (what to insert/delete/clear) without executing them
 
-### Non-goals
+### 🚫 Non-goals
 
 - no writes in LIVELLO 1 (no DB, no Qdrant, no StreamBus)
 - no “RAG answer synthesis”: Memory Orders does not generate final user answers
 - no autonomous mutation by default: sync execution is delegated to a worker/service
 
-## Interfaces
+## 🔌 Interfaces
 
 - **HTTP (LIVELLO 2)**: `services/api_memory_orders/` exposes `/coherence`, `/sync`, `/health/*`
 - **Cognitive Bus (LIVELLO 2)**: adapters publish/consume `memory.*` events (optional)
 - **Governance thresholds**: drift thresholds are configurable (env + frozen tuples)
 
-## Event contract (Cognitive Bus)
+## 📡 Event contract (Cognitive Bus)
 
 Defined in `vitruvyan_core/core/governance/memory_orders/events/memory_events.py`:
 
@@ -43,7 +51,7 @@ Defined in `vitruvyan_core/core/governance/memory_orders/events/memory_events.py
 - `memory.sync.requested` / `memory.sync.completed` / `memory.sync.failed`
 - `memory.audit.recorded`
 
-## Code map
+## 🧩 Code map
 
 - **LIVELLO 1 (pure, no I/O)**: `vitruvyan_core/core/governance/memory_orders/`
   - Consumers: `consumers/coherence_analyzer.py`, `consumers/health_aggregator.py`, `consumers/sync_planner.py`
@@ -57,9 +65,9 @@ Defined in `vitruvyan_core/core/governance/memory_orders/events/memory_events.py
 
 ---
 
-## Pipeline (happy path)
+## 🔁 Pipeline (happy path)
 
-### Coherence check
+### 📉 Coherence check
 
 1. `POST /coherence` (service) requests a coherence check
 2. Adapter reads counts:
@@ -68,7 +76,7 @@ Defined in `vitruvyan_core/core/governance/memory_orders/events/memory_events.py
 3. LIVELLO 1 `CoherenceAnalyzer.process(CoherenceInput)` returns a `CoherenceReport`
 4. Service returns the report and may emit `memory.coherence.checked`
 
-### Sync planning
+### 🧭 Sync planning
 
 1. `POST /sync` requests a sync plan (mode: `incremental` or `full`)
 2. Adapter pulls source/target samples (bounded by `limit`)
@@ -77,9 +85,9 @@ Defined in `vitruvyan_core/core/governance/memory_orders/events/memory_events.py
 
 ---
 
-## Agents / Consumers (LIVELLO 1)
+## 🤖 Agents / Consumers (LIVELLO 1)
 
-### `CoherenceAnalyzer` — drift calculation (counts → report)
+### 📉 `CoherenceAnalyzer` — drift calculation (counts → report)
 
 - File: `vitruvyan_core/core/governance/memory_orders/consumers/coherence_analyzer.py`
 - Input: `CoherenceInput(pg_count, qdrant_count, thresholds, table, collection)`
@@ -94,7 +102,7 @@ Defined in `vitruvyan_core/core/governance/memory_orders/events/memory_events.py
   - `>= healthy` and `< warning` → `warning`
   - `>= warning` → `critical`
 
-### `HealthAggregator` — component health (components → system health)
+### 🩺 `HealthAggregator` — component health (components → system health)
 
 - File: `vitruvyan_core/core/governance/memory_orders/consumers/health_aggregator.py`
 - Input: dict with `components: tuple[ComponentHealth, ...]` and optional `summary`
@@ -107,7 +115,7 @@ Defined in `vitruvyan_core/core/governance/memory_orders/events/memory_events.py
   - else any `degraded` → `degraded`
   - else → `healthy`
 
-### `SyncPlanner` — sync planning (data snapshots → operations)
+### 🧭 `SyncPlanner` — sync planning (data snapshots → operations)
 
 - File: `vitruvyan_core/core/governance/memory_orders/consumers/sync_planner.py`
 - Input: `SyncInput(pg_data, qdrant_data, mode, source_table, target_collection)`
@@ -125,6 +133,6 @@ Defined in `vitruvyan_core/core/governance/memory_orders/events/memory_events.py
 
 ---
 
-## Service (LIVELLO 2) — API surface
+## 🌐 Service (LIVELLO 2) — API surface
 
 See the admin page: `docs/internal/services/MEMORY_ORDERS_API.md`.

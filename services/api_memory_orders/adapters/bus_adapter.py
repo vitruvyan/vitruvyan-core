@@ -9,7 +9,8 @@ Layer: Service (LIVELLO 2 — adapters)
 """
 
 import logging
-from datetime import datetime
+import hashlib
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from core.synaptic_conclave.transport.streams import StreamBus
@@ -37,6 +38,10 @@ from core.governance.memory_orders.events import (
 
 from api_memory_orders.config import settings
 from api_memory_orders.adapters.persistence import MemoryPersistence
+from api_memory_orders.reconciliation.orphan_detector import OrphanDetector
+from api_memory_orders.reconciliation.version_reconciler import VersionReconciler
+from api_memory_orders.reconciliation.duplicate_detector import DuplicateDetector
+from api_memory_orders.reconciliation.conflict_resolver import ConflictResolver
 
 
 logger = logging.getLogger(__name__)
@@ -62,6 +67,10 @@ class MemoryBusAdapter:
         self.coherence_analyzer = CoherenceAnalyzer()
         self.health_aggregator = HealthAggregator()
         self.sync_planner = SyncPlanner()
+        self.orphan_detector = OrphanDetector()
+        self.version_reconciler = VersionReconciler()
+        self.duplicate_detector = DuplicateDetector()
+        self.conflict_resolver = ConflictResolver()
         
         # Thresholds (configurable)
         self.thresholds = CoherenceThresholds(
@@ -308,9 +317,200 @@ class MemoryBusAdapter:
         # Step 5: Return plan
         return plan
 
+    # ========================================
+    #  Reconciliation + Enforcement Pipeline
+    # ========================================
+
+    async def handle_reconciliation(
+        self,
+        table: str = "entities",
+        collection: str | None = None,
+        limit: int = 1000,
+        execute: bool = False,
+        idempotency_key: str | None = None,
+        allow_mass_delete: bool = False,
+        correlation_id: str | None = None,
+    ) -> dict:
+        """
+        Build and optionally execute deterministic reconciliation plan.
+        PG is authoritative; Qdrant is repaired according to policy mode.
+        """
+        if collection is None:
+            collection = settings.QDRANT_COLLECTION
+
+        correlation_id = correlation_id or self._new_correlation_id("reconcile")
+        idempotency_key = idempotency_key or self._build_reconciliation_idempotency_key(
+            table=table,
+            collection=collection,
+            limit=limit,
+            execute=execute,
+        )
+
+        cached = self.persistence.get_cached_idempotency_result(idempotency_key)
+        if cached:
+            cached["idempotent_replay"] = True
+            return cached
+
+        lock_key = f"memory:reconcile:lock:{table}:{collection}"
+        lock_acquired, lock_token = self.persistence.acquire_reconciliation_lock(
+            lock_key=lock_key,
+            ttl_s=settings.MEMORY_RECONCILIATION_LOCK_TTL_S,
+        )
+        if not lock_acquired:
+            raise RuntimeError("Reconciliation already running for this source/collection")
+
+        try:
+            pg_records = self.persistence.fetch_pg_reconciliation_snapshot(table=table, limit=limit)
+            qdrant_records = self.persistence.fetch_qdrant_reconciliation_snapshot(collection=collection, limit=limit)
+
+            orphan_result = self.orphan_detector.detect(pg_records=pg_records, qdrant_records=qdrant_records)
+            version_mismatches = self.version_reconciler.classify(pg_records=pg_records, qdrant_records=qdrant_records)
+            duplicate_vectors = self.duplicate_detector.classify(qdrant_records=qdrant_records)
+
+            operations = self.conflict_resolver.build_operations(
+                pg_records=pg_records,
+                pg_only_ids=orphan_result["pg_only_ids"],
+                qdrant_only_ids=orphan_result["qdrant_only_ids"],
+                version_mismatches=version_mismatches,
+                duplicate_vectors=duplicate_vectors,
+            )
+
+            sync_plan = SyncPlan(
+                operations=operations,
+                estimated_duration_s=len(operations) * self.sync_planner.OPERATION_TIME_S,
+                mode="incremental",
+            )
+            extra_drifts = self.sync_planner.classify_drift(
+                SyncInput(
+                    pg_data=pg_records,
+                    qdrant_data=qdrant_records,
+                    mode="incremental",
+                    source_table=table,
+                    target_collection=collection,
+                )
+            )
+            reconciliation_plan = self.sync_planner.build_reconciliation_plan(
+                sync_plan=sync_plan,
+                drift_types=extra_drifts,
+            )
+
+            execution_summary = None
+            delete_operations = tuple(
+                op for op in reconciliation_plan.operations if op.operation_type == "delete"
+            )
+            qdrant_total = max(1, len(qdrant_records))
+            delete_ratio = len(delete_operations) / qdrant_total
+            mass_delete_blocked = (
+                delete_ratio > settings.MEMORY_RECONCILIATION_MAX_DELETE_RATIO and not allow_mass_delete
+            )
+
+            if reconciliation_plan.requires_execution and execute and mass_delete_blocked:
+                execution_summary = {
+                    "attempted": reconciliation_plan.operations_count,
+                    "applied": 0,
+                    "skipped": reconciliation_plan.operations_count,
+                    "failed": 0,
+                    "mode": settings.MEMORY_RECONCILIATION_MODE,
+                    "dead_lettered": 0,
+                }
+            elif reconciliation_plan.requires_execution and execute:
+                if settings.MEMORY_RECONCILIATION_MODE == "dry_run":
+                    execution_summary = {
+                        "attempted": 0,
+                        "applied": 0,
+                        "skipped": 0,
+                        "failed": 0,
+                        "mode": "dry_run",
+                        "dead_lettered": 0,
+                    }
+                else:
+                    execution_summary = self.persistence.execute_reconciliation_operations(
+                        operations=reconciliation_plan.operations,
+                        collection=collection,
+                        mode=settings.MEMORY_RECONCILIATION_MODE,
+                    )
+
+            response = {
+                "status": "blocked" if mass_delete_blocked else "ok",
+                "severity": reconciliation_plan.severity,
+                "drift_types": [d.value for d in reconciliation_plan.drift_types],
+                "operations_count": reconciliation_plan.operations_count,
+                "requires_execution": reconciliation_plan.requires_execution,
+                "execution": execution_summary,
+                "recommendation": self._reconciliation_recommendation(
+                    severity=reconciliation_plan.severity,
+                    mode=settings.MEMORY_RECONCILIATION_MODE,
+                    mass_delete_blocked=mass_delete_blocked,
+                ),
+                "correlation_id": correlation_id,
+                "idempotent_replay": False,
+            }
+
+            self.persistence.cache_idempotency_result(
+                idempotency_key=idempotency_key,
+                result=response,
+                ttl_s=settings.MEMORY_RECONCILIATION_IDEMPOTENCY_TTL_S,
+            )
+
+            self.persistence.increment_metric("runs_total", 1.0)
+            if execution_summary:
+                self.persistence.increment_metric("operations_attempted_total", float(execution_summary.get("attempted", 0)))
+                self.persistence.increment_metric("operations_applied_total", float(execution_summary.get("applied", 0)))
+                self.persistence.increment_metric("operations_failed_total", float(execution_summary.get("failed", 0)))
+                self.persistence.increment_metric("dead_letter_total", float(execution_summary.get("dead_lettered", 0)))
+            if mass_delete_blocked:
+                self.persistence.increment_metric("policy_block_total", 1.0)
+
+            try:
+                self.bus.emit("memory.reconciliation.planned", response)
+            except Exception:
+                pass
+
+            self._emit_vault_audit_request(
+                action="reconciliation",
+                correlation_id=correlation_id,
+                summary={
+                    "table": table,
+                    "collection": collection,
+                    "severity": reconciliation_plan.severity,
+                    "operations_count": reconciliation_plan.operations_count,
+                    "idempotency_key": idempotency_key,
+                },
+                drift_metrics={
+                    "drift_types": [d.value for d in reconciliation_plan.drift_types],
+                    "pg_snapshot": len(pg_records),
+                    "qdrant_snapshot": len(qdrant_records),
+                    "mass_delete_ratio": delete_ratio,
+                },
+                mode=settings.MEMORY_RECONCILIATION_MODE,
+            )
+            return response
+        finally:
+            self.persistence.release_reconciliation_lock(lock_key=lock_key, token=lock_token)
+
+    @staticmethod
+    def _reconciliation_recommendation(severity: str, mode: str, mass_delete_blocked: bool = False) -> str:
+        if mass_delete_blocked:
+            return "Execution blocked by delete-ratio policy. Set allow_mass_delete=true only after manual review."
+        if severity == "healthy":
+            return "No reconciliation actions required."
+        if mode == "dry_run":
+            return "Drift detected. Review operations and rerun with execute=true in assisted/autonomous mode."
+        return "Drift detected. Execute reconciliation and monitor Vault audit trail."
+
+    @staticmethod
+    def _build_reconciliation_idempotency_key(
+        table: str,
+        collection: str,
+        limit: int,
+        execute: bool,
+    ) -> str:
+        seed = f"{table}|{collection}|{limit}|{execute}"
+        return hashlib.sha256(seed.encode("utf-8")).hexdigest()[:24]
+
     def _new_correlation_id(self, action: str) -> str:
         """Create a deterministic-looking correlation id for traceability."""
-        return f"memory_{action}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid4().hex[:8]}"
+        return f"memory_{action}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}_{uuid4().hex[:8]}"
 
     def _emit_memory_event(
         self,
@@ -323,7 +523,7 @@ class MemoryBusAdapter:
         event = MemoryEvent(
             stream=stream,
             payload=tuple(payload.items()),
-            timestamp=datetime.utcnow().isoformat() + "Z",
+            timestamp=datetime.now(timezone.utc).isoformat(),
             correlation_id=correlation_id,
             source=source,
         )

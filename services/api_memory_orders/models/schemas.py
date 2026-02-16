@@ -139,6 +139,43 @@ class SyncResponse(BaseModel):
 
 
 # ========================================
+#  Reconciliation Schemas
+# ========================================
+
+class ReconciliationRequest(BaseModel):
+    """Request for dual-memory reconciliation planning/execution."""
+    table: str = Field(default="entities", description="Canonical PostgreSQL table")
+    collection: Optional[str] = Field(default=None, description="Derived Qdrant collection")
+    limit: int = Field(default=1000, description="Max records per snapshot")
+    execute: bool = Field(default=False, description="Execute operations if mode allows")
+    idempotency_key: Optional[str] = Field(default=None, description="Idempotency key for safe retries")
+    allow_mass_delete: bool = Field(default=False, description="Allow delete-heavy execution")
+
+
+class ReconciliationExecutionResponse(BaseModel):
+    """Execution summary for reconciliation operations."""
+    attempted: int
+    applied: int
+    skipped: int
+    failed: int
+    mode: str
+    dead_lettered: int = 0
+
+
+class ReconciliationResponse(BaseModel):
+    """Response for reconciliation planning/execution."""
+    status: str
+    severity: str
+    drift_types: List[str]
+    operations_count: int
+    requires_execution: bool
+    execution: Optional[ReconciliationExecutionResponse] = None
+    recommendation: str
+    correlation_id: str
+    idempotent_replay: bool = False
+
+
+# ========================================
 #  Generic Responses
 # ========================================
 

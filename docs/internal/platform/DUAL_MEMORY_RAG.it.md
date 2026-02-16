@@ -16,6 +16,17 @@
   - persistenza e retrieval avvengono via agent + adapter del servizio
   - **coerenza** e **sync planning** sono governati da Memory Orders (non da script ad-hoc)
 
+## Confine semantico (verificato)
+
+- Nello stack attuale **non esiste un servizio `api_semantic` attivo** (servizio legacy rimosso).
+- **Interpretazione intent e routing** vivono nell’orchestrazione LangGraph:
+  - `intent_detection_node.py` classifica l’intent (LLM) e arricchisce i metadati lingua.
+  - `route_node.py` decide il branch di esecuzione (`dispatcher_exec`, `llm_soft`, `semantic_fallback`, ecc.).
+- **Babel Gardens** gestisce segnali linguistici/semantici (language detection, embedding, sentiment, emotion), ma **non sceglie la route**.
+- Il grounding RAG è composto da `semantic_grounding_node.py` + engine VSGS con embedding + retrieval Qdrant.
+
+In sintesi: l’orchestrazione decide **che percorso eseguire**; Babel Gardens fornisce **evidenza linguistica/semantica** usata da quel percorso.
+
 ## Primitivi core (codice)
 
 ### `PostgresAgent` — accesso Archivarium
@@ -60,6 +71,15 @@ flowchart LR
   MO -->|coherence + sync planning| Q
 ```
 
+## Flusso runtime (oggi)
+
+1. Un servizio/nodo richiede i vettori al layer embedding (oggi spesso `api_embedding`).
+2. I vettori vengono persistiti/recuperati via `QdrantAgent` (Mnemosyne), mentre il contesto strutturato resta in PostgreSQL via `PostgresAgent` (Archivarium).
+3. Il retrieval combina hit semantiche da Qdrant con record strutturati da PostgreSQL.
+4. Memory Orders monitora il drift e pianifica la sincronizzazione quando la coerenza PG↔Qdrant degrada.
+
+Per questo il comportamento RAG è duale: **richiamo semantico + verità strutturata**.
+
 ### Embedding layer
 
 Pattern tipici nella codebase:
@@ -83,6 +103,33 @@ Il dual-memory richiede monitoraggio perché “row count” e “point count”
 - **Sync planning**: genera un piano per riallineare (planning-only in LIVELLO 1).
 
 Ordine di riferimento: `docs/internal/orders/MEMORY_ORDERS.md`
+
+## Roadmap evolutiva (verso Babel Gardens come front layer embedding)
+
+Direzione target: Babel Gardens diventa il front layer principale per embedding semantici, mentre orchestrazione/routing restano in LangGraph.
+
+### Cosa va implementato
+
+1. **Unificare il contratto embedding**
+   - Schema request/response standard per Graph, Pattern Weavers, Memory Orders e Babel.
+   - Metadati obbligatori congelati: `language`, `model_type`, `dimension`, correlation/trace ids.
+2. **Migrare i chiamanti in modo incrementale**
+   - Spostare un consumer alla volta dagli endpoint embedding legacy a quelli Babel.
+   - Mantenere adapter di compatibilità durante la transizione.
+3. **Centralizzare la semantica di scrittura vettori**
+   - Un solo owner per strategia id, schema payload, naming collezioni.
+   - Enforcement al boundary adapter, non nei nodi business.
+4. **Proteggere la coerenza durante la migrazione**
+   - Aggiungere check di riconciliazione PG↔Qdrant a ogni step.
+   - Usare le metriche di drift di Memory Orders come gate di rilascio.
+5. **Deprecare il path legacy**
+   - Marcare deprecated i vecchi endpoint embedding.
+   - Rimuovere solo dopo migrazione completa e stabilità in produzione.
+
+### Confine importante
+
+- Anche dopo la migrazione, Babel Gardens **non** deve decidere il routing.
+- Il routing rimane in LangGraph (`intent_detection_node` + `route_node`).
 
 ## Verticalizzazione (dominio pilota: finanza)
 

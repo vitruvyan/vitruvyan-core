@@ -50,6 +50,15 @@ class Settings:
 
     # Reconciliation execution mode
     MEMORY_RECONCILIATION_MODE = os.getenv("MEMORY_RECONCILIATION_MODE", "dry_run").lower()
+    MEMORY_RECONCILIATION_LOCK_TTL_S = int(os.getenv("MEMORY_RECONCILIATION_LOCK_TTL_S", "300"))
+    MEMORY_RECONCILIATION_IDEMPOTENCY_TTL_S = int(os.getenv("MEMORY_RECONCILIATION_IDEMPOTENCY_TTL_S", "900"))
+    MEMORY_RECONCILIATION_MAX_DELETE_RATIO = float(os.getenv("MEMORY_RECONCILIATION_MAX_DELETE_RATIO", "0.20"))
+    MEMORY_RECONCILIATION_RETRY_MAX = int(os.getenv("MEMORY_RECONCILIATION_RETRY_MAX", "2"))
+    MEMORY_RECONCILIATION_RETRY_BACKOFF_MS = int(os.getenv("MEMORY_RECONCILIATION_RETRY_BACKOFF_MS", "250"))
+    MEMORY_RECONCILIATION_DEAD_LETTER_CHANNEL = os.getenv(
+        "MEMORY_RECONCILIATION_DEAD_LETTER_CHANNEL",
+        "memory.reconciliation.dead_letter",
+    )
     
     # Feature flags
     ENABLE_AUTO_SYNC = os.getenv("ENABLE_AUTO_SYNC", "false").lower() == "true"
@@ -60,3 +69,8 @@ settings = Settings()
 
 if settings.MEMORY_RECONCILIATION_MODE not in {"dry_run", "assisted", "autonomous"}:
     settings.MEMORY_RECONCILIATION_MODE = "dry_run"
+
+if settings.MEMORY_RECONCILIATION_MAX_DELETE_RATIO < 0:
+    settings.MEMORY_RECONCILIATION_MAX_DELETE_RATIO = 0.0
+if settings.MEMORY_RECONCILIATION_MAX_DELETE_RATIO > 1:
+    settings.MEMORY_RECONCILIATION_MAX_DELETE_RATIO = 1.0

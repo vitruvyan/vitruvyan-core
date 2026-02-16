@@ -1,19 +1,27 @@
-# Memory Orders API
+---
+tags:
+  - api
+  - memory
+  - sacred-orders
+  - admin
+---
+
+# 🌐 Memory Orders API
 
 <p class="kb-subtitle">LIVELLO 2 service for coherence checks, RAG health aggregation, and sync planning.</p>
 
-## Location
+## 📍 Location
 
 - Service: `services/api_memory_orders/`
 - Pure core: `vitruvyan_core/core/governance/memory_orders/`
 
-## Base URL / Port
+## 🚪 Base URL / Port
 
 - Config default: `MEMORY_API_PORT=8016` (`services/api_memory_orders/config.py`)
 
 > Deploy note: other documents may refer to a different “fleet” port. Treat docker-compose mapping as the source of truth.
 
-## Endpoints (implemented)
+## 🧭 Endpoints (implemented)
 
 Defined in `services/api_memory_orders/api/routes.py`:
 
@@ -24,11 +32,11 @@ Defined in `services/api_memory_orders/api/routes.py`:
 - `POST /sync` — sync planning (planning only, no execution)
 - `GET /metrics` — Prometheus (defined in `services/api_memory_orders/main.py`)
 
-## Request/Response models
+## 🧾 Request/Response models
 
 See `services/api_memory_orders/models/schemas.py`.
 
-### `POST /coherence`
+### 📉 `POST /coherence`
 
 Request (`CoherenceRequest`):
 
@@ -48,7 +56,7 @@ Response (`CoherenceResponse`):
 - `table: str`
 - `collection: str`
 
-### `POST /sync`
+### 🔁 `POST /sync`
 
 Request (`SyncRequest`):
 
@@ -64,7 +72,7 @@ Response (`SyncResponse`):
 - `mode: str`
 - `total_operations: int`
 
-## Env vars (service-level)
+## ⚙️ Env vars (service-level)
 
 Loaded in `services/api_memory_orders/config.py`:
 
@@ -76,4 +84,3 @@ Loaded in `services/api_memory_orders/config.py`:
 - Coherence thresholds: `COHERENCE_THRESHOLD_HEALTHY`, `COHERENCE_THRESHOLD_WARNING`
 - Audit: `MEMORY_AUDIT_TABLE`
 - Flags: `ENABLE_AUTO_SYNC`, `ENABLE_PROMETHEUS`
-
