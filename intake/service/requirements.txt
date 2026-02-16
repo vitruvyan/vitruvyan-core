@@ -1,0 +1,33 @@
+# AEGIS INTAKE API Requirements
+# ================================
+
+# FastAPI + Uvicorn
+fastapi==0.109.0
+uvicorn==0.27.0
+pydantic==2.5.3
+python-multipart==0.0.6
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# INTAKE Agent Dependencies
+pillow==10.1.0          # EXIF extraction, image metadata
+rasterio==1.3.9         # GeoTIFF georeference (optional, graceful degradation)
+
+# CAD/BIM Libraries (Phase 1 - Jan 11, 2026)
+ezdxf==1.3.4            # DXF/DWG file parsing (layers, blocks, entities)
+ifcopenshell==0.8.4     # IFC BIM file parsing (building elements, hierarchy)
+
+# Foundation Dependencies (COMPLETE SET)
+psycopg2-binary==2.9.9  # PostgreSQL (PostgresAgent)
+redis==5.0.1            # Redis Cognitive Bus (event emission)
+qdrant-client==1.7.0    # Qdrant (QdrantAgent)
+alembic==1.13.0         # Database migrations (AlchemistAgent)
+SQLAlchemy==2.0.23      # ORM (AlchemistAgent)
+shapely==2.0.2          # Geospatial operations
+httpx==0.26.0           # HTTP client (API calls)
+numpy==1.26.3           # Numerical operations
+pandas==2.0.3           # Data processing
+
+# Logging & Monitoring
+python-json-logger==2.0.7
