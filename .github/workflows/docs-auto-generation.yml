@@ -11,7 +11,6 @@ on:
         options:
         - 'all'
         - 'langgraph'
-        - 'crewai'
         - 'neural_engine'
         - 'sentiment'
         - 'appendices'
@@ -44,7 +43,7 @@ jobs:
         id: changes
         run: |
           echo "🔎 Detecting cognitive deltas..."
-          for path in "core/langgraph/" "core/crewai/" "core/logic/neural_engine/" "core/sentiment/" ".github/"; do
+          for path in "core/langgraph/" "core/logic/neural_engine/" "core/sentiment/" ".github/"; do
             if git diff --name-only HEAD~1 | grep -q "$path"; then
               echo "${path}_changed=true" >> $GITHUB_OUTPUT
               echo "⚡ Change detected in $path"
