@@ -69,7 +69,7 @@ if _ENTITY_DOMAIN and _ENTITY_DOMAIN != "generic":
     except (ImportError, AttributeError) as e:
         _log.debug(f"[graph_flow] No entity resolver for domain '{_ENTITY_DOMAIN}': {e}")
 
-# 🔍 PHASE 2.2 - Quality Check (ARCHIVED → _legacy/quality_check_node.py)
+# 🔍 PHASE 2.2 - Quality Check (REMOVED)
 
 # ⚙️ PHASE 2.3 - Consolidated Parameter Extraction (horizon_parser + topk_parser)
 from core.orchestration.langgraph.node.params_extraction_node import params_extraction_node
@@ -86,7 +86,7 @@ from core.orchestration.langgraph.node.vault_node import vault_node
 # 🗝️ Codex Hunters Integration
 from core.orchestration.langgraph.node.codex_hunters_node import codex_hunters_node
 
-# 💡 Proactive Suggestions (ARCHIVED → _legacy/proactive_suggestions_node.py)
+# 💡 Proactive Suggestions (REMOVED)
 
 # 🔌 MCP Integration - Phase 4 (Model Context Protocol + OpenAI Function Calling)
 from core.orchestration.langgraph.node.llm_mcp_node import llm_mcp_node

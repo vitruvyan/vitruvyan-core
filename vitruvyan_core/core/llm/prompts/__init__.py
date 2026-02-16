@@ -6,9 +6,8 @@ Provides a PromptRegistry for domains to register their own prompts.
 Core provides infrastructure; domains provide content.
 
 Architecture:
-- registry.py: Domain-agnostic PromptRegistry (NEW)
+- registry.py: Domain-agnostic PromptRegistry
 - version.py: Version management
-- _legacy/: Finance-specific prompts (archived)
 
 New usage (recommended):
     from core.llm.prompts.registry import PromptRegistry, register_generic_domain

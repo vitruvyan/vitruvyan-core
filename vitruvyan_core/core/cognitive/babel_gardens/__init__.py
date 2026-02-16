@@ -44,9 +44,7 @@ from .events import Channels, EventEnvelope
 # Monitoring
 from .monitoring import MetricNames, HealthCheckNames
 
-# Legacy compatibility (deprecated - do not import at module level)
-# These require infrastructure (Postgres, Redis) and should not pollute LIVELLO 1
-# Use: from core.cognitive.babel_gardens._legacy.xxx import YYY
+# Legacy compatibility stubs (deprecated - do not use)
 LinguisticSynthesisEngine = None
 babel_gardens_listener = None
 

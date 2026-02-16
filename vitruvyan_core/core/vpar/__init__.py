@@ -12,15 +12,9 @@ Active modules:
     - VARE: Vitruvyan Adaptive Risk Engine v2.0 (multi-dimensional risk profiling)
     - VWRE: Vitruvyan Weighted Reverse Engineering v2.0 (attribution analysis)
 
-Deprecated (archived to _legacy/):
+Deprecated (removed):
     - VMFL: Absorbed by VWRE + vertical AggregationProviders
     - VHSW: Trivial windowed statistics, not a proprietary algorithm
-
-Archived:
-    - _legacy/orchestrator.py: Pre-refactoring composite scorer
-    - _legacy/algorithm_memory_adapter.py: Orphaned persistence adapter
-    - _legacy/vmfl/: Finance-specific multi-factor scoring (deprecated)
-    - _legacy/vhsw/: Historical sliding window (deprecated)
 """
 
 __all__ = []

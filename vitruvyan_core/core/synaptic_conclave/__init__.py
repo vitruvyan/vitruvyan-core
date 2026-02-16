@@ -7,7 +7,7 @@ Provides durable, replayable event streaming with consumer groups.
 
 ARCHITECTURAL DECISION (Jan 24, 2026):
 - Redis Streams is the ONLY canonical bus
-- All Pub/Sub systems archived (see /archive/pub_sub_legacy/)
+- All Pub/Sub systems removed
 - Bus is "humble" - no payload inspection, no semantic routing
 
 Author: Vitruvyan Development Team
@@ -22,7 +22,7 @@ from .transport.streams import StreamBus, StreamEvent
 from .utils.lexicon import get_lexicon
 
 # ============================================================================
-# DEPRECATED - Archived to /archive/pub_sub_legacy/ (Jan 24, 2026)
+# DEPRECATED - Removed (Jan 24, 2026)
 # ============================================================================
 # The following imports are NO LONGER AVAILABLE:
 # - redis_client (RedisBusClient, CognitiveEvent) → Use StreamBus
@@ -30,7 +30,7 @@ from .utils.lexicon import get_lexicon
 # - herald (get_herald) → Semantic routing moved to consumers
 # - scribe (get_scribe) → Event persistence via Redis Streams
 #
-# Migration guide: /archive/pub_sub_legacy/README.md
+# Use StreamBus for all event transport
 
 __all__ = [
     # Canonical bus (Redis Streams)

@@ -13,7 +13,6 @@ Architecture:
 - monitoring/: Metric name constants
 - governance/: Rules and classifiers (future)
 - philosophy/: Sacred Order charter
-- _legacy/: Pre-refactoring code (frozen archive)
 
 Integration:
 - LIVELLO 1 (this module): Pure Python, no I/O

@@ -148,7 +148,7 @@ class Workflow:
 #   - system_healing → "penitent" (service layer executes)
 #   - notification_dispatch → "herald" (service layer publishes)
 #   - learning_update → "chronicler" (LogDecision)
-#   - system_monitoring → REMOVED (was _legacy.chronicler/SystemMonitor)
+#   - system_monitoring → REMOVED
 
 FULL_AUDIT_WORKFLOW = Workflow(
     workflow_id="orthodoxy.full_audit",

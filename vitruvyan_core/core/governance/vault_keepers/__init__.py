@@ -14,13 +14,6 @@ Modules:
   - governance/  Rules, retention policies [TO BE IMPLEMENTED]
   - events/      Sacred channel names and event envelopes
   - monitoring/  Metric name constants [TO BE IMPLEMENTED]
-  - _legacy/     Pre-refactoring artifacts (keeper.py, archivist.py, etc.)
-
-Migration Note:
-  Original implementation files (keeper.py, archivist.py, chamberlain.py, 
-  courier.py, gdrive_uploader.py, sentinel.py) moved to _legacy/ during
-  SERVICE_PATTERN refactoring. These will be gradually migrated to the new
-  consumers/ pattern following the Orthodoxy Wardens template.
 """
 __version__ = "2.0.0"
 __sacred_order__ = "Truth/Governance (Order V)"

@@ -5,7 +5,7 @@ Intelligent caching for:
 - Semantic search results via Qdrant/Mnemosyne (MnemosyneCacheManager)
 - LLM responses (in core/llm)
 
-Note: CachedQdrantAgent archived to _legacy/ (2026-02-14, no external consumers)
+Note: CachedQdrantAgent removed (2026-02-16, no external consumers)
 
 Author: Vitruvyan Development Team
 Created: 2025-10-26

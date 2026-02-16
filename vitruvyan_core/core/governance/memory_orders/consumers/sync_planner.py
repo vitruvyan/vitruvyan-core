@@ -2,7 +2,7 @@
 Memory Orders — Sync Planner
 
 Pure synchronization planning between Archivarium and Mnemosyne.
-Extracted from _legacy/phrase_sync.py (ONLY planning logic, NO I/O).
+Pure planning logic, NO I/O.
 
 Sacred Order: Memory & Coherence
 Layer: Foundational (LIVELLO 1 — consumers)

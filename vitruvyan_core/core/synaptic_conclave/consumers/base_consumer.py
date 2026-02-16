@@ -259,7 +259,7 @@ class BaseConsumer(ABC):
         - Persistence (built-in to Redis Streams)
         - Delivery guarantees (at-least-once via consumer groups)
         
-        NOTE: Herald deprecated (Jan 24, 2026) - moved to /archive/pub_sub_legacy/
+        NOTE: Herald deprecated and removed (Jan 24, 2026). Use StreamBus.
         """
         event.source = self.name
         

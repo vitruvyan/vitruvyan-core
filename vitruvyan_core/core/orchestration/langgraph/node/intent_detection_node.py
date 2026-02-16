@@ -13,7 +13,7 @@ the IntentRegistry, which is populated by a domain plugin at boot.
 Default behaviour (no plugin):  "soft" + "unknown" intents only.
 
 Author: Vitruvyan Core Team
-Rewritten: February 12, 2026 (from-zero rewrite, old → _legacy/)
+Rewritten: February 12, 2026 (from-zero rewrite)
 """
 
 import asyncio

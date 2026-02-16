@@ -2,7 +2,7 @@
 Memory Orders — Coherence Analyzer
 
 Pure drift calculation between PostgreSQL (Archivarium) and Qdrant (Mnemosyne).
-Extracted from _legacy/coherence.py (ONLY calculation logic, NO I/O).
+Pure calculation logic, NO I/O.
 
 Sacred Order: Memory & Coherence
 Layer: Foundational (LIVELLO 1 — consumers)

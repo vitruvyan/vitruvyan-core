@@ -2,7 +2,7 @@
 Memory Orders — Health Aggregator
 
 Pure component health aggregation for RAG system.
-Extracted from _legacy/rag_health.py (ONLY aggregation logic, NO httpx).
+Pure aggregation logic, NO httpx/I/O.
 
 Sacred Order: Memory & Coherence
 Layer: Foundational (LIVELLO 1 — consumers)
