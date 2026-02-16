@@ -44,7 +44,6 @@ class APIService(Enum):
     EMBEDDING = ("embedding", 8010, "/embedding")
     
     # Agent Services
-    CREWAI = ("crewai", 8005, "/crew")
     WEAVERS = ("pattern_weavers", 8011, "/weavers")  # FIX (Feb 11): Service name pattern_weavers, port 8011
     AUDIT = ("audit", 8006, "/audit")
     
@@ -245,11 +244,6 @@ def get_embedding_url(endpoint: str = "") -> str:
     return get_api_url_with_fallback(APIService.EMBEDDING, endpoint)
 
 
-def get_crewai_url(endpoint: str = "") -> str:
-    """Get CrewAI agents API URL."""
-    return get_api_url_with_fallback(APIService.CREWAI, endpoint)
-
-
 def get_weavers_url(endpoint: str = "") -> str:
     """Get Pattern Weavers API URL."""
     return get_api_url_with_fallback(APIService.WEAVERS, endpoint)
@@ -285,7 +279,6 @@ __all__ = [
     "get_neural_url",
     "get_babel_url",
     "get_embedding_url",
-    "get_crewai_url",
     "get_weavers_url",
     "get_audit_url",
     "get_gemma_url",

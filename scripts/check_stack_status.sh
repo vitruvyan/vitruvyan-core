@@ -28,7 +28,6 @@ echo
 echo "🌐 API SERVICES (Orchestration Layer)"
 echo "───────────────────────────────────"
 docker ps --filter "name=omni_api_graph" --format "{{.Names}}\t{{.Status}}"
-docker ps --filter "name=omni_api_crewai" --format "{{.Names}}\t{{.Status}}"
 docker ps --filter "name=omni_codex_hunters" --format "{{.Names}}\t{{.Status}}"
 docker ps --filter "name=omni_pattern_weavers" --format "{{.Names}}\t{{.Status}}"
 echo
