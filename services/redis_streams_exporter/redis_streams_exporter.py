@@ -253,18 +253,30 @@ class RedisStreamsCollector:
         except Exception as e:
             logger.debug(f"Error collecting consumer group metrics for {stream}: {e}")
     
-    def _calculate_lag(self, last_id: str, delivered_id: str) -> int:
-        """Calculate lag between two stream IDs (simplified)."""
+    def _calculate_lag(self, last_id: str, delivered_id: str) -> float:
+        """Calculate lag between two stream IDs in seconds."""
         try:
             # Redis Stream ID format: timestamp-sequence
             last_ms = int(last_id.split('-')[0])
             delivered_ms = int(delivered_id.split('-')[0])
             
-            # Lag in milliseconds (simplified)
+            # Handle edge case: consumer never consumed (delivered_id = 0-0)
+            if delivered_ms == 0:
+                return 0.0
+            
+            # Lag in milliseconds, convert to seconds
             lag_ms = last_ms - delivered_ms
-            return max(0, lag_ms)
-        except Exception:
-            return 0
+            lag_seconds = max(0, lag_ms / 1000.0)
+            
+            # Sanity check: if lag > 1 day, likely calculation error
+            if lag_seconds > 86400:
+                logger.warning(f"Suspicious lag calculated: {lag_seconds}s (last={last_id}, delivered={delivered_id})")
+                return 0.0
+            
+            return lag_seconds
+        except Exception as e:
+            logger.debug(f"Failed to calculate lag: {e}")
+            return 0.0
     
     def _calculate_event_rates(self, streams: List[str]):
         """Calculate event publishing rates for each stream."""

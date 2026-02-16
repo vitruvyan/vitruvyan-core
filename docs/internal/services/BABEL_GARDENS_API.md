@@ -1,6 +1,6 @@
 # Babel Gardens API
 
-<p class="kb-subtitle">LIVELLO 2 service for multilingual semantics: embeddings, sentiment/emotion signals, profiles, and cognitive routing.</p>
+<p class="kb-subtitle">LIVELLO 2 service for multilingual semantics: embeddings, sentiment/emotion signals, profiles, and semantic enrichment.</p>
 
 ## Location
 
@@ -51,6 +51,13 @@ Defined in `services/api_babel_gardens/api/routes_admin.py`:
 - `POST /v1/events/publish`
 - `POST /v1/routing/intelligent`
 
+## Scope boundary (important)
+
+- Babel Gardens is a **semantic-linguistic service**, not the graph router.
+- It provides language/emotion/sentiment/embedding signals to callers.
+- Execution routing is decided by LangGraph orchestration (`intent_detection_node.py` + `route_node.py`), not by Babel Gardens.
+- Legacy `api_semantic` is removed; do not model this service as “api_semantic replacement for routing”.
+
 ## Request/response schemas
 
 Pydantic models live in `services/api_babel_gardens/schemas/api_models.py`.
@@ -72,4 +79,3 @@ Loaded in `services/api_babel_gardens/config.py`:
 - `QDRANT_HOST`, `QDRANT_PORT`, `QDRANT_COLLECTION_SEMANTIC`, `QDRANT_COLLECTION_SENTIMENT`
 - `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`
 - `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`
-

@@ -52,20 +52,33 @@
 
     const suffix = `${search || ""}${hash || ""}`;
 
-    // The simple-blog theme generates a single `search.html` at the site root.
-    // Avoid generating a broken /it/... search URL.
+    // Search page routing
     if (pathname.endsWith("/search.html") || pathname === "/search.html") {
+      if (pathname.includes("/admin/")) {
+        return {
+          en: "/admin/" + suffix,
+          it: "/admin/it/" + suffix,
+          active: pathname.includes("/admin/it/") ? "it" : "en",
+        };
+      }
+      if (pathname.includes("/docs/")) {
+        return {
+          en: "/docs/" + suffix,
+          it: "/docs/it/" + suffix,
+          active: pathname.includes("/docs/it/") ? "it" : "en",
+        };
+      }
       return {
-        en: "/admin/" + suffix,
-        it: "/it/admin/" + suffix,
+        en: "/" + suffix,
+        it: "/it/" + suffix,
         active: pathname.includes("/it/") ? "it" : "en",
       };
     }
 
-    // Prefer the production routing scheme (/admin/ and /it/admin/).
-    if (pathname.includes("/it/admin/")) {
+    // Admin KB routing (current): /admin/... and /admin/it/...
+    if (pathname.includes("/admin/it/")) {
       return {
-        en: pathname.replace("/it/admin/", "/admin/") + suffix,
+        en: pathname.replace("/admin/it/", "/admin/") + suffix,
         it: pathname + suffix,
         active: "it",
       };
@@ -73,8 +86,40 @@
     if (pathname.includes("/admin/")) {
       return {
         en: pathname + suffix,
-        it: pathname.replace("/admin/", "/it/admin/") + suffix,
+        it: pathname.replace("/admin/", "/admin/it/") + suffix,
         active: "en",
+      };
+    }
+
+    // Public docs routing (current): /docs/... and /docs/it/...
+    if (pathname.includes("/docs/it/")) {
+      return {
+        en: pathname.replace("/docs/it/", "/docs/") + suffix,
+        it: pathname + suffix,
+        active: "it",
+      };
+    }
+    if (pathname.includes("/docs/")) {
+      return {
+        en: pathname + suffix,
+        it: pathname.replace("/docs/", "/docs/it/") + suffix,
+        active: "en",
+      };
+    }
+
+    // Legacy routing fallback: /it/admin/... and /it/docs/...
+    if (pathname.includes("/it/admin/")) {
+      return {
+        en: pathname.replace("/it/admin/", "/admin/") + suffix,
+        it: pathname.replace("/it/admin/", "/admin/it/") + suffix,
+        active: "it",
+      };
+    }
+    if (pathname.includes("/it/docs/")) {
+      return {
+        en: pathname.replace("/it/docs/", "/docs/") + suffix,
+        it: pathname.replace("/it/docs/", "/docs/it/") + suffix,
+        active: "it",
       };
     }
 
@@ -170,9 +215,13 @@
     const suffix = `${search || ""}${hash || ""}`;
 
     const inItalianContext =
-      pathname.startsWith("/it/") || pathname.includes("/it/docs/") || pathname.includes("/it/admin/");
+      pathname.startsWith("/it/") ||
+      pathname.includes("/it/docs/") ||
+      pathname.includes("/it/admin/") ||
+      pathname.includes("/docs/it/") ||
+      pathname.includes("/admin/it/");
 
-    const defaultAfterLogin = inItalianContext ? "/it/docs/" : "/docs/";
+    const defaultAfterLogin = inItalianContext ? "/docs/it/" : "/docs/";
 
     // If the user is on the public landing, send them to docs after login.
     const rd =

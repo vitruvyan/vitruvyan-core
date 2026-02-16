@@ -5,8 +5,8 @@
 <div class="kb-hero">
   <p class="kb-hero__tagline">Un kernel cognitivo per costruire sistemi intelligenti</p>
   <p class="kb-hero__cta">
-    <a href="/it/docs/" class="md-button md-button--primary">Apri Documentazione</a>
-    <a href="/it/admin/" class="md-button">Accesso Admin</a>
+    <a href="/docs/it/" class="md-button md-button--primary">Accesso Ospite</a>
+    <a href="/admin/it/" class="md-button">Accesso Admin</a>
   </p>
 </div>
 

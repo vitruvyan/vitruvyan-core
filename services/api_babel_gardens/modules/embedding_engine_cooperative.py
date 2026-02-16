@@ -8,10 +8,12 @@ import asyncio
 import logging
 import aiohttp
 import json
+import os
 from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 
 from ..shared import GemmaServiceBase, vector_cache
+from ..config import get_config
 from ..schemas import (
     EmbeddingRequest, BatchEmbeddingRequest, EmbeddingResponse, 
     BatchEmbeddingResponse, SimilarityRequest, SimilarityResponse, 
@@ -19,6 +21,15 @@ from ..schemas import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _normalize_embedding_base_url(raw_url: str) -> str:
+    """Normalize embedding service URL to host:port base (no endpoint suffix)."""
+    url = (raw_url or "").strip().rstrip("/")
+    for suffix in ("/v1/embeddings", "/embed"):
+        if url.endswith(suffix):
+            url = url[: -len(suffix)]
+    return url
 
 class EmbeddingEngineCooperative(GemmaServiceBase):
     """
@@ -31,7 +42,10 @@ class EmbeddingEngineCooperative(GemmaServiceBase):
         super().__init__("embedding_engine_cooperative")
         self.name = "EmbeddingEngineCooperative"
         self.version = "2.0.0"
-        self.embedding_api_url = "http://vitruvyan_api_embedding:8010"  # Docker service name
+        cfg = get_config()
+        env_url = os.getenv("EMBEDDING_SERVICE_URL")
+        configured_url = env_url or cfg.embedding.url
+        self.embedding_api_url = _normalize_embedding_base_url(configured_url)
         self.embedding_api_url_fallback = "http://localhost:8010"  # Local fallback
         self.max_batch_size = 32
         self.max_text_length = 8192

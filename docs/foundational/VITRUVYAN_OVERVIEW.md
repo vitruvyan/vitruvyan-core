@@ -1,3 +1,11 @@
+---
+tags:
+  - overview
+  - architecture
+  - system-core
+  - public
+---
+
 # Vitruvyan — Epistemic Operating System
 
 ## What Is Vitruvyan?

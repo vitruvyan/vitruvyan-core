@@ -1,3 +1,10 @@
+---
+tags:
+  - getting-started
+  - installation
+  - public
+---
+
 # Quick Start
 
 Percorso minimo per partire velocemente con Vitruvyan Core.
@@ -26,4 +33,3 @@ Riferimento access control:
 - Indice Sacred Orders: `docs/orders/README.md`
 - Indice servizi: `services/README_SERVICES.md`
 - Documentazione Cognitive Bus: `vitruvyan_core/core/synaptic_conclave/docs/README.md`
-

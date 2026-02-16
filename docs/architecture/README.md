@@ -1,3 +1,10 @@
+---
+tags:
+  - architecture
+  - system-core
+  - overview
+---
+
 # Architecture — Index
 
 This section contains architecture notes, audits, and refactoring plans.
@@ -12,4 +19,3 @@ This section contains architecture notes, audits, and refactoring plans.
 - `docs/architecture/ARCHITECTURAL_REFACTORING_FEB6_2026.md`
 - `docs/architecture/DOMAIN_AGNOSTIC_REFACTORING_REPORT_FEB11.md`
 - `docs/architecture/TECHNICAL_DEBT_AUDIT.md`
-

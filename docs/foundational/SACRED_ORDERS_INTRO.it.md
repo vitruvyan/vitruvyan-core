@@ -1,3 +1,11 @@
+---
+tags:
+  - sacred-orders
+  - governance
+  - overview
+  - public
+---
+
 # Sacred Orders — Introduzione
 
 <p class="kb-subtitle">Un’architettura cognitiva umanocentrica: Ordini come metafore di responsabilità, specializzazione e governance.</p>
@@ -180,4 +188,3 @@ Neural Engine non è un Sacred Order, ma un motore computazionale che:
 - calcola score
 - produce ranking
 - integra sotto-motori deterministici (es. VARE, VWRE)
-

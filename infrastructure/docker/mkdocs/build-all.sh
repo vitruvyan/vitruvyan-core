@@ -25,15 +25,18 @@ if [ -f /app/docs/public/landing.it.md ]; then
   echo "✅ Copied landing.it.md → docs_root_public/index.it.md"
 fi
 
-# Shared assets (stylesheets, images, etc.) used by both public + full sites
+# Shared assets (stylesheets, images, etc.) used by public landing
 mkdir -p /app/docs_root_public/docs/stylesheets
 mkdir -p /app/docs_root_public/docs/javascripts
+mkdir -p /app/docs_root_public/assets/kb
 if [ -f /app/docs/stylesheets/vitruvyan.css ]; then
   cp /app/docs/stylesheets/vitruvyan.css /app/docs_root_public/docs/stylesheets/vitruvyan.css
+  cp /app/docs/stylesheets/vitruvyan.css /app/docs_root_public/assets/kb/vitruvyan.css
   echo "✅ Copied vitruvyan.css → docs_root_public/docs/stylesheets/vitruvyan.css"
 fi
 if [ -f /app/docs/javascripts/vitruvyan.js ]; then
   cp /app/docs/javascripts/vitruvyan.js /app/docs_root_public/docs/javascripts/vitruvyan.js
+  cp /app/docs/javascripts/vitruvyan.js /app/docs_root_public/assets/kb/vitruvyan.js
   echo "✅ Copied vitruvyan.js → docs_root_public/docs/javascripts/vitruvyan.js"
 fi
 echo ""

@@ -1,3 +1,10 @@
+---
+tags:
+  - getting-started
+  - installation
+  - public
+---
+
 # Quick Start
 
 This is a minimal “get productive fast” path for Vitruvyan Core.
@@ -26,4 +33,3 @@ Access control reference:
 - Sacred Orders index: `docs/orders/README.md`
 - Services index: `services/README_SERVICES.md`
 - Cognitive Bus docs: `vitruvyan_core/core/synaptic_conclave/docs/README.md`
-

@@ -48,17 +48,17 @@ markdown_extensions:
   - md_in_html
   - tables
   - toc:
-      permalink: true
+      permalink: false
 
 # Site navigation (SINGLE PAGE ONLY)
 nav:
   - Home: index.md
 
 extra_css:
-  - docs/stylesheets/vitruvyan.css
+  - assets/kb/vitruvyan.css
 
 extra_javascript:
-  - docs/javascripts/vitruvyan.js
+  - assets/kb/vitruvyan.js
 
 # Copyright
 copyright: Copyright &copy; 2026 Vitruvyan Team

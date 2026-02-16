@@ -85,6 +85,7 @@ markdown_extensions:
 
 nav:
   - Home: docs/public/DOCS_HOME.md
+  - Tags: docs/foundational/TAGS.md
   - Getting Started:
     - Overview: docs/foundational/VITRUVYAN_OVERVIEW.md
     - Quick Start: docs/foundational/QUICK_START.md
@@ -99,6 +100,7 @@ nav:
     - Health Checks: docs/installation/HEALTH_CHECKS.md
   - Architecture:
     - Overview: docs/architecture/README.md
+    - Dual Memory Layer: docs/architecture/DUAL_MEMORY_LAYER.md
   - Sacred Orders:
     - Introduction: docs/foundational/SACRED_ORDERS_INTRO.md
     - Index: docs/orders/README.md

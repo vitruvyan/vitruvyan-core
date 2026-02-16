@@ -82,6 +82,7 @@ markdown_extensions:
 
 # Navigation structure
 nav:
+  - Tags: docs/foundational/TAGS.md
   - Getting Started:
     - Overview: docs/foundational/VITRUVYAN_OVERVIEW.md
     - Quick Start: docs/foundational/QUICK_START.md
@@ -124,6 +125,7 @@ nav:
  
   - Architecture:
     - Overview: docs/architecture/README.md
+    - Dual Memory Layer: docs/architecture/DUAL_MEMORY_LAYER.md
     - Sacred Orders Pattern: vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md
     - Technical Debt Audit: docs/architecture/TECHNICAL_DEBT_AUDIT.md
 
@@ -162,9 +164,9 @@ nav:
     - Configuration: config/README_CONFIG.md
     - Scripts: scripts/README_SCRIPTS.md
     
-  - Planning:
-    - Roadmap: docs/planning/_ALBERATURA_FRAMEWORK_CONSOLIDATA_FEB14_2026.md
-    - Refactoring Plan: docs/architecture/SACRED_ORDERS_REFACTORING_PLAN.md
+  # - Planning:
+  #   - Roadmap: docs/planning/_ALBERATURA_FRAMEWORK_CONSOLIDATA_FEB14_2026.md
+  #   - Refactoring Plan: docs/architecture/SACRED_ORDERS_REFACTORING_PLAN.md
 
 # Extra
 extra:

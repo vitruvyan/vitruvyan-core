@@ -1,3 +1,10 @@
+---
+tags:
+  - sacred-orders
+  - governance
+  - admin
+---
+
 # Sacred Orders (Admin)
 
 > **Last Updated**: February 14, 2026

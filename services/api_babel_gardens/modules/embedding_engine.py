@@ -6,6 +6,7 @@ High-performance multilingual embedding generation with Gemma models
 
 import asyncio
 import logging
+import os
 from typing import Dict, List, Optional, Any, Tuple
 import torch
 import torch.nn.functional as F
@@ -15,6 +16,7 @@ from datetime import datetime
 import aiohttp
 
 from ..shared import GemmaServiceBase, model_manager, vector_cache
+from ..config import get_config
 from ..schemas import (
     EmbeddingRequest, BatchEmbeddingRequest, EmbeddingResponse, 
     BatchEmbeddingResponse, SimilarityRequest, SimilarityResponse, 
@@ -22,6 +24,15 @@ from ..schemas import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _normalize_embedding_base_url(raw_url: str) -> str:
+    """Normalize embedding service URL to host:port base (no endpoint suffix)."""
+    url = (raw_url or "").strip().rstrip("/")
+    for suffix in ("/v1/embeddings", "/embed"):
+        if url.endswith(suffix):
+            url = url[: -len(suffix)]
+    return url
 
 class EmbeddingEngineModule(GemmaServiceBase):
     """
@@ -37,8 +48,11 @@ class EmbeddingEngineModule(GemmaServiceBase):
         self.max_text_length = 8192
         self.supported_languages = set(lang.value for lang in LanguageCode)
         self.language_detection_cache = {}
-        # Cooperative embedding API
-        self.embedding_api_url = "http://vitruvyan_api_embedding:8010"
+        # Cooperative embedding API (resolved from config/env; docker default: embedding:8010)
+        cfg = get_config()
+        env_url = os.getenv("EMBEDDING_SERVICE_URL")
+        configured_url = env_url or cfg.embedding.url
+        self.embedding_api_url = _normalize_embedding_base_url(configured_url)
         self.use_cooperative_api = True  # Flag to enable/disable cooperation
         self.session = None
     
@@ -735,7 +749,7 @@ class EmbeddingEngineModule(GemmaServiceBase):
             }
     
     async def _call_cooperative_embedding_api(self, text: str, language: str = "en") -> Dict[str, Any]:
-        """Call cooperative embedding API at vitruvyan_api_embedding:8010"""
+        """Call cooperative embedding API using configured embedding base URL."""
         try:
             if not self.session:
                 self.session = aiohttp.ClientSession()

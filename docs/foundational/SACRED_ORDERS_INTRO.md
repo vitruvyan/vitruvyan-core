@@ -1,3 +1,11 @@
+---
+tags:
+  - sacred-orders
+  - governance
+  - overview
+  - public
+---
+
 # Sacred Orders — Introduction
 
 <p class="kb-subtitle">A human-centric cognitive architecture: Orders as metaphors for responsibility, specialization, and governance.</p>
@@ -180,4 +188,3 @@ Neural Engine is not a Sacred Order — it is a computational engine that:
 - computes scores
 - produces rankings
 - integrates deterministic sub-engines (e.g., VARE, VWRE)
-

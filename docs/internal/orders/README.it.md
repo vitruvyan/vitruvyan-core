@@ -1,3 +1,10 @@
+---
+tags:
+  - sacred-orders
+  - governance
+  - admin
+---
+
 # Sacred Orders (Admin)
 
 Questa sezione è la vista **interna** (admin) dei Sacred Orders: note di implementazione, mappa del codice, responsabilità per-agente e comportamento operativo.
