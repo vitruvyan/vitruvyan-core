@@ -1,0 +1,42 @@
+# Dockerfile.api_graph_test - LangGraph Orchestrator (Test Container)
+FROM python:3.11-slim
+
+RUN groupadd -g 1000 vitruvyan && \
+    useradd -u 1000 -g vitruvyan -m -s /bin/bash vitruvyan
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /home/vitruvyan/.ssh && \
+    chown -R vitruvyan:vitruvyan /home/vitruvyan && \
+    chmod 700 /home/vitruvyan/.ssh
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PYTHONPATH=/app
+
+WORKDIR /app
+
+COPY infrastructure/docker/requirements/requirements-graph.txt /app/requirements-graph.txt
+COPY infrastructure/dependency_locks/requirements_graph_0_5_4_freeze.txt /app/requirements-graph-freeze.txt
+
+RUN pip install --upgrade pip && pip install -r /app/requirements-graph-freeze.txt && pip install langgraph==1.0.8
+
+USER vitruvyan
+
+# Copy service code
+COPY --chown=vitruvyan:vitruvyan services/api_graph /app/api_graph
+
+# Copy ALL core modules
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/ /app/core/
+
+# Copy domains module (required by LangGraph orchestration)
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/domains/ /app/domains/
+
+# Copy config directory for Pattern Weavers API config
+COPY --chown=vitruvyan:vitruvyan config /app/config
+
+EXPOSE 8010
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD curl -fsS http://localhost:8010/health || exit 1
+CMD ["uvicorn", "api_graph.main:app", "--host", "0.0.0.0", "--port", "8010"]
