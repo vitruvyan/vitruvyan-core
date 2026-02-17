@@ -1,8 +1,22 @@
 # LangGraph 1.x Isolated Test Container
 
-> **Last updated**: 16 Febbraio 2026
+> **Last updated**: 17 Febbraio 2026  
+> **Status**: ⚠️ **REMOVED** (deployment completato con successo)
 
-Questo directory contiene il setup per testare **LangGraph 1.0.8** in un container isolato, senza impattare la produzione (LangGraph 0.5.4).
+**NOTA**: Questo test container è stato rimosso il 17 Feb 2026 alle 12:02 UTC dopo il deployment di produzione di LangGraph 1.0.8.
+
+Il deployment è stato verificato e validato con successo:
+- ✅ Produzione: `core_graph` (LangGraph 1.0.8, porta 9004, healthy)
+- ✅ Test container: RIMOSSO (non più necessario)
+- ✅ Test image: RIMOSSA (liberati ~6GB di spazio)
+
+**Questa documentazione è mantenuta come riferimento storico del processo di test.**
+
+---
+
+## Archive: Test Container Documentation
+
+Questo directory conteneva il setup per testare **LangGraph 1.0.8** in un container isolato, senza impattare la produzione (LangGraph 0.5.4).
 
 ## Purpose
 - Testare LangGraph 1.x compatibility e behavior in modo sicuro

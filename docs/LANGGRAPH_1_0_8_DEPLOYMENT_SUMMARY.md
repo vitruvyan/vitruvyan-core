@@ -202,6 +202,28 @@ curl -X POST http://localhost:9004/dispatch \
 
 ---
 
+## 🧹 Post-Deployment Cleanup
+
+**Test Infrastructure Removed** (Feb 17, 2026 12:02 UTC)
+
+After successful production validation (11+ minutes uptime, all health checks passing):
+
+```bash
+# Removed test container
+docker rm core_graph_test
+
+# Removed test image (freed 5.96 GB)
+docker rmi vitruvyan-core-vitruvyan_api_graph_test
+```
+
+**Final State**:
+- ✅ Production container: `core_graph` (healthy, port 9004)
+- ✅ Production image: `vitruvyan-core-graph:latest` (LangGraph 1.0.8)
+- ✅ Test infrastructure: Removed (no longer needed)
+- ✅ Disk space freed: ~6 GB
+
+---
+
 ## 📚 References
 
 - **Upgrade Report**: `docs/LANGGRAPH_UPGRADE_REPORT_FEB16_2026.md`
