@@ -1,11 +1,10 @@
 """
-Compatibility namespace for Intake modules.
+Compatibility namespace for Oculus Prime modules.
 
 Canonical location:
     infrastructure/edge/oculus_prime
 
-This shim keeps legacy imports (e.g. `intake.core...`) operational
-after relocating the intake module under infrastructure/edge.
+This shim enables imports such as `oculus_prime.core...`.
 """
 
 from pathlib import Path

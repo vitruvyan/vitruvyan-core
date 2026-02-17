@@ -8,15 +8,15 @@ import httpx
 from .contracts import EdgeEnvelopeStored, EdgeSourceType
 
 
-class CoreIntakeRelay:
+class CoreOculusPrimeRelay:
     _ENDPOINT_MAP = {
-        EdgeSourceType.document: "/api/intake/document",
-        EdgeSourceType.image: "/api/intake/image",
-        EdgeSourceType.audio: "/api/intake/audio",
-        EdgeSourceType.video: "/api/intake/video",
-        EdgeSourceType.cad: "/api/intake/cad",
-        EdgeSourceType.landscape: "/api/intake/landscape",
-        EdgeSourceType.geo: "/api/intake/geo",
+        EdgeSourceType.document: "/api/oculus-prime/document",
+        EdgeSourceType.image: "/api/oculus-prime/image",
+        EdgeSourceType.audio: "/api/oculus-prime/audio",
+        EdgeSourceType.video: "/api/oculus-prime/video",
+        EdgeSourceType.cad: "/api/oculus-prime/cad",
+        EdgeSourceType.landscape: "/api/oculus-prime/landscape",
+        EdgeSourceType.geo: "/api/oculus-prime/geo",
     }
 
     def __init__(self, base_url: str, timeout_sec: int = 10, token: str | None = None):
@@ -60,6 +60,6 @@ class CoreIntakeRelay:
                     )
                 if 200 <= response.status_code < 300:
                     return True, response.text
-                return False, f"Core intake returned {response.status_code}: {response.text[:512]}"
+                return False, f"Core Oculus Prime returned {response.status_code}: {response.text[:512]}"
             except Exception as exc:
                 return False, f"Relay error: {exc}"

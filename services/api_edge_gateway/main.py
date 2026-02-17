@@ -9,7 +9,7 @@ from fastapi import FastAPI, Query
 
 from .contracts import EdgeEnvelopeIn, EdgeEnvelopeStored
 from .outbox import SQLiteOutbox
-from .relay import CoreIntakeRelay
+from .relay import CoreOculusPrimeRelay
 
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,10 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(level
 
 APP_VERSION = "0.1.0"
 OUTBOX_PATH = os.getenv("EDGE_OUTBOX_PATH", "/tmp/vitruvyan_edge_outbox.db")
-CORE_INTAKE_BASE_URL = os.getenv("CORE_INTAKE_BASE_URL", "http://localhost:9050")
+CORE_OCULUS_PRIME_BASE_URL = os.getenv(
+    "CORE_OCULUS_PRIME_BASE_URL",
+    os.getenv("CORE_INTAKE_BASE_URL", "http://localhost:9050"),
+)
 HTTP_TIMEOUT_SEC = int(os.getenv("EDGE_HTTP_TIMEOUT_SEC", "10"))
 REPLAY_BATCH_SIZE = int(os.getenv("EDGE_REPLAY_BATCH_SIZE", "50"))
 CORE_EDGE_API_TOKEN = os.getenv("CORE_EDGE_API_TOKEN")
@@ -29,8 +32,8 @@ app = FastAPI(
 )
 
 outbox = SQLiteOutbox(OUTBOX_PATH)
-relay = CoreIntakeRelay(
-    base_url=CORE_INTAKE_BASE_URL,
+relay = CoreOculusPrimeRelay(
+    base_url=CORE_OCULUS_PRIME_BASE_URL,
     timeout_sec=HTTP_TIMEOUT_SEC,
     token=CORE_EDGE_API_TOKEN,
 )
@@ -74,7 +77,8 @@ def status() -> Dict[str, Any]:
     return {
         "service": "vitruvyan_edge_gateway",
         "version": APP_VERSION,
-        "core_intake_base_url": CORE_INTAKE_BASE_URL,
+        "core_oculus_prime_base_url": CORE_OCULUS_PRIME_BASE_URL,
+        "core_intake_base_url": CORE_OCULUS_PRIME_BASE_URL,
         "pending_count": outbox.pending_count(),
         "sent_count": outbox.sent_count(),
         "last_replay_utc": _last_replay_utc,
@@ -94,7 +98,8 @@ def metrics() -> Dict[str, Any]:
     }
 
 
-@app.post("/api/edge/intake")
+@app.post("/api/edge/oculus-prime")
+@app.post("/api/edge/intake", deprecated=True)
 def enqueue_intake(payload: EdgeEnvelopeIn) -> Dict[str, Any]:
     envelope = EdgeEnvelopeStored.from_input(payload)
     outbox_id = outbox.enqueue(envelope)

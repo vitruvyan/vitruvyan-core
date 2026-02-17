@@ -1,21 +1,22 @@
 # Vitruvyan Edge Gateway (MVP)
 
-Edge Gateway is the ingress/data-plane component for Intake interoperability.
+Edge Gateway is the ingress/data-plane component for Oculus Prime interoperability.
 
 ## Goals
 
 - Accept H2M/M2M intake requests on edge devices.
 - Persist requests locally in SQLite outbox (offline-first).
-- Relay to Core Intake API when connectivity is available.
+- Relay to Core Oculus Prime API when connectivity is available.
 - Replay pending requests deterministically after reconnect.
 
 ## Runtime Model
 
-`Client -> Edge Gateway -> SQLite Outbox -> Core Intake API -> Redis Streams`
+`Client -> Edge Gateway -> SQLite Outbox -> Core Oculus Prime API -> Redis Streams`
 
 ## Endpoints
 
-- `POST /api/edge/intake`: enqueue intake envelope and attempt immediate relay.
+- `POST /api/edge/oculus-prime`: enqueue envelope and attempt immediate relay.
+- `POST /api/edge/intake` (legacy): backward-compatible alias.
 - `POST /api/edge/replay`: replay pending envelopes.
 - `GET /health`: local health + optional core reachability check.
 - `GET /status`: queue depth and relay counters.
@@ -24,7 +25,8 @@ Edge Gateway is the ingress/data-plane component for Intake interoperability.
 ## Environment Variables
 
 - `EDGE_OUTBOX_PATH` (default: `/tmp/vitruvyan_edge_outbox.db`)
-- `CORE_INTAKE_BASE_URL` (default: `http://localhost:9050`)
+- `CORE_OCULUS_PRIME_BASE_URL` (default: `http://localhost:9050`)
+- `CORE_INTAKE_BASE_URL` (legacy fallback)
 - `EDGE_HTTP_TIMEOUT_SEC` (default: `10`)
 - `EDGE_REPLAY_BATCH_SIZE` (default: `50`)
 - `CORE_EDGE_API_TOKEN` (optional bearer token)
