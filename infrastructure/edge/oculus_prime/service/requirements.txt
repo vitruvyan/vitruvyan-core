@@ -1,5 +1,0 @@
-# Compatibility note
-# Canonical requirements moved to:
-# services/api_edge_oculus_prime/requirements.txt
-
--r ../../../../services/api_edge_oculus_prime/requirements.txt

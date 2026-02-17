@@ -33,10 +33,6 @@ infrastructure/edge/oculus_prime/
 │   ├── agents/                     # Oculus Prime agents (document, API, sensor)
 │   ├── event_evidence_created_v1.json      # Event schema
 │   └── evidence_pack_schema_v1.json        # Evidence Pack schema
-├── service/                        # Compatibility entrypoint (legacy path)
-│   ├── main.py                     # Wrapper -> services/api_edge_oculus_prime
-│   ├── Dockerfile                  # Compatibility Dockerfile
-│   └── requirements.txt            # Compatibility requirements
 └── dse_bridge/                     # DSE integration bridge (if needed)
     ├── main.py                     # Bridge service
     └── README.md                   # Bridge documentation
@@ -50,11 +46,7 @@ services/api_edge_oculus_prime/           # Canonical runtime service (LIVELLO 2
 └── requirements.txt
 ```
 
-### Compatibility Layer (Legacy)
-
-- `infrastructure/edge/oculus_prime/service/*` remains a compatibility wrapper for old entrypoints.
-- Canonical runtime path is `services/api_edge_oculus_prime/*`.
-- Sunset rule: remove the wrapper after all compose files, CI jobs, and docs stop referencing legacy paths.
+Canonical runtime path is `services/api_edge_oculus_prime/*`.
 
 ---
 

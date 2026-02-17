@@ -114,8 +114,8 @@ psql -U vitruvyan_user -d vitruvyan -f schema.sql
 ### Example 1: Ingest PDF Document
 
 ```python
-from intake.core.agents.document_intake import DocumentIntakeAgent
-from intake.core.event_emitter import IntakeEventEmitter
+from infrastructure.edge.oculus_prime.core.agents.document_intake import DocumentIntakeAgent
+from infrastructure.edge.oculus_prime.core.event_emitter import IntakeEventEmitter
 from vitruvyan_core.core.agents.postgres_agent import PostgresAgent
 from vitruvyan_core.core.synaptic_conclave.transport.streams import StreamBus
 
@@ -156,7 +156,7 @@ Created 3 Evidence Packs: ['EVD-12345678-1234-5678-1234-567812345678', 'EVD-8765
 ### Example 2: Ingest Image with OCR
 
 ```python
-from intake.core.agents.image_intake import ImageIntakeAgent
+from infrastructure.edge.oculus_prime.core.agents.image_intake import ImageIntakeAgent
 
 agent = ImageIntakeAgent(event_emitter, postgres)
 
@@ -180,7 +180,7 @@ print(f"Created Evidence Pack: {evidence_id}")
 ### Example 3: Ingest Audio with Transcription
 
 ```python
-from intake.core.agents.audio_intake import AudioIntakeAgent
+from infrastructure.edge.oculus_prime.core.agents.audio_intake import AudioIntakeAgent
 
 agent = AudioIntakeAgent(event_emitter, postgres, whisper_model="base")
 
@@ -204,7 +204,7 @@ print(f"Created {len(evidence_ids)} Evidence Packs (audio chunks)")
 ### Example 4: Ingest Video with Keyframe Extraction
 
 ```python
-from intake.core.agents.video_stream_intake import VideoStreamIntakeAgent
+from infrastructure.edge.oculus_prime.core.agents.video_stream_intake import VideoStreamIntakeAgent
 
 agent = VideoStreamIntakeAgent(event_emitter, postgres, whisper_model="base")
 
