@@ -112,7 +112,7 @@ services/api_<order>/
 
 #### README.md Requirements
 - **Location**: Root of each Sacred Order module (`vitruvyan_core/core/governance/<order>/` and `services/api_<order>/`)
-- **Versioning**: Every README.md **MUST** include `> **Last updated**: <date>` as the first line after the title (H1). Update this date on every edit.
+- **Versioning**: Every .md file (README, documentation, planning docs) **MUST** include `> **Last updated**: <date> <time>` (format: `Feb 17, 2026 14:30 UTC`) as the first line after the title (H1). Update this timestamp on every edit for precise versioning.
 - **Content**: 
   - Module purpose and domain responsibility
   - Quick start (code examples)

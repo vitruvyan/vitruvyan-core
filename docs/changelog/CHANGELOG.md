@@ -1,10 +1,14 @@
 # Vitruvyan Core — Changelog
 
-> **Last updated**: February 16, 2026
+> **Last updated**: February 17, 2026
 
 Cronologia consolidata di tutte le milestone architetturali di Vitruvyan Core, dalla fondazione al V1.0.
 
 ---
+
+## Feb 17, 2026 — LangGraph 1.0.8 Production Upgrade
+
+Graph Orchestrator upgraded from LangGraph 0.5.4 to 1.0.8 (major version jump). Isolated test container validated compatibility. Dependencies upgraded: `langgraph-checkpoint` 2.1.2 → 4.0.0, `langgraph-prebuilt` 0.5.2 → 1.0.7, `langgraph-sdk` 0.1.74 → 0.3.6. All functional tests passed. Production deployment successful (port 9004, service healthy, dispatch endpoint validated).
 
 ## Jan 25–26, 2026 — Herald → Redis Streams Migration: 100% Complete
 
