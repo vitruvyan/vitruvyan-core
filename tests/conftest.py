@@ -206,8 +206,8 @@ except ImportError:
 
 # --- Neural Engine Mocks (IDataProvider, IScoringStrategy) ---
 try:
-    from contracts.data_provider import IDataProvider
-    from contracts.scoring_strategy import IScoringStrategy
+    from contracts import IDataProvider
+    from contracts import IScoringStrategy
 
     class MockDataProvider(IDataProvider):
         """Returns controlled data for Neural Engine tests."""

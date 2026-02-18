@@ -32,13 +32,13 @@ except ImportError:
     HAS_ENGINE = False
 
 try:
-    from vitruvyan_core.contracts.data_provider import IDataProvider
-    from vitruvyan_core.contracts.scoring_strategy import IScoringStrategy
+    from vitruvyan_core.contracts import IDataProvider
+    from vitruvyan_core.contracts import IScoringStrategy
     HAS_CONTRACTS = True
 except ImportError:
     try:
-        from contracts.data_provider import IDataProvider
-        from contracts.scoring_strategy import IScoringStrategy
+        from contracts import IDataProvider
+        from contracts import IScoringStrategy
         HAS_CONTRACTS = True
     except ImportError:
         HAS_CONTRACTS = False

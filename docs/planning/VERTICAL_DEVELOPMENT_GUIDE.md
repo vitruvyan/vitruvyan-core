@@ -875,7 +875,7 @@ def get_domain_rules():
 | `SlotFiller` | `core.orchestration.compose.slot_filler` | 3 | Quando raccogli parametri via dialogo |
 | `ResponseFormatter` | `core.orchestration.compose.response_formatter` | 1 | Quando formatti l'output utente |
 | `BaseDomain` | `domains.base_domain` | 7 | Quando registri un dominio formale |
-| `ILLMProvider` | `core.contracts.llm_provider` | 5 | Solo se sostituisci OpenAI con un provider custom |
+| `ILLMProvider` | `contracts.llm_provider` | 5 | Solo se sostituisci OpenAI con un provider custom |
 | `AggregationProvider` | `domains.aggregation_contract` | 5 | Per scoring/ranking personalizzati |
 | `ExplainabilityProvider` | `domains.explainability_contract` | 7 | Per explainability personalizzata |
 | `RiskProvider` | `domains.risk_contract` | 5 | Per valutazione rischio personalizzata |

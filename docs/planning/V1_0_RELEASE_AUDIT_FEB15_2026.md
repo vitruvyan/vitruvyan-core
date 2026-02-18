@@ -141,7 +141,7 @@ Intent detection is **100% domain-agnostic**: domains register via `INTENT_DOMAI
 ### 3.1 Plugin Surface (`core/contracts/`)
 
 ```python
-from core.contracts import (
+from contracts import (
     # Graph state
     BaseGraphState, GraphStateType,
     ESSENTIAL_FIELDS, INTENT_FIELDS, LANGUAGE_FIELDS, EMOTION_FIELDS,

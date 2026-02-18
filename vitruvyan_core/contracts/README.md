@@ -3,6 +3,8 @@
 **Location**: `vitruvyan_core/contracts/`  
 **Purpose**: System-wide abstract interfaces defining the contract between core components and domain implementations.
 
+**Canonical import namespace**: `contracts` / `vitruvyan_core.contracts`
+
 ---
 
 ## 🎯 Why Contracts are at Root Level
@@ -45,6 +47,10 @@ Contracts mark the **epistemic boundary** between:
 ---
 
 ## 📦 Current Contracts
+
+In addition to Neural Engine interfaces, this package also exposes:
+- `ILLMProvider` (`llm_provider.py`)
+- orchestration contracts (`orchestration.py`): `GraphPlugin`, `NodeContract`, `BaseGraphState`, `Parser`, `BaseParser`, `ParsedSlots`
 
 ### IDataProvider
 **File**: `data_provider.py`  

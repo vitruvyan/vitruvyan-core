@@ -428,8 +428,8 @@ tests/
 ### Contratti & Domini (DEVI CONOSCERLI)
 | File | Righe | Rilevanza |
 |------|-------|-----------|
-| `contracts/data_provider.py` | 165 | Pattern IDataProvider (riferimento per GraphPlugin) |
-| `contracts/scoring_strategy.py` | 199 | Pattern IScoringStrategy (riferimento) |
+| `contracts/neural_engine/data_provider.py` | 165 | Pattern IDataProvider (riferimento per GraphPlugin) |
+| `contracts/neural_engine/scoring_strategy.py` | 199 | Pattern IScoringStrategy (riferimento) |
 | `domains/base_domain.py` | 242 | BaseDomain dove aggiungere `get_graph_plugin()` |
 | `domains/example_domain.py` | ~100 | Dove creare ExampleGraphPlugin |
 

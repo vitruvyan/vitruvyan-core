@@ -3,28 +3,51 @@ Contracts Module
 ================
 
 Defines abstract interfaces (contracts) for domain-specific implementations.
-These contracts enable the Generic Aggregation Engine to work with any domain.
+These contracts enable core components to depend on stable abstractions.
 
-Contracts:
-- IDataProvider: Data access layer (universe, features, metadata)
-- IScoringStrategy: Scoring logic layer (profiles, weights, risk adjustment)
+Layout:
+- Root package: cross-system contracts (orchestration, llm provider)
+- Subpackages: component-scoped contracts (for example neural_engine)
 
 Author: vitruvyan-core
 Date: February 8, 2026
 """
 
-from .data_provider import (
+from .neural_engine.data_provider import (
     IDataProvider,
     DataProviderError,
     EntityNotFoundError,
-    FeatureNotAvailableError
+    FeatureNotAvailableError,
 )
-
-from .scoring_strategy import (
+from .llm_provider import ILLMProvider
+from .orchestration import (
+    BaseGraphState,
+    GraphStateType,
+    ESSENTIAL_FIELDS,
+    INTENT_FIELDS,
+    LANGUAGE_FIELDS,
+    EMOTION_FIELDS,
+    ORTHODOXY_FIELDS,
+    VAULT_FIELDS,
+    TRACING_FIELDS,
+    WEAVER_FIELDS,
+    CAN_FIELDS,
+    ALL_BASE_FIELDS,
+    get_base_field_count,
+    is_base_field,
+    get_domain_fields,
+    GraphPlugin,
+    NodeContract,
+    GraphEngine,
+    Parser,
+    BaseParser,
+    ParsedSlots,
+)
+from .neural_engine.scoring_strategy import (
     IScoringStrategy,
     ScoringStrategyError,
     InvalidProfileError,
-    InvalidWeightsError
+    InvalidWeightsError,
 )
 
 __all__ = [
@@ -33,7 +56,30 @@ __all__ = [
     "DataProviderError",
     "EntityNotFoundError",
     "FeatureNotAvailableError",
-    
+    # Orchestration
+    "BaseGraphState",
+    "GraphStateType",
+    "ESSENTIAL_FIELDS",
+    "INTENT_FIELDS",
+    "LANGUAGE_FIELDS",
+    "EMOTION_FIELDS",
+    "ORTHODOXY_FIELDS",
+    "VAULT_FIELDS",
+    "TRACING_FIELDS",
+    "WEAVER_FIELDS",
+    "CAN_FIELDS",
+    "ALL_BASE_FIELDS",
+    "get_base_field_count",
+    "is_base_field",
+    "get_domain_fields",
+    "GraphPlugin",
+    "NodeContract",
+    "GraphEngine",
+    "Parser",
+    "BaseParser",
+    "ParsedSlots",
+    # LLM
+    "ILLMProvider",
     # Scoring Strategy
     "IScoringStrategy",
     "ScoringStrategyError",

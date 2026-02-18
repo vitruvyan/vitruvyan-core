@@ -93,7 +93,7 @@ AST scanned: 256 core Python files
 ```
 Core module import: 12/12 OK (no circular imports)
 ```
-Modules verified: `core.contracts`, `core.agents.*`, `core.orchestration.*`, `core.synaptic_conclave.*`, `core.logging.audit`, `core.llm.cache_manager`
+Modules verified: `contracts`, `core.agents.*`, `core.orchestration.*`, `core.synaptic_conclave.*`, `core.logging.audit`, `core.llm.cache_manager`
 
 ### Confirmation Statement
 **Zero hard imports from `core/` → `domains.finance`. Zero implicit imports via shared utilities. Zero circular import chains. AST-verified across 256 Python files.**
@@ -116,7 +116,7 @@ domains/finance/ = DISABLED
 
 | # | Module | Status | Time |
 |:---:|:---|:---:|:---:|
-| 1 | `core.contracts` (BaseGraphState, GraphPlugin, NodeContract, Parser) | ✅ | 0.10s |
+| 1 | `contracts` (BaseGraphState, GraphPlugin, NodeContract, Parser) | ✅ | 0.10s |
 | 2 | `core.orchestration.intent_registry` (IntentRegistry) | ✅ | 0.10s |
 | 3 | `core.orchestration.execution_guard` (NodeExecutionGuard) | ✅ | 0.11s |
 | 4 | `core.synaptic_conclave.transport.dlq` (DeadLetterQueue) | ✅ | 1.35s |
@@ -140,7 +140,7 @@ domains/finance/ = DISABLED
 ### Module Load Map (sample)
 ```
 core.agents, core.agents.llm_agent, core.agents.postgres_agent,
-core.agents.qdrant_agent, core.cognitive, core.contracts,
+core.agents.qdrant_agent, core.cognitive, contracts,
 core.llm.cache_manager, core.llm.prompts.registry, core.logging.audit,
 core.orchestration.base_state, core.orchestration.execution_guard,
 core.orchestration.graph_engine, core.orchestration.intent_registry,
