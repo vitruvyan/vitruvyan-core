@@ -9,7 +9,7 @@
 
 ## Purpose
 
-This document defines the **immutable boundary** between the **Intake Layer** (pre-epistemic acquisition) and the **Codex Layer** (epistemic enrichment) in the AEGIS DSE-CPS Engine.
+This document defines the **immutable boundary** between the **Intake Layer** (pre-epistemic acquisition) and the **Codex Layer** (epistemic enrichment) in the Vitruvyan DSE-CPS Engine.
 
 The boundary ensures:
 - **Separation of concerns**: Intake acquires, Codex enriches
@@ -114,7 +114,7 @@ The boundary ensures:
 
 ## Event Contract: `oculus_prime.evidence.created` (canonical)
 
-**Event Schema**: `aegis://oculus_prime/events/evidence_created/v2.0`  
+**Event Schema**: `vitruvyan://oculus_prime/events/evidence_created/v2.0`  
 **Channel**: `oculus_prime.evidence.created` (Redis Streams)  
 **Legacy Alias**: `intake.evidence.created` (migration window only)  
 **Direction**: INTAKE → CODEX (one-way)
@@ -125,7 +125,7 @@ The boundary ensures:
 {
   "event_id": "EVT-12345678-1234-5678-1234-567812345678",
   "event_version": "2.0.0",
-  "schema_ref": "aegis://oculus_prime/events/evidence_created/v2.0",
+  "schema_ref": "vitruvyan://oculus_prime/events/evidence_created/v2.0",
   "timestamp_utc": "2026-01-09T14:30:00Z",
   "evidence_id": "EVD-12345678-1234-5678-1234-567812345678",
   "chunk_id": "CHK-0",
@@ -348,7 +348,7 @@ def verify_evidence_pack_integrity(evidence_pack):
 - [ ] Evidence Packs are append-only (INSERT only, NO UPDATE/DELETE)
 - [ ] `normalized_text` is literal/descriptive (NO semantic interpretation)
 - [ ] Sampling Policy is external, versioned, referenced (not embedded)
-- [ ] Events have `schema_ref` = `aegis://oculus_prime/events/evidence_created/v2.0`
+- [ ] Events have `schema_ref` = `vitruvyan://oculus_prime/events/evidence_created/v2.0`
 - [ ] Idempotency key prevents duplicate processing
 - [ ] Event emission logged to `intake_event_log` (success) or `intake_event_failures` (failure)
 - [ ] No direct calls to Codex Layer functions

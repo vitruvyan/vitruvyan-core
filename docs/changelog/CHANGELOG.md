@@ -32,7 +32,7 @@ Graph Orchestrator upgraded from LangGraph 0.5.4 to 1.0.8 (major version jump). 
 ## Feb 17, 2026 — Oculus Prime Event Naming Migration (Versioned)
 
 Versioned migration introduced for event naming consistency in edge ingestion:
-- Added canonical channel `oculus_prime.evidence.created` with schema `aegis://oculus_prime/events/evidence_created/v2.0`.
+- Added canonical channel `oculus_prime.evidence.created` with schema `vitruvyan://oculus_prime/events/evidence_created/v2.0`.
 - Preserved legacy alias `intake.evidence.created` for backward compatibility.
 - Implemented rollout modes via `OCULUS_PRIME_EVENT_MIGRATION_MODE`: `dual_write` (default), `v2_only`, `v1_only`.
 - Updated emitter audit metadata to include migration mode and emitted channels.
@@ -60,7 +60,7 @@ Orthodoxy Wardens gained epistemic gatekeeping: 5-state verdict system (blessed,
 
 ## Dec 30, 2025 — v1.0.0 Milestone: Domain-Agnostic Framework Complete
 
-Vitruvyan Core declared production-ready. Phases 1–3D complete. Mercator (finance) validated as PoC. AEGIS (governance) ready to proceed.
+Vitruvyan Core declared production-ready. Phases 1–3D complete. Mercator (finance) validated as PoC. Vitruvyan (governance) ready to proceed.
 
 ## Dec 30, 2025 — Phase 3D: Neural Engine Integration Pattern
 

@@ -12,46 +12,40 @@
 
 Costruire un'applicazione Android di riferimento per il modulo Oculus Prime che dimostri la capacità di Vitruvyan di integrarsi con fonti esterne (IoT, sensori mobili, acquisizione multimediale) tramite architettura client-server offline-first.
 
+Obiettivo primario: usare Android come **test harness remoto** per inviare diversi tipi di artifact verso Vitruvyan e verificare end-to-end la robustezza della pipeline.
+
+Questo test serve a validare in anticipo che, spostando in futuro Oculus Prime (o moduli analoghi) su device remoti (IoT, mini-PC, VPS, smartphone), il sistema centrale sia in grado di acquisire, persistire e processare correttamente i flussi esterni.
+
 ---
 
 ## 2. Analisi Architettura Esistente
 
 L'architettura attuale è **già progettata per questo scenario** ed è composta da:
 
-### 2.1 Edge Gateway (`services/api_edge_gateway/`)
+### 2.1 Oculus Prime Edge Gateway (`services/api_edge_oculus_prime/`)
 
 **Caratteristiche**:
-- **Offline-first**: SQLite outbox locale per buffering
-- **Relay intelligente**: tenta invio immediato, fallback su pending queue
-- **Replay deterministico**: `POST /api/edge/replay` per sincronizzazione post-riconnessione
-- **Transport contract**: `EdgeEnvelopeIn` → `EdgeEnvelopeStored`
-- **Endpoint primario**: `POST /api/edge/oculus-prime`
+- **Gateway unico edge**: endpoint media-specifici esposti direttamente dal servizio Oculus Prime
+- **Upload multipart**: file + metadata + correlation ID
+- **Pipeline visibility**: endpoint operativi per health, pipeline status, eventi recenti
+- **Transport contract**: upload diretto verso endpoint `/api/oculus-prime/{type}`
 
 **Componenti chiave**:
 ```python
-# services/api_edge_gateway/contracts.py
-class EdgeSourceType(str, Enum):
-    document = "document"
-    image = "image"
-    audio = "audio"
-    video = "video"
-    cad = "cad"
-    landscape = "landscape"
-    geo = "geo"
-
-class EdgeEnvelopeIn(BaseModel):
-    source_type: EdgeSourceType
-    source_uri: str
-    metadata: Dict[str, Any]
-    correlation_id: Optional[str]
-    created_utc: Optional[str]
+# services/api_edge_oculus_prime/api/routes.py
+@router.post("/api/oculus-prime/image")
+async def ingest_image(
+    file: UploadFile = File(...),
+    sampling_policy_ref: str | None = Form(None),
+    correlation_id: str | None = Form(None),
+):
+    ...
 ```
 
 **Operational endpoints**:
-- `GET /health` — local health + core reachability check
-- `GET /status` — queue depth and relay counters
-- `GET /metrics` — operational counters
-- `POST /api/edge/replay` — replay pending envelopes
+- `GET /health` — health servizio + connettività DB
+- `GET /api/oculus-prime/pipeline` — stato pipeline ingestione
+- `GET /api/oculus-prime/events` — eventi recenti Oculus Prime
 
 ### 2.2 Core Oculus Prime API (`services/api_edge_oculus_prime/`)
 
@@ -110,7 +104,7 @@ External Source → Upload → Agent Processing → Evidence Pack (PostgreSQL)
 │  │  Vitruvyan Android SDK (Kotlin)                           │  │
 │  │  ┌─────────────────────────────────────────────────────┐  │  │
 │  │  │  OculusPrimeClient                                  │  │  │
-│  │  │  - Envelope builder (EdgeEnvelopeIn)                │  │  │
+│  │  │  - Multipart request builder                         │  │  │
 │  │  │  - Media type detection + validation                │  │  │
 │  │  │  - Correlation ID tracking                          │  │  │
 │  │  └─────────────────────────────────────────────────────┘  │  │
@@ -128,19 +122,13 @@ External Source → Upload → Agent Processing → Evidence Pack (PostgreSQL)
 │  │  └─────────────────────────────────────────────────────┘  │  │
 │  └────────────────────────────────────────────────────────────┘  │
 └───────────────────────┬─────────────────────────────────────────┘
-                        │ POST /api/edge/oculus-prime
+                        │ POST /api/oculus-prime/{type}
                         │ (HTTP multipart + metadata)
                         ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │  VITRUVYAN CORE (Server)                                         │
 │  ┌───────────────────────────────────────────────────────────┐  │
-│  │  Edge Gateway API (services/api_edge_gateway)            │  │
-│  │  - Accept upload (SQLite outbox)                         │  │
-│  │  - Attempt relay to Core Oculus Prime                    │  │
-│  └─────────────────────┬─────────────────────────────────────┘  │
-│                        │                                         │
-│  ┌─────────────────────▼─────────────────────────────────────┐  │
-│  │  Core Oculus Prime API (services/api_edge_oculus_prime)  │  │
+│  │  Oculus Prime API (services/api_edge_oculus_prime)       │  │
 │  │  - Media-specific agent processing                       │  │
 │  │  - PostgreSQL Evidence Pack persistence                  │  │
 │  │  - Redis Streams emission (oculus_prime.evidence.created)│  │
@@ -176,7 +164,7 @@ External Source → Upload → Agent Processing → Evidence Pack (PostgreSQL)
 
 ```kotlin
 /**
- * Main client for Oculus Prime Edge Gateway interaction.
+ * Main client for Oculus Prime API interaction.
  * Handles HTTP multipart upload with Bearer token authentication.
  */
 class OculusPrimeClient(
@@ -198,7 +186,7 @@ class OculusPrimeClient(
     
     /**
      * Upload image file with metadata.
-     * Calls POST /api/edge/oculus-prime with source_type=image.
+     * Calls POST /api/oculus-prime/image.
      */
     suspend fun uploadImage(
         file: File,
@@ -212,7 +200,7 @@ class OculusPrimeClient(
                 metadata = metadata,
                 correlationId = correlationId
             )
-            val response = api.uploadEdgeEnvelope(envelope)
+            val response = api.uploadImage(envelope)
             Result.success(response)
         } catch (e: Exception) {
             Result.failure(e)
@@ -225,7 +213,7 @@ class OculusPrimeClient(
     suspend fun uploadGeo(file: File, ...): Result<UploadResponse>
     
     /**
-     * Check Edge Gateway health status.
+     * Check Oculus Prime health status.
      */
     suspend fun checkHealth(): Result<HealthStatus> = withContext(Dispatchers.IO) {
         try {
@@ -237,11 +225,11 @@ class OculusPrimeClient(
     }
     
     /**
-     * Get Edge Gateway queue status.
+     * Get Oculus Prime pipeline status.
      */
-    suspend fun getQueueStatus(): Result<QueueStatus> = withContext(Dispatchers.IO) {
+    suspend fun getPipelineStatus(): Result<PipelineStatus> = withContext(Dispatchers.IO) {
         try {
-            val response = api.getStatus()
+            val response = api.getPipelineStatus()
             Result.success(response)
         } catch (e: Exception) {
             Result.failure(e)
@@ -265,9 +253,9 @@ class OculusPrimeClient(
 }
 
 /**
- * Edge envelope matching server-side EdgeEnvelopeIn contract.
+ * Generic upload envelope used by the Android SDK before multipart serialization.
  */
-data class EdgeEnvelope(
+data class OculusPrimeUploadEnvelope(
     val source_type: SourceType,
     val source_uri: String,
     val metadata: Map<String, Any>,
@@ -289,27 +277,22 @@ enum class SourceType {
 
 data class UploadResponse(
     val status: String,
-    val outbox_id: Int,
-    val envelope_id: String,
-    val relay: RelayStatus
-)
-
-data class RelayStatus(
-    val status: String, // "sent" or "pending"
-    val details: String
+    val message: String,
+    val evidence_ids: List<String>
 )
 
 data class HealthStatus(
     val service: String,
     val version: String,
     val status: String,
-    val core_reachable: Boolean
+    val timestamp: String,
+    val postgresql: String
 )
 
-data class QueueStatus(
-    val pending_count: Int,
-    val sent_count: Int,
-    val metrics: Map<String, Int>
+data class PipelineStatus(
+    val total_events: Int,
+    val ingestion_rate: Double,
+    val recent_errors: Int
 )
 ```
 
@@ -330,7 +313,7 @@ class LocalOutboxManager(
      * Returns outbox ID for tracking.
      */
     suspend fun enqueue(
-        envelope: EdgeEnvelope,
+        envelope: OculusPrimeUploadEnvelope,
         filePath: String
     ): Long = withContext(Dispatchers.IO) {
         val upload = PendingUpload(
@@ -374,7 +357,7 @@ class LocalOutboxManager(
                 return@forEachIndexed
             }
             
-            val envelope = Gson().fromJson(upload.envelopeJson, EdgeEnvelope::class.java)
+            val envelope = Gson().fromJson(upload.envelopeJson, OculusPrimeUploadEnvelope::class.java)
             val result = when (envelope.source_type) {
                 SourceType.IMAGE -> client.uploadImage(file, envelope.metadata, envelope.correlation_id)
                 SourceType.DOCUMENT -> client.uploadDocument(file, envelope.metadata, envelope.correlation_id)
@@ -759,7 +742,6 @@ class SecureTokenManager(context: Context) {
 vitruvyan-core/
 ├── vitruvyan_core/                       # Existing core
 ├── services/                             # Existing services
-│   ├── api_edge_gateway/                 # ✅ Already exists
 │   └── api_edge_oculus_prime/            # ✅ Already exists
 ├── infrastructure/
 │   └── edge/
@@ -812,7 +794,6 @@ vitruvyan-core/
 ├── docs/
 │   └── planning/
 │       └── ANDROID_OCULUS_PRIME_APP_ROADMAP_FEB17_2026.md  # ← This file
-└── intake/                               # Legacy stub (deprecated)
 ```
 
 ---
@@ -836,7 +817,7 @@ vitruvyan-core/
 **Acceptance Criteria**:
 - Upload image via `OculusPrimeClient.uploadImage()` succeeds in integration test
 - Offline enqueue + sync completes without errors
-- Edge Gateway accepts uploaded envelope
+- Oculus Prime API accepts uploaded media and returns evidence IDs
 
 ### Sprint 2: Android Demo App (Week 2 — Feb 24 - Mar 2, 2026)
 
@@ -903,7 +884,7 @@ vitruvyan-core/
 - ✅ Documentation + deployment guide
 
 **Deliverables**:
-1. E2E test suite (Android → Edge Gateway → Oculus Prime → Redis Streams)
+1. E2E test suite (Android → Oculus Prime → Redis Streams)
 2. Performance benchmark report
 3. Final user documentation
 4. Video demo
@@ -919,7 +900,7 @@ vitruvyan-core/
 
 | Aspetto | Beneficio | Dettagli |
 |---------|-----------|----------|
-| **Riuso Edge Gateway** | No duplicazione logica relay/outbox | SDK delega a Edge Gateway esistente, no reinvenzione ruota |
+| **Gateway unico** | Minore complessità architetturale | SDK integra direttamente Oculus Prime |
 | **Offline-first nativo** | SQLite locale + sync automatico | Funziona senza connessione, sincronizzazione trasparente |
 | **SDK generico** | Riutilizzabile per iOS/Flutter/React Native | Pattern adattabile a qualsiasi mobile platform |
 | **Event-driven** | Allineato a Sacred Orders processing | Eventi Redis Streams → pipeline epistemic standard |
@@ -955,11 +936,12 @@ vitruvyan-core/
 
 ### 9.3 Integration Requirements
 
-1. ✅ **Compatibility** con Edge Gateway API contract (EdgeEnvelopeIn)
+1. ✅ **Compatibility** con Oculus Prime API multipart contract
 2. ✅ **Evidence Pack** creati downstream in PostgreSQL
 3. ✅ **Redis Streams** events emessi (`oculus_prime.evidence.created`)
 4. ✅ **Sacred Orders** processing attivato (Codex → Memory → Vault)
 5. ✅ **Qdrant embeddings** disponibili post-processing
+6. ✅ **Remote pipeline validation**: test superato con artifact inviati da device remoto verso core Vitruvyan
 
 ---
 
@@ -1011,7 +993,7 @@ vitruvyan-core/
 
 **Day 3-4**:
 - [ ] Implement `OculusPrimeClient` with Retrofit
-- [ ] Implement `EdgeEnvelope` data classes
+- [ ] Implement media request data classes (`ImageUploadRequest`, `DocumentUploadRequest`, ...)
 - [ ] Add Bearer token authentication interceptor
 
 **Day 5**:
@@ -1040,7 +1022,6 @@ vitruvyan-core/
 
 ## 13. References
 
-- **Edge Gateway API**: `services/api_edge_gateway/README.md`
 - **Oculus Prime API**: `services/api_edge_oculus_prime/README.md`
 - **Infrastructure Core**: `infrastructure/edge/oculus_prime/core/README.md`
 - **Intake + Edge Plan**: `docs/planning/INTAKE_EDGE_REFACTOR_INTEGRATION_PLAN_FEB16_2026.md`
@@ -1054,20 +1035,16 @@ vitruvyan-core/
 
 ## Appendix A: API Contract Examples
 
-### A.1 Upload Image Request (Android → Edge Gateway)
+### A.1 Upload Image Request (Android → Oculus Prime)
 
 ```http
-POST /api/edge/oculus-prime HTTP/1.1
-Host: vitruvyan.example.com:9070
+POST /api/oculus-prime/image HTTP/1.1
+Host: vitruvyan.example.com:9050
 Authorization: Bearer eyJhbGc...
 Content-Type: multipart/form-data; boundary=----boundary123
 
 ------boundary123
-Content-Disposition: form-data; name="source_type"
-
-image
-------boundary123
-Content-Disposition: form-data; name="source_uri"; filename="photo_123.jpg"
+Content-Disposition: form-data; name="file"; filename="photo_123.jpg"
 Content-Type: image/jpeg
 
 [binary image data]
@@ -1086,13 +1063,9 @@ android-session-abc123
 
 ```json
 {
-  "status": "accepted",
-  "outbox_id": 42,
-  "envelope_id": "EEG-f47ac10b-58cc-4372-a567-0e02b2c3d479",
-  "relay": {
-    "status": "sent",
-    "details": "{\"status\": \"success\", \"evidence_ids\": [\"EVD-123\"]}"
-  }
+  "status": "success",
+  "message": "Image processed successfully. Created 1 Evidence Packs.",
+  "evidence_ids": ["EVD-123"]
 }
 ```
 
@@ -1100,12 +1073,11 @@ android-session-abc123
 
 ```json
 {
-  "service": "vitruvyan_edge_gateway",
-  "version": "0.1.0",
+  "service": "vitruvyan_oculus_prime_api",
+  "version": "1.0.0",
   "status": "healthy",
   "timestamp": "2026-02-17T14:30:00Z",
-  "core_reachable": true,
-  "outbox_path": "/data/vitruvyan_edge_outbox.db"
+  "postgresql": "connected"
 }
 ```
 

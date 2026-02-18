@@ -1,10 +1,10 @@
-# AEGIS Intake → DSE Bridge
+# Vitruvyan Intake → DSE Bridge
 
 **Bridge between Codex Hunters (semantic enrichment) and DSE Epistemic Chain (Pattern Weavers)**
 
 ## Overview
 
-The Intake → DSE Bridge is a critical architectural component that connects the AEGIS Intake Layer (raw file ingestion) with the DSE Epistemic Chain (decision intelligence pipeline).
+The Intake → DSE Bridge is a critical architectural component that connects the Vitruvyan Intake Layer (raw file ingestion) with the DSE Epistemic Chain (decision intelligence pipeline).
 
 ### Problem Solved
 
@@ -38,7 +38,7 @@ The Intake → DSE Bridge is a critical architectural component that connects th
 │  CODEX HUNTERS                                                           │
 │  Semantic enrichment (embeddings, entity extraction)                     │
 │  ↓                                                                       │
-│  Qdrant (aegis_embeddings collection)                                   │
+│  Qdrant (vitruvyan_embeddings collection)                                   │
 │  ↓                                                                       │
 │  📡 Event: codex.evidence.indexed                                       │
 └─────────────────────────────────┬───────────────────────────────────────┘
@@ -84,7 +84,7 @@ PGPASSWORD='@Caravaggio971_omni' psql \
 ### 2. Build & Start Bridge Service
 
 ```bash
-cd /home/caravaggio/aegis
+cd /home/caravaggio/vitruvyan
 
 # Build Docker image
 docker compose build vitruvyan_intake_dse_bridge
@@ -114,7 +114,7 @@ docker logs -f omni_intake_dse_bridge
 
 Expected log output:
 ```
-🚀 Starting AEGIS Intake → DSE Bridge Service...
+🚀 Starting Vitruvyan Intake → DSE Bridge Service...
 🌉 IntakeDSEBridge initialized - listening to: codex.evidence.indexed
 ✅ Subscribed to: codex.evidence.indexed
 🎧 Waiting for events...
@@ -181,7 +181,7 @@ Simulate Codex Hunters event emission:
 
 ```bash
 redis-cli
-> PUBLISH codex.evidence.indexed '{"evidence_id": "EVD-TEST-001", "point_id": "test-point-123", "collection": "aegis_embeddings", "timestamp": "2026-01-11T12:00:00Z"}'
+> PUBLISH codex.evidence.indexed '{"evidence_id": "EVD-TEST-001", "point_id": "test-point-123", "collection": "vitruvyan_embeddings", "timestamp": "2026-01-11T12:00:00Z"}'
 ```
 
 Verify bridge operation:

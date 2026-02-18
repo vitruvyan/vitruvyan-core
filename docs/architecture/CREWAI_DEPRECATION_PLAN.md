@@ -13,7 +13,7 @@ CrewAI will be **removed entirely** from `vitruvyan-core`. No replacement framew
 1. CrewAI was used only for Mercator-specific financial agents
 2. LangGraph already handles orchestration
 3. Agentic modules run as Docker services with REST APIs
-4. Aegis doesn't use CrewAI
+4. Oculus Prime doesn't use CrewAI
 5. The core doesn't need an agent framework — it needs orchestration (LangGraph) and services (Docker)
 
 ---

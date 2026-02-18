@@ -1,5 +1,5 @@
 """
-AEGIS INTAKE — Landscape Analysis Intake Agent
+Vitruvyan INTAKE — Landscape Analysis Intake Agent
 
 Media Scope: Raster maps, satellite imagery, map tiles
 Sources: Mapbox, OpenStreetMap, Google Maps, satellite providers

@@ -1,5 +1,5 @@
 """
-AEGIS INTAKE — Video & Streaming Intake Agent
+Vitruvyan INTAKE — Video & Streaming Intake Agent
 
 Media Scope: MP4, OGG, AVI, MOV, WebRTC streams, RTSP feeds, satellite imagery
 Constraints: Keyframe extraction + audio STT, governed by Sampling Policy

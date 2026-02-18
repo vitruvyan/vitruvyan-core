@@ -1,5 +1,5 @@
 """
-AEGIS INTAKE — Image Intake Agent
+Vitruvyan INTAKE — Image Intake Agent
 
 Media Scope: JPG, PNG, TIFF, BMP, GIF
 Constraints: OCR + literal caption ONLY, NO evaluative adjectives

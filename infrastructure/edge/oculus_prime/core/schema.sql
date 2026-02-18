@@ -1,5 +1,5 @@
 -- ============================================================================
--- AEGIS INTAKE — PostgreSQL Schema (Append-Only)
+-- Vitruvyan INTAKE — PostgreSQL Schema (Append-Only)
 -- ============================================================================
 -- Purpose: Immutable persistence for Evidence Packs and event audit trail
 -- Compliance: ACCORDO-FONDATIVO-INTAKE-V1.1
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS intake_event_log (
     -- Event metadata
     event_id VARCHAR(255) NOT NULL,
     event_version VARCHAR(20) NOT NULL,
-    schema_ref VARCHAR(255) NOT NULL,  -- e.g., "aegis://oculus_prime/events/evidence_created/v2.0"
+    schema_ref VARCHAR(255) NOT NULL,  -- e.g., "vitruvyan://oculus_prime/events/evidence_created/v2.0"
     
     -- Business keys
     evidence_id VARCHAR(255) NOT NULL,
@@ -125,7 +125,7 @@ CREATE INDEX idx_intake_event_log_schema_ref ON intake_event_log(schema_ref);
 -- Comment
 COMMENT ON TABLE intake_event_log IS 'Audit trail for emitted evidence-created events (v2 canonical + legacy alias)';
 COMMENT ON COLUMN intake_event_log.idempotency_key IS 'SHA-256 hash: prevents duplicate event emission';
-COMMENT ON COLUMN intake_event_log.schema_ref IS 'Event schema URI (e.g., aegis://oculus_prime/events/evidence_created/v2.0)';
+COMMENT ON COLUMN intake_event_log.schema_ref IS 'Event schema URI (e.g., vitruvyan://oculus_prime/events/evidence_created/v2.0)';
 
 
 -- ============================================================================
@@ -260,20 +260,20 @@ COMMENT ON FUNCTION get_evidence_pack_by_id IS 'Retrieve all chunks for given ev
 -- ============================================================================
 
 -- Example role creation (adjust for your setup)
--- CREATE ROLE aegis_oculus_prime_user WITH LOGIN PASSWORD 'secure_password';
--- GRANT CONNECT ON DATABASE vitruvyan TO aegis_oculus_prime_user;
--- GRANT USAGE ON SCHEMA public TO aegis_oculus_prime_user;
--- GRANT SELECT, INSERT ON evidence_packs TO aegis_oculus_prime_user;
--- GRANT SELECT, INSERT ON intake_event_log TO aegis_oculus_prime_user;
--- GRANT SELECT, INSERT ON intake_event_failures TO aegis_oculus_prime_user;
--- GRANT SELECT ON evidence_packs_recent TO aegis_oculus_prime_user;
--- GRANT SELECT ON intake_event_log_recent TO aegis_oculus_prime_user;
--- GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO aegis_oculus_prime_user;
+-- CREATE ROLE vitruvyan_oculus_prime_user WITH LOGIN PASSWORD 'secure_password';
+-- GRANT CONNECT ON DATABASE vitruvyan TO vitruvyan_oculus_prime_user;
+-- GRANT USAGE ON SCHEMA public TO vitruvyan_oculus_prime_user;
+-- GRANT SELECT, INSERT ON evidence_packs TO vitruvyan_oculus_prime_user;
+-- GRANT SELECT, INSERT ON intake_event_log TO vitruvyan_oculus_prime_user;
+-- GRANT SELECT, INSERT ON intake_event_failures TO vitruvyan_oculus_prime_user;
+-- GRANT SELECT ON evidence_packs_recent TO vitruvyan_oculus_prime_user;
+-- GRANT SELECT ON intake_event_log_recent TO vitruvyan_oculus_prime_user;
+-- GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO vitruvyan_oculus_prime_user;
 
 -- Revoke dangerous permissions
--- REVOKE UPDATE, DELETE, TRUNCATE ON evidence_packs FROM aegis_oculus_prime_user;
--- REVOKE UPDATE, DELETE, TRUNCATE ON intake_event_log FROM aegis_oculus_prime_user;
--- REVOKE UPDATE, DELETE, TRUNCATE ON intake_event_failures FROM aegis_oculus_prime_user;
+-- REVOKE UPDATE, DELETE, TRUNCATE ON evidence_packs FROM vitruvyan_oculus_prime_user;
+-- REVOKE UPDATE, DELETE, TRUNCATE ON intake_event_log FROM vitruvyan_oculus_prime_user;
+-- REVOKE UPDATE, DELETE, TRUNCATE ON intake_event_failures FROM vitruvyan_oculus_prime_user;
 
 COMMENT ON SCHEMA public IS 'RBAC enforced: application user has INSERT+SELECT only on Oculus Prime tables';
 

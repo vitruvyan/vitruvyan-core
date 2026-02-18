@@ -22,7 +22,7 @@ from api_edge_oculus_prime.config import IntakeSettings  # noqa: E402
 
 def _settings() -> IntakeSettings:
     return IntakeSettings(
-        service_name="aegis_oculus_prime_api",
+        service_name="vitruvyan_oculus_prime_api",
         service_version="1.0.0",
         host="0.0.0.0",
         port=8050,
@@ -70,7 +70,7 @@ def test_health_uses_postgres_ping_and_closes_connection(monkeypatch):
     payload = persistence.health()
 
     assert payload["status"] == "healthy"
-    assert payload["service"] == "aegis_oculus_prime_api"
+    assert payload["service"] == "vitruvyan_oculus_prime_api"
     assert fake_pg.closed is True
 
 

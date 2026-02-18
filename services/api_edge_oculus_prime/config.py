@@ -58,9 +58,9 @@ def load_settings() -> OculusPrimeSettings:
             "http://localhost:3000",
             "http://localhost:3001",
             "http://localhost:3003",
-            "http://vitruvyan_aegis_ui:3000",
-            "https://aegis.vitruvyan.com",
-            "https://aegis-ui-seven.vercel.app",
+            "http://vitruvyan_oculus_prime_ui:3000",
+            "https://oculus.vitruvyan.com",
+            "https://oculus-prime-ui.vercel.app",
             frontend_url,
         ]
     )
@@ -69,7 +69,7 @@ def load_settings() -> OculusPrimeSettings:
     )
 
     return OculusPrimeSettings(
-        service_name="aegis_oculus_prime_api",
+        service_name="vitruvyan_oculus_prime_api",
         service_version="1.0.0",
         host=os.getenv("HOST", "0.0.0.0"),
         port=int(os.getenv("PORT", "8050")),

@@ -1,5 +1,5 @@
 """
-AEGIS Intake → DSE Bridge Service
+Vitruvyan Intake → DSE Bridge Service
 
 FastAPI service entry point.
 """

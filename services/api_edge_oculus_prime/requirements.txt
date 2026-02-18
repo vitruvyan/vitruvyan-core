@@ -1,4 +1,4 @@
-# AEGIS OCULUS PRIME API Requirements
+# Vitruvyan OCULUS PRIME API Requirements
 # ================================
 
 # FastAPI + Uvicorn

@@ -1,5 +1,5 @@
 """
-AEGIS OCULUS PRIME — Event Bus Emission Contract (Streams-Native)
+Vitruvyan OCULUS PRIME — Event Bus Emission Contract (Streams-Native)
 
 This module emits evidence-created events to Redis Streams via StreamBus
 and writes append-only audit logs in PostgreSQL.
@@ -32,7 +32,7 @@ class EvidenceCreatedEvent:
 
     event_id: str
     event_version: str = "1.0.0"
-    schema_ref: str = "aegis://intake/events/evidence_created/v1.0"
+    schema_ref: str = "vitruvyan://intake/events/evidence_created/v1.0"
     timestamp_utc: Optional[str] = None
     evidence_id: Optional[str] = None
     chunk_id: Optional[str] = None
@@ -63,11 +63,11 @@ class IntakeEventEmitter:
 
     LEGACY_CHANNEL = "intake.evidence.created"
     LEGACY_EVENT_VERSION = "1.0.0"
-    LEGACY_SCHEMA_REF = "aegis://intake/events/evidence_created/v1.0"
+    LEGACY_SCHEMA_REF = "vitruvyan://intake/events/evidence_created/v1.0"
 
     CANONICAL_CHANNEL = "oculus_prime.evidence.created"
     CANONICAL_EVENT_VERSION = "2.0.0"
-    CANONICAL_SCHEMA_REF = "aegis://oculus_prime/events/evidence_created/v2.0"
+    CANONICAL_SCHEMA_REF = "vitruvyan://oculus_prime/events/evidence_created/v2.0"
 
     MIGRATION_MODES = {"dual_write", "v1_only", "v2_only"}
 

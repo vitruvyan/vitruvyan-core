@@ -1,5 +1,5 @@
 """
-AEGIS INTAKE — Audio Intake Agent
+Vitruvyan INTAKE — Audio Intake Agent
 
 Media Scope: MP3, WAV, AAC, FLAC, OGG
 Constraints: STT + diarization, NO sentiment or intent detection

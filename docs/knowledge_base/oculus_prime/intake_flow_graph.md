@@ -1,6 +1,6 @@
 # Oculus Prime Flow Graph (Streams-Native)
 
-> **Updated**: February 16, 2026  
+> **Updated**: February 17, 2026  
 > **Context**: Vitruvyan Core Oculus Prime refactor baseline  
 > **Scope**: Pre-epistemic acquisition only (no semantic enrichment in Oculus Prime)
 
@@ -11,9 +11,10 @@
 This document describes the canonical Oculus Prime flow after migration to Redis Streams.
 
 Key constraints:
-1. Oculus Prime performs acquisition, normalization, and immutable persistence.
-2. Oculus Prime emits `oculus_prime.evidence.created` via StreamBus (legacy alias supported).
-3. Semantic enrichment starts downstream (Codex Hunters and beyond).
+1. Oculus Prime is the single edge gateway for H2M/M2M ingestion.
+2. Oculus Prime performs acquisition, normalization, and immutable persistence.
+3. Oculus Prime emits `oculus_prime.evidence.created` via StreamBus (legacy alias supported).
+4. Semantic enrichment starts downstream (Codex Hunters and beyond).
 
 ---
 

@@ -1,4 +1,4 @@
-# AEGIS Intake Layer — Compliance Checklist
+# Vitruvyan Intake Layer — Compliance Checklist
 
 **Version**: 1.1.0 (**FREEZE-READY** ✅)  
 **Date**: 2026-01-09  
@@ -13,7 +13,7 @@
 
 ## Purpose
 
-This checklist validates that the AEGIS Intake Layer implementation strictly adheres to all **non-negotiable constraints** defined in ACCORDO-FONDATIVO-INTAKE-V1.1.
+This checklist validates that the Vitruvyan Intake Layer implementation strictly adheres to all **non-negotiable constraints** defined in ACCORDO-FONDATIVO-INTAKE-V1.1.
 
 **Audit Scope**:
 - Evidence Pack Schema
@@ -79,7 +79,7 @@ This checklist validates that the AEGIS Intake Layer implementation strictly adh
 
 | ID | Requirement | Status | Evidence | Notes |
 |----|-------------|--------|----------|-------|
-| 4.1 | Canonical events have `schema_ref` = `aegis://oculus_prime/events/evidence_created/v2.0` | ✅ | `event_evidence_created_v2.json` | Canonical schema enforced |
+| 4.1 | Canonical events have `schema_ref` = `vitruvyan://oculus_prime/events/evidence_created/v2.0` | ✅ | `event_evidence_created_v2.json` | Canonical schema enforced |
 | 4.2 | `idempotency_key` = SHA-256(evidence_id + chunk_id + source_hash) | ✅ | `event_emitter.py` lines 80-95 | Prevents duplicate processing |
 | 4.3 | Events emitted to Redis stream channel `oculus_prime.evidence.created` (legacy alias optional) | ✅ | `event_emitter.py` | Redis Streams enforced |
 | 4.4 | Event emission logged to PostgreSQL `intake_event_log` | ✅ | `event_emitter.py` lines 150-170 | Success audit trail |

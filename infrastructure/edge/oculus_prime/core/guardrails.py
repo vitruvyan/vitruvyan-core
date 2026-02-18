@@ -1,5 +1,5 @@
 """
-AEGIS INTAKE — Runtime Guardrails
+Vitruvyan INTAKE — Runtime Guardrails
 
 Enforces "no semantics" constraint at runtime.
 Validates that normalized_text is literal/descriptive ONLY (NO interpretation).

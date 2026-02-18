@@ -93,7 +93,7 @@ class VerticalInterface(ABC):
     @property
     @abstractmethod
     def vertical_id(self) -> str:
-        """Identificatore unico del verticale (es. 'mercator', 'aegis')"""
+        """Identificatore unico del verticale (es. 'mercator', 'vitruvyan')"""
         pass
     
     @property
@@ -874,7 +874,7 @@ vitruvyan/
 │   │       ├── test_abstention.py
 │   │       └── test_adversarial.py
 │   │
-│   └── aegis/                     # Verticale Emergenze
+│   └── vitruvyan/                     # Verticale Emergenze
 │       ├── __init__.py
 │       ├── vertical.py
 │       ├── config/
@@ -926,7 +926,7 @@ vitruvyan/
 
 ```bash
 # Installa un nuovo verticale
-vitruvyan vertical install ./verticals/aegis
+vitruvyan vertical install ./verticals/vitruvyan
 
 # Output:
 # [1/6] Validating VerticalInterface... ✓
@@ -936,9 +936,9 @@ vitruvyan vertical install ./verticals/aegis
 # [5/6] Verifying Core compliance... ✓
 # [6/6] Running epistemic tests... ✓ (ECE: 0.08, Abstention: 97%)
 #
-# ✓ Vertical 'aegis' installed successfully
+# ✓ Vertical 'vitruvyan' installed successfully
 # 
-# To activate: vitruvyan vertical activate aegis
+# To activate: vitruvyan vertical activate vitruvyan
 ```
 
 ---
@@ -1040,7 +1040,7 @@ verticals:
     core_compatibility: ">=2.0.0"
     status: active
     
-  aegis:
+  vitruvyan:
     version: "0.9.0"
     core_compatibility: ">=2.1.0"
     status: beta

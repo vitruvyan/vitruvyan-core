@@ -1,5 +1,5 @@
 """
-AEGIS INTAKE — Geospatial Intake Agent
+Vitruvyan INTAKE — Geospatial Intake Agent
 
 Media Scope: KML, KMZ, GeoJSON, GPX, WKT polygons
 Use Cases: Warehouse boundaries, delivery zones, operational areas, GPS tracks

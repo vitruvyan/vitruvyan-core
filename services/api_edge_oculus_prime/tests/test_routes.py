@@ -35,7 +35,7 @@ def _client(adapter) -> TestClient:
 def test_health_route_delegates_to_adapter():
     class Adapter:
         def health(self):
-            return {"status": "healthy", "service": "aegis_oculus_prime_api"}
+            return {"status": "healthy", "service": "vitruvyan_oculus_prime_api"}
 
     client = _client(Adapter())
     response = client.get("/health")

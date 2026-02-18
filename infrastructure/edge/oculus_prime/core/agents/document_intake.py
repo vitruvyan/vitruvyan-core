@@ -1,5 +1,5 @@
 """
-AEGIS INTAKE — Document Intake Agent
+Vitruvyan INTAKE — Document Intake Agent
 
 Media Scope: PDF, DOCX, MD, TXT, JSON, XML
 Constraints: NO semantic inference, NO relevance judgment

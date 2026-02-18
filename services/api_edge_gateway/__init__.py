@@ -1,2 +1,0 @@
-"""Vitruvyan Edge Gateway package."""
-

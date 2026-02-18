@@ -1,4 +1,4 @@
-# AEGIS Intake Layer — Pre-Epistemic Evidence Acquisition
+# Vitruvyan Intake Layer — Pre-Epistemic Evidence Acquisition
 
 **Version**: 1.0.0  
 **Date**: 2026-01-09  
@@ -9,7 +9,7 @@
 
 ## Purpose
 
-The **AEGIS Intake Layer** is the **pre-epistemic acquisition system** for the AEGIS DSE-CPS Engine. It acquires raw evidence from multiple media types (documents, images, audio, video, streams), normalizes content to literal format, and emits immutable Evidence Packs to the Redis Cognitive Bus.
+The **Vitruvyan Intake Layer** is the **pre-epistemic acquisition system** for the Vitruvyan DSE-CPS Engine. It acquires raw evidence from multiple media types (documents, images, audio, video, streams), normalizes content to literal format, and emits immutable Evidence Packs to the Redis Cognitive Bus.
 
 **Key Characteristics**:
 - ✅ **Pre-epistemic**: NO semantic interpretation, NO entity extraction, NO sentiment analysis
@@ -24,7 +24,7 @@ The **AEGIS Intake Layer** is the **pre-epistemic acquisition system** for the A
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  AEGIS INTAKE LAYER (Pre-Epistemic)                          │
+│  Vitruvyan INTAKE LAYER (Pre-Epistemic)                          │
 │  ┌────────────────────────────────────────────────────────┐  │
 │  │  Media-Specific Agents                                 │  │
 │  │  ┌──────────┬──────────┬──────────┬──────────────┐    │  │
@@ -270,13 +270,13 @@ print(f"Created {len(evidence_ids)} Evidence Packs (video chunks)")
 ## Event Schema
 
 **Event**: `oculus_prime.evidence.created` (canonical)  
-**Schema URI**: `aegis://oculus_prime/events/evidence_created/v2.0`
+**Schema URI**: `vitruvyan://oculus_prime/events/evidence_created/v2.0`
 
 ```json
 {
   "event_id": "EVT-12345678-1234-5678-1234-567812345678",
   "event_version": "2.0.0",
-  "schema_ref": "aegis://oculus_prime/events/evidence_created/v2.0",
+  "schema_ref": "vitruvyan://oculus_prime/events/evidence_created/v2.0",
   "timestamp": "2026-01-09T14:30:00Z",
   "evidence_id": "EVD-12345678-1234-5678-1234-567812345678",
   "chunk_id": "CHK-0",
@@ -491,7 +491,7 @@ Example:
 
 ## License
 
-AEGIS Intake Layer is part of the Vitruvyan AI Trading Advisor project.  
+Vitruvyan Intake Layer is part of the Vitruvyan AI Trading Advisor project.  
 Copyright © 2026 Caravaggio. All rights reserved.
 
 ---

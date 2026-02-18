@@ -345,7 +345,7 @@ class OculusPrimeAdapter:
 
     def root(self) -> dict[str, Any]:
         return {
-            "service": "AEGIS OCULUS PRIME API",
+            "service": "Vitruvyan OCULUS PRIME API",
             "version": self.settings.service_version,
             "status": "operational",
             "docs": "/docs",

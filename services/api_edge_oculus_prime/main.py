@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
     app.state.oculus_prime_adapter = adapter
     app.state.intake_adapter = adapter
     logger.info(
-        "AEGIS OCULUS PRIME API starting (pg=%s:%s db=%s redis=%s:%s)",
+        "Vitruvyan OCULUS PRIME API starting (pg=%s:%s db=%s redis=%s:%s)",
         settings.postgres_host,
         settings.postgres_port,
         settings.postgres_db,
@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="AEGIS OCULUS PRIME API",
+    title="Vitruvyan OCULUS PRIME API",
     description="Evidence Pack ingestion service for Edge interoperability",
     version=settings.service_version,
     lifespan=lifespan,

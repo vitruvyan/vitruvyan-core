@@ -1,7 +1,7 @@
 """
 API Intake Agent — Versatile external API data acquisition.
 
-AEGIS INTAKE LAYER — PHASE 2.5
+Vitruvyan INTAKE LAYER — PHASE 2.5
 Date: January 12, 2026
 
 Architecture:

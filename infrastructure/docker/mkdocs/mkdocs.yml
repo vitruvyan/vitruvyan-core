@@ -133,6 +133,8 @@ nav:
     - Overview: services/README_SERVICES.md
     - API Graph: services/api_graph/README.md
     - API MCP: services/api_mcp/README.md
+    - Edge APIs:
+      - Oculus Prime API: services/api_edge_oculus_prime/README.md
     - Platform APIs:
       - Embedding API: docs/internal/services/EMBEDDING_API.md
       - Synaptic Conclave API: docs/internal/services/CONCLAVE_API.md
@@ -148,6 +150,10 @@ nav:
     
   - Infrastructure:
     - Overview: infrastructure/README_INFRASTRUCTURE.md
+    - Edge:
+      - Edge Overview: infrastructure/edge/README.md
+      - Oculus Prime Module: infrastructure/edge/oculus_prime/README.md
+      - Oculus Prime Flow Graph: docs/knowledge_base/oculus_prime/intake_flow_graph.md
     - Docker Setup: infrastructure/docker/README.md
     - Monitoring: infrastructure/docker/monitoring/README.md
     - Synaptic Topology (Mermaid): infrastructure/docker/monitoring/grafana/SYNAPTIC_CONCLAVE_TOPOLOGY.md

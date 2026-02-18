@@ -56,7 +56,7 @@ def test_dual_write_emits_v2_and_legacy_alias():
         "intake.evidence.created",
     ]
     assert event.event_version == "2.0.0"
-    assert event.schema_ref == "aegis://oculus_prime/events/evidence_created/v2.0"
+    assert event.schema_ref == "vitruvyan://oculus_prime/events/evidence_created/v2.0"
     assert event.metadata["migration_mode"] == "dual_write"
     assert event.metadata["emitted_channels"] == [
         "oculus_prime.evidence.created",
@@ -101,5 +101,5 @@ def test_v1_only_supports_rollback_mode():
 
     assert [c["channel"] for c in bus.calls] == ["intake.evidence.created"]
     assert event.event_version == "1.0.0"
-    assert event.schema_ref == "aegis://intake/events/evidence_created/v1.0"
+    assert event.schema_ref == "vitruvyan://intake/events/evidence_created/v1.0"
     assert event.metadata["migration_mode"] == "v1_only"

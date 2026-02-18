@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://aegis.aicom/schemas/events/evidence_created_v2.json",
-  "title": "AEGIS Oculus Prime Event: evidence.created v2",
+  "$id": "https://vitruvyan.aicom/schemas/events/evidence_created_v2.json",
+  "title": "Vitruvyan Oculus Prime Event: evidence.created v2",
   "description": "Canonical event emitted when Evidence Pack is successfully created and persisted",
   "type": "object",
   "required": [
@@ -27,7 +27,7 @@
     },
     "schema_ref": {
       "type": "string",
-      "const": "aegis://oculus_prime/events/evidence_created/v2.0",
+      "const": "vitruvyan://oculus_prime/events/evidence_created/v2.0",
       "description": "Canonical schema reference for event validation and replay"
     },
     "timestamp_utc": {

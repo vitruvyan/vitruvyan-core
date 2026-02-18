@@ -1,8 +1,6 @@
-# AEGIS Oculus Prime — Evidence Pack Ingestion System
+# Oculus Prime — Evidence Ingestion Gateway
 
-> **Vertical**: AEGIS (Autonomous Evidence-Gathering and Intelligence System)  
-> **Layer**: Perception (Ingestion)  
-> **Status**: Imported from aegis vertical (Feb 16, 2026)
+> **Subtitle**: Multi-purpose edge ingestion gateway for H2M and M2M interoperability.
 
 ---
 
@@ -15,7 +13,7 @@ Oculus Prime is a **domain-agnostic Evidence Pack ingestion system** responsible
 - Emitting events to the Cognitive Bus for downstream processing
 - Enforcing append-only persistence and integrity guarantees
 
-**Sacred Order**: Perception (BABEL GARDENS domain — but vertical-specific implementation for AEGIS)
+**Sacred Order**: Perception (domain-agnostic edge acquisition layer)
 
 ---
 
@@ -78,14 +76,14 @@ psql -h <POSTGRES_HOST> -U <POSTGRES_USER> -d vitruvyan_core -f infrastructure/e
 ### 1. Build Docker Image
 
 ```bash
-docker build -f services/api_edge_oculus_prime/Dockerfile -t aegis_oculus_prime:latest .
+docker build -f services/api_edge_oculus_prime/Dockerfile -t vitruvyan_oculus_prime:latest .
 ```
 
 ### 2. Run Container
 
 ```bash
 docker run -d \
-  --name aegis_oculus_prime \
+  --name vitruvyan_oculus_prime \
   --network vitruvyan_core_net \
   -p 9050:8050 \
   -e POSTGRES_HOST=core_postgres \
@@ -95,7 +93,7 @@ docker run -d \
   -e POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
   -e REDIS_HOST=core_redis \
   -e REDIS_PORT=6379 \
-  aegis_oculus_prime:latest
+  vitruvyan_oculus_prime:latest
 ```
 
 ### 3. Health Check
@@ -106,7 +104,7 @@ curl http://localhost:9050/health
 
 Expected response:
 ```json
-{"status": "healthy", "service": "aegis_oculus_prime_api", "version": "1.0.0"}
+{"status": "healthy", "service": "vitruvyan_oculus_prime_api", "version": "1.0.0"}
 ```
 
 ### 4. Troubleshooting Connection Errors
@@ -161,7 +159,7 @@ Oculus Prime emits canonical `oculus_prime.evidence.created` events to the Cogni
   "source_type": "document",
   "normalized_text": "...",
   "created_utc": "2026-02-16T19:30:00Z",
-  "schema_ref": "aegis://oculus_prime/events/evidence_created/v2.0"
+  "schema_ref": "vitruvyan://oculus_prime/events/evidence_created/v2.0"
 }
 ```
 
@@ -203,17 +201,17 @@ All Oculus Prime operations MUST comply with:
 
 ## Development Notes
 
-- **Origin**: Imported from `aegis` vertical (Feb 16, 2026)
+- **Origin**: Imported from `vitruvyan` vertical (Feb 16, 2026)
 - **Python Version**: 3.11+
 - **Dependencies**: FastAPI, psycopg2-binary, redis, pydantic
-- **Testing**: Unit tests pending (import from aegis/tests)
+- **Testing**: Unit tests pending (import from vitruvyan/tests)
 
 ---
 
 ## Next Steps
 
-1. ✅ Import core module from aegis
-2. ✅ Import service API from aegis
+1. ✅ Import core module from vitruvyan
+2. ✅ Import service API from vitruvyan
 3. ✅ Import database schema
 4. ✅ Align runtime service to `services/api_edge_oculus_prime` (LIVELLO 2 structure)
 5. ✅ Add Oculus Prime service to `infrastructure/docker/docker-compose.yml`
@@ -223,5 +221,5 @@ All Oculus Prime operations MUST comply with:
 ---
 
 **Last Updated**: Feb 16, 2026  
-**Maintainer**: AEGIS Team  
+**Maintainer**: Vitruvyan Team  
 **Status**: Imported, pending integration

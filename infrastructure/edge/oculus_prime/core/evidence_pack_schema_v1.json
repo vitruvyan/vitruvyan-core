@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://aegis.aicom/schemas/evidence_pack_v1.json",
-  "title": "AEGIS Evidence Pack v1",
+  "$id": "https://vitruvyan.aicom/schemas/evidence_pack_v1.json",
+  "title": "Vitruvyan Evidence Pack v1",
   "description": "Immutable, append-only evidence container for pre-epistemic intake",
   "type": "object",
   "required": [

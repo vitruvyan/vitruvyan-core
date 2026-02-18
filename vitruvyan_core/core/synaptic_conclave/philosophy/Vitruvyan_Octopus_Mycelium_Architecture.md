@@ -307,7 +307,7 @@ Vitruvyan currently supports financial analysis with:
 
 This serves as a validation environment for the architecture.
 
-### 6.2 Future: Emergency Response (Aegis)
+### 6.2 Future: Emergency Response (Oculus Prime)
 
 The target application is decision support during natural disasters:
 - Heterogeneous input integration (sensors, reports, imagery)

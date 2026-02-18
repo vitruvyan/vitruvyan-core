@@ -1,5 +1,5 @@
 """
-AEGIS INTAKE — CAD/BIM Intake Agent
+Vitruvyan INTAKE — CAD/BIM Intake Agent
 
 Media Scope: CAD files (DWG, DXF), BIM files (IFC, RVT)
 Sources: AutoCAD, Revit, ArchiCAD, SketchUp exports

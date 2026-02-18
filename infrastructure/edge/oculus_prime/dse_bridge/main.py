@@ -1,5 +1,5 @@
 """
-AEGIS Intake → DSE Bridge Service
+Vitruvyan Intake → DSE Bridge Service
 
 FastAPI service that bridges Codex Hunters (semantic enrichment) and DSE Epistemic Chain (Pattern Weavers).
 
@@ -61,7 +61,7 @@ logger = logging.getLogger(__name__)
 
 # FastAPI app
 app = FastAPI(
-    title="AEGIS Intake → DSE Bridge",
+    title="Vitruvyan Intake → DSE Bridge",
     description="Bridge service between Codex Hunters and DSE Epistemic Chain",
     version="1.0.0"
 )
@@ -75,7 +75,7 @@ async def startup_event():
     """Initialize bridge and start event listener on startup"""
     global bridge
     
-    logger.info("🚀 Starting AEGIS Intake → DSE Bridge Service...")
+    logger.info("🚀 Starting Vitruvyan Intake → DSE Bridge Service...")
     
     # Initialize bridge
     bridge = IntakeDSEBridge()
@@ -262,7 +262,7 @@ async def get_status():
 async def root():
     """Root endpoint with service info"""
     return {
-        "service": "AEGIS Intake → DSE Bridge",
+        "service": "Vitruvyan Intake → DSE Bridge",
         "version": "1.0.0",
         "description": "Bridge between Codex Hunters (semantic enrichment) and DSE Epistemic Chain (Pattern Weavers)",
         "endpoints": {
