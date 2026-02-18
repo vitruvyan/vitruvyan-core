@@ -158,6 +158,12 @@ nav:
     - Monitoring: infrastructure/docker/monitoring/README.md
     - Synaptic Topology (Mermaid): infrastructure/docker/monitoring/grafana/SYNAPTIC_CONCLAVE_TOPOLOGY.md
     - KB Access Control: infrastructure/docker/mkdocs/ACCESS_CONTROL.md
+
+  - Contracts:
+    - Contracts Overview: docs/contracts/README.md
+    - Vertical Contract V1: docs/contracts/verticals/VERTICAL_CONTRACT_V1.md
+    - Vertical Conformance Checklist: docs/contracts/verticals/VERTICAL_CONFORMANCE_CHECKLIST.md
+    - Vertical Manifest Template: docs/contracts/verticals/templates/vertical_manifest.yaml
     
   - Development:
     - Testing: tests/README_TESTS.md

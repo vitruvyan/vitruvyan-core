@@ -16,6 +16,19 @@
 - `route_node`: Add vertical-specific routes
 - `context` field: Pass vertical metadata
 
+## Contracts-First Pattern (Mandatory)
+
+Vertical examples and real vertical implementations MUST follow the contract package:
+
+- `docs/contracts/verticals/VERTICAL_CONTRACT_V1.md`
+- `docs/contracts/verticals/VERTICAL_CONFORMANCE_CHECKLIST.md`
+- `docs/contracts/verticals/templates/vertical_manifest.yaml`
+
+Practical rules:
+1. Keep core domain-agnostic; extend through adapters/plugins only.
+2. Use canonical contract imports from `contracts` / `vitruvyan_core.contracts`.
+3. Treat this folder as pattern reference; production verticals belong under `vitruvyan_core/domains/<domain>/`.
+
 ---
 
 ## Directory Structure

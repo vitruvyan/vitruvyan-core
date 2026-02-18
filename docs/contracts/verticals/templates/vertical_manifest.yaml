@@ -1,0 +1,49 @@
+# Vertical Manifest Template
+schema_version: "1.0.0"
+contract_version: "vertical-contract-v1"
+
+domain_name: "example"
+domain_version: "0.1.0"
+status: "draft" # draft|active|deprecated
+
+ownership:
+  team: "domain-team"
+  tech_lead: "name.surname"
+  contact: "team@example.com"
+
+required_components:
+  intent_config: true
+  readme: true
+  manifest: true
+
+optional_components:
+  graph_plugin: true
+  governance_rules: true
+  slot_filler: false
+  response_formatter: false
+  execution_config: false
+  entity_resolver_config: false
+
+adapters:
+  langgraph_plugin: true
+  sacred_orders_rules: true
+  neural_engine_contracts: false
+
+contracts_used:
+  - contracts.GraphPlugin
+  - contracts.BaseParser
+  - contracts.neural_engine.IDataProvider
+  - contracts.neural_engine.IScoringStrategy
+
+compliance:
+  checklist_version: "vertical-conformance-checklist-v1"
+  status: "pending" # pending|pass|fail
+  last_verified_utc: null
+
+derogations: []
+# - id: "DEROG-001"
+#   reason: "temporary migration gap"
+#   owner: "domain-team"
+#   expiry_utc: "2026-03-31T00:00:00Z"
+#   remediation_plan: "replace legacy import"
+
