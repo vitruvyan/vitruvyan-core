@@ -875,7 +875,7 @@ def get_domain_rules():
 | `SlotFiller` | `core.orchestration.compose.slot_filler` | 3 | Quando raccogli parametri via dialogo |
 | `ResponseFormatter` | `core.orchestration.compose.response_formatter` | 1 | Quando formatti l'output utente |
 | `BaseDomain` | `domains.base_domain` | 7 | Quando registri un dominio formale |
-| `ILLMProvider` | `core.contracts.llm_provider` | 5 | Solo se sostituisci OpenAI con un provider custom |
+| `ILLMProvider` | `contracts.llm_provider` | 5 | Solo se sostituisci OpenAI con un provider custom |
 | `AggregationProvider` | `domains.aggregation_contract` | 5 | Per scoring/ranking personalizzati |
 | `ExplainabilityProvider` | `domains.explainability_contract` | 7 | Per explainability personalizzata |
 | `RiskProvider` | `domains.risk_contract` | 5 | Per valutazione rischio personalizzata |
@@ -1373,7 +1373,7 @@ app.include_router(router)
 
 ### Contratti ABC (codice sorgente)
 
-- `vitruvyan_core/core/contracts/__init__.py` — Import point unico
+- `vitruvyan_core/contracts/__init__.py` — Import point unico
 - `vitruvyan_core/core/orchestration/graph_engine.py` — `GraphPlugin`, `NodeContract`, `GraphEngine`
 - `vitruvyan_core/core/orchestration/intent_registry.py` — `IntentRegistry`, `IntentDefinition`
 - `vitruvyan_core/core/orchestration/base_state.py` — `BaseGraphState` (37 campi)

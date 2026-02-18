@@ -21,7 +21,10 @@ CURRENT BEHAVIOR:
 
 import pandas as pd
 from typing import Dict, List, Optional, Any
-from contracts import IScoringStrategy, ScoringStrategyError
+try:
+    from contracts import IScoringStrategy, ScoringStrategyError
+except ModuleNotFoundError:
+    from vitruvyan_core.contracts import IScoringStrategy, ScoringStrategyError
 
 
 class MockScoringStrategy(IScoringStrategy):

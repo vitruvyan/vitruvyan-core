@@ -16,7 +16,10 @@ from typing import Dict, Any, List
 import numpy as np
 import pandas as pd
 
-from contracts import IScoringStrategy
+try:
+    from contracts import IScoringStrategy
+except ModuleNotFoundError:
+    from vitruvyan_core.contracts import IScoringStrategy
 
 logger = logging.getLogger(__name__)
 

@@ -20,7 +20,10 @@ CURRENT BEHAVIOR:
 import pandas as pd
 import numpy as np
 from typing import Optional, List, Dict, Any
-from contracts import IDataProvider, DataProviderError
+try:
+    from contracts import IDataProvider, DataProviderError
+except ModuleNotFoundError:
+    from vitruvyan_core.contracts import IDataProvider, DataProviderError
 
 
 class MockDataProvider(IDataProvider):
