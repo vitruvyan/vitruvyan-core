@@ -189,7 +189,9 @@ nav:
     
   - Development:
     - Testing: tests/README_TESTS.md
-    - Core Update/Upgrade Masterplan: docs/knowledge_base/development/core_update_upgrade_masterplan.md
+    - Core Update/Upgrade:
+      - Masterplan: docs/knowledge_base/development/core_update_upgrade_masterplan.md
+      - Update System Contract V1: docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md
     - Templates: docs/foundational/TEMPLATE_SACRED_ORDER_COMPONENT.md
     - Verticals:
       - Pattern: examples/verticals/README.md
@@ -199,8 +201,6 @@ nav:
         - Conformance Checklist: docs/contracts/verticals/VERTICAL_CONFORMANCE_CHECKLIST.md
         - Pattern Notes: docs/contracts/verticals/pattern.md
         - Manifest Template: docs/contracts/verticals/templates/vertical_manifest.yaml
-      - Platform Contracts:
-        - Update System Contract V1: docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md
       - Finance:
         - Codex Hunters Domain Pack: examples/verticals/finance/CODEX_HUNTERS_DOMAIN_PACK.md
     - Examples: examples/README_EXAMPLES.md
