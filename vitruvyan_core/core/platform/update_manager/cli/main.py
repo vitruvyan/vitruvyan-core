@@ -9,7 +9,7 @@ Usage:
     vit channel stable
     vit status
 
-Phase 1: Implement `vit update` command
+Phase 2: upgrade, plan, rollback implemented
 """
 
 import sys
@@ -17,6 +17,9 @@ import argparse
 import logging
 
 from .commands.update import register_update_command
+from .commands.upgrade import register_upgrade_command
+from .commands.plan import register_plan_command
+from .commands.rollback import register_rollback_command
 
 # Configure logging
 logging.basicConfig(
@@ -41,34 +44,16 @@ def cli_main():
     
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
     
-    # Register commands (Phase 1: update only)
+    # Register commands (Phase 2: update, upgrade, plan, rollback)
     register_update_command(subparsers)
+    register_upgrade_command(subparsers)
+    register_plan_command(subparsers)
+    register_rollback_command(subparsers)
     
-    # Phase 2+ commands (stubs for now)
-    # TODO: Implement upgrade, plan, rollback, channel, status
+    # Phase 3+ commands (stubs)
+    # TODO: Implement channel, status
     
-    # vit upgrade (stub)
-    upgrade_parser = subparsers.add_parser(
-        "upgrade",
-        help="Apply upgrade (with compatibility validation)"
-    )
-    upgrade_parser.add_argument("--yes", action="store_true", help="Non-interactive mode")
-    upgrade_parser.add_argument("--target", help="Target version (default: latest)")
-    
-    # vit plan
-    plan_parser = subparsers.add_parser(
-        "plan",
-        help="Show upgrade plan (changes, risks, tests)"
-    )
-    plan_parser.add_argument("--target", required=True, help="Target version")
-    
-    # vit rollback
-    rollback_parser = subparsers.add_parser(
-        "rollback",
-        help="Revert to previous version"
-    )
-    
-    # vit channel
+    # vit channel (stub)
     channel_parser = subparsers.add_parser(
         "channel",
         help="Switch update channel (stable|beta)"
