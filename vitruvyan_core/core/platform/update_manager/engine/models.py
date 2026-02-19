@@ -14,15 +14,16 @@ class Release:
     """
     Core release metadata.
     
-    Source: GitHub Releases API + release_metadata.json
+    Source: GitHub Releases API + releases.json asset
     """
     version: str
-    release_date: datetime
+    release_date: str  # ISO 8601 timestamp
     channel: str  # stable|beta
     contracts_version: str
     changes: dict  # {breaking: [], features: [], fixes: []}
     migration_guide_url: Optional[str] = None
-    checksum: Optional[str] = None
+    minimum_vertical_version: dict = field(default_factory=dict)  # {vertical_name: min_version}
+    checksum: dict = field(default_factory=dict)  # {type: "git_commit_sha", value: "..."}
 
 
 @dataclass(frozen=True)
@@ -32,13 +33,11 @@ class CompatibilityResult:
     
     Exit codes:
     - compatible: True → safe to upgrade
-    - compatible: False, reason: "..." → blocked
+    - compatible: False, blocking_reason: "..." → blocked
     """
     compatible: bool
-    current_version: str
     target_version: str
-    reason: Optional[str] = None  # e.g. "contracts_major_mismatch"
-    warnings: List[str] = field(default_factory=list)
+    blocking_reason: Optional[str] = None  # e.g. "contracts_major_mismatch"
 
 
 @dataclass(frozen=True)
