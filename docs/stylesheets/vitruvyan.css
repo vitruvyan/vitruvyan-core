@@ -4,6 +4,13 @@
   --md-text-font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco,
     Consolas, "Liberation Mono", "Courier New", monospace;
   --md-code-font-family: var(--md-text-font-family);
+  --md-accent-fg-color: #000;
+  --md-accent-fg-color--transparent: rgba(0, 0, 0, 0.14);
+  --md-typeset-a-color: #000;
+}
+
+html {
+  font-size: 14px;
 }
 
 .kb-subtitle,
@@ -21,6 +28,7 @@ h6 {
 body {
   font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
+  font-size: 0.94rem;
 }
 
 /* Sticky header */
@@ -53,7 +61,7 @@ header nav.navbar {
 
 /* Primary navbar entries */
 nav.navbar .navbar-nav .nav-link {
-  font-size: 1rem;
+  font-size: 0.83rem;
 }
 
 .headerlink {
@@ -67,7 +75,7 @@ nav.navbar .navbar-nav .nav-link {
 }
 
 .kb-subtitle {
-  font-size: 1.05rem;
+  font-size: 0.85rem;
   text-transform: none;
 }
 
@@ -82,17 +90,17 @@ h3 {
 
 .md-typeset h1,
 h1 {
-  font-size: 2.1rem;
+  font-size: 1.52rem;
 }
 
 .md-typeset h2,
 h2 {
-  font-size: 1.55rem;
+  font-size: 1.24rem;
 }
 
 .md-typeset h3,
 h3 {
-  font-size: 1.25rem;
+  font-size: 1.08rem;
 }
 
 .md-typeset h1,
@@ -121,6 +129,8 @@ h3 {
 .md-typeset p,
 .md-typeset li {
   font-weight: 400;
+  font-size: 0.94rem;
+  line-height: 1.45;
 }
 
 .md-nav--primary > .md-nav__title[for="__drawer"] {
@@ -143,7 +153,7 @@ h3 {
   font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
     Arial, sans-serif;
   font-weight: 600;
-  font-size: 1.3rem;
+  font-size: 0.85rem;
   margin: 0.5rem 0 0.75rem 0;
   color: var(--md-accent-fg-color);
 }
@@ -244,7 +254,7 @@ a#component-site-name:hover {
 }
 
 #kb-lang-switch .kb-lang-switch__icon {
-  font-size: 0.95em;
+  font-size: 0.85em;
 }
 
 #kb-lang-switch .kb-lang-switch__menu {
@@ -321,9 +331,562 @@ a#component-site-name:hover {
   --md-primary-fg-color--light: #4ade80;
   --md-primary-fg-color--dark: #16a34a;
 
-  --md-accent-fg-color: #a78bfa;
-  --md-accent-fg-color--transparent: rgba(167, 139, 250, 0.12);
-
-  --md-typeset-a-color: var(--md-accent-fg-color);
+  --md-accent-fg-color: #000;
+  --md-accent-fg-color--transparent: rgba(0, 0, 0, 0.14);
+  --md-typeset-a-color: #000;
   --md-code-bg-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Material theme tuned to feel closer to the previous simple-blog look:
+   white surfaces, framed content card, boxed sidebar, mono body + strong headings. */
+[data-md-color-scheme="default"] {
+  --md-default-bg-color: #f4f4f4;
+  --md-default-fg-color: #1e1e1e;
+  --md-primary-fg-color: #ffffff;
+  --md-primary-bg-color: #1e1e1e;
+  --md-accent-fg-color: #000;
+  --md-accent-fg-color--transparent: rgba(0, 0, 0, 0.14);
+  --md-typeset-a-color: #000;
+}
+
+.md-header {
+  background: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: none;
+}
+
+.md-header__title,
+.md-header__topic,
+.md-tabs__link,
+.md-search__input {
+  color: #1e1e1e;
+}
+
+.md-header__title,
+.md-header__topic,
+.md-header__button,
+.md-header__source {
+  color: #000 !important;
+}
+
+.md-tabs {
+  background: #fff;
+  border-bottom: 1px solid #000;
+}
+
+.md-tabs__list {
+  justify-content: center;
+}
+
+.md-tabs__link {
+  color: #111 !important;
+  font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.95rem;
+  padding: 0.24rem 0.62rem;
+}
+
+.md-tabs__link:hover,
+.md-tabs__link:focus,
+.md-tabs__item--active .md-tabs__link {
+  background: #000;
+  color: #fff !important;
+}
+
+.md-main {
+  background: #f4f4f4;
+}
+
+.md-main__inner {
+  max-width: 88rem;
+  margin-top: 1.1rem;
+}
+
+.md-content__inner {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  border-radius: 0.55rem;
+  padding: 1.35rem 1.45rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+}
+
+.md-sidebar__scrollwrap {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0.55rem;
+  padding: 0.45rem 0.2rem;
+}
+
+.md-nav__item .md-nav__link--active,
+.md-nav__item .md-nav__link:hover {
+  color: #111;
+  font-weight: 700;
+}
+
+.md-typeset .md-button {
+  border-radius: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.md-typeset pre > code,
+.md-typeset code {
+  border-radius: 0.35rem;
+}
+
+.md-footer {
+  background: #fff;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Material layout: primary tabs + generated horizontal submenu bar on desktop */
+@media screen and (min-width: 76.25em) {
+  .md-main__inner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .md-content {
+    max-width: none;
+    order: 2;
+  }
+
+  .md-sidebar--primary,
+  .md-sidebar--secondary {
+    display: none;
+  }
+}
+
+.kb-subnav {
+  background: #000;
+  border-bottom: 1px solid #000;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-8px);
+  overflow: hidden;
+  transition: max-height 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 260ms ease, transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kb-subnav.is-open {
+  max-height: 160px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.kb-subnav[hidden] {
+  display: none !important;
+}
+
+.kb-subnav__inner {
+  max-width: 88rem;
+  margin: 0 auto;
+  padding: 0.42rem 1rem;
+}
+
+.kb-subnav__list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kb-subnav__item {
+  flex: 0 0 auto;
+}
+
+.kb-subnav__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.95rem;
+  white-space: nowrap;
+  border: 1px solid #fff;
+  background: #000;
+  color: #fff !important;
+  padding: 0.2rem 0.52rem;
+  font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.kb-subnav__link:hover,
+.kb-subnav__link:focus,
+.kb-subnav__link.is-active {
+  background: #fff;
+  color: #000 !important;
+  text-decoration: none;
+}
+
+.md-search__form {
+  background: #000 !important;
+  min-height: 1.95rem;
+  display: flex;
+  align-items: center;
+}
+
+.md-search__input {
+  color: #fff !important;
+  font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace !important;
+}
+
+.md-search__icon,
+.md-search__output,
+.md-search__input::placeholder {
+  color: #fff !important;
+}
+
+.md-search__form,
+.md-search__input,
+.md-search__label {
+  font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace !important;
+}
+
+.kb-auth-controls-material {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+  margin-left: 0.42rem;
+  align-self: center;
+}
+
+.kb-auth-controls-material__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.95rem;
+  border: 1px solid #000;
+  background: #000;
+  color: #fff !important;
+  padding: 0.2rem 0.54rem;
+  font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.82rem;
+  text-decoration: none;
+}
+
+.kb-auth-controls-material__link:hover,
+.kb-auth-controls-material__link:focus {
+  background: #111;
+  color: #fff !important;
+  text-decoration: none;
+}
+
+.md-header__inner {
+  align-items: center;
+}
+
+.md-typeset h1 {
+  color: #000 !important;
+  border-bottom: none !important;
+  padding-bottom: 0;
+}
+
+.md-typeset a {
+  display: inline-block;
+  background: #000;
+  color: #fff !important;
+  padding: 0.04rem 0.28rem;
+  text-decoration: none;
+}
+
+.md-typeset a:hover,
+.md-typeset a:focus {
+  background: #111;
+  color: #fff !important;
+  text-decoration: none;
+}
+
+/* Remove remaining Material blue accents from notes/buttons. */
+.md-typeset .admonition.note,
+.md-typeset details.note {
+  border-color: #000 !important;
+}
+
+.md-typeset .note > .admonition-title,
+.md-typeset .note > summary {
+  background: rgba(0, 0, 0, 0.12) !important;
+  color: #000 !important;
+}
+
+.md-typeset .note > .admonition-title::before,
+.md-typeset .note > summary::before {
+  background-color: #000 !important;
+}
+
+.md-typeset .md-button,
+.md-typeset .md-button--primary {
+  background: #000 !important;
+  border-color: #000 !important;
+  color: #fff !important;
+}
+
+.md-typeset .md-button:hover,
+.md-typeset .md-button:focus,
+.md-typeset .md-button--primary:hover,
+.md-typeset .md-button--primary:focus {
+  background: #111 !important;
+  border-color: #111 !important;
+  color: #fff !important;
+}
+
+/* Sidebar/TOC hover + active accents must be black (not blue). */
+.md-nav--secondary .md-nav__link:hover,
+.md-nav--secondary .md-nav__link:focus,
+.md-nav--secondary .md-nav__link--active {
+  color: #000 !important;
+  background: transparent !important;
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.md-nav--secondary .md-nav__link--active::before,
+.md-nav--secondary .md-nav__link:hover::before,
+.md-nav--secondary .md-nav__link:focus::before {
+  background: #000 !important;
+}
+
+.md-sidebar .md-nav__link {
+  background: transparent !important;
+  color: #000 !important;
+}
+
+.md-sidebar .md-nav__link:hover,
+.md-sidebar .md-nav__link:focus {
+  background: transparent !important;
+  color: #000 !important;
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.md-sidebar .md-nav__title {
+  color: #000 !important;
+}
+
+.md-sidebar__scrollwrap {
+  scrollbar-color: #000 #e6e6e6;
+}
+
+.md-sidebar__scrollwrap::-webkit-scrollbar {
+  width: 10px;
+}
+
+.md-sidebar__scrollwrap::-webkit-scrollbar-track {
+  background: #e6e6e6;
+}
+
+.md-sidebar__scrollwrap::-webkit-scrollbar-thumb {
+  background: #000;
+  border-radius: 8px;
+}
+
+.md-sidebar__scrollwrap::-webkit-scrollbar-thumb:hover {
+  background: #000;
+}
+
+@media screen and (max-width: 76.2344em) {
+  .kb-auth-controls-material {
+    display: none !important;
+  }
+
+  .kb-subnav {
+    display: none !important;
+  }
+}
+
+@media screen and (max-width: 76.2344em) {
+  .md-content__inner,
+  .md-sidebar__scrollwrap {
+    border-radius: 0.4rem;
+  }
+}
+
+/* Bootstrap4 theme: black/white look and feel */
+body {
+  font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  color: #111;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.dropdown-item {
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, sans-serif;
+}
+
+.navbar.navbar-dark.bg-dark {
+  background: #fff !important;
+  border-bottom: 1px solid #000;
+  position: relative;
+  z-index: 5000;
+}
+
+.navbar.navbar-dark .navbar-brand,
+.navbar.navbar-dark .navbar-nav .nav-link,
+.navbar.navbar-dark .navbar-nav .nav-link.dropdown-toggle,
+.navbar.navbar-dark .navbar-toggler {
+  color: #000 !important;
+}
+
+.navbar.navbar-dark .navbar-nav .nav-link {
+  font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.navbar.navbar-dark .navbar-brand {
+  font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.85rem;
+  letter-spacing: 0.01em;
+}
+
+.navbar.navbar-dark .navbar-nav .nav-link:hover,
+.navbar.navbar-dark .navbar-nav .nav-link:focus,
+.navbar.navbar-dark .navbar-nav .show > .nav-link {
+  background: #000;
+  color: #fff !important;
+}
+
+.navbar .dropdown-menu {
+  border: 1px solid #000;
+  border-radius: 0;
+  background: #fff;
+  z-index: 6000 !important;
+  position: absolute;
+}
+
+.navbar .dropdown-item {
+  color: #000;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.navbar .dropdown-item:hover,
+.navbar .dropdown-item:focus {
+  background: #000;
+  color: #fff;
+}
+
+/* Bootstrap sidebar/TOC: remove default blue active state */
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link,
+.bs-sidebar .nav .nav-link.active,
+.bs-sidebar .nav .active > .nav-link,
+.bs-sidebar .nav .nav-link:focus,
+.bs-sidebar .nav .nav-link:hover {
+  background: #000 !important;
+  color: #fff !important;
+  border-radius: 0 !important;
+}
+
+.bs-sidebar .nav .nav-link,
+.bs-sidenav .nav-link {
+  color: #111 !important;
+  border-radius: 0 !important;
+}
+
+/* Ensure sidebar stays below navbar dropdown layers */
+.bs-sidebar,
+.bs-sidenav,
+.col-md-3,
+.col-md-9 {
+  position: relative;
+  z-index: 1;
+}
+
+.navbar .navbar-toggler {
+  border-color: #000 !important;
+}
+
+.navbar .navbar-toggler-icon {
+  filter: invert(1);
+}
+
+.container main,
+.post {
+  color: #111;
+}
+
+a {
+  color: #000;
+}
+
+a:hover,
+a:focus {
+  background: #000;
+  color: #fff;
+  text-decoration: none;
+}
+
+/* Keep navbar and dropdown links readable with the same B/W interaction */
+.navbar a:hover,
+.navbar a:focus,
+.dropdown-item:hover,
+.dropdown-item:focus {
+  background: #000 !important;
+  color: #fff !important;
+}
+
+code,
+pre,
+tt {
+  font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+}
+
+pre {
+  background: #000;
+  color: #fff;
+  border: 1px solid #000;
+  border-radius: 0;
+}
+
+/* Inline code: black badge with white text, like simple-blog screenshots */
+.post :not(pre) > code,
+.container main :not(pre) > code {
+  background: #000 !important;
+  color: #fff !important;
+  border: 1px solid #000 !important;
+  border-radius: 0 !important;
+  padding: 0.08rem 0.28rem !important;
+}
+
+/* Fenced blocks and highlighted code: force true black background + white text */
+.highlight,
+.codehilite,
+div[class*="language-"] {
+  background: #000 !important;
+  border: 1px solid #000 !important;
+}
+
+.highlight pre,
+.codehilite pre,
+div[class*="language-"] pre {
+  background: #000 !important;
+  color: #fff !important;
+}
+
+.highlight pre code,
+.codehilite pre code,
+div[class*="language-"] pre code,
+.highlight pre code span,
+.codehilite pre code span,
+div[class*="language-"] pre code span {
+  background: transparent !important;
+  color: #fff !important;
 }

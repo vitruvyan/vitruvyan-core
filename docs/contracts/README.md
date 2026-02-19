@@ -1,8 +1,16 @@
-# Contracts Documentation
+# Contracts
 
-This area contains normative and operational contracts for Vitruvyan.
+Canonical documentation for Vitruvyan contracts.
 
-## Sections
+This section defines the stable interfaces used to keep core modules domain-agnostic and vertical modules pluggable.
 
-- `verticals/`: domain vertical contracts, checklist, and templates.
+## Scope
 
+- Core contracts namespace: `vitruvyan_core/contracts/`
+- Vertical contract model and templates
+- Governance rules for contract-first development
+
+## References
+
+- Python package: `vitruvyan_core/contracts/__init__.py`
+- Vertical contract docs: `docs/contracts/verticals/README.md`

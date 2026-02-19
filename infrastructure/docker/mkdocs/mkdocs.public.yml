@@ -18,10 +18,13 @@ site_dir: /app/site_public
 
 # Theme configuration (minimal)
 theme:
-  name: simple-blog
+  name: material
   language: en
-  sidebar: true
-  navigation_depth: 2
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - search.suggest
+    - content.code.copy
 
 # Plugins (minimal)
 plugins:
@@ -55,10 +58,10 @@ nav:
   - Home: index.md
 
 extra_css:
-  - assets/kb/vitruvyan.css
+  - assets/kb/vitruvyan.css?v=20260218m
 
 extra_javascript:
-  - assets/kb/vitruvyan.js
+  - assets/kb/vitruvyan.js?v=20260218m
 
 # Copyright
 copyright: Copyright &copy; 2026 Vitruvyan Team

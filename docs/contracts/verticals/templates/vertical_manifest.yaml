@@ -1,7 +1,3 @@
-# Vertical Manifest Template
-schema_version: "1.0.0"
-contract_version: "vertical-contract-v1"
-
 domain_name: "example"
 domain_version: "0.1.0"
 status: "draft" # draft|active|deprecated
@@ -32,18 +28,5 @@ adapters:
 contracts_used:
   - contracts.GraphPlugin
   - contracts.BaseParser
-  - contracts.neural_engine.IDataProvider
-  - contracts.neural_engine.IScoringStrategy
-
-compliance:
-  checklist_version: "vertical-conformance-checklist-v1"
-  status: "pending" # pending|pass|fail
-  last_verified_utc: null
-
-derogations: []
-# - id: "DEROG-001"
-#   reason: "temporary migration gap"
-#   owner: "domain-team"
-#   expiry_utc: "2026-03-31T00:00:00Z"
-#   remediation_plan: "replace legacy import"
-
+  - contracts.IDataProvider
+  - contracts.IScoringStrategy

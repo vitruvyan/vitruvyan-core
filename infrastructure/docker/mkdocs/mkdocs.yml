@@ -18,10 +18,13 @@ site_dir: /app/site
 
 # Theme configuration
 theme:
-  name: simple-blog
+  name: material
   language: en
-  sidebar: true
-  navigation_depth: 3
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - search.suggest
+    - content.code.copy
   
 # Plugins
 plugins:
@@ -42,6 +45,8 @@ plugins:
       lang:
         - en
         - it
+  - material/tags:
+      enabled: true
   # git-revision-date-localized disabled (requires git repo in mounted volumes)
   # - git-revision-date-localized:
   #     enable_creation_date: true
@@ -82,7 +87,6 @@ markdown_extensions:
 
 # Navigation structure
 nav:
-  - Tags: docs/foundational/TAGS.md
   - Getting Started:
     - Overview: docs/foundational/VITRUVYAN_OVERVIEW.md
     - Quick Start: docs/foundational/QUICK_START.md
@@ -133,8 +137,8 @@ nav:
     - Overview: services/README_SERVICES.md
     - API Graph: services/api_graph/README.md
     - API MCP: services/api_mcp/README.md
-    - Edge APIs:
-      - Oculus Prime API: services/api_edge_oculus_prime/README.md
+    - API Oculus Prime: services/api_edge_oculus_prime/README.md
+    - Edge Gateway Flow (Legacy): docs/knowledge_base/oculus_prime/edge_gateway_flow.md
     - Platform APIs:
       - Embedding API: docs/internal/services/EMBEDDING_API.md
       - Synaptic Conclave API: docs/internal/services/CONCLAVE_API.md
@@ -150,23 +154,16 @@ nav:
     
   - Infrastructure:
     - Overview: infrastructure/README_INFRASTRUCTURE.md
-    - Edge:
-      - Edge Overview: infrastructure/edge/README.md
-      - Oculus Prime Module: infrastructure/edge/oculus_prime/README.md
-      - Oculus Prime Flow Graph: docs/knowledge_base/oculus_prime/intake_flow_graph.md
     - Docker Setup: infrastructure/docker/README.md
+    - Oculus Prime: infrastructure/edge/oculus_prime/README.md
+    - Oculus Prime Flow Graph: docs/knowledge_base/oculus_prime/intake_flow_graph.md
     - Monitoring: infrastructure/docker/monitoring/README.md
     - Synaptic Topology (Mermaid): infrastructure/docker/monitoring/grafana/SYNAPTIC_CONCLAVE_TOPOLOGY.md
     - KB Access Control: infrastructure/docker/mkdocs/ACCESS_CONTROL.md
-
-  - Contracts:
-    - Contracts Overview: docs/contracts/README.md
-    - Vertical Contract V1: docs/contracts/verticals/VERTICAL_CONTRACT_V1.md
-    - Vertical Conformance Checklist: docs/contracts/verticals/VERTICAL_CONFORMANCE_CHECKLIST.md
-    - Vertical Manifest Template: docs/contracts/verticals/templates/vertical_manifest.yaml
     
   - Development:
     - Testing: tests/README_TESTS.md
+    - Core Update/Upgrade Masterplan: docs/knowledge_base/development/core_update_upgrade_masterplan.md
     - Templates: docs/foundational/TEMPLATE_SACRED_ORDER_COMPONENT.md
     - Verticals:
       - Pattern: examples/verticals/README.md
@@ -186,10 +183,10 @@ extra:
     provider: mike  # Versioning provider (optional)
 
 extra_css:
-  - docs/stylesheets/vitruvyan.css
+  - docs/stylesheets/vitruvyan.css?v=20260218m
 
 extra_javascript:
-  - docs/javascripts/vitruvyan.js
+  - docs/javascripts/vitruvyan.js?v=20260218m
 
 # Copyright
 copyright: Copyright &copy; 2026 Vitruvyan Team

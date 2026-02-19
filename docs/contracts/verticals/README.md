@@ -1,12 +1,16 @@
 # Vertical Contracts
 
-This folder defines the standard contract for vertical creation and governance.
+Contract-first standard for creating and evolving domain verticals.
 
-## Files
+## Objective
 
-- `VERTICAL_CONTRACT_V1.md`
-- `VERTICAL_CONFORMANCE_CHECKLIST.md`
-- `templates/vertical_manifest.yaml`
-- `schema/vertical_manifest.schema.json`
-- `templates/new_vertical/*`
+Enforce a repeatable implementation pattern across domains:
 
+- domain-agnostic core
+- domain adapters for specialization
+- explicit manifest + ownership + lifecycle
+
+## Documents
+
+- Pattern: `docs/contracts/verticals/pattern.md`
+- Manifest template: `docs/contracts/verticals/templates/vertical_manifest.yaml`
