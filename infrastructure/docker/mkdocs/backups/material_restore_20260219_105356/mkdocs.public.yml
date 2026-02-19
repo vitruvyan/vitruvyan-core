@@ -19,31 +19,12 @@ site_dir: /app/site_public
 # Theme configuration (minimal)
 theme:
   name: material
-  logo: assets/kb/vitruvyan-logo-white.png
   language: en
-  font:
-    text: Inconsolata
-    code: Inconsolata
-  palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: black
-      accent: black
-      toggle:
-        icon: material/weather-night
-        name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: black
-      accent: blue
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
   features:
     - navigation.tabs
-    - navigation.top
+    - navigation.tabs.sticky
     - search.suggest
-    - search.highlight
+    - content.code.copy
 
 # Plugins (minimal)
 plugins:
@@ -77,10 +58,10 @@ nav:
   - Home: index.md
 
 extra_css:
-  - assets/kb/material_v1.css?v=20260219a
+  - assets/kb/vitruvyan.css?v=20260218m
 
 extra_javascript:
-  - assets/kb/vitruvyan.js?v=20260219g
+  - assets/kb/vitruvyan.js?v=20260218m
 
 # Copyright
 copyright: Copyright &copy; 2026 Vitruvyan Team

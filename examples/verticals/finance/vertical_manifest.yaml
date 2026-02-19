@@ -1,0 +1,54 @@
+# Finance Vertical - Vitruvyan
+
+domain_name: "finance"
+domain_version: "0.2.0"
+status: "active"
+
+# ============================================================================
+# COMPATIBILITY (UPDATE SYSTEM CONTRACT V1)
+# ============================================================================
+# Required for `vit` update/upgrade system.
+# See: docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md
+
+compatibility:
+  min_core_version: "1.0.0"          # Minimum supported Core version
+  max_core_version: "1.x.x"          # Maximum supported Core version (wildcard = any 1.x.x)
+  contracts_major: 1                  # Contracts major version (must match Core)
+  update_channel: "stable"            # Update channel (stable = production-ready only)
+  breaking_changes_allowlist: []      # No opt-in to breaking changes yet
+  smoke_tests_timeout: 180            # 3 minutes (faster than default 5 min)
+
+ownership:
+  team: "finance-vertical-team"
+  tech_lead: "vitruvyan.platform"
+  contact: "platform@vitruvyan.com"
+
+required_components:
+  intent_config: true
+  readme: true
+  manifest: true
+
+optional_components:
+  graph_plugin: true
+  governance_rules: false
+  slot_filler: false
+  response_formatter: false
+  execution_config: false
+  entity_resolver_config: false
+
+adapters:
+  langgraph_plugin: true
+  sacred_orders_rules: false
+  neural_engine_contracts: false
+
+contracts_used:
+  - contracts.GraphPlugin
+  - contracts.BaseParser
+  - contracts.IDataProvider
+  - contracts.IScoringStrategy
+
+# Finance-specific metadata
+domain_metadata:
+  description: "Financial markets vertical (tickers, screening, portfolio)"
+  examples: ["stock analysis", "portfolio optimization", "market screening"]
+  data_sources: ["Yahoo Finance API", "custom neural engine"]

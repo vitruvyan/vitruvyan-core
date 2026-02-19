@@ -34,6 +34,25 @@ if [ -f /app/docs/stylesheets/vitruvyan.css ]; then
   cp /app/docs/stylesheets/vitruvyan.css /app/docs_root_public/assets/kb/vitruvyan.css
   echo "✅ Copied vitruvyan.css → docs_root_public/docs/stylesheets/vitruvyan.css"
 fi
+if [ -f /app/docs/stylesheets/material_v1.css ]; then
+  cp /app/docs/stylesheets/material_v1.css /app/docs_root_public/docs/stylesheets/material_v1.css
+  cp /app/docs/stylesheets/material_v1.css /app/docs_root_public/assets/kb/material_v1.css
+  echo "✅ Copied material_v1.css → docs_root_public/docs/stylesheets/material_v1.css"
+fi
+if [ -f /app/docs/stylesheets/vitruvyan-logo-white.png ]; then
+  cp /app/docs/stylesheets/vitruvyan-logo-white.png /app/docs_root_public/docs/stylesheets/vitruvyan-logo-white.png
+  cp /app/docs/stylesheets/vitruvyan-logo-white.png /app/docs_root_public/assets/kb/vitruvyan-logo-white.png
+  echo "✅ Copied vitruvyan-logo-white.png → public stylesheets/assets"
+fi
+if [ -f /app/docs/stylesheets/vitruvyan-logo-white-hover.png ]; then
+  cp /app/docs/stylesheets/vitruvyan-logo-white-hover.png /app/docs_root_public/docs/stylesheets/vitruvyan-logo-white-hover.png
+  cp /app/docs/stylesheets/vitruvyan-logo-white-hover.png /app/docs_root_public/assets/kb/vitruvyan-logo-white-hover.png
+  echo "✅ Copied vitruvyan-logo-white-hover.png → public stylesheets/assets"
+fi
+if [ -f /app/docs/assets/images/vitruvyan-logo.png ]; then
+  cp /app/docs/assets/images/vitruvyan-logo.png /app/docs_root_public/assets/kb/vitruvyan-logo.png
+  echo "✅ Copied vitruvyan-logo.png → docs_root_public/assets/kb/vitruvyan-logo.png"
+fi
 if [ -f /app/docs/javascripts/vitruvyan.js ]; then
   cp /app/docs/javascripts/vitruvyan.js /app/docs_root_public/docs/javascripts/vitruvyan.js
   cp /app/docs/javascripts/vitruvyan.js /app/docs_root_public/assets/kb/vitruvyan.js

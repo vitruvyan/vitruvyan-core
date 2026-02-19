@@ -28,36 +28,11 @@ exclude_docs: |
 
 theme:
   name: material
-  logo: docs/stylesheets/vitruvyan-logo-white.png
   language: en
-  font:
-    text: Inconsolata
-    code: Inconsolata
-  palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: black
-      accent: black
-      toggle:
-        icon: material/weather-night
-        name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: black
-      accent: blue
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
   features:
     - navigation.tabs
     - navigation.tabs.sticky
-    - navigation.sections
-    - navigation.expand
-    - navigation.path
-    - navigation.top
-    - toc.follow
     - search.suggest
-    - search.highlight
     - content.code.copy
 
 plugins:
@@ -141,9 +116,9 @@ nav:
     - Pattern Weavers: docs/orders/PATTERN_WEAVERS.md
 
 extra_css:
-  - docs/stylesheets/material_v1.css?v=20260219a
+  - docs/stylesheets/vitruvyan.css?v=20260218m
 
 extra_javascript:
-  - docs/javascripts/vitruvyan.js?v=20260219g
+  - docs/javascripts/vitruvyan.js?v=20260218m
 
 copyright: Copyright &copy; 2026 Vitruvyan Team

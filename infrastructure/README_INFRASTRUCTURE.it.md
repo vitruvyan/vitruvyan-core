@@ -6,23 +6,23 @@
 
 ---
 
-## 🎯 What It Contains
+## 🎯 Cosa Contiene
 
-`infrastructure/` contains everything needed to **deploy and monitor** Vitruvyan in production:
+`infrastructure/` contiene tutto il necessario per **deployare e monitorare** Vitruvyan in produzione:
 - Docker Compose configurations
 - Grafana dashboards
 - Prometheus metrics
 - Secrets management (Ansible Vault)
 
-**Features**:
+**Caratteristiche**:
 - ✅ **Single Command Deploy**: `docker compose up -d`
 - ✅ **Observability**: Grafana + Prometheus + custom dashboards
-- ✅ **Secrets Management**: Ansible Vault for credentials
-- ✅ **Multi-Service**: 14+ services orchestrated
+- ✅ **Secrets Management**: Ansible Vault per credenziali
+- ✅ **Multi-Service**: 14+ services orchestrati
 
 ---
 
-## 📂 Structure
+## 📂 Struttura
 
 ```
 infrastructure/
@@ -44,15 +44,15 @@ infrastructure/
 │       └── GRAFANA_DASHBOARD_VALIDATION_REPORT.md
 │
 └── secrets/                     # Secrets management (gitignored)
-  ├── ansible-vault.yml.enc    → Encrypted credentials
-  └── .vault_pass              → Vault password (local only)
+    ├── ansible-vault.yml.enc    → Encrypted credentials
+    └── .vault_pass              → Vault password (local only)
 ```
 
 ---
 
 ## 🐳 Docker Compose
 
-### Orchestrated Services (14+)
+### Services Orchestrati (14+)
 
 **Infra Core** (3):
 ```yaml
@@ -120,10 +120,10 @@ docker compose down -v
 
 ### Grafana Dashboards
 
-**Access**: http://localhost:3000  
+**Accesso**: http://localhost:3000  
 **Default credentials**: admin/admin
 
-**Available dashboards**:
+**Dashboards disponibili**:
 
 | Dashboard | Purpose | Metrics |
 |-----------|---------|---------|
@@ -134,13 +134,13 @@ docker compose down -v
 
 ### Prometheus Metrics
 
-**Access**: http://localhost:9090
+**Accesso**: http://localhost:9090
 
 **Targets**:
 - Vitruvyan services: `http://<service>:<port>/metrics`
 - Infrastructure: PostgreSQL exporter, Redis exporter
 
-**Custom metrics** (examples):
+**Custom metrics** (esempi):
 ```
 vitruvyan_bus_stream_length{stream="vault.archive.requested"}
 vitruvyan_orthodoxy_verdicts_total{verdict="blessed"}
@@ -149,7 +149,7 @@ vitruvyan_memory_coherence_score{collection="default"}
 
 ### Dashboard Development
 
-See [monitoring/docs/](monitoring/docs/) for:
+Vedere [monitoring/docs/](monitoring/docs/) per:
 - Dashboard creation guide
 - Metric naming conventions
 - Grafana provisioning
@@ -186,7 +186,7 @@ ansible-vault encrypt infrastructure/secrets/ansible-vault.yml
 ansible-vault edit infrastructure/secrets/ansible-vault.yml.enc
 ```
 
-⚠️ **NEVER commit** `.vault_pass` or decrypted files!
+⚠️ **NEVER commit** `.vault_pass` o file decriptati!
 
 ---
 
@@ -276,7 +276,7 @@ curl http://localhost:3000/api/health  # Grafana
 
 ---
 
-## 📚 Documentation
+## 📚 Documentazione
 
 **Module docs**: [monitoring/docs/](monitoring/docs/)
 - Grafana dashboard validation
@@ -291,24 +291,23 @@ curl http://localhost:3000/api/health  # Grafana
 
 ## 🎯 Design Principles
 
-1. **Single Command Deploy**: `docker compose up -d` for everything
-2. **Observability-First**: Metrics + dashboards for every service
+1. **Single Command Deploy**: `docker compose up -d` per tutto
+2. **Observability-First**: Metrics + dashboards per ogni service
 3. **Secrets Never Committed**: Ansible Vault + .gitignore
-4. **Stateless Services**: Persistent data in volumes, services are restartable
-5. **Health Checks**: Every service exposes `/health`
+4. **Stateless Services**: Persistent data in volumes, servizi riavviabili
+5. **Health Checks**: Ogni service espone `/health`
 
 ---
 
-## 📖 Useful Links
+## 📖 Link Utili
 
-- **[Services](../services/README_SERVICES.md)** — Microservices deployed by this stack
+- **[Services](../services/README_SERVICES.md)** — Microservizi deployati da questo stack
 - **[Vitruvyan Core](../vitruvyan_core/README_VITRUVYAN_CORE.md)** — Core library
 - **[Scripts](../scripts/README_SCRIPTS.md)** — Deploy automation, maintenance scripts
-- **[Docs Portal](../docs/index.md)** — Documentation entry point
+- **[Docs Portal](../docs/index.md)** — Entry point documentazione
 
 ---
 
-**Purpose**: Deploy, orchestrate, monitor Vitruvyan in production.  
+**Purpose**: Deploy, orchestrate, monitor Vitruvyan in produzione.  
 **Tools**: Docker Compose, Grafana, Prometheus, Ansible Vault.  
-**Status**: 14+ services orchestrated, 4 Grafana dashboards, secrets encrypted.
-
+**Status**: 14+ services orchestrati, 4 dashboards Grafana, secrets encrypted.

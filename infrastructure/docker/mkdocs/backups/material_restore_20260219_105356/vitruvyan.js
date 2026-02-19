@@ -17,12 +17,6 @@
   }
 
   function ensureCustomCssLoaded() {
-    // Load legacy stylesheet only for Bootstrap-based pages.
-    // Material already ships its own dedicated stylesheet and loading both
-    // causes conflicting overrides (especially after auth redirects).
-    const isBootstrapPage = Boolean(document.querySelector("nav.navbar"));
-    if (!isBootstrapPage) return;
-
     const hrefPattern = /docs\/stylesheets\/vitruvyan\.css(?:\?|$)/;
     const alreadyLoaded = Array.from(
       document.querySelectorAll('link[rel="stylesheet"][href]')
@@ -283,59 +277,10 @@
 
     const encodedRd = encodeURIComponent(rd);
 
-    const origin = window.location.origin || "https://kb.vitruvyan.com";
-    const registerRedirect = encodeURIComponent(`${origin}/oauth2/callback`);
-
     return {
       login: `/oauth2/start?rd=${encodedRd}`,
       logout: `/oauth2/sign_out?rd=${encodeURIComponent(inItalianContext ? "/it/" : "/")}`,
-      register:
-        `https://auth.vitruvyan.com/realms/vitruvyan-core/protocol/openid-connect/registrations` +
-        `?client_id=kb&response_type=code&scope=openid%20email%20profile&redirect_uri=${registerRedirect}`,
-      profile: "https://auth.vitruvyan.com/auth/realms/vitruvyan-core/account/",
     };
-  }
-
-  async function detectAuthenticatedSession() {
-    try {
-      const response = await fetch("/oauth2/userinfo", {
-        method: "GET",
-        credentials: "include",
-        cache: "no-store",
-        redirect: "manual",
-      });
-      if (response.status === 200 || response.status === 202) return true;
-      if (response.status === 401 || response.status === 403) return false;
-    } catch (_) {
-      // Fallback to cookie heuristic when auth endpoint isn't reachable.
-    }
-
-    const cookie = document.cookie || "";
-    return (
-      /(?:^|;\s*)(?:__Host-)?_oauth2_proxy=/.test(cookie) ||
-      /(?:^|;\s*)oauth2_proxy=/.test(cookie) ||
-      /(?:^|;\s*)(?:__Host-)?_vitruvyan_kb=/.test(cookie) ||
-      /(?:^|;\s*)_vitruvyan_kb=/.test(cookie)
-    );
-  }
-
-  async function fetchAuthenticatedUser() {
-    try {
-      const response = await fetch("/oauth2/userinfo", {
-        method: "GET",
-        credentials: "include",
-        cache: "no-store",
-      });
-      if (!response.ok) return null;
-      const data = await response.json();
-      if (!data || typeof data !== "object") return null;
-      return {
-        email: data.email || "",
-        name: data.name || data.preferred_username || "",
-      };
-    } catch (_) {
-      return null;
-    }
   }
 
   function setupAuthControls() {
@@ -355,23 +300,20 @@
     li.className = "nav-item kb-auth-controls";
     li.id = "kb-auth-controls";
 
-    const authLink = document.createElement("a");
-    authLink.className = "nav-link text-decoration-none kb-auth-controls__link kb-auth-controls__link--login";
-    authLink.href = login;
-    authLink.textContent = "Sign in";
-    authLink.setAttribute("aria-label", "Sign in");
+    const loginLink = document.createElement("a");
+    loginLink.className = "nav-link text-decoration-none kb-auth-controls__link kb-auth-controls__link--login";
+    loginLink.href = login;
+    loginLink.textContent = "Sign in";
+    loginLink.setAttribute("aria-label", "Sign in");
 
-    li.appendChild(authLink);
+    const logoutLink = document.createElement("a");
+    logoutLink.className = "nav-link text-decoration-none kb-auth-controls__link kb-auth-controls__link--logout";
+    logoutLink.href = logout;
+    logoutLink.textContent = "Sign out";
+    logoutLink.setAttribute("aria-label", "Sign out");
 
-    const applyState = (isAuthenticated) => {
-      authLink.href = isAuthenticated ? logout : login;
-      authLink.textContent = isAuthenticated ? "Sign out" : "Sign in";
-      authLink.setAttribute("aria-label", isAuthenticated ? "Sign out" : "Sign in");
-      authLink.classList.toggle("kb-auth-controls__link--logout", isAuthenticated);
-      authLink.classList.toggle("kb-auth-controls__link--login", !isAuthenticated);
-    };
-
-    detectAuthenticatedSession().then(applyState).catch(() => applyState(false));
+    li.appendChild(loginLink);
+    li.appendChild(logoutLink);
 
     if (searchItem) {
       outerNav.insertBefore(li, searchItem);
@@ -385,105 +327,28 @@
     if (!headerInner) return;
     if (document.getElementById("kb-auth-controls-material")) return;
 
-    const { login, logout, register, profile } = computeAuthLinks();
+    const { login, logout } = computeAuthLinks();
 
     const container = document.createElement("div");
     container.id = "kb-auth-controls-material";
     container.className = "kb-auth-controls-material";
-    container.dataset.open = "false";
 
-    const toggle = document.createElement("button");
-    toggle.type = "button";
-    toggle.className = "kb-auth-controls-material__toggle";
-    toggle.setAttribute("aria-haspopup", "menu");
-    toggle.setAttribute("aria-expanded", "false");
-    toggle.setAttribute("aria-label", "Account menu");
-    toggle.textContent = "Account";
+    const loginLink = document.createElement("a");
+    loginLink.className =
+      "kb-auth-controls-material__link kb-auth-controls-material__link--login";
+    loginLink.href = login;
+    loginLink.textContent = "Sign in";
+    loginLink.setAttribute("aria-label", "Sign in");
 
-    const menu = document.createElement("div");
-    menu.className = "kb-auth-controls-material__menu";
-    menu.setAttribute("role", "menu");
+    const logoutLink = document.createElement("a");
+    logoutLink.className =
+      "kb-auth-controls-material__link kb-auth-controls-material__link--logout";
+    logoutLink.href = logout;
+    logoutLink.textContent = "Sign out";
+    logoutLink.setAttribute("aria-label", "Sign out");
 
-    const header = document.createElement("div");
-    header.className = "kb-auth-controls-material__header";
-    header.textContent = "Guest";
-    menu.appendChild(header);
-
-    const actions = document.createElement("div");
-    actions.className = "kb-auth-controls-material__actions";
-
-    const primaryAction = document.createElement("a");
-    primaryAction.className = "kb-auth-controls-material__item";
-    primaryAction.href = login;
-    primaryAction.textContent = "Login";
-    primaryAction.setAttribute("role", "menuitem");
-
-    const secondaryAction = document.createElement("a");
-    secondaryAction.className = "kb-auth-controls-material__item";
-    secondaryAction.href = register;
-    secondaryAction.textContent = "Register";
-    secondaryAction.setAttribute("role", "menuitem");
-    secondaryAction.rel = "noopener";
-
-    const dangerAction = document.createElement("a");
-    dangerAction.className = "kb-auth-controls-material__item kb-auth-controls-material__item--danger";
-    dangerAction.href = logout;
-    dangerAction.textContent = "Sign out";
-    dangerAction.setAttribute("role", "menuitem");
-
-    actions.appendChild(primaryAction);
-    actions.appendChild(secondaryAction);
-    menu.appendChild(actions);
-
-    container.appendChild(toggle);
-    container.appendChild(menu);
-
-    const setOpen = (open) => {
-      container.dataset.open = open ? "true" : "false";
-      toggle.setAttribute("aria-expanded", open ? "true" : "false");
-    };
-
-    toggle.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      setOpen(container.dataset.open !== "true");
-    });
-
-    document.addEventListener("click", () => setOpen(false));
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") setOpen(false);
-    });
-    menu.addEventListener("click", () => setOpen(false));
-
-    const applyState = (isAuthenticated, user) => {
-      actions.replaceChildren();
-      if (isAuthenticated) {
-        const displayName = (user?.email || user?.name || "Signed in").trim();
-        header.textContent = displayName;
-        toggle.textContent = "Account";
-
-        const profileAction = document.createElement("a");
-        profileAction.className = "kb-auth-controls-material__item";
-        profileAction.href = profile;
-        profileAction.textContent = "Profile settings";
-        profileAction.setAttribute("role", "menuitem");
-        profileAction.target = "_blank";
-        profileAction.rel = "noopener";
-
-        actions.appendChild(profileAction);
-        actions.appendChild(dangerAction);
-        return;
-      }
-
-      header.textContent = "Guest";
-      toggle.textContent = "Sign in";
-      actions.appendChild(primaryAction);
-      actions.appendChild(secondaryAction);
-    };
-
-    Promise.all([detectAuthenticatedSession(), fetchAuthenticatedUser()])
-      .then(([isAuthenticated, user]) => applyState(Boolean(isAuthenticated || user), user))
-      .catch(() => applyState(false, null));
+    container.appendChild(loginLink);
+    container.appendChild(logoutLink);
 
     const searchComponent = headerInner.querySelector("[data-md-component='search']");
     if (searchComponent && searchComponent.parentNode === headerInner) {
@@ -597,189 +462,84 @@
     });
   }
 
-  function setupMaterialMegaMenu() {
+  function setupMaterialHorizontalSubnav() {
     const tabs = document.querySelector(".md-tabs");
-    const tabsList = tabs?.querySelector(".md-tabs__list");
-    const primaryList = document.querySelector(".md-nav--primary > .md-nav__list");
-    if (!tabs || !tabsList || !primaryList) return;
+    const primaryNav = document.querySelector(".md-nav--primary > .md-nav__list");
+    if (!tabs || !primaryNav) return;
 
-    const normalize = (label) => (label || "").toLowerCase().replace(/\s+/g, " ").trim();
+    const activeTopItem = primaryNav.querySelector(":scope > .md-nav__item--active");
+    if (!activeTopItem) return;
 
-    const textOf = (el) => ((el?.textContent || "").replace(/\s+/g, " ").trim());
-    const sectionsMap = new Map();
-    const topItems = primaryList.querySelectorAll(":scope > .md-nav__item");
-    topItems.forEach((item) => {
-      const topAnchor = item.querySelector(":scope > .md-nav__link[href]");
-      const topLabel = item.querySelector(":scope > .md-nav__link");
-      const title = textOf(topAnchor || topLabel);
-      if (!title) return;
+    const childLinks = activeTopItem.querySelectorAll(
+      ":scope > .md-nav > .md-nav__list > .md-nav__item > .md-nav__link[href]"
+    );
+    if (!childLinks || childLinks.length === 0) return;
 
-      const groups = [];
-      const childItems = item.querySelectorAll(":scope > .md-nav > .md-nav__list > .md-nav__item");
-      childItems.forEach((child) => {
-        const childAnchor = child.querySelector(":scope > .md-nav__link[href]");
-        const childLabel = child.querySelector(":scope > .md-nav__link");
-        const childTitle = textOf(childLabel || childAnchor);
-        const childHref = childAnchor?.getAttribute("href") || "";
-
-        const grandchildren = Array.from(
-          child.querySelectorAll(":scope > .md-nav > .md-nav__list > .md-nav__item > .md-nav__link[href]")
-        ).map((a) => ({
-          title: textOf(a),
-          href: a.getAttribute("href") || "",
-        }));
-
-        if (grandchildren.length > 0) {
-          groups.push({
-            heading: childTitle,
-            links: grandchildren.filter((g) => g.title && g.href),
-          });
-        } else if (childTitle && childHref) {
-          groups.push({
-            heading: childTitle,
-            links: [{ title: childTitle, href: childHref }],
-          });
-        }
-      });
-
-      sectionsMap.set(normalize(title), {
-        title,
-        href: topAnchor?.getAttribute("href") || "",
-        groups,
-      });
-    });
-
-    let mega = document.getElementById("kb-mega-menu");
-    if (!mega) {
-      mega = document.createElement("section");
-      mega.id = "kb-mega-menu";
-      mega.className = "kb-mega-menu";
-      mega.setAttribute("aria-label", "Section menu");
-      mega.hidden = true;
+    let subnav = document.getElementById("kb-subnav");
+    if (!subnav) {
+      subnav = document.createElement("nav");
+      subnav.id = "kb-subnav";
+      subnav.className = "kb-subnav";
+      subnav.setAttribute("aria-label", "Section submenu");
 
       const inner = document.createElement("div");
-      inner.className = "kb-mega-menu__inner md-grid";
-      const title = document.createElement("div");
-      title.className = "kb-mega-menu__title";
-      const grid = document.createElement("div");
-      grid.className = "kb-mega-menu__grid";
+      inner.className = "kb-subnav__inner";
 
-      inner.appendChild(title);
-      inner.appendChild(grid);
-      mega.appendChild(inner);
-      tabs.insertAdjacentElement("afterend", mega);
+      const list = document.createElement("ul");
+      list.className = "kb-subnav__list";
+
+      inner.appendChild(list);
+      subnav.appendChild(inner);
+      tabs.insertAdjacentElement("afterend", subnav);
     }
 
-    const megaTitle = mega.querySelector(".kb-mega-menu__title");
-    const megaGrid = mega.querySelector(".kb-mega-menu__grid");
-    if (!megaTitle || !megaGrid) return;
+    const list = subnav.querySelector(".kb-subnav__list");
+    if (!list) return;
+    list.replaceChildren();
 
-    let openTab = null;
+    const currentPath = window.location.pathname.replace(/\/+$/, "");
 
-    const closeMega = () => {
-      openTab?.classList.remove("kb-mega-tab--open");
-      openTab = null;
-      mega.hidden = true;
-      mega.classList.remove("is-open");
-    };
+    childLinks.forEach((link) => {
+      const href = link.getAttribute("href");
+      const text = (link.textContent || "").trim();
+      if (!href || !text) return;
 
-    const openMega = (tabItem, section) => {
-      if (!section || section.groups.length === 0) return;
+      const li = document.createElement("li");
+      li.className = "kb-subnav__item";
 
-      if (openTab && openTab !== tabItem) {
-        openTab.classList.remove("kb-mega-tab--open");
+      const a = document.createElement("a");
+      a.className = "kb-subnav__link";
+      a.href = href;
+      a.textContent = text;
+
+      const linkUrl = new URL(href, window.location.href);
+      const linkPath = linkUrl.pathname.replace(/\/+$/, "");
+      if (linkPath === currentPath) {
+        a.classList.add("is-active");
       }
-      openTab = tabItem;
-      openTab.classList.add("kb-mega-tab--open");
 
-      megaTitle.textContent = section.title;
-      megaGrid.replaceChildren();
-
-      section.groups.forEach((group) => {
-        const column = document.createElement("div");
-        column.className = "kb-mega-menu__col";
-
-        const heading = document.createElement("div");
-        heading.className = "kb-mega-menu__heading";
-        heading.textContent = group.heading;
-        column.appendChild(heading);
-
-        const list = document.createElement("ul");
-        list.className = "kb-mega-menu__list";
-
-        group.links.forEach((entry) => {
-          const li = document.createElement("li");
-          const a = document.createElement("a");
-          a.className = "kb-mega-menu__link";
-          a.href = entry.href;
-          a.textContent = entry.title;
-          li.appendChild(a);
-          list.appendChild(li);
-        });
-
-        column.appendChild(list);
-        megaGrid.appendChild(column);
-      });
-
-      mega.hidden = false;
-      mega.classList.remove("is-open");
-      window.requestAnimationFrame(() => {
-        mega.classList.add("is-open");
-      });
-    };
-
-    const isDesktop = () => window.matchMedia("(min-width: 76.25em)").matches;
-
-    const tabItems = tabsList.querySelectorAll(":scope > .md-tabs__item");
-    tabItems.forEach((tabItem) => {
-      const tabLink = tabItem.querySelector(":scope > .md-tabs__link[href]");
-      if (!tabLink) return;
-      const label = normalize(tabLink.textContent || "");
-      const section = sectionsMap.get(label);
-      if (!section || section.groups.length === 0) return;
-
-      tabItem.classList.add("kb-mega-tab");
-      tabLink.setAttribute("aria-haspopup", "menu");
-
-      tabLink.addEventListener("click", (event) => {
-        if (!isDesktop()) return;
-        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      a.addEventListener("click", (event) => {
+        const targetHref = a.getAttribute("href");
+        if (!targetHref) return;
         event.preventDefault();
-        event.stopPropagation();
-
-        if (openTab === tabItem) {
-          closeMega();
-          return;
-        }
-        openMega(tabItem, section);
+        subnav.classList.remove("is-open");
+        window.setTimeout(() => {
+          window.location.href = targetHref;
+        }, 180);
       });
+
+      li.appendChild(a);
+      list.appendChild(li);
     });
 
-    document.addEventListener("click", (event) => {
-      if (!(event.target instanceof Element)) {
-        closeMega();
-        return;
-      }
-      if (tabs.contains(event.target) || mega.contains(event.target)) return;
-      closeMega();
-    });
+    const hasItems = list.children.length > 0;
+    subnav.hidden = !hasItems;
+    if (!hasItems) return;
 
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") closeMega();
+    subnav.classList.remove("is-open");
+    window.requestAnimationFrame(() => {
+      subnav.classList.add("is-open");
     });
-
-    window.addEventListener("resize", () => {
-      if (!isDesktop()) closeMega();
-    });
-
-    mega.addEventListener("click", (event) => {
-      if (!(event.target instanceof Element)) return;
-      if (event.target.closest("a.kb-mega-menu__link")) {
-        closeMega();
-      }
-    });
-
-    document.body.classList.add("kb-mega-enabled");
   }
 
   if (document.readyState === "loading") {
@@ -813,8 +573,8 @@
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", setupMaterialMegaMenu, { once: true });
+    document.addEventListener("DOMContentLoaded", setupMaterialHorizontalSubnav, { once: true });
   } else {
-    setupMaterialMegaMenu();
+    setupMaterialHorizontalSubnav();
   }
 })();

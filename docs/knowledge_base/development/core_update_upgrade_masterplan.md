@@ -1,5 +1,10 @@
 # Core Update/Upgrade Masterplan 🚀
 
+> **Last updated**: Feb 19, 2026 16:45 UTC  
+> **Status**: Approved — Phase 0 starting  
+> **CLI Command**: `vit update` / `vit upgrade`  
+> **Architecture**: Hybrid (Library + CLI, built-in to Core)
+
 ## Objective 🎯
 
 Define a distro-like update system for Vitruvyan Core:
@@ -10,6 +15,40 @@ Define a distro-like update system for Vitruvyan Core:
 - auto-rollback on failure 🛟
 
 Expected outcome: **zero Core forks across verticals** and repeatable upgrades.
+
+## Architectural Decisions (Approved) ✅
+
+**Pattern**: Industry-standard hybrid (apt/pip/dnf model)
+- **Library**: `core.platform.update_manager.engine` (business logic, testable)
+- **CLI**: `vit` command (user interface, built-in)
+- **Distribution**: Single package (`pip install vitruvyan-core` includes CLI)
+
+**Location**: `vitruvyan_core/core/platform/update_manager/`
+```
+core/platform/update_manager/
+├── engine/          # Library (compatibility, planning, execution)
+│   ├── registry.py
+│   ├── compatibility.py
+│   ├── planner.py
+│   └── executor.py
+├── cli/             # CLI (commands, formatters)
+│   ├── main.py
+│   ├── commands/
+│   └── formatters.py
+└── tests/
+```
+
+**CLI Commands** (apt-style, concise):
+- `vit update` = check for updates (like `apt update`)
+- `vit upgrade` = apply upgrade (like `apt upgrade`)
+- `vit plan` = show upgrade plan
+- `vit rollback` = revert to previous version
+- `vit channel` = switch stable/beta
+
+**Versioning**:
+- Git tags: `v1.0.0` (stable), `v1.1.0-beta.1` (beta)
+- SemVer strict (MAJOR.MINOR.PATCH)
+- Dual channels: `stable` (production), `beta` (early access)
 
 ## End State 🧭
 
@@ -40,12 +79,14 @@ the platform must:
 
 Main components:
 
-- `Release Registry`
-- `Compatibility Engine`
-- `Update Manager CLI`
-- `Notification Engine`
-- `Safety Layer` (snapshot, tests, rollback)
-- `Policy & Governance` (versioning, deprecations, support window)
+- `Release Registry` (GitHub Releases API + metadata)
+- `Compatibility Engine` (version validation + manifest parsing)
+- `Update Manager CLI` (`vit` command)
+- `Notification Engine` (startup check + periodic polling)
+- `Safety Layer` (git snapshot, smoke tests, rollback)
+- `Policy & Governance` (contracts, versioning, deprecations)
+
+**Contract-Driven**: All interactions governed by `UPDATE_SYSTEM_CONTRACT_V1.md`
 
 ### 1) Release Registry 📦
 
@@ -81,19 +122,23 @@ Common block reasons:
 
 ### 3) Update Manager CLI 🛠️
 
+**Command**: `vit` (concise, apt-style)
+
 Target commands:
 
-- `vitruvyan update check`
-- `vitruvyan update plan`
-- `vitruvyan update apply`
-- `vitruvyan update rollback`
-- `vitruvyan update status`
+- `vit update` — check for updates (sync release registry)
+- `vit upgrade` — apply upgrade (with compatibility validation)
+- `vit plan` — show upgrade plan (changes, risks, tests)
+- `vit rollback` — revert to previous version
+- `vit channel [stable|beta]` — switch update channel
+- `vit status` — show current version + available updates
 
 Minimum behavior:
 
-- human-readable output
-- CI-friendly exit codes
+- human-readable output (tables, colors)
+- CI-friendly exit codes (0=success, 1=blocked, 2=error)
 - non-interactive mode (`--yes`) for automation
+- JSON output mode (`--json`) for programmatic usage
 
 ### 4) Notification Engine 🔔
 
@@ -131,22 +176,28 @@ Goal: lock base rules and data schema.
 
 Tasks:
 
-- formalize Core/Contracts versioning policy
-- extend `vertical_manifest.yaml` with compatibility fields
-- define release metadata schema
-- define initial compatibility matrix
+- **Create contract**: `docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md`
+  - Manifest schema (vertical compliance)
+  - Smoke test interface (exit codes, timeout)
+  - Versioning policy (SemVer, breaking changes)
+  - Release metadata schema (JSON format)
+- **Extend** `vertical_manifest.yaml` with compatibility fields
+- **Create directory structure**: `core/platform/update_manager/{engine,cli,tests}/`
+- **Define** initial compatibility matrix (core version → contracts version)
 
 Deliverables:
 
-- policy document (`docs/contracts/...`)
-- updated manifest template
-- sample release metadata JSON/YAML
+- `UPDATE_SYSTEM_CONTRACT_V1.md` (binding contract)
+- Updated `vertical_manifest.yaml` template
+- Sample release metadata JSON
+- Skeleton code structure (empty modules with docstrings)
 
 Definition of Done:
 
-- policy approved
-- manifest schema validated
-- one sample vertical using new schema
+- Contract approved by platform team
+- Manifest schema validated (pytest schema test)
+- One sample vertical using new schema (finance example)
+- Directory structure created + committed
 
 ## Phase 1 - Compatibility Engine (Week 2) 🧠
 
@@ -154,40 +205,50 @@ Goal: block risky upgrades before apply.
 
 Tasks:
 
-- implement vertical manifest parser
-- implement Core version range validation
-- implement contracts major validation
-- generate compatibility report with reasons
+- Implement `engine/registry.py` (GitHub Releases API client)
+- Implement `engine/compatibility.py` (version range validation, SemVer parsing)
+- Implement `engine/models.py` (dataclasses: Release, CompatibilityResult)
+- Implement `cli/commands/update.py` (`vit update` command)
+- Generate compatibility report (text + JSON formats)
 
 Deliverables:
 
-- `compatibility_engine` module
-- `vitruvyan update check` command
-- text + JSON report
+- Working `vit update` command
+- Compatibility report: `compatible`, `compatible_with_warnings`, `blocked`
+- JSON output mode: `vit update --json`
+- Unit tests: `tests/test_compatibility.py` (100% coverage)
 
 Definition of Done:
 
-- 100% happy-path cases pass
-- incompatible cases return `blocked` with explicit reason
+- `vit update` shows current version + latest available
+- Incompatible upgrades blocked with explicit reason
+- All unit tests pass (pytest)
+- Works with sample vertical (finance)
 
 ## Phase 2 - Apply + Rollback (Weeks 3-4) 🔁
 
-Goal: safe transactional upgrade flow.
-
-Tasks:
-
-- implement `update plan`
-- implement `update apply`
-- pre-upgrade snapshot
-- post-upgrade smoke tests
-- automatic rollback
+GoImplement `engine/planner.py` (upgrade plan generation)
+- Implement `engine/executor.py` (git checkout, pip install, snapshot)
+- Implement `cli/commands/plan.py` (`vit plan` command)
+- Implement `cli/commands/upgrade.py` (`vit upgrade` command)
+- Implement `cli/commands/rollback.py` (`vit rollback` command)
+- Pre-upgrade snapshot (git tag: `pre-upgrade-<timestamp>`)
+- Post-upgrade smoke tests (call vertical's `smoke_tests/run.sh`)
+- Automatic rollback on failure
 
 Deliverables:
 
-- local end-to-end upgrade workflow
-- upgrade/rollback execution logs
+- Working `vit upgrade` command (end-to-end flow)
+- Working `vit rollback` command
+- Upgrade audit log (`.vitruvyan/upgrade_history.json`)
+- Functional tests: `tests/test_cli.py` (E2E scenarios)
 
 Definition of Done:
+
+- Compatible upgrade applies successfully + smoke tests pass
+- Failing smoke tests trigger automatic rollback
+- Rollback restores previous state (git + deps)
+- Audit log records all upgrade attempts
 
 - compatible update applies successfully
 - failing tests trigger automatic rollback
@@ -248,25 +309,75 @@ Deliverables:
 - pre/post-upgrade checklist
 - vertical version status dashboard (minimal is fine)
 
-Definition of Done:
+**Phase 0 (Foundations)**:
+- [ ] Create `UPDATE_SYSTEM_CONTRACT_V1.md`
+- [ ] Extend `vertical_manifest.yaml` (compatibility fields)
+- [ ] Define `release_metadata.json` schema
+- [ ] Create directory structure `core/platform/update_manager/`
 
-- upgrade process is repeatable and auditable in production
+**Phase 1 (Compatibility Engine)**:
+- [ ] Implement `engine/registry.py` (GitHub API)
+- [ ] Implement `engine/compatibility.py` (version validation)
+- [ ] Implement `vit update` command
+- [ ] Generate JSON compatibility report
+- [ ] Unit tests (compatibility logic)
 
-## Minimum Technical Backlog ✅
+**Phase 2 (Apply + Rollback)**:
+- [ ] Implement `engine/planner.py` (upgrade plan)
+- [ ] Implement `engine/executor.py` (apply/rollback)
+- [ ] Implement `vit upgrade` command
+- [ ] Implement `vit rollback` command
+- [ ] Create vertical smoke test template
+- [ ] Add upgrade audit logging
 
-- [ ] extend `vertical_manifest.yaml` (compatibility fields)
-- [ ] define `release_metadata.json` schema
-- [ ] implement `update check`
-- [ ] implement `update plan`
+**Phase 3 (CI/CD Gate)**:
+- [ ] Implement CI compatibility gate
+- [ ] Multi-vertical test matrix
+- [ ] Release blocking rules
+
+**Phase 4 (Notifications)**:
+- [ ] Startup update check
+- [ ] Periodic polling (configurable)
+- [ ] Webhook notifications (optional)
+
+**Phase 5 (Hardening)**:
+- [ ] Operational runbook
+- [ ] Rollback resilience tests
+- [ ] Version status dashboard
 - [ ] implement `update apply`
 - [ ] implement `update rollback`
 - [ ] create vertical smoke test pack
-- [ ] generate JSON compatibility report
-- [ ] implement CI compatibility gate
-- [ ] add upgrade audit logging
+**Developer workflow** (vertical team):
 
-## Required Manifest Fields (Target) 📄
+```bash
+# 1. Check for updates
+vit update
+# Output: "New version v1.2.0 available (current: v1.1.0)"
+#         "Compatibility: ✅ COMPATIBLE"
 
+# 2. Review upgrade plan
+vit plan --target v1.2.0
+# Output: changelog, affected contracts, required tests
+
+# 3. Apply upgrade
+vit upgrade
+# Platform auto-executes:
+#   - Create snapshot (git tag pre-upgrade-20260219-164500)
+#   - Checkout v1.2.0
+#   - Install dependencies
+#   - Run smoke tests
+#   - Confirm OR rollback
+
+# 4. Verify
+vit status
+# Output: "Core v1.2.0 (upgraded from v1.1.0 on 2026-02-19)"
+```
+
+**Rollback flow** (if issues found post-upgrade):
+```bash
+vit rollback
+# Restores: git state + dependencies + audit log entry
+```
 ```yaml
 domain_name: "example"
 domain_version: "0.1.0"
@@ -295,12 +406,19 @@ ownership:
 
 ## Main Risks & Mitigations ⚠️
 
-- Risk: vertical imports Core internals instead of contracts.
-  Mitigation: CI lint/policy to block non-approved imports.
+**MVP Path** (3 weeks, immediate value):
+1. **Phase 0** (Week 1): Foundations + contract
+2. **Phase 1** (Week 1-2): `vit update` working (read-only checks)
+3. **Phase 2** (Week 2-3): `vit upgrade` + `vit rollback` (manual testing)
 
-- Risk: incomplete release metadata.
-  Mitigation: mandatory release metadata template + pre-release validation.
+**Production Hardening** (additional 2-4 weeks):
+4. **Phase 3** (Week 4): CI gates (prevent breaking releases)
+5. **Phase 4** (Week 5): Notifications (proactive alerts)
+6. **Phase 5** (Week 6-7): Governance + runbooks
 
+This sequence minimizes architectural risk before vertical expansion.
+
+**Quick-win milestone**: After Week 2, vertical teams can run `vit update` to check compatibility (immediate safety net, even without auto-apply)
 - Risk: unreliable rollback.
   Mitigation: atomic snapshot + recurring rollback drills.
 

@@ -556,97 +556,27 @@ a#component-site-name:hover {
   gap: 0.34rem;
   margin-left: 0.42rem;
   align-self: center;
-  position: relative;
 }
 
-.kb-auth-controls-material__toggle {
+.kb-auth-controls-material__link {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-height: 2rem;
-  min-width: 5.6rem;
+  min-height: 1.95rem;
   border: 1px solid #000;
   background: #000;
   color: #fff !important;
-  padding: 0.2rem 0.62rem;
+  padding: 0.2rem 0.54rem;
   font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
-  font-size: 0.84rem;
-  cursor: pointer;
+  font-size: 0.82rem;
   text-decoration: none;
 }
 
-.kb-auth-controls-material__toggle:hover,
-.kb-auth-controls-material__toggle:focus {
+.kb-auth-controls-material__link:hover,
+.kb-auth-controls-material__link:focus {
   background: #111;
   color: #fff !important;
   text-decoration: none;
-}
-
-.kb-auth-controls-material__menu {
-  position: absolute;
-  top: calc(100% + 0.35rem);
-  right: 0;
-  min-width: 15.5rem;
-  border: 1px solid #222;
-  background: #0f1014;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
-  z-index: 8000;
-  opacity: 0;
-  transform: translateY(-6px);
-  pointer-events: none;
-  transition: opacity 120ms ease, transform 120ms ease;
-}
-
-.kb-auth-controls-material[data-open="true"] .kb-auth-controls-material__menu {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-.kb-auth-controls-material__header {
-  padding: 0.58rem 0.74rem 0.52rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
-    Arial, sans-serif;
-  font-size: 0.86rem;
-  font-weight: 700;
-  color: #f7f7f7;
-}
-
-.kb-auth-controls-material__actions {
-  display: flex;
-  flex-direction: column;
-}
-
-.kb-auth-controls-material__item {
-  display: flex;
-  align-items: center;
-  min-height: 2.05rem;
-  padding: 0.42rem 0.74rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
-  font-size: 0.88rem;
-  color: #ffffff !important;
-  text-decoration: none;
-}
-
-.kb-auth-controls-material__item:hover,
-.kb-auth-controls-material__item:focus {
-  background: #000;
-  color: #ffffff !important;
-  text-decoration: none;
-}
-
-.kb-auth-controls-material__item--danger {
-  color: #ffd4d4 !important;
-}
-
-.kb-auth-controls-material__item--danger:hover,
-.kb-auth-controls-material__item--danger:focus {
-  background: #2a1111;
-  color: #ffe8e8 !important;
 }
 
 .md-header__inner {

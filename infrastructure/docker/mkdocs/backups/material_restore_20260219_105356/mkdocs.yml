@@ -1,7 +1,7 @@
 # ============================================================================
 # MkDocs Configuration — Vitruvyan Core Knowledge Base
 # ============================================================================
-# Last Updated: February 19, 2026
+# Last Updated: February 15, 2026
 # Purpose: User & administrator documentation (domain-agnostic epistemic OS)
 # Deploy: docker compose up -d mkdocs → http://localhost:9800
 # Build:  mkdocs build → site/ (static HTML)
@@ -19,37 +19,11 @@ site_dir: /app/site
 # Theme configuration
 theme:
   name: material
-  logo: docs/stylesheets/vitruvyan-logo-white.png
   language: en
-  font:
-    text: Inconsolata
-    code: Inconsolata
-  palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: black
-      accent: black
-      toggle:
-        icon: material/weather-night
-        name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: black
-      accent: blue
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
   features:
     - navigation.tabs
     - navigation.tabs.sticky
-    - navigation.sections
-    - navigation.expand
-    - navigation.path
-    - navigation.top
-    - toc.follow
     - search.suggest
-    - search.highlight
-    - search.share
     - content.code.copy
   
 # Plugins
@@ -193,12 +167,6 @@ nav:
     - Templates: docs/foundational/TEMPLATE_SACRED_ORDER_COMPONENT.md
     - Verticals:
       - Pattern: examples/verticals/README.md
-      - Contracts:
-        - Overview: docs/contracts/verticals/README.md
-        - Vertical Contract V1: docs/contracts/verticals/VERTICAL_CONTRACT_V1.md
-        - Conformance Checklist: docs/contracts/verticals/VERTICAL_CONFORMANCE_CHECKLIST.md
-        - Pattern Notes: docs/contracts/verticals/pattern.md
-        - Manifest Template: docs/contracts/verticals/templates/vertical_manifest.yaml
       - Finance:
         - Codex Hunters Domain Pack: examples/verticals/finance/CODEX_HUNTERS_DOMAIN_PACK.md
     - Examples: examples/README_EXAMPLES.md
@@ -215,10 +183,10 @@ extra:
     provider: mike  # Versioning provider (optional)
 
 extra_css:
-  - docs/stylesheets/material_v1.css?v=20260219a
+  - docs/stylesheets/vitruvyan.css?v=20260218m
 
 extra_javascript:
-  - docs/javascripts/vitruvyan.js?v=20260219g
+  - docs/javascripts/vitruvyan.js?v=20260218m
 
 # Copyright
 copyright: Copyright &copy; 2026 Vitruvyan Team

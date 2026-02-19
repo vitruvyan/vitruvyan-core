@@ -2,6 +2,20 @@ domain_name: "example"
 domain_version: "0.1.0"
 status: "draft" # draft|active|deprecated
 
+# ============================================================================
+# COMPATIBILITY (UPDATE SYSTEM CONTRACT V1)
+# ============================================================================
+# Required for `vit` update/upgrade system.
+# See: docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md
+
+compatibility:
+  min_core_version: "1.0.0"          # REQUIRED (SemVer, minimum supported Core version)
+  max_core_version: "1.x.x"          # REQUIRED (SemVer with wildcard, maximum supported Core version)
+  contracts_major: 1                  # REQUIRED (integer, must match Core's contracts major version)
+  update_channel: "stable"            # REQUIRED ("stable" | "beta")
+  breaking_changes_allowlist: []      # OPTIONAL (list of breaking change IDs to opt-in)
+  smoke_tests_timeout: 300            # OPTIONAL (seconds, default 300 = 5 minutes)
+
 ownership:
   team: "domain-team"
   tech_lead: "name.surname"
