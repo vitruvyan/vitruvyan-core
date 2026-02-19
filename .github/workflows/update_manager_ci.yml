@@ -1,0 +1,199 @@
+name: Update Manager CI Gate
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'vitruvyan_core/core/**'
+      - 'examples/verticals/*/vertical_manifest.yaml'
+      - 'domains/*/vertical_manifest.yaml'
+      - '.github/workflows/update_manager_ci.yml'
+  
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags (e.g., v1.3.0)
+  
+  workflow_dispatch:
+    inputs:
+      target_version:
+        description: 'Target Core version to test (e.g., 1.3.0)'
+        required: true
+        type: string
+
+jobs:
+  validate-manifests:
+    name: Validate Vertical Manifests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install pyyaml pytest
+      
+      - name: Run contract compliance check
+        run: |
+          python -m vitruvyan_core.core.platform.update_manager.ci.release_blocker \
+            --check-compliance \
+            --repo-root . > compliance_report.json || exit_code=$?
+          
+          # Print report
+          cat compliance_report.json
+          
+          # Exit with blocker's exit code
+          exit ${exit_code:-0}
+      
+      - name: Upload compliance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: manifest-compliance-report
+          path: compliance_report.json
+          retention-days: 30
+
+  check-compatibility:
+    name: Check Core Compatibility
+    runs-on: ubuntu-latest
+    needs: validate-manifests
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Extract version from tag
+        id: extract_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "target_version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Target version: $VERSION"
+      
+      - name: Install dependencies
+        run: |
+          pip install pyyaml pytest
+      
+      - name: Check release compatibility
+        run: |
+          python -m vitruvyan_core.core.platform.update_manager.ci.release_blocker \
+            ${{ steps.extract_version.outputs.target_version }} \
+            --repo-root . > compatibility_report.json || exit_code=$?
+          
+          # Print report
+          cat compatibility_report.json
+          
+          # Exit with blocker's exit code (1 = block release)
+          exit ${exit_code:-0}
+      
+      - name: Upload compatibility report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compatibility-report-${{ steps.extract_version.outputs.target_version }}
+          path: compatibility_report.json
+          retention-days: 90
+      
+      - name: Comment on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('compatibility_report.json', 'utf8'));
+            
+            const comment = `## ⚠️ Release Blocked — Breaking Compatibility
+            
+            **Target Version**: ${{ steps.extract_version.outputs.target_version }}
+            **Reason**: ${report.reason}
+            
+            ### Details
+            \`\`\`
+            ${report.details}
+            \`\`\`
+            
+            ### Failing Verticals (${report.failing_verticals.length}/${report.total_verticals})
+            ${report.failing_verticals.map(v => `- ${v}`).join('\n')}
+            
+            ---
+            **Action Required**: Update vertical manifests or adjust Core version constraints.
+            See [UPDATE_SYSTEM_CONTRACT_V1](./docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md).
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  run-compatibility-tests:
+    name: Run Compatibility Tests
+    runs-on: ubuntu-latest
+    needs: validate-manifests
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install -e .[dev]  # Assumes pyproject.toml has [dev] extras with pytest
+      
+      - name: Run compatibility tests
+        run: |
+          pytest \
+            -v \
+            -m compatibility \
+            --tb=short \
+            --junit-xml=compatibility-tests.xml \
+            vitruvyan_core/core/platform/update_manager/tests/
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compatibility-test-results
+          path: compatibility-tests.xml
+          retention-days: 30
+
+  summary:
+    name: CI Gate Summary
+    runs-on: ubuntu-latest
+    needs: [validate-manifests, check-compatibility, run-compatibility-tests]
+    if: always()
+    
+    steps:
+      - name: Check all jobs status
+        run: |
+          if [[ "${{ needs.validate-manifests.result }}" != "success" ]]; then
+            echo "❌ Manifest validation failed"
+            exit 1
+          fi
+          
+          if [[ "${{ needs.check-compatibility.result }}" == "failure" ]]; then
+            echo "❌ Compatibility check failed (blocking release)"
+            exit 1
+          fi
+          
+          if [[ "${{ needs.run-compatibility-tests.result }}" == "failure" ]]; then
+            echo "❌ Compatibility tests failed"
+            exit 1
+          fi
+          
+          echo "✅ All CI gates passed"
