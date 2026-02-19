@@ -12,6 +12,7 @@ mkdocs-material==9.7.1
 
 # Optional theme (Simple Blog)
 mkdocs-simple-blog==0.3.0
+mkdocs-theme-bootstrap4
 
 # Plugins
 mkdocs-mermaid2-plugin==1.1.1      # Mermaid diagrams

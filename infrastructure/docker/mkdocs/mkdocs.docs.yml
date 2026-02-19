@@ -27,10 +27,13 @@ exclude_docs: |
   .github/**
 
 theme:
-  name: simple-blog
+  name: material
   language: en
-  sidebar: true
-  navigation_depth: 3
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - search.suggest
+    - content.code.copy
 
 plugins:
   - i18n:
@@ -50,6 +53,8 @@ plugins:
       lang:
         - en
         - it
+  - material/tags:
+      enabled: true
   - mermaid2
   - minify:
       # NOTE: keep Mermaid diagram source newlines intact.
@@ -85,7 +90,6 @@ markdown_extensions:
 
 nav:
   - Home: docs/public/DOCS_HOME.md
-  - Tags: docs/foundational/TAGS.md
   - Getting Started:
     - Overview: docs/foundational/VITRUVYAN_OVERVIEW.md
     - Quick Start: docs/foundational/QUICK_START.md
@@ -112,9 +116,9 @@ nav:
     - Pattern Weavers: docs/orders/PATTERN_WEAVERS.md
 
 extra_css:
-  - docs/stylesheets/vitruvyan.css
+  - docs/stylesheets/vitruvyan.css?v=20260218m
 
 extra_javascript:
-  - docs/javascripts/vitruvyan.js
+  - docs/javascripts/vitruvyan.js?v=20260218m
 
 copyright: Copyright &copy; 2026 Vitruvyan Team

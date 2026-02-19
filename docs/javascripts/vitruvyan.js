@@ -3,9 +3,31 @@
   if (window.__vitruvyan_kb_initialized) return;
   window.__vitruvyan_kb_initialized = true;
 
+  // Backward compatibility: old bookmarks ending with README.md
+  // should resolve to MkDocs directory URLs.
+  if (window.location.pathname.endsWith("/README.md")) {
+    const target = window.location.pathname.replace(/\/README\.md$/, "/");
+    window.location.replace(`${target}${window.location.search || ""}${window.location.hash || ""}`);
+    return;
+  }
+
   function normalizeBaseUrl(baseUrl) {
     if (!baseUrl || typeof baseUrl !== "string") return ".";
     return baseUrl.replace(/\/+$/, "");
+  }
+
+  function ensureCustomCssLoaded() {
+    const hrefPattern = /docs\/stylesheets\/vitruvyan\.css(?:\?|$)/;
+    const alreadyLoaded = Array.from(
+      document.querySelectorAll('link[rel="stylesheet"][href]')
+    ).some((el) => hrefPattern.test(el.getAttribute("href") || ""));
+    if (alreadyLoaded) return;
+
+    const baseUrl = normalizeBaseUrl(window.base_url);
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = `${baseUrl}/docs/stylesheets/vitruvyan.css`;
+    document.head.appendChild(link);
   }
 
   function ensureSiteNameLink() {
@@ -33,10 +55,34 @@
     siteNameEl.replaceWith(link);
   }
 
+  function removeBootstrapPrevNextControls() {
+    const links = document.querySelectorAll(
+      '.navbar a.nav-link[rel="next"], .navbar a.nav-link[rel="prev"]'
+    );
+    links.forEach((link) => {
+      const item = link.closest("li.nav-item");
+      if (item) {
+        item.remove();
+      } else {
+        link.remove();
+      }
+    });
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", ensureSiteNameLink, { once: true });
+    document.addEventListener(
+      "DOMContentLoaded",
+      () => {
+        ensureCustomCssLoaded();
+        ensureSiteNameLink();
+        removeBootstrapPrevNextControls();
+      },
+      { once: true }
+    );
   } else {
+    ensureCustomCssLoaded();
     ensureSiteNameLink();
+    removeBootstrapPrevNextControls();
   }
 
   function joinBase(baseUrl, path) {
@@ -276,6 +322,43 @@
     }
   }
 
+  function setupMaterialAuthControls() {
+    const headerInner = document.querySelector(".md-header__inner");
+    if (!headerInner) return;
+    if (document.getElementById("kb-auth-controls-material")) return;
+
+    const { login, logout } = computeAuthLinks();
+
+    const container = document.createElement("div");
+    container.id = "kb-auth-controls-material";
+    container.className = "kb-auth-controls-material";
+
+    const loginLink = document.createElement("a");
+    loginLink.className =
+      "kb-auth-controls-material__link kb-auth-controls-material__link--login";
+    loginLink.href = login;
+    loginLink.textContent = "Sign in";
+    loginLink.setAttribute("aria-label", "Sign in");
+
+    const logoutLink = document.createElement("a");
+    logoutLink.className =
+      "kb-auth-controls-material__link kb-auth-controls-material__link--logout";
+    logoutLink.href = logout;
+    logoutLink.textContent = "Sign out";
+    logoutLink.setAttribute("aria-label", "Sign out");
+
+    container.appendChild(loginLink);
+    container.appendChild(logoutLink);
+
+    const searchComponent = headerInner.querySelector("[data-md-component='search']");
+    if (searchComponent && searchComponent.parentNode === headerInner) {
+      searchComponent.insertAdjacentElement("afterend", container);
+      return;
+    }
+
+    headerInner.appendChild(container);
+  }
+
   function fixSearchPageMenuLinks() {
     const { pathname } = window.location;
     if (!(pathname.endsWith("/search.html") || pathname === "/search.html")) return;
@@ -379,6 +462,86 @@
     });
   }
 
+  function setupMaterialHorizontalSubnav() {
+    const tabs = document.querySelector(".md-tabs");
+    const primaryNav = document.querySelector(".md-nav--primary > .md-nav__list");
+    if (!tabs || !primaryNav) return;
+
+    const activeTopItem = primaryNav.querySelector(":scope > .md-nav__item--active");
+    if (!activeTopItem) return;
+
+    const childLinks = activeTopItem.querySelectorAll(
+      ":scope > .md-nav > .md-nav__list > .md-nav__item > .md-nav__link[href]"
+    );
+    if (!childLinks || childLinks.length === 0) return;
+
+    let subnav = document.getElementById("kb-subnav");
+    if (!subnav) {
+      subnav = document.createElement("nav");
+      subnav.id = "kb-subnav";
+      subnav.className = "kb-subnav";
+      subnav.setAttribute("aria-label", "Section submenu");
+
+      const inner = document.createElement("div");
+      inner.className = "kb-subnav__inner";
+
+      const list = document.createElement("ul");
+      list.className = "kb-subnav__list";
+
+      inner.appendChild(list);
+      subnav.appendChild(inner);
+      tabs.insertAdjacentElement("afterend", subnav);
+    }
+
+    const list = subnav.querySelector(".kb-subnav__list");
+    if (!list) return;
+    list.replaceChildren();
+
+    const currentPath = window.location.pathname.replace(/\/+$/, "");
+
+    childLinks.forEach((link) => {
+      const href = link.getAttribute("href");
+      const text = (link.textContent || "").trim();
+      if (!href || !text) return;
+
+      const li = document.createElement("li");
+      li.className = "kb-subnav__item";
+
+      const a = document.createElement("a");
+      a.className = "kb-subnav__link";
+      a.href = href;
+      a.textContent = text;
+
+      const linkUrl = new URL(href, window.location.href);
+      const linkPath = linkUrl.pathname.replace(/\/+$/, "");
+      if (linkPath === currentPath) {
+        a.classList.add("is-active");
+      }
+
+      a.addEventListener("click", (event) => {
+        const targetHref = a.getAttribute("href");
+        if (!targetHref) return;
+        event.preventDefault();
+        subnav.classList.remove("is-open");
+        window.setTimeout(() => {
+          window.location.href = targetHref;
+        }, 180);
+      });
+
+      li.appendChild(a);
+      list.appendChild(li);
+    });
+
+    const hasItems = list.children.length > 0;
+    subnav.hidden = !hasItems;
+    if (!hasItems) return;
+
+    subnav.classList.remove("is-open");
+    window.requestAnimationFrame(() => {
+      subnav.classList.add("is-open");
+    });
+  }
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", setupSearchSuggest, { once: true });
   } else {
@@ -398,8 +561,20 @@
   }
 
   if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupMaterialAuthControls, { once: true });
+  } else {
+    setupMaterialAuthControls();
+  }
+
+  if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", fixSearchPageMenuLinks, { once: true });
   } else {
     fixSearchPageMenuLinks();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupMaterialHorizontalSubnav, { once: true });
+  } else {
+    setupMaterialHorizontalSubnav();
   }
 })();
