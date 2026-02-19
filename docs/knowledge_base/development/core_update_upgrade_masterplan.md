@@ -444,3 +444,158 @@ This sequence minimizes architectural risk before vertical expansion.
 4. Phase 4 and 5 for continuous operations
 
 This sequence minimizes architectural risk before vertical expansion.
+
+---
+
+## Implementation Progress 📊
+
+> **Last updated**: Feb 19, 2026 18:30 UTC  
+> **Current Phase**: Phase 1 (Compatibility Engine)  
+> **Branch**: `feature/update-manager-vit-cli`
+
+### ✅ Phase 0 Complete (Feb 19, 2026)
+
+**Foundations + Contract**
+
+- [x] Directory structure created: `vitruvyan_core/core/platform/update_manager/{engine,cli,tests}/`
+- [x] Contract published: `docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md` (15 sections, binding)
+  - [x] P0 amendments applied (wildcard semantics, path resolution, checksum, dirty tree, audit trail)
+- [x] Manifest template extended: `docs/contracts/verticals/templates/vertical_manifest.yaml`
+- [x] Finance vertical example: `examples/verticals/finance/vertical_manifest.yaml` + smoke tests
+- [x] Skeleton code: 13 Python modules with docstrings + NotImplementedError stubs
+- [x] Git commit: `089178e` (40 files, +4655/-257 lines)
+- [x] Contract v1.0.1: `3afc2db` (P0 compliant)
+
+**Key Decisions**:
+- CLI command: `vit` (apt-style, concise)
+- Architecture: Hybrid (Library + CLI, built-in to Core)
+- Location: `vitruvyan_core/core/platform/update_manager/`
+- Versioning: Git tags strict SemVer (`v1.0.0`, `v1.1.0-beta.1`)
+- Channels: `stable` (production), `beta` (early access)
+
+### ✅ Phase 1 Complete (Feb 19, 2026)
+
+**Compatibility Engine — Read-Only Check**
+
+Implemented modules:
+
+1. **engine/registry.py** (GitHub Releases API client)
+   - `ReleaseRegistry.fetch_latest(channel)` → fetch latest release from GitHub
+   - `ReleaseRegistry.fetch_all(channel)` → fetch all releases (filtered by channel)
+   - `ReleaseRegistry.verify_checksum(release)` → verify Git commit SHA
+   - `ReleaseRegistry._parse_semver(version)` → parse SemVer for sorting
+   - Uses stdlib `urllib` (zero external dependencies)
+   - Pagination support (100 releases per request)
+   - Downloads `releases.json` asset from GitHub Release
+   - Filters by channel (`stable`, `beta`)
+   - Sorts by SemVer (descending)
+
+2. **engine/compatibility.py** (Version matching + validation)
+   - `CompatibilityChecker.check(current, target, manifest)` → validate compatibility
+   - `CompatibilityChecker._match_version(version, pattern, operator)` → SemVer comparison (`>=`, `<=`, `==`)
+   - `CompatibilityChecker._match_wildcard(version, pattern)` → wildcard matching (`1.x.x` permissive)
+   - `CompatibilityChecker.parse_semver(version)` → parse SemVer tuple
+   - `CompatibilityChecker.check_contracts_major()` → contracts version validation
+   - Blocks incompatible upgrades (target < min or target > max)
+   - Returns `CompatibilityResult` (compatible bool + blocking_reason)
+
+3. **cli/commands/update.py** (`vit update` command)
+   - `cmd_update(args)` → main command logic
+   - `get_current_version()` → detect current Core version (3 strategies: `__version__`, `git describe`, fallback)
+   - `find_vertical_manifest()` → walk up directory tree to find `vertical_manifest.yaml`
+   - Displays: current version, latest version, release date, changes (breaking/features/fixes)
+   - Compatibility check with vertical manifest (if found)
+   - Shows migration guide URL
+   - Next steps: `vit upgrade --channel stable`
+   - Format: Human-readable console output (emojis, colors)
+
+4. **cli/main.py** (CLI entry point)
+   - Imports `register_update_command` from `commands/update.py`
+   - Registers `vit update` subcommand with argparse
+   - Executes `args.func(args)` pattern (command dispatch)
+   - Logging configured (INFO level)
+   - Stub commands for Phase 2+ (upgrade, plan, rollback, channel, status)
+
+5. **cli/formatters.py** (Output formatters)
+   - `format_release_info(release)` → format Release object for display
+   - `format_compatibility_result(result)` → format CompatibilityResult
+   - `OutputFormatter.color(text, color)` → ANSI colored output
+
+6. **pyproject.toml** (Package configuration)
+   - Project metadata: name, version, description, authors, license
+   - Dependencies: pyyaml, pydantic, httpx, psycopg2, redis, qdrant-client, openai, langgraph
+   - Optional dependencies: dev (pytest, black, ruff, mypy), mcp (anthropic), monitoring (prometheus-client)
+   - CLI entry point: `vit = "vitruvyan_core.core.platform.update_manager.cli.main:cli_main"`
+   - Setuptools configuration: packages.find, pytest.ini_options
+   - Tool configuration: black, ruff, mypy
+
+**Implementation Details**:
+- **Zero breaking changes**: All code isolated in `core/platform/update_manager/`
+- **Stdlib-first**: Uses `urllib` (no `requests` dependency yet)
+- **Error handling**: NetworkError for GitHub API failures
+- **Timeout protection**: 10-second timeout for network requests
+- **Graceful degradation**: Falls back to "unknown" version if detection fails
+- **Vertical discovery**: Walks up from CWD to Git repo root looking for `vertical_manifest.yaml`
+
+**Testing Strategy** (next):
+- Unit tests: `tests/test_registry.py` (mock GitHub API responses)
+- Unit tests: `tests/test_compatibility.py` (wildcard matching, SemVer comparison)
+- Integration test: `tests/test_vit_update_e2e.py` (actual GitHub API call)
+- Manual test: `pip install -e . && vit update --channel stable`
+
+**Known Limitations** (Phase 1):
+- Current version detection: hardcoded fallback to "unknown" if `__version__` and `git describe` fail
+- Contracts version: hardcoded to "1.0.0" (should read from Core metadata in Phase 2)
+- No caching: GitHub API called on every `vit update` (add cache in Phase 2)
+- No rate limit handling: Will fail after 60 requests/hour (unauthenticated)
+- Manifest discovery: stops at Git repo root (could support custom paths)
+
+### 🔜 Phase 2 Next (Week 3)
+
+**Update Executor — Apply Upgrade**
+
+Modules to implement:
+
+1. **engine/planner.py** (`UpgradePlanner`)
+   - Generate upgrade plan (changes, risks, tests)
+   - Estimate upgrade duration
+   - Check for breaking changes
+   - Validate prerequisites (clean working tree, sufficient disk space)
+
+2. **engine/executor.py** (`UpgradeExecutor`)
+   - Execute upgrade transaction (git checkout, pip install)
+   - Create snapshot tag before upgrade
+   - Run vertical smoke tests
+   - Rollback on failure (restore snapshot)
+   - Write audit log entry
+
+3. **cli/commands/upgrade.py** (`vit upgrade` command)
+   - Interactive confirmation (show plan, ask consent)
+   - Non-interactive mode (`--yes` flag)
+   - Target version selection (`--target v1.2.0`)
+   - Progress indicators (spinner, percentage)
+   - Error reporting (detailed diagnostics)
+
+4. **cli/commands/plan.py** (`vit plan` command)
+   - Show upgrade plan without applying
+   - Risk assessment (breaking changes, migration complexity)
+   - Smoke test preview (timeout, exit codes)
+
+5. **cli/commands/rollback.py** (`vit rollback` command)
+   - Revert to previous version (snapshot tag)
+   - Restore dependencies (`requirements.txt` snapshot)
+   - Update audit log
+
+**Timeline**: Week 3 (Feb 20-26, 2026)
+
+**Definition of Done**:
+- `vit upgrade` working end-to-end (manual testing)
+- `vit rollback` restores previous version
+- Smoke tests run automatically after upgrade
+- Audit log created (`.vitruvyan/upgrade_history.json`)
+- Integration tests pass (mocked GitHub API)
+
+### 🔜 Phase 3-5 (Weeks 4-7)
+
+**CI Gates, Notifications, Governance** (see Masterplan sections above)
+

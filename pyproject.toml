@@ -1,0 +1,116 @@
+# Vitruvyan Core - Epistemic Operating System
+# Platform configuration (PEP 621)
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vitruvyan-core"
+version = "1.0.0"
+description = "Domain-agnostic epistemic operating system"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Vitruvyan Team"}
+]
+keywords = ["epistemic", "ai", "langgraph", "rag", "cognitive-architecture"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12"
+]
+
+# Core dependencies (minimal, stable versions)
+dependencies = [
+    "pyyaml>=6.0",
+    "pydantic>=2.0",
+    "httpx>=0.24",
+    "psycopg2-binary>=2.9",
+    "redis>=4.5",
+    "qdrant-client>=1.7",
+    "openai>=1.0",
+    "langgraph>=0.2.0",
+    "langchain-core>=0.3.0"
+]
+
+[project.optional-dependencies]
+# Development dependencies
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0"
+]
+
+# MCP integration (optional)
+mcp = [
+    "anthropic>=0.18.0"
+]
+
+# Monitoring (optional)
+monitoring = [
+    "prometheus-client>=0.17.0",
+    "grafana-api>=1.0"
+]
+
+[project.scripts]
+# CLI entry points
+vit = "vitruvyan_core.core.platform.update_manager.cli.main:cli_main"
+
+[project.urls]
+Homepage = "https://github.com/vitruvyan/vitruvyan-core"
+Documentation = "https://docs.vitruvyan.io"
+Repository = "https://github.com/vitruvyan/vitruvyan-core"
+Issues = "https://github.com/vitruvyan/vitruvyan-core/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["vitruvyan_core*"]
+exclude = ["tests*", "docs*", "examples*", "scripts*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --strict-markers --tb=short"
+markers = [
+    "unit: Unit tests (fast, no external dependencies)",
+    "integration: Integration tests (requires infrastructure)",
+    "slow: Slow tests (> 5 seconds)"
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | _build
+  | build
+  | dist
+  | __pycache__
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501"]  # Line too long (handled by black)
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # Gradual typing
+ignore_missing_imports = true

@@ -43,3 +43,49 @@ class OutputFormatter:
     def json_output(data: Any) -> str:
         """Format as JSON."""
         return json.dumps(data, indent=2)
+
+
+def format_release_info(release) -> str:
+    """
+    Format Release object for display.
+    
+    Args:
+        release: Release object
+    
+    Returns:
+        Formatted string
+    """
+    lines = [
+        f"Version: {release.version}",
+        f"Channel: {release.channel}",
+        f"Released: {release.release_date}",
+        f"Contracts: {release.contracts_version}"
+    ]
+    
+    if release.changes:
+        changes = release.changes
+        if changes.get("breaking"):
+            lines.append(f"⚠️  Breaking changes: {len(changes['breaking'])}")
+        if changes.get("features"):
+            lines.append(f"✨ Features: {len(changes['features'])}")
+        if changes.get("fixes"):
+            lines.append(f"🐛 Fixes: {len(changes['fixes'])}")
+    
+    return "\n".join(lines)
+
+
+def format_compatibility_result(result) -> str:
+    """
+    Format CompatibilityResult for display.
+    
+    Args:
+        result: CompatibilityResult object
+    
+    Returns:
+        Formatted string
+    """
+    if result.compatible:
+        return f"✅ Compatible (target: {result.target_version})"
+    else:
+        return f"❌ Incompatible: {result.blocking_reason}"
+

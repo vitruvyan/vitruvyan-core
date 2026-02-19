@@ -14,6 +14,15 @@ Phase 1: Implement `vit update` command
 
 import sys
 import argparse
+import logging
+
+from .commands.update import register_update_command
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s: %(message)s"
+)
 
 
 def cli_main():
@@ -32,14 +41,13 @@ def cli_main():
     
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
     
-    # vit update
-    update_parser = subparsers.add_parser(
-        "update",
-        help="Check for updates (sync release registry)"
-    )
-    update_parser.add_argument("--json", action="store_true", help="JSON output")
+    # Register commands (Phase 1: update only)
+    register_update_command(subparsers)
     
-    # vit upgrade
+    # Phase 2+ commands (stubs for now)
+    # TODO: Implement upgrade, plan, rollback, channel, status
+    
+    # vit upgrade (stub)
     upgrade_parser = subparsers.add_parser(
         "upgrade",
         help="Apply upgrade (with compatibility validation)"
@@ -79,12 +87,12 @@ def cli_main():
         parser.print_help()
         sys.exit(1)
     
-    # Phase 1: Only `update` implemented
-    if args.command == "update":
-        print("⚠️  Phase 1: `vit update` not yet implemented")
-        print("See: docs/knowledge_base/development/core_update_upgrade_masterplan.md")
-        sys.exit(0)
+    # Execute command (if func is registered)
+    if hasattr(args, "func"):
+        exit_code = args.func(args)
+        sys.exit(exit_code)
     else:
+        # Command not yet implemented
         print(f"⚠️  Command `vit {args.command}` not yet implemented (Phase 2+)")
         sys.exit(0)
 
