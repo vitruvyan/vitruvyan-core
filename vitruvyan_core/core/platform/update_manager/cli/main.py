@@ -20,6 +20,7 @@ from .commands.update import register_update_command
 from .commands.upgrade import register_upgrade_command
 from .commands.plan import register_plan_command
 from .commands.rollback import register_rollback_command
+from .commands.status import register_status_command
 
 # Configure logging
 logging.basicConfig(
@@ -44,14 +45,15 @@ def cli_main():
     
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
     
-    # Register commands (Phase 2: update, upgrade, plan, rollback)
+    # Register commands (Phase 2+: update, upgrade, plan, rollback, status)
     register_update_command(subparsers)
     register_upgrade_command(subparsers)
     register_plan_command(subparsers)
     register_rollback_command(subparsers)
+    register_status_command(subparsers)
     
     # Phase 3+ commands (stubs)
-    # TODO: Implement channel, status
+    # TODO: Implement channel
     
     # vit channel (stub)
     channel_parser = subparsers.add_parser(
@@ -59,12 +61,6 @@ def cli_main():
         help="Switch update channel (stable|beta)"
     )
     channel_parser.add_argument("channel", choices=["stable", "beta"])
-    
-    # vit status
-    status_parser = subparsers.add_parser(
-        "status",
-        help="Show current version + available updates"
-    )
     
     args = parser.parse_args()
     

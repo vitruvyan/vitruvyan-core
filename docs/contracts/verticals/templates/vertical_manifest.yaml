@@ -16,6 +16,38 @@ compatibility:
   breaking_changes_allowlist: []      # OPTIONAL (list of breaking change IDs to opt-in)
   smoke_tests_timeout: 300            # OPTIONAL (seconds, default 300 = 5 minutes)
 
+# ============================================================================
+# NOTIFICATIONS (UPDATE SYSTEM NOTIFICATIONS)
+# ============================================================================
+# Optional notification settings for Core update alerts.
+# See: docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md (Phase 4)
+
+notifications:
+  enabled: true                       # OPTIONAL (bool, default true)
+  channels:                           # OPTIONAL (list, default ["desktop", "log"])
+    - "desktop"                       # Desktop notifications (notify-send/osascript/win10toast)
+    - "log"                           # Log file (~/.vitruvyan/update_notifications.log)
+    # - "webhook"                     # HTTP webhook (Slack/generic)
+    # - "email"                       # Email (SMTP)
+  
+  check_on_startup: true              # OPTIONAL (bool, check updates on service startup)
+  check_interval_hours: 24            # OPTIONAL (int, hours between periodic checks, default 24)
+  
+  # Desktop notification settings
+  desktop_urgency: "normal"           # OPTIONAL ("low" | "normal" | "critical", default "normal")
+  
+  # Webhook settings (if "webhook" channel enabled)
+  webhook_url: ""                     # OPTIONAL (string, HTTP endpoint for webhook)
+  webhook_format: "slack"             # OPTIONAL ("slack" | "generic", default "slack")
+  
+  # Email settings (if "email" channel enabled)
+  email_to: ""                        # OPTIONAL (string, recipient email address)
+  email_from: "vitruvyan@example.com" # OPTIONAL (string, sender email address)
+  smtp_host: "smtp.gmail.com"         # OPTIONAL (string, SMTP server hostname)
+  smtp_port: 587                      # OPTIONAL (int, SMTP port, default 587)
+  smtp_user: ""                       # OPTIONAL (string, SMTP username)
+  smtp_password: ""                   # OPTIONAL (string, SMTP password - use env var instead)
+
 ownership:
   team: "domain-team"
   tech_lead: "name.surname"
