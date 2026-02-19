@@ -21,6 +21,210 @@ This contract governs:
 
 ---
 
+## Update System Flow Diagrams
+
+### 1. Update Check Flow (`vit update`)
+
+```mermaid
+graph TD
+    A[User runs: vit update] --> B[Find vertical_manifest.yaml]
+    B --> C{Manifest found?}
+    C -->|No| D[Use generic compatibility check]
+    C -->|Yes| E[Load compatibility constraints]
+    
+    E --> F[Get current Core version]
+    F --> G[Fetch latest release from GitHub]
+    
+    G --> H{Network error?}
+    H -->|Yes| I[Display error, exit 1]
+    H -->|No| J[Compare versions]
+    
+    J --> K{Update available?}
+    K -->|No| L[Display: Already on latest]
+    K -->|Yes| M[Check compatibility]
+    
+    M --> N{Compatible?}
+    N -->|No| O[Display: Incompatible + reasons]
+    N -->|Yes| P[Display: Update available]
+    
+    D --> F
+    L --> Q[Exit 0]
+    O --> Q
+    P --> Q
+    I --> Q
+    
+    style P fill:#90EE90
+    style O fill:#FFB6C1
+    style L fill:#87CEEB
+```
+
+### 2. Upgrade Flow (`vit upgrade`)
+
+```mermaid
+graph TD
+    A[User runs: vit upgrade] --> B[Find vertical_manifest.yaml]
+    B --> C{Manifest found?}
+    C -->|No| D[Error: Manifest required]
+    C -->|Yes| E[Check compatibility]
+    
+    E --> F{Compatible?}
+    F -->|No| G[Error: Incompatible version]
+    F -->|Yes| H[Create snapshot]
+    
+    H --> I[Save current state to ~/.vitruvyan/snapshots/]
+    I --> J[Pull Core update from GitHub]
+    
+    J --> K{Pull success?}
+    K -->|No| L[Error: Download failed]
+    K -->|Yes| M[Install new version]
+    
+    M --> N[Run smoke tests: smoke_tests/run.sh]
+    N --> O{Tests passed?}
+    
+    O -->|No| P[ROLLBACK TRIGGERED]
+    O -->|Yes| Q[Upgrade SUCCESS]
+    
+    P --> R[Restore from snapshot]
+    R --> S[Restart services]
+    S --> T[Exit 1 - rollback complete]
+    
+    Q --> U[Clean old snapshots]
+    U --> V[Exit 0 - upgrade complete]
+    
+    D --> W[Exit 1]
+    G --> W
+    L --> W
+    
+    style Q fill:#90EE90
+    style P fill:#FFB6C1
+    style H fill:#FFD700
+    style N fill:#FFA500
+```
+
+### 3. Notification Flow (Phase 4)
+
+```mermaid
+graph TD
+    A[System Startup] --> B[startup_check triggered]
+    B --> C{Notifications enabled?}
+    C -->|No| D[Skip check]
+    C -->|Yes| E{Interval elapsed?}
+    
+    E -->|No| D
+    E -->|Yes| F[Fetch latest release]
+    
+    F --> G{Update available?}
+    G -->|No| H[Record last check time]
+    G -->|Yes| I{Compatible?}
+    
+    I -->|No| H
+    I -->|Yes| J[Build notification]
+    
+    J --> K[Send to configured channels]
+    K --> L[Desktop Notifier]
+    K --> M[Log Notifier]
+    K --> N[Webhook Notifier]
+    K --> O[Email Notifier]
+    
+    L --> P{notify-send available?}
+    P -->|Yes| Q[Show desktop notification]
+    P -->|No| R[Skip]
+    
+    M --> S[Write to ~/.vitruvyan/update_notifications.log]
+    
+    N --> T{Webhook URL configured?}
+    T -->|Yes| U[POST to Slack/HTTP endpoint]
+    T -->|No| R
+    
+    O --> V{SMTP configured?}
+    V -->|Yes| W[Send email]
+    V -->|No| R
+    
+    Q --> H
+    S --> H
+    U --> H
+    W --> H
+    R --> H
+    H --> D
+    
+    style J fill:#FFD700
+    style Q fill:#90EE90
+    style S fill:#87CEEB
+    style U fill:#DDA0DD
+```
+
+### 4. CI/CD Integration Flow
+
+```mermaid
+graph TD
+    A[Git tag pushed: v1.2.0] --> B[GitHub Actions triggered]
+    B --> C[Job: validate-manifests]
+    B --> D[Job: check-compatibility]
+    B --> E[Job: run-compatibility-tests]
+    
+    C --> F[ContractValidator.validate]
+    F --> G{All verticals valid?}
+    G -->|No| H[BLOCK RELEASE]
+    G -->|Yes| I[Continue]
+    
+    D --> J[CompatibilityChecker.check]
+    J --> K{All verticals compatible?}
+    K -->|No| H
+    K -->|Yes| I
+    
+    E --> L[pytest -m compatibility]
+    L --> M{All tests pass?}
+    M -->|No| H
+    M -->|Yes| I
+    
+    I --> N[Job: summary]
+    N --> O[Publish release_metadata.json]
+    O --> P[Create GitHub Release]
+    
+    P --> Q[Release v1.2.0 PUBLISHED]
+    
+    H --> R[Exit 1 - deployment blocked]
+    
+    style Q fill:#90EE90
+    style H fill:#FFB6C1
+    style F fill:#FFA500
+    style J fill:#FFA500
+    style L fill:#FFA500
+```
+
+### 5. Periodic Poller Flow (Background Daemon)
+
+```mermaid
+graph TD
+    A[Start: python -m ...periodic_poller] --> B[Load notification config]
+    B --> C{Enabled?}
+    C -->|No| D[Exit: Notifications disabled]
+    C -->|Yes| E[Register signal handlers SIGINT/SIGTERM]
+    
+    E --> F[Run first update check immediately]
+    F --> G[startup_check force=True]
+    
+    G --> H[Sleep interval_seconds]
+    H --> I{Shutdown requested?}
+    
+    I -->|Yes| J[Graceful shutdown]
+    I -->|No| K[Check if interval elapsed]
+    
+    K --> L{Interval complete?}
+    L -->|No| H
+    L -->|Yes| M[Run update check]
+    
+    M --> G
+    
+    J --> N[Exit 0]
+    
+    style E fill:#FFD700
+    style G fill:#87CEEB
+    style J fill:#90EE90
+```
+
+---
+
 ## 1. Manifest Schema (Vertical MUST Comply)
 
 Every vertical MUST provide `vertical_manifest.yaml` with these fields:
