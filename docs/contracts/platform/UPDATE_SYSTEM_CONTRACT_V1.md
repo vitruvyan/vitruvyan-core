@@ -55,6 +55,40 @@ ownership:
 
 **Enforcement**: `vit upgrade` reads manifest and blocks if invalid.
 
+### Wildcard Matching Rules
+
+**Semantics**: `x` = any non-negative integer (permissive matching)
+
+**Examples**:
+- `1.x.x` matches: `1.0.0`, `1.5.2`, `1.999.0`
+- `1.x.x` does NOT match: `2.0.0`, `0.9.0`
+- `1.2.x` matches: `1.2.0`, `1.2.99`
+- `1.2.x` does NOT match: `1.3.0`, `1.1.9`
+
+**Implementation** (Python reference):
+```python
+def match_version(version: str, pattern: str) -> bool:
+    """
+    Match version against wildcard pattern.
+    
+    >>> match_version("1.5.2", "1.x.x")
+    True
+    >>> match_version("2.0.0", "1.x.x")
+    False
+    """
+    pattern_parts = pattern.split('.')
+    version_parts = version.split('-')[0].split('.')  # strip pre-release
+    
+    for p, v in zip(pattern_parts, version_parts):
+        if p == 'x':
+            continue  # wildcard = any value
+        if p != v:
+            return False
+    return True
+```
+
+**Rationale**: Industry standard (npm `^1.0.0`, Cargo `1.*`). Reduces manifest maintenance burden.
+
 ---
 
 ## 2. Smoke Test Interface (Vertical MUST Provide)
@@ -65,6 +99,38 @@ Every vertical MUST provide executable smoke tests.
 
 ```
 <vertical_root>/smoke_tests/run.sh
+```
+
+### Path Resolution
+
+**Vertical root** = directory containing `vertical_manifest.yaml`
+
+**Algorithm**:
+```python
+def find_vertical_root(manifest_path: str) -> str:
+    """
+    Vertical root = directory containing vertical_manifest.yaml
+    
+    Example:
+        manifest: /home/vitruvyan/vitruvyan-core/domains/finance/vertical_manifest.yaml
+        → vertical_root: /home/vitruvyan/vitruvyan-core/domains/finance/
+    """
+    return os.path.dirname(os.path.abspath(manifest_path))
+
+def find_smoke_tests(vertical_root: str) -> str:
+    return os.path.join(vertical_root, "smoke_tests/run.sh")
+```
+
+**Discovery**: `vit` searches for `vertical_manifest.yaml` starting from current directory, walking up to Git repo root.
+
+**Structure** (example):
+```
+/home/vitruvyan/vitruvyan-core/domains/finance/
+├── vertical_manifest.yaml       ← vit finds this
+├── smoke_tests/
+│   └── run.sh                   ← resolved as <manifest_dir>/smoke_tests/run.sh
+├── intent_config.py
+└── README.md
 ```
 
 ### Contract
@@ -178,11 +244,43 @@ Every Core release MUST include `release_metadata.json`.
     "finance": "0.2.0"
   },
   "checksum": {
-    "algorithm": "sha256",
-    "value": "abc123def456..."
+    "type": "git_commit_sha",
+    "value": "089178e4c5a2b1f9d3e7c4a9f8b2d5e1a3c7f9b0"
   }
 }
 ```
+
+### Checksum Specification
+
+**Type**: `git_commit_sha` (Git commit hash of release tag)
+
+**Verification Algorithm**:
+```bash
+# vit upgrade verifies:
+git rev-parse v1.2.0  # → MUST match checksum.value
+```
+
+**Implementation** (Python):
+```python
+import subprocess
+
+def verify_release(tag: str, expected_sha: str) -> bool:
+    actual_sha = subprocess.check_output(
+        ["git", "rev-parse", tag]
+    ).decode().strip()
+    
+    if actual_sha != expected_sha:
+        raise SecurityError(
+            f"Checksum mismatch: expected {expected_sha}, got {actual_sha}"
+        )
+    return True
+```
+
+**Rationale**: 
+- Zero overhead (Git built-in)
+- Cryptographically secure (SHA-1, migrating to SHA-256)
+- Industry standard (Docker image digests, Kubernetes manifests)
+- Immutable (Git commits are content-addressable)
 
 ### Required Fields
 
@@ -281,6 +379,50 @@ Every Core release MUST include `release_metadata.json`.
 
 ## 7. Rollback Scope (MVP)
 
+### Pre-Upgrade Validation
+
+**REQUIRED BEFORE UPGRADE**: `vit upgrade` MUST verify clean working tree.
+
+**Checks**:
+1. **No uncommitted changes**:
+   ```bash
+   git diff-index --quiet HEAD --
+   # Exit code 0 = clean, non-zero = dirty
+   ```
+
+2. **No untracked files in critical paths**:
+   - `vitruvyan_core/`
+   - `contracts/`
+   - (Vertical files in `domains/` are allowed)
+
+**Error Handling**:
+```bash
+vit upgrade
+# Output if dirty:
+# ❌ Upgrade blocked: Uncommitted changes detected
+#
+# Modified files:
+#   vitruvyan_core/core/agents/postgres_agent.py
+#   domains/finance/intent_config.py
+#
+# Actions:
+#   git commit -am "WIP: save changes"
+#   OR
+#   git stash
+#
+# Exit code: 1 (blocked)
+```
+
+**Rationale**: 
+- Prevents data loss (uncommitted work)
+- Ensures rollback can restore exact state
+- Zero tolerance for safety-critical operations
+- Industry standard (Kubernetes, Docker, apt)
+
+**Override**: NONE (no `--force` flag, safety-critical)
+
+---
+
 ### Included in Rollback
 
 ✅ Core codebase (git checkout snapshot tag)  
@@ -302,7 +444,45 @@ Every Core release MUST include `release_metadata.json`.
 
 ### Location
 
-`.vitruvyan/upgrade_history.json` (vertical root)
+`.vitruvyan/upgrade_history.json` (Git repository root)
+
+**Absolute Path Resolution**:
+```bash
+# vit determines repo root:
+git rev-parse --show-toplevel
+# → /home/vitruvyan/vitruvyan-core/
+
+# Audit trail location:
+# → /home/vitruvyan/vitruvyan-core/.vitruvyan/upgrade_history.json
+```
+
+**Rationale**:
+- **Installation-scoped**: One audit trail per Core installation (not per vertical)
+- **Shared history**: All verticals in same installation share upgrade history
+- **Git-aligned**: Repo root is deterministic (`git rev-parse --show-toplevel`)
+- **Portable**: `.vitruvyan/` added to `.gitignore` (local state, not committed)
+
+**Structure** (example):
+```
+/home/vitruvyan/vitruvyan-core/       ← Git repo root
+├── .vitruvyan/
+│   └── upgrade_history.json         ← Installation-level audit
+├── vitruvyan_core/                  ← Core code
+└── domains/
+    ├── finance/                     ← Vertical 1
+    └── healthcare/                  ← Vertical 2
+```
+
+**Multi-Installation** (independent machines):
+```
+Machine A (Finance Team):
+  /opt/finance-install/
+    └── .vitruvyan/upgrade_history.json  ← Independent history
+
+Machine B (Healthcare Team):
+  /home/healthcare/vitruvyan/
+    └── .vitruvyan/upgrade_history.json  ← Independent history
+```
 
 ### Schema
 
