@@ -709,3 +709,143 @@ Moduli implementati:
 - 6 file modificati, +1049/-47 righe
 - File nuovi: `upgrade.py`, `plan.py`, `rollback.py`
 - Modificati: `planner.py`, `executor.py`, `main.py`
+
+---
+
+### ✅ Phase 3 Completata (19 Feb 2026)
+
+**Gate CI/CD — Prevenzione Release Rompenti**
+
+Moduli implementati:
+
+1. **ci/contract_validator.py** (ContractValidator)
+   - `validate_manifest(manifest_path)` → ValidationResult
+   - `validate_multiple(paths)` → List[ValidationResult]
+   - **Regole di validazione** (conformità UPDATE_SYSTEM_CONTRACT_V1):
+     - Campi richiesti: domain_name, domain_version, status, compatibility, ownership
+     - Sezione compatibility: min/max_core_version, contracts_major, update_channel
+     - Sezione ownership: team, tech_lead, contact (formato email)
+     - Vincoli versione: SemVer o wildcard (es. 1.x.x)
+     - Major contratti: deve corrispondere a versione Core
+     - Canale aggiornamento: "stable" o "beta"
+     - Timeout smoke test: 60-600 secondi (se fornito)
+   - `discover_verticals(root_dir)` → trova tutti i file vertical_manifest.yaml
+   - **Controlli validazione**:
+     - Conformità schema (campi richiesti, tipi)
+     - min_core_version ≤ max_core_version
+     - Esistenza smoke test (warning se mancante)
+     - Eseguibilità smoke test (warning se non eseguibile)
+
+2. **ci/pytest_integration.py** (marker e fixture pytest)
+   - **Decorator**: `@compatibility_test` (marca test per filtraggio CI)
+   - **Fixture**:
+     - `repo_root`: Cerca radice Git (`.git/`)
+     - `vertical_manifests`: Scopre tutti i manifest (scope session)
+     - `active_verticals`: Filtra manifest status="active"
+     - `contract_validator`: ContractValidator inizializzato
+     - `compatibility_check_helper`: Helper asserzioni (solleva se invalido)
+   - **Parametrizzazione**: `parametrize_verticals(metafunc)` → esegue test una volta per verticale
+   - **Registrazione marker**: compatibility, slow
+
+3. **ci/release_blocker.py** (ReleaseBlocker)
+   - `check_release(target_version)` → BlockingReport
+   - `check_manifest_compliance()` → BlockingReport
+   - **Ragioni blocco**:
+     - INVALID_MANIFEST: violazione schema
+     - INCOMPATIBLE_VERTICAL: mismatch intervallo versione
+     - CONTRACT_VIOLATION: test conformità fallito
+     - NO_VERTICALS: nessun manifest trovato (sospetto)
+   - **BlockingReport**:
+     - `blocked: bool` (True = blocca release)
+     - `reason: BlockingReason` (enum)
+     - `details: str` (messaggi errore)
+     - `failing_verticals: List[str]` (path manifest falliti)
+     - `total_verticals: int`
+     - `exit_code()` → 0 (pass) | 1 (block)
+     - `to_json()` → artifact JSON per CI
+   - **Entry point CLI**: `python -m vitruvyan_core.core.platform.update_manager.ci.release_blocker`
+
+4. **.github/workflows/update_manager_ci.yml** (GitHub Actions)
+   - **Trigger**:
+     - Pull request (branch: main, develop)
+     - Tag release (`v*`)
+     - Dispatch manuale (input target_version)
+   - **Job**:
+     1. **validate-manifests**: Controllo conformità contratto
+        - Esegue: `release_blocker --check-compliance`
+        - Upload: artifact `compliance_report.json`
+        - Blocca: se qualsiasi manifest invalido
+     2. **check-compatibility**: Validazione intervallo versione (solo tag)
+        - Estrae versione da tag (`v1.2.0` → `1.2.0`)
+        - Esegue: `release_blocker <version>`
+        - Upload: artifact `compatibility_report.json`
+        - Commenta su PR se bloccato (ragione, verticali fallite)
+        - Blocca: se qualsiasi verticale incompatibile
+     3. **run-compatibility-tests**: Suite pytest
+        - Esegue: `pytest -m compatibility`
+        - Upload: `compatibility-tests.xml` (formato JUnit)
+        - Blocca: se qualsiasi test fallisce
+     4. **summary**: Aggrega tutti i risultati job
+        - Fallisce se qualsiasi job fallito
+   - **Filtro path**: Attiva solo se Core o manifest modificati
+
+5. **tests/test_compatibility.py** (8 test compatibilità)
+   - `test_all_manifests_valid`: Tutti i manifest conformi al contratto ✅
+   - `test_active_verticals_have_required_fields`: Verticali attivi validi ✅
+   - `test_version_constraints_valid`: Formato SemVer o wildcard ✅
+   - `test_contracts_major_matches_core`: Allineamento versione contratti ✅
+   - `test_smoke_tests_exist`: Smoke test presenti (warning se mancanti) ✅
+   - `test_update_channel_valid`: Canale è "stable" o "beta" ✅
+   - `test_smoke_test_timeout_in_range`: Timeout 60-600 secondi ✅
+   - `test_manifest_discovery_works`: Almeno 1 manifest trovato ✅
+   - `test_vertical_manifest_individual`: Test parametrizzato (1 per verticale)
+
+6. **tests/conftest.py** (configurazione pytest)
+   - Importa fixture da `ci/pytest_integration.py`
+   - Registra marker: `compatibility`, `slow`
+   - Configura parametrizzazione test
+
+7. **pytest.ini** (registrazione marker globale)
+   - Aggiunto: `compatibility: Update Manager compatibility tests (CI gates)`
+
+**Dettagli Implementativi**:
+- **Matching wildcard**: `1.x.x` corrisponde a qualsiasi `1.*.*` (permissivo, standard industria)
+- **Validazione SemVer**: Regex `^\d+\.\d+\.\d+(-[\w.]+)?$` (supporta pre-release)
+- **Confronto versioni**: Ordinamento base major.minor.patch (wildcard → 999)
+- **Posizione smoke test**: `<vertical_root>/smoke_tests/run.sh` (contratto P0)
+- **Path discovery manifest**:
+  - `examples/verticals/*/vertical_manifest.yaml`
+  - `domains/*/vertical_manifest.yaml`
+- **Ritenzione artifact CI**: 30 giorni (test), 90 giorni (report compatibilità)
+
+**Test Eseguiti**:
+- ✅ Manuale: `python -m ...release_blocker --check-compliance`
+  - Risultato: 1 verticale conforme (finance), exit 0
+- ✅ Manuale: `python -m ...release_blocker 1.2.0`
+  - Risultato: Compatibile (1.2.0 dentro 1.x.x), exit 0
+- ✅ Manuale: `python -m ...release_blocker 2.0.0`
+  - Risultato: Bloccato (2.0.0 > 1.x.x), exit 1
+- ✅ Pytest: `pytest -m compatibility`
+  - Risultato: 8/8 test passati
+- ✅ ContractValidator: Verticale finance passa tutti i controlli
+- ✅ Matching wildcard: 1.x.x correttamente corrisponde a 1.2.0, rifiuta 2.0.0
+- ✅ Fixture: `vertical_manifests`, `contract_validator` funzionano correttamente
+
+**Limitazioni Note (Phase 3)**:
+- **Nessun test release GitHub**: Workflow non attivato ancora (richiede tag release reale)
+- **Singola verticale**: Esiste solo verticale finance (servono altre per test matrice)
+- **Nessuna gestione pre-release**: Workflow non distingue canali stable/beta
+- **Posting commenti**: Richiede token GitHub con permessi scrittura PR
+
+**Modifiche File** (commit `c00d064`):
+- 8 file modificati, +1187 righe
+- File nuovi (7):
+  - `.github/workflows/update_manager_ci.yml` (172 righe)
+  - `ci/__init__.py` (20 righe)
+  - `ci/contract_validator.py` (325 righe)
+  - `ci/pytest_integration.py` (150 righe)
+  - `ci/release_blocker.py` (250 righe)
+  - `tests/conftest.py` (33 righe)
+  - `tests/test_compatibility.py` (175 righe)
+- Modificato (1):
+  - `pytest.ini` (+1 marker)
