@@ -115,17 +115,17 @@ graph TB
 
 ---
 
-## 🏛️ Parte 2: AEGIS — Un Esempio di Sistema di Dominio
+## 🏛️ Parte 2: Vitruvyan — Un Esempio di Sistema di Dominio
 
-### 2.1 Cos'è AEGIS?
+### 2.1 Cos'è Vitruvyan?
 
-**AEGIS** (Advanced Exploration of Generative Infrastructure Solutions) è un **vertical** di Vitruvyan specializzato in **Design Space Exploration** — la valutazione di configurazioni architetturali complesse.
+**Vitruvyan** (Advanced Exploration of Generative Infrastructure Solutions) è un **vertical** di Vitruvyan specializzato in **Design Space Exploration** — la valutazione di configurazioni architetturali complesse.
 
-Mentre Vitruvyan è il "sistema operativo", AEGIS è un'"applicazione" che gira su di esso.
+Mentre Vitruvyan è il "sistema operativo", Vitruvyan è un'"applicazione" che gira su di esso.
 
-### 2.2 Il Percorso Cognitivo Completo in AEGIS
+### 2.2 Il Percorso Cognitivo Completo in Vitruvyan
 
-Quando un **frammento di informazione** entra nel sistema AEGIS, attraversa un percorso preciso. Ecco il flusso reale, basato sul codice sorgente:
+Quando un **frammento di informazione** entra nel sistema Vitruvyan, attraversa un percorso preciso. Ecco il flusso reale, basato sul codice sorgente:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -256,7 +256,7 @@ Quando un **frammento di informazione** entra nel sistema AEGIS, attraversa un p
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.3 Schema Mermaid del Flusso AEGIS
+### 2.3 Schema Mermaid del Flusso Vitruvyan
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1a1a2e', 'primaryTextColor': '#fff'}}}%%
@@ -340,9 +340,9 @@ flowchart TB
     class E1,E2,E3,E4 bus
 ```
 
-### 2.4 La Catena Epistemica di AEGIS
+### 2.4 La Catena Epistemica di Vitruvyan
 
-AEGIS implementa una **catena epistemica** rigida che trasforma informazioni grezze in decisioni vincolanti:
+Vitruvyan implementa una **catena epistemica** rigida che trasforma informazioni grezze in decisioni vincolanti:
 
 ```
 INTAKE → CODEX → PATTERN_WEAVERS → CONTRACT → KERNEL → EXPLAINABILITY
@@ -397,7 +397,7 @@ Grezzo → Arricchito → Ipotesi → Validato → Calcolato → Spiegato
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.2 Gli Eventi Principali in AEGIS
+### 3.2 Gli Eventi Principali in Vitruvyan
 
 | Evento | Emesso da | Consumato da | Significato |
 |--------|-----------|--------------|-------------|
@@ -461,7 +461,7 @@ Intake --emette evento--> [Bus] <--ascolta-- Codex
 >
 > *La **rete nervosa** (Cognitive Bus) permette ai tentacoli di parlare tra loro direttamente, senza passare dal cervello.*
 >
-> *In AEGIS, un documento entra come 'frammento grezzo', viene arricchito, interpretato, validato contro contratti sacri, elaborato matematicamente, e infine spiegato in linguaggio naturale.*
+> *In Vitruvyan, un documento entra come 'frammento grezzo', viene arricchito, interpretato, validato contro contratti sacri, elaborato matematicamente, e infine spiegato in linguaggio naturale.*
 >
 > *Ogni passaggio è tracciato. Ogni decisione è auditabile. Se un componente fallisce, gli altri continuano."*
 

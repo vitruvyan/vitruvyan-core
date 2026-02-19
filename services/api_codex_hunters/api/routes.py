@@ -211,7 +211,7 @@ async def discover_entity(request: DiscoveryRequest) -> DiscoveryResponse:
     
     result = bus_adapter.process_discovery(
         entity_id=request.entity_id,
-        source_type=request.source_type,
+        source=request.source_type,
         raw_data=request.raw_data or {},
         metadata=request.metadata,
     )
@@ -233,7 +233,7 @@ async def restore_entity(request: RestoreRequest) -> RestoreResponse:
     result = bus_adapter.process_restore(
         entity_id=request.entity_id,
         raw_data=request.raw_data,
-        source_type=request.source_type,
+        source=request.source_type,
     )
     
     return RestoreResponse(

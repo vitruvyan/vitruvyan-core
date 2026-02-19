@@ -11,7 +11,7 @@ typing_extensions>=4.9.0
 prometheus-client==0.19.0
 
 # LangGraph & grafi
-langgraph==0.5.4
+langgraph==1.0.8
 networkx>=3.2
 nest-asyncio==1.6.0
 

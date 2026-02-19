@@ -359,8 +359,8 @@ Bucket statistics: {'top_count': 3, 'middle_count': 4, 'bottom_count': 3}
 
 | File | Purpose | Lines |
 |------|---------|-------|
-| `contracts/data_provider.py` | IDataProvider interface | 150 |
-| `contracts/scoring_strategy.py` | IScoringStrategy interface | 180 |
+| `contracts/neural_engine/data_provider.py` | IDataProvider interface | 150 |
+| `contracts/neural_engine/scoring_strategy.py` | IScoringStrategy interface | 180 |
 | `core/neural_engine/engine.py` | Main orchestrator | 320 |
 | `core/neural_engine/scoring.py` | Z-score calculator | 200 |
 | `core/neural_engine/composite.py` | Composite scorer | 140 |

@@ -224,4 +224,4 @@ This approach:
 
 The `domains/` folder contains abstract contracts (`base_domain.py`, `aggregation_contract.py`, etc.) that are **already domain-agnostic**. These should be preserved as-is.
 
-**Priority**: Document debt now, clean incrementally. The core is functional as-is for Mercator. Aegis development will drive further abstraction.
+**Priority**: Document debt now, clean incrementally. The core is functional as-is for Mercator. Oculus Prime development will drive further abstraction.

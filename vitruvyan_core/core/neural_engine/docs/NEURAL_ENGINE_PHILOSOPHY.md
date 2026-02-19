@@ -84,10 +84,10 @@ But it never tells you:
 
 ### Verticals Are Epistemologically Specific
 
-Your vertical (Mercator, AEGIS, custom domain) makes the **epistemological choices**:
+Your vertical (Mercator, Vitruvyan, custom domain) makes the **epistemological choices**:
 
 - **Mercator** says: "Quality = momentum + trend + volatility"
-- **AEGIS** says: "Readiness = training + equipment + morale"
+- **Vitruvyan** says: "Readiness = training + equipment + morale"
 - **Your domain** says: "[YOUR DEFINITION OF QUALITY]"
 
 The core doesn't care. It executes the structure you define.

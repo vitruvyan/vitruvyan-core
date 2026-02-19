@@ -24,7 +24,7 @@ This forms a complete computational substrate. No additional primitives are requ
 
 ## 2️⃣ Vertical Incarnation Stress Test
 
-**Both Mercator and AEGIS map naturally onto current NE contracts.**
+**Both Mercator and Vitruvyan map naturally onto current NE contracts.**
 
 **Mercator (Finance):**
 - Factors: MomentumFactor, VolatilityFactor, TrendFactor
@@ -32,7 +32,7 @@ This forms a complete computational substrate. No additional primitives are requ
 - Normalization: ZScoreNormalizer (standard finance practice)
 - No architectural pressure - clean mapping to existing contracts
 
-**AEGIS (Defense/Logistics):**
+**Vitruvyan (Defense/Logistics):**
 - Factors: ReadinessFactor, EfficiencyFactor, RiskFactor
 - Profiles: CombatProfile, LogisticsProfile, ReconnaissanceProfile
 - Normalization: MinMaxNormalizer (bounded operational metrics)
@@ -63,7 +63,7 @@ Vitruvyan Core is intentionally incomplete without vertical incarnation. The Cor
 
 **A. NE work is DONE — next work must happen exclusively in verticals**
 
-**Justification:** The NE architecture is conceptually closed and complete. It provides all necessary primitives for vertical incarnation without overreach or gaps. Further work on NE would violate architectural boundaries by adding domain semantics or business logic. The substrate is hardened; verticals must now incarnate it with their specific factors, profiles, and domain logic. Any remaining work belongs in Mercator, AEGIS, or future vertical implementations, not in the core substrate.
+**Justification:** The NE architecture is conceptually closed and complete. It provides all necessary primitives for vertical incarnation without overreach or gaps. Further work on NE would violate architectural boundaries by adding domain semantics or business logic. The substrate is hardened; verticals must now incarnate it with their specific factors, profiles, and domain logic. Any remaining work belongs in Mercator, Vitruvyan, or future vertical implementations, not in the core substrate.
 
 ---
 

@@ -1,6 +1,6 @@
 """
-Vitruvyan Core — Orchestration Contracts
-=========================================
+Vitruvyan Core - Orchestration Contracts
+========================================
 
 Canonical contract surface for orchestration extension points.
 """

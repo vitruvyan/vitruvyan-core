@@ -9,6 +9,19 @@ This file is the **high-signal, stable context** Copilot needs to work productiv
 - Prefer **OS-agnostic naming** in new code (entities, signals, events), even if older docs/examples mention tickers/markets.
 - If you need deep specs, use the **Appendix docs** in `.github/` (linked at the end) instead of expanding this file.
 
+## Contracts-First Rule (Development + Site Management)
+
+All implementation and documentation workflows MUST be contracts-driven.
+
+1. Development of verticals MUST conform to:
+   - `docs/contracts/verticals/VERTICAL_CONTRACT_V1.md`
+   - `docs/contracts/verticals/VERTICAL_CONFORMANCE_CHECKLIST.md`
+2. New verticals MUST include `vertical_manifest.yaml` based on:
+   - `docs/contracts/verticals/templates/vertical_manifest.yaml`
+3. Contract interfaces MUST be imported from canonical runtime namespace:
+   - `contracts` / `vitruvyan_core.contracts`
+4. KB/Admin documentation updates (MkDocs nav and pages) MUST keep the Contracts section aligned with actual contract files and versions.
+
 ---
 
 ## Sacred Orders (Epistemic Hierarchy)
@@ -112,7 +125,7 @@ services/api_<order>/
 
 #### README.md Requirements
 - **Location**: Root of each Sacred Order module (`vitruvyan_core/core/governance/<order>/` and `services/api_<order>/`)
-- **Versioning**: Every README.md **MUST** include `> **Last updated**: <date>` as the first line after the title (H1). Update this date on every edit.
+- **Versioning**: Every .md file (README, documentation, planning docs) **MUST** include `> **Last updated**: <date> <time>` (format: `Feb 17, 2026 14:30 UTC`) as the first line after the title (H1). Update this timestamp on every edit for precise versioning.
 - **Content**: 
   - Module purpose and domain responsibility
   - Quick start (code examples)

@@ -6,7 +6,7 @@
 
 ## 🎯 OBIETTIVO ORIGINALE (Dal Prompt Iniziale)
 
-Trasformare Vitruvyan da **financial trading advisor** in **generic decision support OS** per qualsiasi dominio (logistics/AEGIS, healthcare, defense, etc.).
+Trasformare Vitruvyan da **financial trading advisor** in **generic decision support OS** per qualsiasi dominio (logistics/Vitruvyan, healthcare, defense, etc.).
 
 **Principio fondamentale**: Core agnostico + verticals specializzati
 
@@ -441,7 +441,7 @@ vitruvyan_core/domains/finance/
 - [ ] Create VEE/VARE adapters
 - [ ] Update imports in services
 
-#### 2B: Logistics Domain (AEGIS - Proof of Concept)
+#### 2B: Logistics Domain (Vitruvyan - Proof of Concept)
 **Objective**: Dimostrare che il core funziona per un dominio NON-finance
 
 **Structure**:
@@ -529,8 +529,8 @@ vitruvyan_core/domains/logistics/
 | **Phase 3C** (VWRE Abstraction) | 1 | ✅ DONE | ae23a46 |
 | **Phase 3D** (Neural Integration) | 2 | ✅ DONE | ae23a46 |
 | **Phase 4** (Mercator Vertical) | 5 | ✅ DONE | 6c874a5 |
-| **Phase 4** (AEGIS Vertical) | 2 | 🚀 NEXT | Defense/Logistics |
-| **Phase 2B** (Logistics Domain) | 2 | Phase 4 | AEGIS proof of concept |
+| **Phase 4** (Vitruvyan Vertical) | 2 | 🚀 NEXT | Defense/Logistics |
+| **Phase 2B** (Logistics Domain) | 2 | Phase 4 | Vitruvyan proof of concept |
 | **Phase 1C** (Orchestration) | 2 | Phase 4 | Domain-aware LangGraph |
 | **Phase 4** (Cleanup + Tests) | 2 | Phase 4 | Production-ready |
 | **TOTALE** | **13 giorni** | - | Vitruvyan-Core v1.0 |
@@ -539,12 +539,12 @@ vitruvyan_core/domains/logistics/
 
 ## 🎯 NEXT IMMEDIATE ACTION
 
-**START HERE**: Phase 4B - AEGIS Defense/Logistics Vertical
+**START HERE**: Phase 4B - Vitruvyan Defense/Logistics Vertical
 
 **Current Status**: ✅ Phase 4A COMPLETE - Mercator financial vertical fully implemented and validated
 
 **What to Build**:
-1. **AEGIS (Defense/Logistics Vertical)**: Operational risk assessment for critical infrastructure
+1. **Vitruvyan (Defense/Logistics Vertical)**: Operational risk assessment for critical infrastructure
 2. **Domain Factors**: Supply chain resilience, threat assessment, readiness metrics
 3. **Risk Dimensions**: Operational, cybersecurity, geopolitical, supply chain risks
 
@@ -557,10 +557,10 @@ vitruvyan_core/domains/logistics/
 **When**: Immediate - Mercator proves vertical development pattern works
 
 **Output Expected**:
-1. `verticals/aegis/` - Complete AEGIS vertical implementation
+1. `verticals/vitruvyan/` - Complete Vitruvyan vertical implementation
 2. Working examples of defense/logistics risk assessment
 3. Domain-specific operational narratives
-4. Commit: "feat(aegis): Phase 4B - AEGIS defense vertical implementation"
+4. Commit: "feat(vitruvyan): Phase 4B - Vitruvyan defense vertical implementation"
 
 ---
 
@@ -575,16 +575,16 @@ vitruvyan_core/domains/logistics/
 6. ✅ **Phase 4**: Mercator financial vertical completa (provider incarnation)
 
 ### Cosa manca (dal prompt originale):
-1. ⚠️ **Phase 2**: Domain implementations (logistics example - AEGIS foundation)
+1. ⚠️ **Phase 2**: Domain implementations (logistics example - Vitruvyan foundation)
 2. ⚠️ **Phase 1C**: Orchestration refactoring (LangGraph nodes)
-3. ⚠️ **Phase 4**: AEGIS defense/logistics vertical implementation
+3. ⚠️ **Phase 4**: Vitruvyan defense/logistics vertical implementation
 4. ⚠️ **Phase 4**: Final cleanup + comprehensive testing
 
 ### Percentuale completamento: ~95%
 
 ### Prossimo step critico: 
-**AEGIS Vertical Development** (Defense/Logistics)
-- AEGIS: Defense/logistics vertical per operational risk assessment
+**Vitruvyan Vertical Development** (Defense/Logistics)
+- Vitruvyan: Defense/logistics vertical per operational risk assessment
 - Pattern: Stesso approccio Mercator con domain factors specifici
 - Output: Secondo verticale completo per validare scalabilità pattern
 

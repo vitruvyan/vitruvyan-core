@@ -1,0 +1,13 @@
+flowchart TD
+    A[External Source<br/>H2M / M2M] --> B[Intake API<br/>upload + ingest endpoint]
+    B --> C[Media Intake Agent<br/>document/image/audio/video/geo/cad]
+    C --> D[Evidence Pack Builder<br/>literal normalized_text]
+    D --> E[(PostgreSQL<br/>evidence_packs append-only)]
+    D --> F[IntakeEventEmitter]
+    F --> G[[Redis Streams<br/>vitruvyan:intake.evidence.created]]
+    F --> H[(PostgreSQL<br/>intake_event_log / intake_event_failures)]
+
+    G --> I[Codex Hunters Consumer Group]
+    I --> J[Pattern Weavers]
+    J --> K[Memory Orders]
+    K --> L[Vault Keepers]

@@ -623,7 +623,7 @@ Access at **http://localhost:8000**
 - **Core Status:** Domain-agnostic substrate with optional vertical injection (stub fallback when a vertical is not configured)
 - **Architecture:** Provider incarnation pattern proven
 - **Validation:** See `docs/foundational/MODULE_STATUS_MAP.md` and `tests/` for current coverage and integration status
-- **Next:** Vertical integrations (e.g., AEGIS) + end-to-end domain execution wiring
+- **Next:** Vertical integrations (e.g., Vitruvyan) + end-to-end domain execution wiring
 
 📋 **[Report Finale Completo](REPORT_FINALE.md)** - Documentazione dettagliata progetto
 

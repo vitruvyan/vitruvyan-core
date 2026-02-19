@@ -1370,10 +1370,15 @@ app.include_router(router)
 - [SACRED_ORDER_PATTERN.md](../../vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md) — Pattern Sacred Order
 - [copilot-instructions.md](../../.github/copilot-instructions.md) — Regole invarianti del core
 - [V1_0_RELEASE_AUDIT_FEB15_2026.md](V1_0_RELEASE_AUDIT_FEB15_2026.md) — Stato dell'arte V1.0
+- [Vertical Contract V1](../contracts/verticals/VERTICAL_CONTRACT_V1.md) — Contratto normativo verticale
+- [Vertical Conformance Checklist](../contracts/verticals/VERTICAL_CONFORMANCE_CHECKLIST.md) — Checklist pass/fail
+- [Vertical Manifest Template](../contracts/verticals/templates/vertical_manifest.yaml) — Manifest standard
 
 ### Contratti ABC (codice sorgente)
 
 - `vitruvyan_core/contracts/__init__.py` — Import point unico
+- `vitruvyan_core/contracts/orchestration.py` — Export orchestration contracts
+- `vitruvyan_core/contracts/neural_engine/` — Contratti Neural Engine (`IDataProvider`, `IScoringStrategy`)
 - `vitruvyan_core/core/orchestration/graph_engine.py` — `GraphPlugin`, `NodeContract`, `GraphEngine`
 - `vitruvyan_core/core/orchestration/intent_registry.py` — `IntentRegistry`, `IntentDefinition`
 - `vitruvyan_core/core/orchestration/base_state.py` — `BaseGraphState` (37 campi)

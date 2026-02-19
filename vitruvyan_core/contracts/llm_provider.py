@@ -1,5 +1,7 @@
 """
-ILLMProvider — Protocol for pluggable LLM providers.
+ILLMProvider - Protocol for pluggable LLM providers.
+
+Canonical location: ``vitruvyan_core/contracts``.
 """
 
 from __future__ import annotations

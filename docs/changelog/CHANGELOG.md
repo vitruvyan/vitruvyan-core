@@ -1,10 +1,42 @@
 # Vitruvyan Core — Changelog
 
-> **Last updated**: February 16, 2026
+> **Last updated**: February 17, 2026
 
 Cronologia consolidata di tutte le milestone architetturali di Vitruvyan Core, dalla fondazione al V1.0.
 
 ---
+
+## Feb 17, 2026 — Android Oculus Prime App Roadmap
+
+Planning document created for Android edge client development (`docs/planning/ANDROID_OCULUS_PRIME_APP_ROADMAP_FEB17_2026.md`):
+- Analyzed existing Edge Gateway + Oculus Prime API architecture for Android integration.
+- Proposed 3-module Android SDK: `sdk-core` (networking + contracts), `sdk-offline` (SQLite outbox + sync), `sdk-sensors` (camera, audio, GPS helpers).
+- Designed offline-first architecture with local queuing, background sync via WorkManager, and retry policies.
+- Specified security layer: device identity, token encryption (EncryptedSharedPreferences), HMAC payload signing, optional mTLS.
+- Defined 5-sprint implementation roadmap (SDK foundation → demo app → IoT sensors → security → E2E validation).
+- Reference implementation target: Jetpack Compose app with camera capture, gallery upload, GPS tracking, and real-time status dashboard.
+
+## Feb 17, 2026 — LangGraph 1.0.8 Production Upgrade
+
+Graph Orchestrator upgraded from LangGraph 0.5.4 to 1.0.8 (major version jump). Isolated test container validated compatibility. Dependencies upgraded: `langgraph-checkpoint` 2.1.2 → 4.0.0, `langgraph-prebuilt` 0.5.2 → 1.0.7, `langgraph-sdk` 0.1.74 → 0.3.6. All functional tests passed. Production deployment successful (port 9004, service healthy, dispatch endpoint validated).
+
+## Feb 17, 2026 — Edge Intake Compliance Refactor (Service Layer)
+
+`services/api_edge_oculus_prime` aligned to LIVELLO 2 service logic for service-side I/O:
+- Added `adapters/persistence.py` as dedicated DB read adapter for health/evidence/pipeline/events endpoints.
+- Removed downstream coupling from Intake API read models (`cognitive_entities` queries removed).
+- Kept Streams-native emission path unchanged (`intake.evidence.created`) with append-only persistence.
+- Updated intake docs to reflect `intake_event_failures` naming and Streams consumer-group semantics.
+- Added tests for persistence adapter, routes, and document ingest flow (insert + emit behavior).
+
+## Feb 17, 2026 — Oculus Prime Event Naming Migration (Versioned)
+
+Versioned migration introduced for event naming consistency in edge ingestion:
+- Added canonical channel `oculus_prime.evidence.created` with schema `vitruvyan://oculus_prime/events/evidence_created/v2.0`.
+- Preserved legacy alias `intake.evidence.created` for backward compatibility.
+- Implemented rollout modes via `OCULUS_PRIME_EVENT_MIGRATION_MODE`: `dual_write` (default), `v2_only`, `v1_only`.
+- Updated emitter audit metadata to include migration mode and emitted channels.
+- Added v2 schema file and migration tests for dual-write/rollback behavior.
 
 ## Jan 25–26, 2026 — Herald → Redis Streams Migration: 100% Complete
 
@@ -28,7 +60,7 @@ Orthodoxy Wardens gained epistemic gatekeeping: 5-state verdict system (blessed,
 
 ## Dec 30, 2025 — v1.0.0 Milestone: Domain-Agnostic Framework Complete
 
-Vitruvyan Core declared production-ready. Phases 1–3D complete. Mercator (finance) validated as PoC. AEGIS (governance) ready to proceed.
+Vitruvyan Core declared production-ready. Phases 1–3D complete. Mercator (finance) validated as PoC. Vitruvyan (governance) ready to proceed.
 
 ## Dec 30, 2025 — Phase 3D: Neural Engine Integration Pattern
 

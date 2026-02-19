@@ -21,7 +21,9 @@ WORKDIR /app
 COPY infrastructure/docker/requirements/requirements-graph.txt /app/requirements-graph.txt
 COPY infrastructure/dependency_locks/requirements_graph_0_5_4_freeze.txt /app/requirements-graph-freeze.txt
 
-RUN pip install --upgrade pip && pip install -r /app/requirements-graph-freeze.txt && pip install langgraph==1.0.8
+RUN pip install --upgrade pip && \
+    pip install -r /app/requirements-graph.txt && \
+    pip install langgraph==1.0.8
 
 USER vitruvyan
 
