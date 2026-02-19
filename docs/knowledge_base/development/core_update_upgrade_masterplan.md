@@ -599,3 +599,113 @@ Modules to implement:
 
 **CI Gates, Notifications, Governance** (see Masterplan sections above)
 
+---
+
+### ✅ Phase 2 Complete (Feb 19, 2026)
+
+**Update Executor — Apply Upgrade with Rollback**
+
+Implemented modules:
+
+1. **engine/planner.py** (UpgradePlanner)
+   - `plan(from, to, release, manifest_path)` → generates UpgradePlan
+   - `validate_prerequisites()` → blocks on dirty working tree (P0 contract)
+   - `_check_clean_working_tree()` → `git diff-index --quiet HEAD --`
+   - `_check_disk_space()` → requires 100MB minimum
+   - `_determine_tests(manifest_path)` → discovers vertical smoke tests
+   - `_estimate_downtime(breaking, tests)` → base 30s + tests 60s/test + 20% buffer
+   - **PrerequisiteError**: raised when dirty tree or insufficient disk space
+
+2. **engine/executor.py** (UpgradeExecutor)
+   - `apply(plan, manifest_path)` → executes full upgrade transaction
+   - `rollback()` → reverts to snapshot tag
+   - `create_snapshot()` → creates Git tag `pre-upgrade-YYYYMMDD-HHMMSS`
+   - `run_smoke_tests(manifest_path)` → executes `<vertical_root>/smoke_tests/run.sh`
+   - `_write_audit_log()` → writes to `.vitruvyan/upgrade_history.json` (P0 contract)
+   - `_checkout_version(version)` → `git checkout v{version}`
+   - `_get_audit_log_path()` → resolves to Git repo root (P0 contract)
+   - **Auto-rollback**: triggers on smoke test failure or any exception
+
+3. **cli/commands/upgrade.py** (`vit upgrade` command)
+   - **Interactive workflow**:
+     1. Fetch target release from GitHub (latest or `--target`)
+     2. Compatibility check with vertical manifest
+     3. Generate upgrade plan (planner)
+     4. Display plan: changes (breaking/features/fixes), downtime estimate, smoke tests
+     5. Confirmation prompt (skip with `--yes`)
+     6. Execute upgrade (executor)
+     7. Show snapshot tag for rollback
+   - **Flags**: `--channel stable|beta`, `--target VERSION`, `--yes`
+   - **Exit codes**: 0 = success, 1 = error/rollback
+
+4. **cli/commands/plan.py** (`vit plan` command)
+   - Display upgrade plan without applying
+   - **Sections**:
+     - Timeline: estimated downtime + rollback strategy
+     - Changes: breaking/features/fixes (limit 5 each for readability)
+     - Smoke tests: list all discovered tests
+     - Risk assessment: HIGH/MEDIUM/LOW (based on breaking changes + tests)
+   - Next steps: suggests `vit upgrade` command
+   - **Required arg**: `--target VERSION`
+
+5. **cli/commands/rollback.py** (`vit rollback` command)
+   - Reverts to last upgrade snapshot
+   - Reads snapshot tag from `.vitruvyan/upgrade_history.json`
+   - Confirmation prompt
+   - Executes `git checkout {snapshot_tag}`
+   - Verifies with `git describe --tags`
+
+6. **cli/main.py** (CLI orchestration)
+   - Registered `upgrade`, `plan`, `rollback` commands
+   - Updated imports and help text
+   - Phase 2 complete marker
+
+**Implementation Details**:
+- **P0 contract compliance**:
+  - Dirty tree blocking: zero tolerance (no `--force` override)
+  - Audit log location: Git repo root `.vitruvyan/upgrade_history.json`
+  - Snapshot tags: `pre-upgrade-YYYYMMDD-HHMMSS` format
+- **Smoke tests**:
+  - Location: `<vertical_root>/smoke_tests/run.sh` (P0 contract)
+  - Timeout: from manifest `smoke_tests_timeout` (default 180s)
+  - Exit codes: 0 = pass, 1 = fail, 2 = error
+  - Auto-rollback on failure
+- **Audit log format**:
+  ```json
+  {
+    "upgrades": [
+      {
+        "timestamp": "2026-02-19T18:30:00",
+        "from_version": "1.0.0",
+        "to_version": "1.2.0",
+        "snapshot_tag": "pre-upgrade-20260219-183000",
+        "success": true
+      }
+    ]
+  }
+  ```
+-**Graceful degradation**:
+  - Disk space check: non-blocking (warning only)
+  - No smoke tests: non-blocking (warning: "risky upgrade")
+  - Latest version unknown: show warning, allow proceed
+
+**Known Limitations (Phase 2)**:
+- **pip install skipped**: Requires Python venv management (Phase 3)
+- **requirements.txt snapshot**: Not implemented (Phase 3)
+- **No channel command**: Switching channels not yet implemented
+- **No status command**: Current version + updates summary not yet implemented
+- **Git-only**: Assumes Git repository (no tarball support yet)
+
+**Testing Performed**:
+- ✅ Manual test: `vit upgrade --help` (arg parsing)
+- ✅ Manual test: `vit plan --help` (arg parsing)
+- ✅ Manual test: `vit rollback --help` (arg parsing)
+- ✅ Prerequisite validation: dirty tree detection
+- ✅ Snapshot creation: `pre-upgrade-*` tag format
+- ✅ Audit log: JSON write/read
+- ⚠️ End-to-end upgrade: requires GitHub release (Phase 3)
+
+**File Changes** (commit `cfb2169`):
+- 6 files changed, +1049/-47 lines
+- New files: `upgrade.py`, `plan.py`, `rollback.py`
+- Modified: `planner.py`, `executor.py`, `main.py`
