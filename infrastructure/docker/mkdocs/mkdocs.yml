@@ -1,7 +1,7 @@
 # ============================================================================
 # MkDocs Configuration — Vitruvyan Core Knowledge Base
 # ============================================================================
-# Last Updated: February 19, 2026
+# Last Updated: February 20, 2026
 # Purpose: User & administrator documentation (domain-agnostic epistemic OS)
 # Deploy: docker compose up -d mkdocs → http://localhost:9800
 # Build:  mkdocs build → site/ (static HTML)
@@ -177,6 +177,12 @@ nav:
       - Memory Orders API: docs/internal/services/MEMORY_ORDERS_API.md
       - Orthodoxy Wardens API: docs/internal/services/ORTHODOXY_WARDENS_API.md
       - Vault Keepers API: docs/internal/services/VAULT_KEEPERS_API.md
+  
+  - Web UI:
+    - Overview: docs/knowledge_base/web_ui/index.md
+    - Philosophy: docs/knowledge_base/web_ui/philosophy.md
+    - Contracts: docs/knowledge_base/web_ui/contracts.md
+    - Stack & Technology: docs/knowledge_base/web_ui/stack.md
     
   - Infrastructure:
     - Overview: infrastructure/README_INFRASTRUCTURE.md

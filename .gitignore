@@ -105,3 +105,4 @@ infrastructure/docker/monitoring/oauth2-proxy/oauth2-proxy.env
 
 # Node modules (if any frontend)
 node_modules/
+.vitruvyan/
