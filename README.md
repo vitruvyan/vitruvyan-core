@@ -2,9 +2,9 @@
 
 **Domain-Agnostic Agentic AI Framework**
 
-> **Last Updated**: February 14, 2026 (Priority 2B: Hook Pattern Implementation)  
-> **Version**: 0.1.0-alpha  
-> **Status**: Foundation Phase — Consolidation (SACRED_ORDER_PATTERN 100%, Hook Pattern 3/3 nodes)
+> **Last Updated**: February 20, 2026 (v1.2.0: Update Manager + Complete Pipeline Visualization)  
+> **Version**: 1.2.0  
+> **Status**: Foundation Phase — Update System Integrated (SACRED_ORDER_PATTERN 100%)
 
 Vitruvyan Core is an **opinionated architectural framework** for multi-service, multi-domain agentic AI systems. It provides LangGraph orchestration, Redis Streams event bus, Sacred Orders governance, and domain-agnostic primitives that can be specialized through a **registry-based plugin pattern** (hook registries + environment selection).
 
@@ -366,8 +366,41 @@ Nodes remain domain-neutral - they operate on generic entities and signals.
 
 ---
 
-## 🚀 Quick Start
+## � Update Manager CLI
 
+Vitruvyan Core includes a built-in **update management system** (`vit` CLI) that works **out-of-the-box** without installation:
+
+```bash
+# Check for updates (works immediately after git clone)
+./vit status
+
+# Add to PATH for global access (optional)
+export PATH="$(pwd):${PATH}"
+vit --help
+```
+
+**Key Features**:
+- ✅ **Zero installation** — works immediately without `pip install`
+- ✅ **Auto-setup autocomplete** — prompts on first run
+- ✅ **Semantic versioning** — update/upgrade/rollback with smoke tests
+- ✅ **CI/CD integration** — contract validation gates
+
+**Essential Commands**:
+```bash
+vit status              # Current version + available updates
+vit plan                # Preview upgrade plan (dry-run)
+vit update              # Pull latest changes
+vit upgrade             # Update + smoke tests + rollback support
+vit rollback            # Revert to previous version
+```
+
+📚 **Full guide**: [VIT_CLI_QUICKSTART.md](VIT_CLI_QUICKSTART.md)  
+📋 **Contract**: [UPDATE_SYSTEM_CONTRACT_V1.md](docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md)
+
+---
+
+## 🚀 Quick Start
+````
 ### Prerequisites
 
 - Docker + Docker Compose
