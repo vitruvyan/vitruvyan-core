@@ -169,48 +169,6 @@ services:
     networks:
       - core-net
 
-  vitruvyan_api_graph_test:
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_graph_test
-    container_name: core_graph_test
-    restart: unless-stopped
-    ports:
-      - "9010:8010"
-    environment:
-      - LANGGRAPH_ENABLED=1
-      - DISPATCHER_URL=http://vitruvyan_api_graph_test:8010/dispatch
-      - DISPATCHER_HEALTH_URL=http://vitruvyan_api_graph_test:8010/health
-      - GRAPH_HTTP_TIMEOUT=120
-      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
-      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - GRAPH_LLM_MODEL=gpt-4o-mini
-      - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
-      - QDRANT_PORT=${QDRANT_PORT:-6333}
-      - NE_BASE_URL=http://neural_engine:8003
-      - SENTIMENT_API_URL=http://babel_gardens:8009
-      - BABEL_GARDENS_URL=http://babel_gardens:8009
-      - EMBEDDING_API_URL=http://embedding:8010
-      - REDIS_HOST=core_redis
-      - REDIS_PORT=6379
-      - LLM_CACHE_ENABLED=true
-      - LLM_CACHE_TTL_HOURS=24
-      - LLM_CACHE_MAX_SIZE=10000
-      # VSGS (Semantic Grounding)
-      - VSGS_ENABLED=${VSGS_ENABLED:-0}
-      - VSGS_GROUNDING_TOPK=${VSGS_GROUNDING_TOPK:-3}
-      - VSGS_PROMPT_BUDGET_CHARS=${VSGS_PROMPT_BUDGET_CHARS:-800}
-      - VSGS_STORE_EVERY_N=${VSGS_STORE_EVERY_N:-1}
-    depends_on:
-      - redis
-      - postgres
-    networks:
-      - core-net
-
   neural_engine:
     build:
       context: ../..
