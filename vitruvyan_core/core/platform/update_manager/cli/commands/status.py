@@ -132,28 +132,33 @@ def run(args: argparse.Namespace) -> int:
     try:
         registry = ReleaseRegistry()
         channel = args.channel if hasattr(args, "channel") else "stable"
-        latest_release = registry.fetch_latest_release(channel=channel)
+        latest_release = registry.fetch_latest(channel=channel)
         
-        status["latest_version"] = latest_release.version
-        status["update_available"] = latest_release.version != current_version
-        status["breaking_changes"] = latest_release.breaking_changes
-        status["changelog_url"] = f"https://github.com/dbaldoni/vitruvyan-core/releases/tag/v{latest_release.version}"
-        
-        # Check compatibility if manifest present
-        if manifest_path and status["update_available"]:
-            checker = CompatibilityChecker()
-            import yaml
-            with open(manifest_path, "r") as f:
-                manifest = yaml.safe_load(f)
+        if latest_release is None:
+            status["latest_version"] = "unknown"
+            status["update_available"] = False
+            status["warning"] = f"No {channel} releases found on GitHub"
+        else:
+            status["latest_version"] = latest_release.version
+            status["update_available"] = latest_release.version != current_version
+            status["breaking_changes"] = latest_release.breaking_changes
+            status["changelog_url"] = f"https://github.com/dbaldoni/vitruvyan-core/releases/tag/v{latest_release.version}"
             
-            result = checker.check(
-                current_version=current_version,
-                target_version=latest_release.version,
-                manifest=manifest,
-            )
-            status["compatible"] = result.compatible
-            if not result.compatible:
-                status["compatibility_issues"] = result.issues
+            # Check compatibility if manifest present
+            if manifest_path and status["update_available"]:
+                checker = CompatibilityChecker()
+                import yaml
+                with open(manifest_path, "r") as f:
+                    manifest = yaml.safe_load(f)
+                
+                result = checker.check(
+                    current_version=current_version,
+                    target_version=latest_release.version,
+                    manifest=manifest,
+                )
+                status["compatible"] = result.compatible
+                if not result.compatible:
+                    status["compatibility_issues"] = result.issues
     
     except NetworkError as e:
         logger.warning(f"Network error fetching latest release: {e}")
@@ -215,6 +220,10 @@ def _print_status_human(status: dict) -> None:
     # Error handling
     if "error" in status:
         print(f"\n  ⚠️  Error: {status['error']}")
+    
+    # Warning handling
+    if "warning" in status:
+        print(f"\n  ℹ️  {status['warning']}")
     
     # Notification status
     print("\n  Notification settings:")

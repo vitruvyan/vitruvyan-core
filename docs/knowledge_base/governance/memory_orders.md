@@ -1,15 +1,15 @@
-# Memory Orders
+# 🧠 Memory Orders
 
 Memory Orders is the governance order responsible for coherence detection and reconciliation planning between canonical PostgreSQL state and derived Qdrant state.
 
-## Responsibilities
+## 📌 Responsibilities
 
 - Detect drift and classify inconsistencies
 - Produce deterministic synchronization/reconciliation plans
 - Emit governance and audit events
 - Delegate persistent audit storage to Vault Keepers
 
-### Interoperability: Memory Orders ↔ Vault Keepers
+### 🔗 Interoperability: Memory Orders ↔ Vault Keepers
 
 - Memory Orders detects and classifies drift.
 - Memory Orders emits audit requests as events (`audit.vault.requested`) using `MemoryEvent` envelope structure.
@@ -17,7 +17,7 @@ Memory Orders is the governance order responsible for coherence detection and re
 - Memory Orders does not write to `memory_audit_log`; duplicated local audit persistence is removed.
 - Audit persistence is centralized in `vault_audit_log`.
 
-### Audit Idempotency Guarantee
+### ✅ Audit Idempotency Guarantee
 
 - Memory Orders does not implement audit deduplication in application code.
 - Idempotency is enforced downstream in Vault Keepers at DB level via unique `correlation_id`.

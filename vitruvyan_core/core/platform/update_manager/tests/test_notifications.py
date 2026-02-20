@@ -280,7 +280,7 @@ def test_startup_check_update_available(mock_send, mock_registry, sample_manifes
     # Mock registry to return update
     mock_registry_instance = MagicMock()
     mock_registry_instance.get_current_version.return_value = "1.0.0"
-    mock_registry_instance.fetch_latest_release.return_value = MagicMock(
+    mock_registry_instance.fetch_latest.return_value = MagicMock(
         version="1.2.0",
         breaking_changes=False,
     )
@@ -305,7 +305,7 @@ def test_startup_check_already_latest(mock_send, mock_registry, sample_manifest,
     # Mock registry to return no update
     mock_registry_instance = MagicMock()
     mock_registry_instance.get_current_version.return_value = "1.2.0"
-    mock_registry_instance.fetch_latest_release.return_value = MagicMock(
+    mock_registry_instance.fetch_latest.return_value = MagicMock(
         version="1.2.0",
         breaking_changes=False,
     )

@@ -1,9 +1,16 @@
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Inconsolata:wght@400;500;600&display=swap");
 
+html {
+  font-size: 100%;
+}
+
 :root {
   --md-text-font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco,
     Consolas, "Liberation Mono", "Courier New", monospace;
   --md-code-font-family: var(--md-text-font-family);
+  --kb-nav-font-size: 0.85rem;
+  --kb-nav-font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 .md-typeset h1,
@@ -150,10 +157,9 @@
 }
 
 .md-sidebar--primary .md-nav__link {
-  font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  font-family: var(--kb-nav-font-family) !important;
   font-weight: 500;
-  font-size: 0.95rem;
+  font-size: var(--kb-nav-font-size) !important;
 }
 
 /* White logo on header (light+dark), with dedicated hover asset. */
@@ -284,12 +290,21 @@
 }
 
 .kb-mega-menu__heading {
-  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
-    Arial, sans-serif;
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-family: var(--kb-nav-font-family);
+  font-size: var(--kb-nav-font-size);
+  font-weight: 600;
   color: #000;
   margin-bottom: 0.35rem;
+  line-height: 1.25;
+}
+
+.kb-mega-menu__desc {
+  margin: 0 0 0.5rem 0;
+  font-family: var(--kb-nav-font-family);
+  font-size: var(--kb-nav-font-size);
+  line-height: 1.25;
+  color: #4a4a4a;
+  font-style: italic;
 }
 
 .kb-mega-menu__list {
@@ -300,13 +315,40 @@
 
 .kb-mega-menu__link {
   display: block;
-  font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
-  font-size: 0.92rem;
+  font-family: var(--kb-nav-font-family);
+  font-size: var(--kb-nav-font-size);
   line-height: 1.3;
   color: #111 !important;
   text-decoration: none;
-  padding: 0.2rem 0.1rem;
+  padding: 0.24rem 0.1rem;
+}
+
+.kb-mega-menu__link-label {
+  display: block;
+}
+
+.kb-mega-menu__link-desc {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: var(--kb-nav-font-size);
+  line-height: 1.24;
+  color: #4a4a4a;
+  font-style: italic;
+}
+
+/* Hard normalization across top nav, both sidebars and mega-menu. */
+.md-tabs__link,
+.md-sidebar--primary .md-nav__link,
+.md-sidebar--secondary .md-nav__link,
+.md-nav--secondary .md-nav__link,
+.md-sidebar--secondary .md-nav__link .md-typeset,
+.md-nav--secondary .md-nav__link .md-typeset,
+.kb-mega-menu__heading,
+.kb-mega-menu__desc,
+.kb-mega-menu__link,
+.kb-mega-menu__link-desc {
+  font-family: var(--kb-nav-font-family) !important;
+  font-size: var(--kb-nav-font-size) !important;
 }
 
 .kb-mega-menu__link:hover,
@@ -318,6 +360,46 @@
 .md-tabs__item.kb-mega-tab--open > .md-tabs__link {
   background: #000;
   color: #fff !important;
+}
+
+/* Content cards/code blocks: keep text readable and consistent with nav scale. */
+.md-typeset pre > code,
+.md-typeset code,
+.md-typeset .grid.cards > ol > li,
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid > .card {
+  font-size: var(--kb-nav-font-size) !important;
+}
+
+/* Light mode: code cards/blocks in black with white text. */
+[data-md-color-scheme="default"] .md-typeset pre > code,
+[data-md-color-scheme="default"] .md-typeset .highlight pre,
+[data-md-color-scheme="default"] .md-typeset .highlighttable {
+  background: #000 !important;
+  color: #fff !important;
+}
+
+[data-md-color-scheme="default"] .md-typeset pre > code *,
+[data-md-color-scheme="default"] .md-typeset .highlight pre * {
+  color: #f5f7ff !important;
+}
+
+[data-md-color-scheme="default"] .md-clipboard,
+[data-md-color-scheme="slate"] .md-clipboard {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  border-radius: 0.25rem !important;
+  color: #fff !important;
+  opacity: 1 !important;
+}
+
+[data-md-color-scheme="default"] .md-clipboard:hover,
+[data-md-color-scheme="default"] .md-clipboard:focus,
+[data-md-color-scheme="slate"] .md-clipboard:hover,
+[data-md-color-scheme="slate"] .md-clipboard:focus {
+  background: #ffffff !important;
+  border-color: #ffffff !important;
+  color: #000 !important;
 }
 
 @media screen and (min-width: 76.25em) {
@@ -354,8 +436,16 @@
   color: #57b0ff;
 }
 
+[data-md-color-scheme="slate"] .kb-mega-menu__desc {
+  color: #b8bec8;
+}
+
 [data-md-color-scheme="slate"] .kb-mega-menu__link {
   color: #eef2f8 !important;
+}
+
+[data-md-color-scheme="slate"] .kb-mega-menu__link-desc {
+  color: #b8bec8;
 }
 
 [data-md-color-scheme="slate"] .md-tabs__item.kb-mega-tab--open > .md-tabs__link {

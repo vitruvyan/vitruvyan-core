@@ -21,6 +21,7 @@ from .commands.upgrade import register_upgrade_command
 from .commands.plan import register_plan_command
 from .commands.rollback import register_rollback_command
 from .commands.status import register_status_command
+from .commands.completion import register_completion_command
 
 # Configure logging
 logging.basicConfig(
@@ -51,6 +52,7 @@ def cli_main():
     register_plan_command(subparsers)
     register_rollback_command(subparsers)
     register_status_command(subparsers)
+    register_completion_command(subparsers)
     
     # Phase 3+ commands (stubs)
     # TODO: Implement channel

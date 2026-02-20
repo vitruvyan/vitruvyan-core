@@ -1,13 +1,13 @@
-# Edge Gateway Flow (Offline-First)
+# 🌉 Edge Gateway Flow (Offline-First)
 
 > **Updated**: February 16, 2026  
 > **Scope**: `services/api_edge_gateway` MVP
 
-## Purpose
+## 🎯 Purpose
 
 Describe how edge runtimes ingest local data, buffer offline, and relay to Core Oculus Prime.
 
-## Flow Graph
+## 🔄 Flow Graph
 
 ```mermaid
 flowchart TD

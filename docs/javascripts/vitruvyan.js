@@ -604,6 +604,26 @@
     if (!tabs || !tabsList || !primaryList) return;
 
     const normalize = (label) => (label || "").toLowerCase().replace(/\s+/g, " ").trim();
+    const descriptionMap = [
+      {
+        match: /sacred orders/i,
+        text: "Governance services: memory, audit, truth validation, archival persistence.",
+      },
+      {
+        match: /oculus prime/i,
+        text: "Edge runtime for offline-first execution, ingestion and local orchestration.",
+      },
+      {
+        match: /synaptic conclave|cognitive bus/i,
+        text: "Event bus for inter-service communication, streaming and observability.",
+      },
+    ];
+    const resolveDescription = (label) => {
+      const value = (label || "").trim();
+      if (!value) return "";
+      const found = descriptionMap.find((d) => d.match.test(value));
+      return found ? found.text : "";
+    };
 
     const textOf = (el) => ((el?.textContent || "").replace(/\s+/g, " ").trim());
     const sectionsMap = new Map();
@@ -622,22 +642,38 @@
         const childTitle = textOf(childLabel || childAnchor);
         const childHref = childAnchor?.getAttribute("href") || "";
 
-        const grandchildren = Array.from(
-          child.querySelectorAll(":scope > .md-nav > .md-nav__list > .md-nav__item > .md-nav__link[href]")
-        ).map((a) => ({
-          title: textOf(a),
-          href: a.getAttribute("href") || "",
-        }));
+        const links = [];
+        const pushLink = (title, href) => {
+          if (!title || !href || href.includes("#")) return;
+          if (links.some((l) => l.href === href)) return;
+          links.push({ title, href });
+        };
 
-        if (grandchildren.length > 0) {
-          groups.push({
-            heading: childTitle,
-            links: grandchildren.filter((g) => g.title && g.href),
+        // Keep page-level entries.
+        pushLink(childTitle, childHref);
+
+        // Keep section children (and one extra nested level) but skip in-page anchors,
+        // so we don't import full page TOCs into mega-menu.
+        const grandItems = child.querySelectorAll(":scope > .md-nav > .md-nav__list > .md-nav__item");
+        grandItems.forEach((grand) => {
+          const grandAnchor = grand.querySelector(":scope > .md-nav__link[href]");
+          const grandLabel = grand.querySelector(":scope > .md-nav__link");
+          const grandTitle = textOf(grandLabel || grandAnchor);
+          const grandHref = grandAnchor?.getAttribute("href") || "";
+          pushLink(grandTitle, grandHref);
+
+          const greatAnchors = grand.querySelectorAll(
+            ":scope > .md-nav > .md-nav__list > .md-nav__item > .md-nav__link[href]"
+          );
+          greatAnchors.forEach((a) => {
+            pushLink(textOf(a), a.getAttribute("href") || "");
           });
-        } else if (childTitle && childHref) {
+        });
+
+        if (links.length > 0) {
           groups.push({
-            heading: childTitle,
-            links: [{ title: childTitle, href: childHref }],
+            heading: childTitle || links[0].title,
+            links,
           });
         }
       });
@@ -704,6 +740,14 @@
         heading.textContent = group.heading;
         column.appendChild(heading);
 
+        const headingDescription = resolveDescription(group.heading);
+        if (headingDescription) {
+          const p = document.createElement("p");
+          p.className = "kb-mega-menu__desc";
+          p.textContent = headingDescription;
+          column.appendChild(p);
+        }
+
         const list = document.createElement("ul");
         list.className = "kb-mega-menu__list";
 
@@ -712,7 +756,12 @@
           const a = document.createElement("a");
           a.className = "kb-mega-menu__link";
           a.href = entry.href;
-          a.textContent = entry.title;
+
+          const label = document.createElement("span");
+          label.className = "kb-mega-menu__link-label";
+          label.textContent = entry.title;
+          a.appendChild(label);
+
           li.appendChild(a);
           list.appendChild(li);
         });

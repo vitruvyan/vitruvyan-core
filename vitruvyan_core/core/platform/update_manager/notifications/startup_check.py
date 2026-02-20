@@ -75,11 +75,16 @@ def startup_check(manifest_path: Optional[str] = None, force: bool = False) -> N
         current_version = registry.get_current_version()
         
         try:
-            latest_release = registry.fetch_latest_release(channel="stable")
+            latest_release = registry.fetch_latest(channel="stable")
         except Exception as e:
             # GitHub API error, fail silently (don't block startup)
             print(f"Update check failed: {e}")
             set_last_check_time()  # Record attempt to avoid spam
+            return
+        
+        # No releases found
+        if latest_release is None:
+            set_last_check_time()
             return
         
         # Check compatibility (if manifest provided)
