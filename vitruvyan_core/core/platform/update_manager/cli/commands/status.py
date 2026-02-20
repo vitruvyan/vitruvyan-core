@@ -139,10 +139,13 @@ def run(args: argparse.Namespace) -> int:
             status["update_available"] = False
             status["warning"] = f"No {channel} releases found on GitHub"
         else:
+            latest_version_normalized = latest_release.version.lstrip("v")
+            current_version_normalized = current_version.lstrip("v")
+            
             status["latest_version"] = latest_release.version
-            status["update_available"] = latest_release.version != current_version
-            status["breaking_changes"] = latest_release.breaking_changes
-            status["changelog_url"] = f"https://github.com/dbaldoni/vitruvyan-core/releases/tag/v{latest_release.version}"
+            status["update_available"] = latest_version_normalized != current_version_normalized
+            status["breaking_changes"] = len(latest_release.changes.get("breaking", [])) > 0
+            status["changelog_url"] = f"https://github.com/dbaldoni/vitruvyan-core/releases/tag/{latest_release.version}"
             
             # Check compatibility if manifest present
             if manifest_path and status["update_available"]:

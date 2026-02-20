@@ -6,6 +6,7 @@ Phase 1 implementation.
 
 import json
 import logging
+import os
 import subprocess
 from typing import List, Optional
 from urllib.request import urlopen, Request
@@ -29,20 +30,92 @@ class ReleaseRegistry:
     - fetch_latest(channel="stable") → Release
     - fetch_all(channel=None) → List[Release]
     - verify_checksum(release) → bool
+    
+    Environment Variables:
+    - GITHUB_TOKEN: Personal access token for private repositories (optional)
     """
     
     GITHUB_API_BASE = "https://api.github.com"
     TIMEOUT_SECONDS = 10
     
-    def __init__(self, repo="vitruvyan/vitruvyan-core"):
+    def __init__(self, repo: Optional[str] = None):
         """
         Initialize registry client.
         
         Args:
-            repo: GitHub repository (format: "owner/repo")
+            repo: GitHub repository (format: "owner/repo").
+                  If None, autodetermines from git remote or VITRUVYAN_REPO env var.
         """
+        if repo is None:
+            repo = self._autodetermine_repo()
+        
         self.repo = repo
         self.api_url = f"{self.GITHUB_API_BASE}/repos/{repo}/releases"
+        self.github_token = os.getenv("GITHUB_TOKEN")
+    
+    def _autodetermine_repo(self) -> str:
+        """
+        Autodetermine repository from git remote or environment variable.
+        
+        Returns:
+            Repository name (format: "owner/repo")
+        """
+        # Try environment variable first
+        repo = os.getenv("VITRUVYAN_REPO")
+        if repo:
+            logger.debug(f"Using repository from VITRUVYAN_REPO: {repo}")
+            return repo
+        
+        # Try git remote
+        try:
+            result = subprocess.run(
+                ["git", "remote", "get-url", "origin"],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=5,
+            )
+            remote_url = result.stdout.strip()
+            
+            # Parse GitHub URL (supports both HTTPS and SSH)
+            # https://github.com/owner/repo.git
+            # git@github.com:owner/repo.git
+            if "github.com" in remote_url:
+                parts = remote_url.replace(".git", "").split("/")
+                if len(parts) >= 2:
+                    owner = parts[-2].split(":")[-1]  # Handle git@github.com:owner
+                    repo = parts[-1]
+                    detected_repo = f"{owner}/{repo}"
+                    logger.debug(f"Autodetermined repository from git remote: {detected_repo}")
+                    return detected_repo
+        
+        except (subprocess.CalledProcessError, FileNotFoundError, IndexError):
+            pass
+        
+        # Fallback to default
+        default_repo = "vitruvyan/vitruvyan-core"
+        logger.debug(f"Using default repository: {default_repo}")
+        return default_repo
+    
+    def _create_request(self, url: str, accept_header: str = "application/vnd.github.v3+json") -> Request:
+        """
+        Create HTTP request with authentication if token is available.
+        
+        Args:
+            url: Request URL
+            accept_header: Accept header value
+        
+        Returns:
+            Request object with headers
+        """
+        headers = {"Accept": accept_header}
+        
+        # Add authentication if token is available
+        if self.github_token:
+            headers["Authorization"] = f"token {self.github_token}"
+            logger.debug("Using GitHub token for authentication")
+        
+        return Request(url, headers=headers)
     
     def fetch_latest(self, channel="stable") -> Optional[Release]:
         """
@@ -85,9 +158,9 @@ class ReleaseRegistry:
         """
         try:
             # Fetch GitHub Releases (paginated, max 100)
-            request = Request(
+            request = self._create_request(
                 f"{self.api_url}?per_page=100",
-                headers={"Accept": "application/vnd.github.v3+json"}
+                accept_header="application/vnd.github.v3+json"
             )
             
             with urlopen(request, timeout=self.TIMEOUT_SECONDS) as response:
@@ -165,22 +238,24 @@ class ReleaseRegistry:
         if not metadata_asset:
             return None
         
-        # Download asset
-        download_url = metadata_asset.get("browser_download_url")
-        if not download_url:
+        # For private repos, use API endpoint instead of browser_download_url
+        asset_id = metadata_asset.get("id")
+        asset_url = metadata_asset.get("url")  # API URL, not browser URL
+        
+        if not asset_url:
             return None
         
         try:
-            request = Request(
-                download_url,
-                headers={"Accept": "application/octet-stream"}
+            request = self._create_request(
+                asset_url,
+                accept_header="application/octet-stream"
             )
             with urlopen(request, timeout=self.TIMEOUT_SECONDS) as response:
                 content = response.read().decode()
                 return json.loads(content)
         
         except (URLError, HTTPError, json.JSONDecodeError) as e:
-            logger.warning(f"Failed to download {download_url}: {e}")
+            logger.warning(f"Failed to download asset {asset_id}: {e}")
             return None
     
     def verify_checksum(self, release: Release) -> bool:
