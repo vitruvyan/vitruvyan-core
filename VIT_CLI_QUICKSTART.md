@@ -6,7 +6,32 @@ The `vit` command works **out-of-the-box** without any installation:
 
 ```bash
 cd /path/to/vitruvyan-core
-./vit --help
+./vit status
+```
+
+### ✨ Auto-Configured Features
+
+The `vit` wrapper automatically configures on first run:
+
+1. **PYTHONPATH** — no need for `pip install -e .`
+2. **Bash autocomplete** — tab completion enabled automatically
+3. **GitHub authentication** — auto-detects `gh auth token` for private repos
+
+**Autocomplete activation** (happens automatically):
+```bash
+# First run: completion added to ~/.bashrc
+./vit status
+
+# Immediate effect in current shell (tab completion works)
+vit <TAB>         # → status, update, upgrade, plan, rollback
+vit upgrade --<TAB>   # → --channel, --target, --yes, --json
+```
+
+**To reload in existing shells**:
+```bash
+source ~/.bashrc
+# or
+exec bash
 ```
 
 ### Add to PATH (Optional, Recommended)
@@ -14,7 +39,7 @@ cd /path/to/vitruvyan-core
 To use `vit` from anywhere:
 
 ```bash
-# Add this line to your ~/.bashrc or ~/.zshrc
+# Add this line to your ~/.bashrc
 export PATH="/path/to/vitruvyan-core:${PATH}"
 
 # Reload shell
@@ -63,33 +88,65 @@ vit rollback
 
 ---
 
-## ⚡ Autocomplete Setup
+## ⚡ Autocomplete
 
-The CLI will **automatically prompt you** to enable autocomplete on first run.
+**Tab completion is enabled automatically** on first run.
 
-### Manual Setup (Bash)
+### How It Works
 ```bash
-# Add to ~/.bashrc:
-source /path/to/vitruvyan-core/vitruvyan_core/core/platform/update_manager/cli/completion/vit-completion.bash
+# First time you run vit
+./vit status
 
-# Reload
+# Behind the scenes (automatic, no interaction):
+# 1. Adds completion source to ~/.bashrc
+# 2. Loads completion for current shell (immediate effect)
+# 3. Creates ~/.vit_completion_configured marker
+
+# ✅ No user interaction required
+# ✅ Works immediately in current shell
+# ✅ Persists across shell restarts
+```
+
+### Verify Autocomplete
+```bash
+# Test tab completion (works immediately after first run)
+vit <TAB>              # Shows: update, upgrade, plan, rollback, status, channel
+vit upgrade --<TAB>    # Shows: --channel, --target, --yes, --json
+vit upgrade --channel <TAB>  # Shows: stable, beta
+```
+
+### Troubleshooting
+
+**Autocomplete not working?**
+```bash
+# 1. Check if .bashrc was modified
+grep "vit-completion.bash" ~/.bashrc
+
+# 2. Reload shell configuration
 source ~/.bashrc
+
+# 3. Test in new terminal
+exec bash
+
+# 4. Verify completion script exists
+ls -lh vitruvyan_core/core/platform/update_manager/cli/completion/vit-completion.bash
+
+# 5. Manual load for current shell
+source vitruvyan_core/core/platform/update_manager/cli/completion/vit-completion.bash
 ```
 
-### Manual Setup (Zsh)
+### Manual Control (if needed)
 ```bash
-# Add to ~/.zshrc:
-autoload -U compinit && compinit
-source /path/to/vitruvyan-core/vitruvyan_core/core/platform/update_manager/cli/completion/vit-completion.bash
+# Check autocomplete status
+ls -la ~/.vit_completion_configured
 
-# Reload
-source ~/.zshrc
-```
+# Remove autocomplete configuration
+vit completion uninstall
+rm ~/.vit_completion_configured
 
-### Using the completion command
-```bash
-vit completion install    # Auto-install for current shell
-vit completion uninstall  # Remove autocomplete
+# Re-enable autocomplete
+rm ~/.vit_completion_configured
+./vit status  # Auto-configures again
 ```
 
 ---

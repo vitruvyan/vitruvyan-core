@@ -10,45 +10,29 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Setup PYTHONPATH
 export PYTHONPATH="${SCRIPT_DIR}:${PYTHONPATH}"
 
-# Auto-setup completion on first run (if not already configured)
+# Auto-setup completion on first run (out-of-the-box, non-interactive)
 COMPLETION_SETUP_MARKER="${HOME}/.vit_completion_configured"
-if [[ ! -f "${COMPLETION_SETUP_MARKER}" ]] && [[ -n "${BASH_VERSION}" ]]; then
-    # Check if running interactively
-    if [[ $- == *i* ]] && [[ "$1" != "completion" ]]; then
-        echo "🎯 Vitruvyan CLI - First time setup"
-        echo ""
-        echo "Would you like to enable bash autocomplete? (recommended)"
-        echo "This will add one line to your ~/.bashrc"
-        echo ""
-        read -p "Enable autocomplete? [Y/n] " -n 1 -r
-        echo ""
-        
-        if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
-            # Add completion source to bashrc
-            COMPLETION_LINE="source ${SCRIPT_DIR}/vitruvyan_core/core/platform/update_manager/cli/completion/vit-completion.bash"
-            
-            if ! grep -qF "${COMPLETION_LINE}" "${HOME}/.bashrc" 2>/dev/null; then
-                echo "" >> "${HOME}/.bashrc"
-                echo "# Vitruvyan CLI autocomplete" >> "${HOME}/.bashrc"
-                echo "${COMPLETION_LINE}" >> "${HOME}/.bashrc"
-                echo "✅ Autocomplete added to ~/.bashrc"
-                echo "   Run: source ~/.bashrc (or restart terminal)"
-            else
-                echo "✅ Autocomplete already configured in ~/.bashrc"
-            fi
-            
-            # Mark as configured
-            touch "${COMPLETION_SETUP_MARKER}"
-            echo ""
-            echo "Setup complete! Continue with your command..."
-            echo ""
-        else
-            echo "⏭️  Skipping autocomplete setup"
-            echo "   You can enable it later by running: vit completion install"
-            touch "${COMPLETION_SETUP_MARKER}"
-            echo ""
-        fi
+COMPLETION_SCRIPT="${SCRIPT_DIR}/vitruvyan_core/core/platform/update_manager/cli/completion/vit-completion.bash"
+
+if [[ ! -f "${COMPLETION_SETUP_MARKER}" ]] && [[ -n "${BASH_VERSION}" ]] && [[ -f "${COMPLETION_SCRIPT}" ]]; then
+    # Auto-enable bash autocomplete (out-of-the-box)
+    COMPLETION_LINE="source ${COMPLETION_SCRIPT}"
+    
+    # Check if .bashrc exists and doesn't already have completion
+    if [[ -f "${HOME}/.bashrc" ]] && ! grep -qF "vit-completion.bash" "${HOME}/.bashrc" 2>/dev/null; then
+        # Add completion source to bashrc (silently)
+        echo "" >> "${HOME}/.bashrc"
+        echo "# Vitruvyan CLI autocomplete (auto-configured)" >> "${HOME}/.bashrc"
+        echo "${COMPLETION_LINE}" >> "${HOME}/.bashrc"
     fi
+    
+    # Mark as configured
+    touch "${COMPLETION_SETUP_MARKER}"
+fi
+
+# Load completion for current shell session (immediate effect)
+if [[ -n "${BASH_VERSION}" ]] && [[ -f "${COMPLETION_SCRIPT}" ]]; then
+    source "${COMPLETION_SCRIPT}" 2>/dev/null || true
 fi
 
 # Execute CLI
