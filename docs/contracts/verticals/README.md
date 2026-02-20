@@ -9,6 +9,7 @@ Enforce a repeatable implementation pattern across domains:
 - domain-agnostic core
 - domain adapters for specialization
 - explicit manifest + ownership + lifecycle
+- optional domain graph-node packs (`graph_nodes/`) through hook factories
 
 ## Documents
 

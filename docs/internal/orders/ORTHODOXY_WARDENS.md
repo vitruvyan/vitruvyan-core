@@ -152,3 +152,46 @@ These live under the same folder but **are not LIVELLO 1-pure** (they use LLM an
   - `Confession`: the structured case entering the tribunal
   - `Finding`: an immutable piece of evidence
   - `Verdict`: the governance decision (`blessed`, `purified`, `heretical`, `non_liquet`, …)
+
+### Domain governance hook (real contract)
+
+- Hook registry:
+  - `vitruvyan_core/core/governance/orthodoxy_wardens/governance/rule_registry.py`
+  - `register_domain(domain)` dynamically imports:
+    - `domains.<domain>.governance_rules`
+    - expects `get_domain_rules() -> Tuple[Rule, ...]`
+- Domain implementation example:
+  - `vitruvyan_core/domains/finance/governance_rules.py`
+  - exports `get_domain_rules()`
+
+### Runtime status
+
+- `STATUS: PLANNED/EXPERIMENTAL`
+- Why:
+  - the hook exists and works at module level
+  - default service startup does not call `register_domain(...)`
+  - `GOVERNANCE_DOMAIN` is mentioned in comments/docstrings but is not wired in startup/runtime selection
+  - current legacy `ComplianceValidator` path (`_legacy/inquisitor_agent.py`) uses its own local regex ruleset
+
+### How to enable domain rules (startup wiring)
+
+At service startup (LIVELLO 2), initialize registry and pass a domain-aware `RuleSet` to the consumer used for governance decisions.
+
+```python
+from core.governance.orthodoxy_wardens.governance.rule import DEFAULT_RULES
+from core.governance.orthodoxy_wardens.governance.rule_registry import get_governance_rule_registry
+from core.governance.orthodoxy_wardens.consumers.inquisitor import Inquisitor
+
+registry = get_governance_rule_registry()
+registry.set_generic_rules(DEFAULT_RULES)
+registry.register_domain("<domain>")  # imports domains.<domain>.governance_rules.get_domain_rules()
+ruleset = registry.get_ruleset(domain="<domain>")
+
+inquisitor = Inquisitor(ruleset=ruleset)
+```
+
+For end-to-end vertical implementation steps, use:
+
+- `docs/knowledge_base/development/Vertical_Implementation_Guide.md`
+- `docs/knowledge_base/development/verticals/Vertical_Sacred_Orders.md`
+- `docs/knowledge_base/development/verticals/Vertical_Technical_Reference.md`

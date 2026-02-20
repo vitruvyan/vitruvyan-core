@@ -15,6 +15,7 @@ No vertical can bypass contracts. Domain logic must be attached through adapters
 ## Adapter Model
 
 - LangGraph plugin adapter
+- Optional LangGraph graph-nodes hook (`domains/<domain>/graph_nodes/registry.py`)
 - Sacred Orders governance adapter
 - Optional Neural Engine adapters (`IDataProvider`, `IScoringStrategy`)
 

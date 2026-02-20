@@ -3,6 +3,11 @@ Version: 1.0
 Date: 2026-01-18  
 Status: Foundational
 
+> **Classification**: Foundational / Conceptual (non implementation guide).  
+> For implementation steps and runtime wiring use: `docs/knowledge_base/development/Vertical_Implementation_Guide.md`.  
+> For technical file/env/loader details use: `docs/knowledge_base/development/verticals/Vertical_Technical_Reference.md`.  
+> For binding requirements use: `docs/contracts/verticals/VERTICAL_CONTRACT_V1.md` and `docs/contracts/verticals/VERTICAL_CONFORMANCE_CHECKLIST.md`.
+
 ---
 
 ## Preambolo

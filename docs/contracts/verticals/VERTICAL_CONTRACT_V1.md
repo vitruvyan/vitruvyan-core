@@ -40,7 +40,8 @@ Each vertical SHOULD provide (production baseline):
 2. `governance_rules.py`
 3. `slot_filler.py`
 4. `response_formatter.py`
-5. Integration tests
+5. `graph_nodes/` (domain graph node pack, if custom graph routing/nodes are needed)
+6. Integration tests
 
 ## 5. Mandatory Contracts
 
@@ -59,8 +60,14 @@ Direct imports from deprecated/legacy contract namespaces MUST NOT be introduced
 ## 6. Domain Registration
 
 1. Vertical loading MUST be controlled through environment selection (`INTENT_DOMAIN`, `ENTITY_DOMAIN`, `EXEC_DOMAIN`).
-2. Vertical modules MUST expose expected factory functions (`create_<domain>_registry`, plugin factory where applicable).
-3. If dynamic import fails, runtime MUST preserve core fallback behavior.
+2. Optional graph extension loading MAY be controlled through `GRAPH_DOMAIN` (defaults to `INTENT_DOMAIN` in current implementation).
+3. Vertical modules MUST expose expected factory functions:
+   - `create_<domain>_registry` (intent registry)
+   - optional graph node factories in `domains.<domain>.graph_nodes.registry`:
+     - `get_<domain>_graph_nodes()`
+     - `get_<domain>_graph_edges()` (optional)
+     - `get_<domain>_route_targets()` (optional)
+4. If dynamic import fails, runtime MUST preserve core fallback behavior.
 
 ## 7. Governance and Safety
 
@@ -115,4 +122,3 @@ A vertical is compliant only if:
 2. no MUST NOT violation exists
 3. manifest is valid
 4. required tests pass
-

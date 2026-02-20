@@ -189,12 +189,20 @@ nav:
     
   - Development:
     - Testing: tests/README_TESTS.md
-    - Core Update/Upgrade:
-      - Masterplan: docs/knowledge_base/development/core_update_upgrade_masterplan.md
+    - Update & Package Manager:
+      - Update Manager System: docs/knowledge_base/development/Update_Manager_System.md
       - Update System Contract V1: docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md
+      - Package Manager Contract V1: docs/contracts/platform/PACKAGE_MANAGER_SYSTEM_CONTRACT_V1.md
+      - Capabilities Summary: docs/knowledge_base/development/UPDATE_MANAGER_CAPABILITIES_SUMMARY.md
     - Templates: docs/foundational/TEMPLATE_SACRED_ORDER_COMPONENT.md
     - Verticals:
-      - Pattern: examples/verticals/README.md
+      - Implementation Guide (Overview): docs/knowledge_base/development/Vertical_Implementation_Guide.md
+      - Domain: docs/knowledge_base/development/verticals/Vertical_Domain.md
+      - Orchestration (LangGraph): docs/knowledge_base/development/verticals/Vertical_Orchestration_LangGraph.md
+      - Sacred Orders Integration: docs/knowledge_base/development/verticals/Vertical_Sacred_Orders.md
+      - Pattern Guide: docs/knowledge_base/development/verticals/Vertical_Patterns.md
+      - Technical Reference: docs/knowledge_base/development/verticals/Vertical_Technical_Reference.md
+      - Pattern Examples: examples/verticals/README.md
       - Contracts:
         - Overview: docs/contracts/verticals/README.md
         - Vertical Contract V1: docs/contracts/verticals/VERTICAL_CONTRACT_V1.md
@@ -217,7 +225,7 @@ extra:
     provider: mike  # Versioning provider (optional)
 
 extra_css:
-  - docs/stylesheets/material_v1.css?v=20260219l
+  - docs/stylesheets/material_v1.css?v=20260219m
 
 extra_javascript:
   - docs/javascripts/vitruvyan.js?v=20260219k

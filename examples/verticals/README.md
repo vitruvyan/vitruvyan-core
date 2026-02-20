@@ -1,5 +1,11 @@
 # Vertical Pattern — Domain-Specific Graph Extensions
 
+> **STATUS: PATTERN / EXAMPLES (NON-CANONICAL IMPLEMENTATION GUIDE)**  
+> This folder contains patterns and prototypes.  
+> Implementation source of truth: `docs/knowledge_base/development/Vertical_Implementation_Guide.md`  
+> Pattern guide: `docs/knowledge_base/development/verticals/Vertical_Patterns.md`  
+> Full technical reference: `docs/knowledge_base/development/verticals/Vertical_Technical_Reference.md`
+
 **Purpose**: Keep core graph **domain-agnostic** while enabling **vertical-specific functionality**.
 
 ---

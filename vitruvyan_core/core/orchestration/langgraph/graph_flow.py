@@ -69,6 +69,67 @@ if _ENTITY_DOMAIN and _ENTITY_DOMAIN != "generic":
     except (ImportError, AttributeError) as e:
         _log.debug(f"[graph_flow] No entity resolver for domain '{_ENTITY_DOMAIN}': {e}")
 
+# 🔌 Optional graph_nodes domain extension (experimental hook)
+# Contract:
+# - module: domains.<domain>.graph_nodes.registry
+# - function: get_<domain>_graph_nodes() -> Dict[str, Callable]
+# - optional: get_<domain>_graph_edges() -> List[Tuple[str, str]]
+# - optional: get_<domain>_route_targets() -> Dict[str, str]
+_GRAPH_DOMAIN = _os.getenv("GRAPH_DOMAIN", _INTENT_DOMAIN)
+
+
+def _load_domain_graph_extension(domain: str):
+    """Load optional domain graph extension from graph_nodes/registry."""
+    if not domain or domain == "generic":
+        return {}, [], {}
+
+    module_path = f"domains.{domain}.graph_nodes.registry"
+    try:
+        mod = _importlib.import_module(module_path)
+
+        nodes_fn = getattr(mod, f"get_{domain}_graph_nodes")
+        edges_fn = getattr(mod, f"get_{domain}_graph_edges", None)
+        routes_fn = getattr(mod, f"get_{domain}_route_targets", None)
+
+        nodes = nodes_fn() if callable(nodes_fn) else {}
+        edges = edges_fn() if callable(edges_fn) else []
+        routes = routes_fn() if callable(routes_fn) else {}
+
+        if not isinstance(nodes, dict):
+            _log.warning(
+                f"[graph_flow] {module_path}.{nodes_fn.__name__} must return dict. Ignoring graph nodes."
+            )
+            nodes = {}
+        if not isinstance(edges, list):
+            _log.warning(
+                f"[graph_flow] {module_path}.get_{domain}_graph_edges must return list. Ignoring graph edges."
+            )
+            edges = []
+        if not isinstance(routes, dict):
+            _log.warning(
+                f"[graph_flow] {module_path}.get_{domain}_route_targets must return dict. Ignoring route targets."
+            )
+            routes = {}
+
+        if nodes or edges or routes:
+            _log.info(
+                f"[graph_flow] Loaded graph_nodes extension for domain '{domain}' "
+                f"(nodes={len(nodes)}, edges={len(edges)}, routes={len(routes)})"
+            )
+
+        return nodes, edges, routes
+    except ImportError as e:
+        _log.debug(f"[graph_flow] No graph_nodes extension for domain '{domain}': {e}")
+    except AttributeError as e:
+        _log.debug(f"[graph_flow] graph_nodes extension missing required factory for '{domain}': {e}")
+    except Exception as e:
+        _log.warning(f"[graph_flow] Failed loading graph_nodes extension for '{domain}': {e}")
+
+    return {}, [], {}
+
+
+_graph_nodes_ext, _graph_edges_ext, _graph_routes_ext = _load_domain_graph_extension(_GRAPH_DOMAIN)
+
 # 🔍 PHASE 2.2 - Quality Check (REMOVED)
 
 # ⚙️ PHASE 2.3 - Consolidated Parameter Extraction (horizon_parser + topk_parser)
@@ -209,6 +270,43 @@ def build_graph():
     # 🔌 MCP Integration - Phase 4 (OpenAI Function Calling gateway)
     g.add_node("llm_mcp", llm_mcp_node)
 
+    # 🔌 Optional domain graph_nodes extension (experimental)
+    registered_nodes = {
+        "parse",
+        "intent_detection",
+        "weaver",
+        "entity_resolver",
+        "params_extraction",
+        "decide",
+        "babel_emotion",
+        "semantic_grounding",
+        "exec",
+        "qdrant",
+        "llm_soft",
+        "output_normalizer",
+        "compose",
+        "advisor",
+        "can",
+        "orthodoxy",
+        "vault",
+        "codex_hunters",
+        "llm_mcp",
+    }
+
+    for node_name, node_handler in _graph_nodes_ext.items():
+        if node_name in registered_nodes:
+            _log.warning(
+                f"[graph_flow] graph_nodes extension attempted to override core node '{node_name}'. Ignoring."
+            )
+            continue
+        if not callable(node_handler):
+            _log.warning(
+                f"[graph_flow] graph_nodes extension node '{node_name}' is not callable. Ignoring."
+            )
+            continue
+        g.add_node(node_name, node_handler)
+        registered_nodes.add(node_name)
+
     g.set_entry_point("parse")
 
     # 🧠 PHASE 2: Consolidated pipeline
@@ -249,18 +347,55 @@ def build_graph():
         )
         return route_value
 
+    _decide_route_targets = {
+        "semantic_fallback": "qdrant",
+        "dispatcher_exec": "exec",            # Direct execution (no sentiment prereq)
+        "llm_mcp": "llm_mcp",                 # 🔌 Phase 4: MCP routing (when USE_MCP=1)
+        "slot_filler": "compose",
+        "llm_soft": "llm_soft",
+        "codex_expedition": "codex_hunters",  # 🗝️ Codex Hunters (maintenance system)
+    }
+    for route_key, route_target in _graph_routes_ext.items():
+        normalized_target = END if route_target == "END" else route_target
+        if normalized_target is not END and normalized_target not in registered_nodes:
+            _log.warning(
+                f"[graph_flow] graph_nodes route target '{route_target}' for route '{route_key}' "
+                "is not a registered node. Ignoring."
+            )
+            continue
+        _decide_route_targets[route_key] = normalized_target
+
     g.add_conditional_edges(
         "decide",
         route_from_decide,
-        {
-            "semantic_fallback": "qdrant",
-            "dispatcher_exec": "exec",            # Direct execution (no sentiment prereq)
-            "llm_mcp": "llm_mcp",                 # 🔌 Phase 4: MCP routing (when USE_MCP=1)
-            "slot_filler": "compose",
-            "llm_soft": "llm_soft",
-            "codex_expedition": "codex_hunters",  # 🗝️ Codex Hunters (maintenance system)
-        },
+        _decide_route_targets,
     )
+
+    # Additional domain edges (if declared by graph_nodes extension)
+    for edge in _graph_edges_ext:
+        if not isinstance(edge, (list, tuple)) or len(edge) != 2:
+            _log.warning(f"[graph_flow] Invalid graph edge declaration '{edge}'. Expected (source, target).")
+            continue
+        source, target = edge
+        normalized_target = END if target == "END" else target
+
+        if source not in registered_nodes:
+            _log.warning(
+                f"[graph_flow] graph_nodes edge source '{source}' is not a registered node. Ignoring."
+            )
+            continue
+        if normalized_target is not END and normalized_target not in registered_nodes:
+            _log.warning(
+                f"[graph_flow] graph_nodes edge target '{target}' is not a registered node. Ignoring."
+            )
+            continue
+
+        try:
+            g.add_edge(source, normalized_target)
+        except Exception as e:
+            _log.warning(
+                f"[graph_flow] Failed to add graph_nodes edge ({source} -> {target}): {e}"
+            )
 
     # exec → output_normalizer (quality_check archived)
     g.add_edge("exec", "output_normalizer")

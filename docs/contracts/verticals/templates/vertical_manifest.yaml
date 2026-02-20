@@ -60,6 +60,7 @@ required_components:
 
 optional_components:
   graph_plugin: true
+  graph_nodes: false              # OPTIONAL domain graph node pack (domains/<domain>/graph_nodes/)
   governance_rules: true
   slot_filler: false
   response_formatter: false
@@ -68,6 +69,7 @@ optional_components:
 
 adapters:
   langgraph_plugin: true
+  langgraph_graph_nodes_hook: false  # OPTIONAL (GRAPH_DOMAIN + graph_nodes/registry.py factories)
   sacred_orders_rules: true
   neural_engine_contracts: false
 

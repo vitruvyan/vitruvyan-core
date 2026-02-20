@@ -8,7 +8,7 @@ Contract Version: Vertical Contract V1
 - [ ] `vitruvyan_core/domains/<domain_name>/intent_config.py` exists
 - [ ] `vitruvyan_core/domains/<domain_name>/README.md` exists
 - [ ] `vitruvyan_core/domains/<domain_name>/vertical_manifest.yaml` exists
-- [ ] Optional production files are present when required (`graph_plugin.py`, `governance_rules.py`, etc.)
+- [ ] Optional production files are present when required (`graph_plugin.py`, `governance_rules.py`, `graph_nodes/registry.py`, etc.)
 
 ## B. Contract Usage
 
@@ -21,6 +21,7 @@ Contract Version: Vertical Contract V1
 - [ ] No domain business logic added to core modules
 - [ ] Sacred Orders remain domain-agnostic
 - [ ] LangGraph extension is plugin-based
+- [ ] If `graph_nodes/` is used, custom nodes are loaded through domain hook modules (not by editing core nodes)
 - [ ] Neural Engine domain behavior is contract-based
 
 ## D. Governance
@@ -35,6 +36,7 @@ Contract Version: Vertical Contract V1
 - [ ] Intent registry load test passes
 - [ ] Manifest validation test passes
 - [ ] Integration tests pass (if required by manifest)
+- [ ] If `graph_nodes` adapter is enabled, graph compile/runtime smoke test passes
 
 ## F. Manifest
 
@@ -49,4 +51,3 @@ Contract Version: Vertical Contract V1
 - [ ] No open MUST violation
 - [ ] No unresolved expired derogation
 - [ ] CI conformance gate is green
-
