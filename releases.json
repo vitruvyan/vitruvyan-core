@@ -1,0 +1,47 @@
+{
+  "version": "1.2.2",
+  "channel": "stable",
+  "release_date": "2026-02-20T18:00:00Z",
+  "changes": {
+    "features": [
+      "Auto-configured bash completion (non-interactive)",
+      "Immediate tab completion effect in current shell",
+      "Silent .bashrc modification (no user prompt)"
+    ],
+    "fixes": [
+      "Support for private GitHub repositories (fixed authentication)"
+    ],
+    "documentation": [
+      "Updated README.md with autocomplete features",
+      "Enhanced VIT_CLI_QUICKSTART.md with auto-configuration guide",
+      "Added AUTOCOMPLETE_OUT_OF_THE_BOX_TESTING.md (testing guide)"
+    ],
+    "breaking_changes": []
+  },
+  "commits": [
+    {
+      "hash": "015c4d5",
+      "message": "chore: bump version to 1.2.2"
+    },
+    {
+      "hash": "2debeae",
+      "message": "feat(cli): enable autocomplete out-of-the-box (non-interactive)"
+    },
+    {
+      "hash": "f32e4c5",
+      "message": "fix(update-manager): support private GitHub repositories"
+    }
+  ],
+  "validation": [
+    "Tested on vmi3066053 (development VM)",
+    "Tested on vmi2647694 (remote deployment VM)",
+    "Zero-installation principle fully satisfied",
+    "Autocomplete works immediately after first run",
+    "Full upgrade/rollback workflow validated"
+  ],
+  "upgrade_instructions": "vit upgrade --channel stable",
+  "checksum": {
+    "algorithm": "sha256",
+    "value": "TBD"
+  }
+}

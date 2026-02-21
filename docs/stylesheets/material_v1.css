@@ -1,16 +1,50 @@
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Inconsolata:wght@400;500;600&display=swap");
 
 html {
-  font-size: 100%;
+  font-size: 16px; /* Aumentato da default 100% per font più grandi */
 }
 
 :root {
   --md-text-font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco,
     Consolas, "Liberation Mono", "Courier New", monospace;
   --md-code-font-family: var(--md-text-font-family);
-  --kb-nav-font-size: 0.85rem;
+  --kb-nav-font-size: 1.0rem; /* Aumentato da 0.85rem → 0.90rem → 1.0rem per allineamento */
   --kb-nav-font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco,
     Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* Larghezza fluida 80% invece di max-width fisso */
+.md-main__inner {
+  max-width: 80% !important;
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Header, tabs e footer alla stessa larghezza del contenuto */
+.md-header__inner,
+.md-tabs,
+.md-footer__inner {
+  max-width: 80% !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Navbar (tabs) allineata a sinistra con Montserrat */
+.md-tabs {
+  justify-content: flex-start !important;
+}
+
+.md-tabs__list {
+  margin-left: 0 !important;
+  justify-content: flex-start !important;
+}
+
+.md-tabs__link {
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, sans-serif !important;
+  font-weight: 600 !important;
+  font-size: var(--kb-nav-font-size) !important;
 }
 
 .md-typeset h1,
@@ -27,13 +61,13 @@ html {
 
 .md-typeset p,
 .md-typeset li {
-  font-size: 0.95rem;
-  line-height: 1.55;
+  font-size: 1.05rem; /* Aumentato da 0.95rem per leggibilità migliore */
+  line-height: 1.65; /* Aumentato da 1.55 per maggior respiro */
 }
 
 /* Content breathing room: prevent headings/text from touching card edges. */
 .md-content__inner {
-  padding: 1.35rem 1.55rem;
+  padding: 1.5rem 2rem; /* Aumentato padding per contenuto più arioso */
 }
 
 /* Material header account dropdown (Keycloak auth controls). */
@@ -57,7 +91,7 @@ html {
   padding: 0.2rem 0.62rem;
   font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
-  font-size: 0.84rem;
+  font-size: 0.95rem; /* Aumentato da 0.84rem per leggibilità */
   cursor: pointer;
 }
 
@@ -151,7 +185,7 @@ html {
   font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
     Arial, sans-serif;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 1.05rem; /* Aumentato da 0.9rem per allineamento con base 16px */
   letter-spacing: 0.01em;
   color: #000000;
 }
@@ -166,6 +200,8 @@ html {
 .md-header__button.md-logo img,
 .md-nav__button.md-logo img {
   content: url("vitruvyan-logo-white.png");
+  height: 2.5rem; /* Aumentato per logo più grande (default ~1.5rem) */
+  width: auto;
 }
 
 .md-header__button.md-logo:hover img,
@@ -173,6 +209,30 @@ html {
 .md-nav__button.md-logo:hover img,
 .md-nav__button.md-logo:focus img {
   content: url("vitruvyan-logo-white-hover.png");
+  height: 2.5rem;
+  width: auto;
+}
+
+/* Search bar più grande e allineata al resto del sito */
+.md-search__form {
+  height: 2.5rem !important;
+  border-radius: 0.25rem;
+}
+
+.md-search__input {
+  font-size: 1.0rem !important; /* Allineato a --kb-nav-font-size */
+  height: 2.5rem !important;
+  padding: 0 2.8rem 0 3rem !important;
+  font-family: var(--kb-nav-font-family) !important;
+}
+
+.md-search__icon {
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+}
+
+.md-search__icon[for="__search"] {
+  top: 0 !important;
 }
 
 /* Dark palette tuned to a Figma-like UI feel */
@@ -336,8 +396,7 @@ html {
   font-style: italic;
 }
 
-/* Hard normalization across top nav, both sidebars and mega-menu. */
-.md-tabs__link,
+/* Hard normalization across sidebars and mega-menu (escluso md-tabs__link che usa Montserrat sopra). */
 .md-sidebar--primary .md-nav__link,
 .md-sidebar--secondary .md-nav__link,
 .md-nav--secondary .md-nav__link,

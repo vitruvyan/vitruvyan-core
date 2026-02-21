@@ -231,7 +231,7 @@ extra:
     provider: mike  # Versioning provider (optional)
 
 extra_css:
-  - docs/stylesheets/material_v1.css?v=20260219m
+  - docs/stylesheets/material_v1.css?v=20260220q
 
 extra_javascript:
   - docs/javascripts/vitruvyan.js?v=20260219k
