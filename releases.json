@@ -1,43 +1,78 @@
 {
-  "version": "1.2.2",
+  "version": "1.3.0",
   "channel": "stable",
-  "release_date": "2026-02-20T18:00:00Z",
+  "release_date": "2026-02-22T19:00:00Z",
   "changes": {
     "features": [
-      "Auto-configured bash completion (non-interactive)",
-      "Immediate tab completion effect in current shell",
-      "Silent .bashrc modification (no user prompt)"
+      "Created vitruvyan_edge/ as first-class package (multi-module container)",
+      "Extracted Oculus Prime from infrastructure/edge/ to vitruvyan_edge/oculus_prime/",
+      "Added __init__.py at all package levels (regular packages, setuptools-compatible)",
+      "Added vitruvyan_edge to pyproject.toml package discovery",
+      "New 'Edge Modules' category in MkDocs Knowledge Base navigation",
+      "MkDocs runtime visibility (compose mount + docs_root symlink)"
     ],
-    "fixes": [
-      "Support for private GitHub repositories (fixed authentication)"
-    ],
+    "fixes": [],
     "documentation": [
-      "Updated README.md with autocomplete features",
-      "Enhanced VIT_CLI_QUICKSTART.md with auto-configuration guide",
-      "Added AUTOCOMPLETE_OUT_OF_THE_BOX_TESTING.md (testing guide)"
+      "Created vitruvyan_edge/README.md (multi-module architecture guide)",
+      "Deprecated infrastructure/edge/README.md (deployment-only pointer)",
+      "Updated 10 documentation files with new vitruvyan_edge paths",
+      "Updated MkDocs nav (main + backup yml) for Edge Modules section",
+      "Added VITRUVYAN_EDGE_EXTRACTION_PLAN_FEB22_2026.md (9-phase migration plan)"
     ],
-    "breaking_changes": []
+    "breaking_changes": [
+      "Python imports changed: infrastructure.edge.oculus_prime → vitruvyan_edge.oculus_prime",
+      "Dockerfile COPY changed: infrastructure/edge/oculus_prime → vitruvyan_edge"
+    ]
   },
   "commits": [
     {
-      "hash": "015c4d5",
-      "message": "chore: bump version to 1.2.2"
+      "hash": "803885c",
+      "message": "Merge feat/vitruvyan-edge-extraction: create vitruvyan_edge package"
     },
     {
-      "hash": "2debeae",
-      "message": "feat(cli): enable autocomplete out-of-the-box (non-interactive)"
+      "hash": "be366ed",
+      "message": "refactor(edge): complete vitruvyan_edge extraction [FINAL]"
     },
     {
-      "hash": "f32e4c5",
-      "message": "fix(update-manager): support private GitHub repositories"
+      "hash": "ba827d3",
+      "message": "docs(mkdocs): update edge nav and runtime path visibility"
+    },
+    {
+      "hash": "4c765ce",
+      "message": "docs(edge): update documentation for vitruvyan_edge migration"
+    },
+    {
+      "hash": "e69b100",
+      "message": "feat(packaging): add vitruvyan_edge to installable packages"
+    },
+    {
+      "hash": "fac6864",
+      "message": "refactor(edge): update Dockerfile COPY paths"
+    },
+    {
+      "hash": "cb70940",
+      "message": "refactor(edge): update test imports"
+    },
+    {
+      "hash": "28e611c",
+      "message": "refactor(edge): update service adapter imports"
+    },
+    {
+      "hash": "badb61b",
+      "message": "refactor(edge): update internal imports in vitruvyan_edge"
+    },
+    {
+      "hash": "74e723d",
+      "message": "feat(edge): create vitruvyan_edge package structure"
     }
   ],
   "validation": [
-    "Tested on vmi3066053 (development VM)",
-    "Tested on vmi2647694 (remote deployment VM)",
-    "Zero-installation principle fully satisfied",
-    "Autocomplete works immediately after first run",
-    "Full upgrade/rollback workflow validated"
+    "Test suite: 7/8 passed (identical to v1.2.2 baseline)",
+    "All vitruvyan_edge imports resolved (regular packages)",
+    "Docker build + deploy: healthy, zero errors",
+    "Zero infrastructure.edge references in runtime Python code",
+    "MkDocs navigation updated (main + backup yml)",
+    "9 atomic commits with rollback points"
   ],
   "upgrade_instructions": "vit upgrade --channel stable",
   "checksum": {
