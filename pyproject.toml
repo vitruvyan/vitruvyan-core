@@ -72,8 +72,8 @@ Issues = "https://github.com/vitruvyan/vitruvyan-core/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["vitruvyan_core*"]
-exclude = ["tests*", "docs*", "examples*", "scripts*"]
+include = ["vitruvyan_core*", "vitruvyan_edge*"]
+exclude = ["tests*", "docs*", "examples*", "scripts*", "infrastructure*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

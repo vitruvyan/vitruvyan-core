@@ -983,6 +983,7 @@ services:
     volumes:
       - ../../docs:/app/docs:ro
       - ../../vitruvyan_core:/app/vitruvyan_core:ro
+      - ../../vitruvyan_edge:/app/vitruvyan_edge:ro
       - ../../services:/app/services:ro
       - ../../infrastructure:/app/infrastructure:ro
       - ../../tests:/app/tests:ro

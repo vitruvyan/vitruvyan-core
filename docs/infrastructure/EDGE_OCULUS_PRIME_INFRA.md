@@ -6,11 +6,11 @@ This page restores the infrastructure-level documentation entry for Edge Oculus 
 
 Current infrastructure code location:
 
-- `infrastructure/edge/oculus_prime/`
+- `vitruvyan_edge/oculus_prime/`
 
 Current infrastructure status:
 
-- Core runtime folder is present under `infrastructure/edge/oculus_prime/core/`.
+- Core runtime folder is present under `vitruvyan_edge/oculus_prime/core/`.
 - Edge-specific README pages are not yet restored in this folder.
 
 ## Related Documentation
@@ -20,4 +20,4 @@ Current infrastructure status:
 
 ## Next Recovery Task
 
-Add `README.md` files under `infrastructure/edge/oculus_prime/` (and submodules) for deployment/runtime docs.
+Add `README.md` files under `vitruvyan_edge/oculus_prime/` (and submodules) for deployment/runtime docs.

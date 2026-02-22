@@ -31,7 +31,7 @@ Refactor Intake into a robust, streams-native, pre-epistemic acquisition layer a
 
 Core components:
 1. `services/api_edge_gateway`: ingress adapters, local queue/outbox, replay engine, telemetry.
-2. `infrastructure/edge/oculus_prime/core`: media-specific agents + canonical evidence/event contracts.
+2. `vitruvyan_edge/oculus_prime/core`: media-specific agents + canonical evidence/event contracts.
 3. `service intake API`: upload + ingestion endpoints + retrieval.
 4. `StreamBus`: intake event emission + downstream consumption with consumer groups.
 5. Governance checkpoints: Orthodoxy rulepacks for edge/intake events.
