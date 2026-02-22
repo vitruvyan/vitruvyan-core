@@ -368,7 +368,7 @@ PGPASSWORD='@Caravaggio971_omni' psql \
 ## References
 
 - **Architecture Doc**: `docs/INTAKE_DSE_BRIDGE_IMPLEMENTATION_COMPLETE.md`
-- **Intake Layer**: `infrastructure/edge/oculus_prime/README.md`
+- **Intake Layer**: `vitruvyan_edge/oculus_prime/README.md`
 - **Codex Hunters**: `services/core/api_codex_hunters/main.py`
 - **Pattern Weavers**: `vitruvyan_core/core/orchestration/langgraph/node/pattern_weavers_node.py`
 - **PostgreSQL Schema**: `infrastructure/migrations/002_create_bridge_operations_log.sql`

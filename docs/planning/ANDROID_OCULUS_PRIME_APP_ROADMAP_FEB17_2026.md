@@ -51,7 +51,7 @@ async def ingest_image(
 
 **Caratteristiche**:
 - **7 media types**: document, image, audio, video, CAD, landscape, geo
-- **Agents specializzati**: in `infrastructure/edge/oculus_prime/core/agents/`
+- **Agents specializzati**: in `vitruvyan_edge/oculus_prime/core/agents/`
 - **Evidence Packs**: immutabili, append-only PostgreSQL
 - **Event emission**: Redis Streams (`oculus_prime.evidence.created`)
 - **Pre-epistemic**: NO NER, NO embeddings (upstream processing)
@@ -65,7 +65,7 @@ async def ingest_image(
 - `POST /api/oculus-prime/landscape`
 - `POST /api/oculus-prime/geo`
 
-### 2.3 Infrastructure Layer (`infrastructure/edge/oculus_prime/core/`)
+### 2.3 Infrastructure Layer (`vitruvyan_edge/oculus_prime/core/`)
 
 **Compliance**: 94% ACCORDO-FONDATIVO-INTAKE-V1.1
 
@@ -987,7 +987,7 @@ vitruvyan-core/
 ### Week 1 (Feb 17-23, 2026) — SDK Foundation
 
 **Day 1-2**:
-- [ ] Create `infrastructure/edge/oculus_prime/android/vitruvyan-sdk/` structure
+- [ ] Create `vitruvyan_edge/oculus_prime/android/vitruvyan-sdk/` structure
 - [ ] Setup Gradle multi-module build (`sdk-core`, `sdk-offline`, `sdk-sensors`)
 - [ ] Define Kotlin package structure (`com.vitruvyan.sdk.*`)
 
@@ -1023,7 +1023,7 @@ vitruvyan-core/
 ## 13. References
 
 - **Oculus Prime API**: `services/api_edge_oculus_prime/README.md`
-- **Infrastructure Core**: `infrastructure/edge/oculus_prime/core/README.md`
+- **Infrastructure Core**: `vitruvyan_edge/oculus_prime/core/README.md`
 - **Intake + Edge Plan**: `docs/planning/INTAKE_EDGE_REFACTOR_INTEGRATION_PLAN_FEB16_2026.md`
 - **Jetpack Compose**: https://developer.android.com/jetpack/compose
 - **CameraX**: https://developer.android.com/training/camerax

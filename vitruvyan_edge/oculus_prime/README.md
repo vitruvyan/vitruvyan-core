@@ -20,7 +20,7 @@ Oculus Prime is a **domain-agnostic Evidence Pack ingestion system** responsible
 ## Directory Structure
 
 ```
-infrastructure/edge/oculus_prime/
+vitruvyan_edge/oculus_prime/
 ├── core/                           # Core Oculus Prime module (domain logic)
 │   ├── README.md                   # Oculus Prime system documentation
 │   ├── COMPLIANCE_CHECKLIST.md     # Compliance verification checklist
@@ -55,7 +55,7 @@ Canonical runtime path is `services/api_edge_oculus_prime/*`.
 Run the schema.sql file to create the required tables in PostgreSQL:
 
 ```bash
-psql -h <POSTGRES_HOST> -U <POSTGRES_USER> -d vitruvyan_core -f infrastructure/edge/oculus_prime/core/schema.sql
+psql -h <POSTGRES_HOST> -U <POSTGRES_USER> -d vitruvyan_core -f vitruvyan_edge/oculus_prime/core/schema.sql
 ```
 
 **Tables created**:
@@ -116,7 +116,7 @@ If you see `connection refused` on `localhost:5432` or `/health` returns `503`:
 - Host run (`uvicorn` outside Docker): use mapped host ports from core stack:
   `POSTGRES_HOST=localhost`, `POSTGRES_PORT=9432`, `REDIS_HOST=localhost`, `REDIS_PORT=9379`.
 - Ensure schema is applied:
-  `psql -h <POSTGRES_HOST> -U <POSTGRES_USER> -d vitruvyan_core -f infrastructure/edge/oculus_prime/core/schema.sql`.
+  `psql -h <POSTGRES_HOST> -U <POSTGRES_USER> -d vitruvyan_core -f vitruvyan_edge/oculus_prime/core/schema.sql`.
 
 ---
 
@@ -193,9 +193,9 @@ All Oculus Prime operations MUST comply with:
 
 ## Documentation
 
-- **Core README**: [infrastructure/edge/oculus_prime/core/README.md](core/README.md)
-- **Compliance Checklist**: [infrastructure/edge/oculus_prime/core/COMPLIANCE_CHECKLIST.md](core/COMPLIANCE_CHECKLIST.md)
-- **Codex Contract**: [infrastructure/edge/oculus_prime/core/INTAKE_CODEX_BOUNDARY_CONTRACT.md](core/INTAKE_CODEX_BOUNDARY_CONTRACT.md)
+- **Core README**: [vitruvyan_edge/oculus_prime/core/README.md](core/README.md)
+- **Compliance Checklist**: [vitruvyan_edge/oculus_prime/core/COMPLIANCE_CHECKLIST.md](core/COMPLIANCE_CHECKLIST.md)
+- **Codex Contract**: [vitruvyan_edge/oculus_prime/core/INTAKE_CODEX_BOUNDARY_CONTRACT.md](core/INTAKE_CODEX_BOUNDARY_CONTRACT.md)
 
 ---
 

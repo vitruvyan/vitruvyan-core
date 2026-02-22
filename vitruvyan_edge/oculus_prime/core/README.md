@@ -74,7 +74,7 @@ The **Vitruvyan Intake Layer** is the **pre-epistemic acquisition system** for t
 ## Directory Structure
 
 ```
-infrastructure/edge/oculus_prime/core/
+vitruvyan_edge/oculus_prime/core/
 ├── README.md                                   ← This file
 ├── INTAKE_CODEX_BOUNDARY_CONTRACT.md           ← Layer separation contract
 ├── COMPLIANCE_CHECKLIST.md                     ← Audit validation (94% compliant)
@@ -114,8 +114,8 @@ psql -U vitruvyan_user -d vitruvyan -f schema.sql
 ### Example 1: Ingest PDF Document
 
 ```python
-from infrastructure.edge.oculus_prime.core.agents.document_intake import DocumentIntakeAgent
-from infrastructure.edge.oculus_prime.core.event_emitter import IntakeEventEmitter
+from vitruvyan_edge.oculus_prime.core.agents.document_intake import DocumentIntakeAgent
+from vitruvyan_edge.oculus_prime.core.event_emitter import IntakeEventEmitter
 from vitruvyan_core.core.agents.postgres_agent import PostgresAgent
 from vitruvyan_core.core.synaptic_conclave.transport.streams import StreamBus
 
@@ -156,7 +156,7 @@ Created 3 Evidence Packs: ['EVD-12345678-1234-5678-1234-567812345678', 'EVD-8765
 ### Example 2: Ingest Image with OCR
 
 ```python
-from infrastructure.edge.oculus_prime.core.agents.image_intake import ImageIntakeAgent
+from vitruvyan_edge.oculus_prime.core.agents.image_intake import ImageIntakeAgent
 
 agent = ImageIntakeAgent(event_emitter, postgres)
 
@@ -180,7 +180,7 @@ print(f"Created Evidence Pack: {evidence_id}")
 ### Example 3: Ingest Audio with Transcription
 
 ```python
-from infrastructure.edge.oculus_prime.core.agents.audio_intake import AudioIntakeAgent
+from vitruvyan_edge.oculus_prime.core.agents.audio_intake import AudioIntakeAgent
 
 agent = AudioIntakeAgent(event_emitter, postgres, whisper_model="base")
 
@@ -204,7 +204,7 @@ print(f"Created {len(evidence_ids)} Evidence Packs (audio chunks)")
 ### Example 4: Ingest Video with Keyframe Extraction
 
 ```python
-from infrastructure.edge.oculus_prime.core.agents.video_stream_intake import VideoStreamIntakeAgent
+from vitruvyan_edge.oculus_prime.core.agents.video_stream_intake import VideoStreamIntakeAgent
 
 agent = VideoStreamIntakeAgent(event_emitter, postgres, whisper_model="base")
 
