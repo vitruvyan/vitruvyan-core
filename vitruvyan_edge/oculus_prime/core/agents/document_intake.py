@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List
 import logging
 
-from infrastructure.edge.oculus_prime.core.guardrails import IntakeGuardrails
+from vitruvyan_edge.oculus_prime.core.guardrails import IntakeGuardrails
 
 # Document processing libraries (conditional imports)
 try:

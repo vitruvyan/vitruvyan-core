@@ -25,7 +25,7 @@ from typing import Dict, Any, Optional, List, Tuple
 import logging
 import xml.etree.ElementTree as ET
 
-from infrastructure.edge.oculus_prime.core.guardrails import IntakeGuardrails
+from vitruvyan_edge.oculus_prime.core.guardrails import IntakeGuardrails
 
 # Geospatial libraries (conditional imports)
 try:

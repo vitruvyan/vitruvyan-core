@@ -30,7 +30,7 @@ from typing import Dict, Any, Optional, List, Tuple
 import logging
 from urllib.parse import urlparse, parse_qs
 
-from infrastructure.edge.oculus_prime.core.guardrails import IntakeGuardrails
+from vitruvyan_edge.oculus_prime.core.guardrails import IntakeGuardrails
 
 # Image processing (conditional imports)
 try:
