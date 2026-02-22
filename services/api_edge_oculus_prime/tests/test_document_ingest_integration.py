@@ -16,7 +16,7 @@ if str(SERVICES_DIR) not in sys.path:
 if str(CORE_DIR) not in sys.path:
     sys.path.insert(0, str(CORE_DIR))
 
-from infrastructure.edge.oculus_prime.core.agents.document_intake import DocumentIntakeAgent  # noqa: E402
+from vitruvyan_edge.oculus_prime.core.agents.document_intake import DocumentIntakeAgent  # noqa: E402
 
 
 class _FakeCursor:
