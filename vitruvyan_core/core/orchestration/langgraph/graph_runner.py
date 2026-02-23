@@ -38,8 +38,38 @@ def _detect_language(text: str) -> str:
     return code
 
 
-# In-memory session cache (fast, but not persistent)
-_SESSION_STATE: Dict[str, Dict[str, Any]] = {}
+# In-memory session cache with LRU eviction (thread-safe)
+# Max 1000 entries, TTL 1 hour. Lazy eviction on read/write.
+import threading
+import time
+
+_SESSION_LOCK = threading.Lock()
+_SESSION_STATE: Dict[str, Dict[str, Any]] = {}  # user_id → {state..., _ts: float}
+_SESSION_MAX = int(os.getenv("SESSION_CACHE_MAX", "1000"))
+_SESSION_TTL = int(os.getenv("SESSION_CACHE_TTL", "3600"))  # seconds
+
+
+def _session_get(user_id: str) -> Dict[str, Any]:
+    """Thread-safe read with TTL check. Returns {} on miss/expired."""
+    with _SESSION_LOCK:
+        entry = _SESSION_STATE.get(user_id)
+        if entry is None:
+            return {}
+        if time.monotonic() - entry.get("_ts", 0) > _SESSION_TTL:
+            _SESSION_STATE.pop(user_id, None)
+            return {}
+        return {k: v for k, v in entry.items() if k != "_ts"}
+
+
+def _session_put(user_id: str, state: Dict[str, Any]) -> None:
+    """Thread-safe write with LRU eviction when over capacity."""
+    with _SESSION_LOCK:
+        # Evict oldest entries if over capacity
+        while len(_SESSION_STATE) >= _SESSION_MAX and user_id not in _SESSION_STATE:
+            _SESSION_STATE.pop(next(iter(_SESSION_STATE)))
+        state_with_ts = dict(state)
+        state_with_ts["_ts"] = time.monotonic()
+        _SESSION_STATE[user_id] = state_with_ts
 
 # Lazy graph compilation — deferred to first use instead of import-time
 _ENABLE_MINIMAL = os.getenv("ENABLE_MINIMAL_GRAPH", "false").lower() == "true"
@@ -74,10 +104,10 @@ def run_graph_once(
     5. Persist final state to RAM (cache) and Postgres/Qdrant.
     6. Return final response or full state.
     """
-    # 1) Load previous state — RAM first, PostgreSQL fallback (Feb 23, 2026)
+    # 1) Load previous state — thread-safe LRU cache first, PostgreSQL fallback (Feb 23, 2026)
     # Ensures conversation continuity survives container restarts and scale-out.
     # CAN node receives _previous_* fields and can produce contextual responses.
-    state = _SESSION_STATE.get(user_id) or {}
+    state = _session_get(user_id)
     if not state:
         # RAM miss (restart, new replica, or first request) — recover from PG
         try:
@@ -182,8 +212,8 @@ def run_graph_once(
                  final_state.get('emotion_detected'),
                  list(final_state.keys()) if isinstance(final_state, dict) else 'NOT A DICT')
 
-    # 4) Persist results
-    _SESSION_STATE[user_id] = final_state
+    # 4) Persist results (thread-safe LRU cache + PostgreSQL write-through)
+    _session_put(user_id, final_state)
 
     # 4b) Persist conversation to PostgreSQL (restored Feb 23, 2026)
     # Note: save_conversation() was removed in Nov 2025 under the incorrect

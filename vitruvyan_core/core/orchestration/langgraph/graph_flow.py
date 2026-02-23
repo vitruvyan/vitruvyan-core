@@ -164,6 +164,9 @@ from core.orchestration.langgraph.node.advisor_node import advisor_node
 # 🧠 CAN v2 - Conversational Advisor Node (Dec 27, 2025)
 from core.orchestration.langgraph.node.can_node import can_node
 
+# ⚡ Early-exit for simple intents (greeting, farewell, thanks) — Feb 23, 2026
+from core.orchestration.langgraph.node.early_exit_node import early_exit_node, is_early_exit
+
 # Shared state — Domain-Agnostic OS Kernel
 # Inherits ~35 domain-agnostic fields from BaseGraphState (base_state.py).
 # Only graph-specific / domain-extension fields are declared below.
@@ -270,6 +273,9 @@ def build_graph():
     # 🔌 MCP Integration - Phase 4 (OpenAI Function Calling gateway)
     g.add_node("llm_mcp", llm_mcp_node)
 
+    # ⚡ Early-exit for simple intents (greeting, farewell, thanks)
+    g.add_node("early_exit", early_exit_node)
+
     # 🔌 Optional domain graph_nodes extension (experimental)
     registered_nodes = {
         "parse",
@@ -291,6 +297,7 @@ def build_graph():
         "vault",
         "codex_hunters",
         "llm_mcp",
+        "early_exit",
     }
 
     for node_name, node_handler in _graph_nodes_ext.items():
@@ -310,9 +317,20 @@ def build_graph():
     g.set_entry_point("parse")
 
     # 🧠 PHASE 2: Consolidated pipeline
-    # parse → intent_detection → weaver → entity_resolver → babel_emotion → semantic_grounding → params_extraction → decide
+    # parse → intent_detection → [early_exit_check] → weaver → ... → decide
     g.add_edge("parse", "intent_detection")
-    g.add_edge("intent_detection", "weaver") # New edge
+
+    # ⚡ Early-exit conditional: simple intents skip 14 nodes → direct END
+    g.add_conditional_edges(
+        "intent_detection",
+        lambda state: "early_exit" if is_early_exit(state) else "weaver",
+        {
+            "early_exit": "early_exit",
+            "weaver": "weaver",
+        },
+    )
+    g.add_edge("early_exit", END)
+
     g.add_edge("weaver", "entity_resolver") # New edge
     # 🎭 PHASE 2.1: Emotion detection after entity_id resolution
     g.add_edge("entity_resolver", "babel_emotion")

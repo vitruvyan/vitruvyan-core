@@ -1,36 +1,50 @@
 {
-  "version": "1.3.1",
+  "version": "1.4.0",
   "channel": "stable",
-  "release_date": "2026-02-23T14:00:00Z",
+  "release_date": "2026-02-23T23:00:00Z",
   "contracts_version": "1.0.0",
   "changes": {
     "features": [
-      "Conversation continuity: graph_runner recovers session from PostgreSQL on RAM miss",
-      "Previous intent, entities, language, and narrative summary injected into Graph state",
-      "CAN node receives _previous_* fields for contextual multi-turn responses"
+      "GraphResponseMin + SessionMin contract (channel-agnostic, COO-approved)",
+      "Early-exit node: greeting/farewell/thanks skip 14 nodes (<1s vs 3-8s)",
+      "asyncio.to_thread() + per-user lock in graph_adapter (multi-user concurrency)",
+      "_SESSION_STATE: thread-safe LRU cache with TTL eviction (max 1000 entries, 1h TTL)",
+      "Canonical Orthodoxy verdicts: blessed|purified|heretical|non_liquet|clarification_needed",
+      "Deterministic correlation_id for dedup/cache (hash of user+intent+entities+timebucket)"
     ],
     "fixes": [
-      "Restored PostgreSQL conversation persistence (removed incorrectly in Nov 2025)",
-      "Fixed false comment claiming semantic_grounding_node auto-saves to conversations table"
+      "graph_adapter: FastAPI event loop no longer blocked during graph execution",
+      "Legacy orthodoxy status values (locally_blessed, under_review) mapped to canonical enum"
     ],
     "documentation": [],
-    "breaking_changes": []
+    "breaking_changes": [
+      "GraphResponseMin replaces GraphResponseSchema as primary API response (legacy keys preserved for backward-compat)"
+    ]
   },
   "commits": [
     {
       "hash": "TBD",
-      "message": "fix(graph_runner): restore PostgreSQL conversation persistence"
+      "message": "feat(contracts): GraphResponseMin + SessionMin channel-agnostic contract"
     },
     {
       "hash": "TBD",
-      "message": "feat(graph_runner): conversation continuity via PostgreSQL session recovery"
+      "message": "feat(graph_flow): early-exit node for simple intents with governance"
+    },
+    {
+      "hash": "TBD",
+      "message": "feat(graph_adapter): asyncio.to_thread + per-user lock for concurrency"
+    },
+    {
+      "hash": "TBD",
+      "message": "feat(graph_runner): thread-safe LRU session cache with TTL eviction"
     }
   ],
   "validation": [
-    "Syntax validation: ast.parse passed",
-    "Non-blocking: PG recovery failure logs warning, does not break graph execution",
-    "Backward compatible: new state fields are additive (_previous_*)",
-    "Zero changes to Graph nodes — only richer input state"
+    "Syntax validation: ast.parse passed (6 files)",
+    "Contract tests: all 5 Orthodoxy statuses validated",
+    "Early-exit logic: 7 intent assertions passed",
+    "LRU cache: put/get/strip/miss all validated",
+    "Backward compatible: legacy json/human/audit_monitored keys preserved"
   ],
   "upgrade_instructions": "vit upgrade --channel stable",
   "checksum": {

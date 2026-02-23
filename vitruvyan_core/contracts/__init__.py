@@ -36,6 +36,12 @@ from .orchestration import (
     BaseParser,
     ParsedSlots,
 )
+from .graph_response import (
+    SessionMin,
+    GraphResponseMin,
+    OrthodoxyStatusType,
+    build_correlation_id,
+)
 from .neural_engine.data_provider import (
     IDataProvider,
     DataProviderError,
@@ -52,6 +58,11 @@ from .neural_engine.scoring_strategy import (
 __all__ = [
     # LLM
     "ILLMProvider",
+    # Graph Response Contract (channel-agnostic)
+    "SessionMin",
+    "GraphResponseMin",
+    "OrthodoxyStatusType",
+    "build_correlation_id",
     # Data Provider
     "IDataProvider",
     "DataProviderError",
