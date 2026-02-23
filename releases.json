@@ -1,78 +1,35 @@
 {
-  "version": "1.3.0",
+  "version": "1.3.1",
   "channel": "stable",
-  "release_date": "2026-02-22T19:00:00Z",
+  "release_date": "2026-02-23T14:00:00Z",
   "changes": {
     "features": [
-      "Created vitruvyan_edge/ as first-class package (multi-module container)",
-      "Extracted Oculus Prime from infrastructure/edge/ to vitruvyan_edge/oculus_prime/",
-      "Added __init__.py at all package levels (regular packages, setuptools-compatible)",
-      "Added vitruvyan_edge to pyproject.toml package discovery",
-      "New 'Edge Modules' category in MkDocs Knowledge Base navigation",
-      "MkDocs runtime visibility (compose mount + docs_root symlink)"
+      "Conversation continuity: graph_runner recovers session from PostgreSQL on RAM miss",
+      "Previous intent, entities, language, and narrative summary injected into Graph state",
+      "CAN node receives _previous_* fields for contextual multi-turn responses"
     ],
-    "fixes": [],
-    "documentation": [
-      "Created vitruvyan_edge/README.md (multi-module architecture guide)",
-      "Deprecated infrastructure/edge/README.md (deployment-only pointer)",
-      "Updated 10 documentation files with new vitruvyan_edge paths",
-      "Updated MkDocs nav (main + backup yml) for Edge Modules section",
-      "Added VITRUVYAN_EDGE_EXTRACTION_PLAN_FEB22_2026.md (9-phase migration plan)"
+    "fixes": [
+      "Restored PostgreSQL conversation persistence (removed incorrectly in Nov 2025)",
+      "Fixed false comment claiming semantic_grounding_node auto-saves to conversations table"
     ],
-    "breaking_changes": [
-      "Python imports changed: infrastructure.edge.oculus_prime → vitruvyan_edge.oculus_prime",
-      "Dockerfile COPY changed: infrastructure/edge/oculus_prime → vitruvyan_edge"
-    ]
+    "documentation": [],
+    "breaking_changes": []
   },
   "commits": [
     {
-      "hash": "803885c",
-      "message": "Merge feat/vitruvyan-edge-extraction: create vitruvyan_edge package"
+      "hash": "TBD",
+      "message": "fix(graph_runner): restore PostgreSQL conversation persistence"
     },
     {
-      "hash": "be366ed",
-      "message": "refactor(edge): complete vitruvyan_edge extraction [FINAL]"
-    },
-    {
-      "hash": "ba827d3",
-      "message": "docs(mkdocs): update edge nav and runtime path visibility"
-    },
-    {
-      "hash": "4c765ce",
-      "message": "docs(edge): update documentation for vitruvyan_edge migration"
-    },
-    {
-      "hash": "e69b100",
-      "message": "feat(packaging): add vitruvyan_edge to installable packages"
-    },
-    {
-      "hash": "fac6864",
-      "message": "refactor(edge): update Dockerfile COPY paths"
-    },
-    {
-      "hash": "cb70940",
-      "message": "refactor(edge): update test imports"
-    },
-    {
-      "hash": "28e611c",
-      "message": "refactor(edge): update service adapter imports"
-    },
-    {
-      "hash": "badb61b",
-      "message": "refactor(edge): update internal imports in vitruvyan_edge"
-    },
-    {
-      "hash": "74e723d",
-      "message": "feat(edge): create vitruvyan_edge package structure"
+      "hash": "TBD",
+      "message": "feat(graph_runner): conversation continuity via PostgreSQL session recovery"
     }
   ],
   "validation": [
-    "Test suite: 7/8 passed (identical to v1.2.2 baseline)",
-    "All vitruvyan_edge imports resolved (regular packages)",
-    "Docker build + deploy: healthy, zero errors",
-    "Zero infrastructure.edge references in runtime Python code",
-    "MkDocs navigation updated (main + backup yml)",
-    "9 atomic commits with rollback points"
+    "Syntax validation: ast.parse passed",
+    "Non-blocking: PG recovery failure logs warning, does not break graph execution",
+    "Backward compatible: new state fields are additive (_previous_*)",
+    "Zero changes to Graph nodes — only richer input state"
   ],
   "upgrade_instructions": "vit upgrade --channel stable",
   "checksum": {

@@ -74,10 +74,34 @@ def run_graph_once(
     5. Persist final state to RAM (cache) and Postgres/Qdrant.
     6. Return final response or full state.
     """
-    # 1) Load previous state (RAM cache only - VSGS handles conversation context)
-    # Phase 1 Migration (Nov 2025): Removed get_last_conversation() call
-    # Reason: semantic_grounding_node populates state["semantic_matches"] automatically
+    # 1) Load previous state — RAM first, PostgreSQL fallback (Feb 23, 2026)
+    # Ensures conversation continuity survives container restarts and scale-out.
+    # CAN node receives _previous_* fields and can produce contextual responses.
     state = _SESSION_STATE.get(user_id) or {}
+    if not state:
+        # RAM miss (restart, new replica, or first request) — recover from PG
+        try:
+            from core.agents.postgres_agent import PostgresAgent
+            pg = PostgresAgent()
+            last = pg.fetch_one(
+                "SELECT slots, intent, language FROM conversations "
+                "WHERE user_id = %s ORDER BY created_at DESC LIMIT 1",
+                (user_id,),
+            )
+            if last and last.get("slots"):
+                prev = last["slots"] if isinstance(last["slots"], dict) else json.loads(last["slots"])
+                state["_previous_intent"] = prev.get("intent")
+                state["_previous_entities"] = prev.get("entity_ids", [])
+                state["_previous_language"] = prev.get("language")
+                # Carry forward the last narrative summary (truncated for token budget)
+                can_resp = prev.get("can_response")
+                if isinstance(can_resp, dict):
+                    state["_conversation_summary"] = can_resp.get("narrative", "")[:500]
+                logger.info("[graph_runner] Session recovered from PostgreSQL for user=%s (prev_intent=%s)",
+                            user_id, state.get("_previous_intent"))
+        except Exception as e:
+            logger.warning("[graph_runner] Session recovery from PostgreSQL failed: %s", e)
+
     state["input_text"] = input_text
     state["user_id"] = user_id
     
