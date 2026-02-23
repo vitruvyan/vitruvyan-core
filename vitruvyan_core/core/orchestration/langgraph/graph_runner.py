@@ -160,19 +160,30 @@ def run_graph_once(
 
     # 4) Persist results
     _SESSION_STATE[user_id] = final_state
-    
-    # Phase 1 Migration (Nov 2025): save_conversation() removed
-    # Reason: semantic_grounding_node auto-saves to conversations + semantic_states
-    # Old code (kept as reference):
-    # try:
-    #     save_conversation(
-    #         user_id=user_id,
-    #         input_text=input_text,
-    #         slots=final_state,
-    #         intent=final_state.get("intent", "unknown")
-    #     )
-    # except Exception as e:
-    #     print(f"⚠️ [graph_runner] Failed to persist conversation: {e}")
+
+    # 4b) Persist conversation to PostgreSQL (restored Feb 23, 2026)
+    # Note: save_conversation() was removed in Nov 2025 under the incorrect
+    # assumption that semantic_grounding_node auto-saves to the conversations
+    # table. In reality, VSGS only writes to Qdrant (semantic_states), not PG.
+    # This restores relational persistence for multi-user production readiness.
+    try:
+        from core.agents.postgres_agent import PostgresAgent
+        pg = PostgresAgent()
+        pg.execute(
+            "INSERT INTO conversations (user_id, input_text, slots, intent, language) "
+            "VALUES (%s, %s, %s, %s, %s)",
+            (
+                user_id,
+                input_text,
+                json.dumps(final_state, default=str),
+                final_state.get("intent", "unknown"),
+                final_state.get("language", "en"),
+            ),
+        )
+        logger.info("[graph_runner] Conversation persisted to PostgreSQL (user=%s, intent=%s)",
+                     user_id, final_state.get("intent"))
+    except Exception as e:
+        logger.warning("[graph_runner] Failed to persist conversation to PostgreSQL: %s", e)
 
     # 5) Return final result
     if return_full:
