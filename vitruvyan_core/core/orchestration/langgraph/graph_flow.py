@@ -458,17 +458,42 @@ def build_graph():
     g.add_edge("vault", "compose")
     g.add_edge("compose", "can")
     
-    # 🧠 CAN v2 → Advisor (conditional: only if user_requests_action=True or can_mode='urgent')
-    g.add_conditional_edges(
-        "can",
-        lambda state: "advisor" if (state.get("user_requests_action", False) or state.get("can_mode") == "urgent") else END,
-        {
-            "advisor": "advisor",
-            END: END,
-        }
-    )
-    
-    g.add_edge("advisor", END)
+    # 🧠 CAN v2 → Advisor / post-pipeline enrichment
+    # If domain edges declare a node sourced from 'advisor' (e.g. proactive_suggestions),
+    # that node replaces the default advisor → END terminal edge, and the can fallback
+    # routes to it instead of END.
+    _post_advisor_node = None
+    for _edge in _graph_edges_ext:
+        if isinstance(_edge, (list, tuple)) and len(_edge) == 2:
+            _src, _tgt = _edge
+            if _src == "advisor" and _tgt != "END" and _tgt in registered_nodes:
+                _post_advisor_node = _tgt
+                break
+
+    if _post_advisor_node:
+        # Domain provides post-pipeline enrichment (e.g. finance: proactive_suggestions)
+        # advisor → _post_advisor_node edge is already added by domain edge loop above
+        # _post_advisor_node → END edge is already added by domain edge loop above
+        _pan = _post_advisor_node  # capture for lambda default arg
+        g.add_conditional_edges(
+            "can",
+            lambda state, _fallback=_pan: "advisor" if (
+                state.get("user_requests_action", False)
+                or state.get("can_mode") == "urgent"
+            ) else _fallback,
+            {"advisor": "advisor", _pan: _pan},
+        )
+    else:
+        # Default: no post-pipeline enrichment
+        g.add_conditional_edges(
+            "can",
+            lambda state: "advisor" if (
+                state.get("user_requests_action", False)
+                or state.get("can_mode") == "urgent"
+            ) else END,
+            {"advisor": "advisor", END: END},
+        )
+        g.add_edge("advisor", END)
     
     # ❌ REMOVED (Dec 27, 2025): Direct edge codex_hunters → END
     # This was overriding the conditional edges above.
