@@ -137,6 +137,21 @@ Poi:
 2. riavvia `api_graph`.
 3. verifica logs: niente fallback generic non attesi.
 
+## Integrazione Early-Exit (v1.4.0)
+
+Da v1.4.0, `graph_flow.py` include un **edge condizionale** dopo `intent_detection`:
+
+- Se `is_early_exit(state)` restituisce True, il grafo ruota su `early_exit` → `END`, bypassando 14 nodi a valle.
+- **Intent di default**: `greeting`, `farewell`, `thanks`, `chit_chat`, `smalltalk`, `goodbye`, `gratitude`.
+- **Override dominio**: imposta la env var `EARLY_EXIT_INTENTS` (separati da virgola) per personalizzare quali intent prendono il fast path.
+
+**Implicazioni per i verticali**:
+- I plugin di dominio registrati via `INTENT_DOMAIN` producono nomi di intent. Se il dominio definisce intent conversazionali custom, aggiungili a `EARLY_EXIT_INTENTS`.
+- Il nodo `early_exit` è un nodo core (domain-agnostic). Usa `LLMAgent` per generare la risposta e imposta `orthodoxy_status=blessed`.
+- Route hook, entity resolver e execution handler NON vengono invocati sul percorso early-exit.
+
+**Contratto di risposta**: Tutte le risposte (incluso early-exit) vengono restituite come `GraphResponseMin` (`vitruvyan_core/contracts/graph_response.py`), fornendo `human` + `follow_ups` + `session_min` channel-agnostic.
+
 ## Stato GraphPlugin
 
 `graph_plugin.py` esiste come pattern (esempio finance), ma nel `graph_flow.py` corrente non c'e un auto-loader globale del contratto `GraphPlugin` completo.
