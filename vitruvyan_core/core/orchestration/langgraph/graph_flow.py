@@ -54,10 +54,9 @@ else:
     _intent_mod.configure(_intent_reg)
 
 # Configure route_node with registry-driven intent routing (domain-agnostic)
-_route_mod.configure(
-    exec_intents=_intent_reg.get_exec_intent_names(),
-    soft_intents=_intent_reg.get_soft_intent_names(),
-)
+# NOTE: route_node.configure() is called AFTER _graph_routes_ext is loaded
+# so that direct_routes from domain extension are available.
+# See below, after _load_domain_graph_extension().
 
 # 🔍 Configure EntityResolverRegistry (domain plugin pattern — dynamic import)
 _ENTITY_DOMAIN = _os.getenv("ENTITY_DOMAIN", _INTENT_DOMAIN)
@@ -129,6 +128,15 @@ def _load_domain_graph_extension(domain: str):
 
 
 _graph_nodes_ext, _graph_edges_ext, _graph_routes_ext = _load_domain_graph_extension(_GRAPH_DOMAIN)
+
+# Configure route_node AFTER domain graph extension is loaded
+# so that direct_routes (intent → route_value) are available.
+_direct_routes = {route_key: route_key for route_key in _graph_routes_ext.keys()}
+_route_mod.configure(
+    exec_intents=_intent_reg.get_exec_intent_names(),
+    soft_intents=_intent_reg.get_soft_intent_names(),
+    direct_routes=_direct_routes if _direct_routes else None,
+)
 
 # 🔍 PHASE 2.2 - Quality Check (REMOVED)
 

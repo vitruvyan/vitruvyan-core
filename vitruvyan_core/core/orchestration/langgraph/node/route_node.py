@@ -31,9 +31,14 @@ logger = logging.getLogger(__name__)
 # Module-level configuration (set by graph_flow.py at boot)
 _exec_intents: List[str] = []
 _soft_intents: List[str] = ["soft"]
+_direct_routes: Dict[str, str] = {}  # intent → route value (domain-specific)
 
 
-def configure(exec_intents: List[str] = None, soft_intents: List[str] = None) -> None:
+def configure(
+    exec_intents: List[str] = None,
+    soft_intents: List[str] = None,
+    direct_routes: Dict[str, str] = None,
+) -> None:
     """
     Configure routing intent lists from IntentRegistry.
     Called by graph_flow.py during graph construction.
@@ -41,13 +46,20 @@ def configure(exec_intents: List[str] = None, soft_intents: List[str] = None) ->
     Args:
         exec_intents: Intent names that route to dispatcher_exec
         soft_intents: Intent names that route to llm_soft
+        direct_routes: Dict mapping intent name → route value
+                       (domain-specific, e.g., shadow_buy → shadow_buy)
     """
-    global _exec_intents, _soft_intents
+    global _exec_intents, _soft_intents, _direct_routes
     if exec_intents is not None:
         _exec_intents = exec_intents
     if soft_intents is not None:
         _soft_intents = soft_intents
-    logger.info(f"[ROUTE_NODE] Configured: exec_intents={_exec_intents}, soft_intents={_soft_intents}")
+    if direct_routes is not None:
+        _direct_routes = direct_routes
+    logger.info(
+        f"[ROUTE_NODE] Configured: exec_intents={_exec_intents}, "
+        f"soft_intents={_soft_intents}, direct_routes={list(_direct_routes.keys())}"
+    )
 
 
 def route_node(state: dict) -> dict:
@@ -70,6 +82,12 @@ def route_node(state: dict) -> dict:
 
     intent = state.get("intent", "unknown")
     proposed_exec = state.get("proposed_exec")
+
+    # Priority 0.5: Direct routes (domain-specific, e.g., shadow_buy)
+    if intent in _direct_routes:
+        state["route"] = _direct_routes[intent]
+        logger.info(f"[ROUTE_NODE] intent '{intent}' → {_direct_routes[intent]} (direct route)")
+        return state
 
     if proposed_exec:
         state["route"] = "dispatcher_exec"
