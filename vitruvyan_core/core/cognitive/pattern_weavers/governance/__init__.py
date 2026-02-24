@@ -13,4 +13,18 @@ Sacred Laws (from philosophy/charter.md):
 4. Explainability: Every match includes similarity score + match type
 """
 
+from .semantic_plugin import (
+    GenericSemanticPlugin,
+    SemanticPluginRegistry,
+    get_plugin_registry,
+    register_semantic_plugin,
+)
+
+__all__ = [
+    "GenericSemanticPlugin",
+    "SemanticPluginRegistry",
+    "get_plugin_registry",
+    "register_semantic_plugin",
+]
+
 __all__ = []

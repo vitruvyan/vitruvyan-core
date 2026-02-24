@@ -7,6 +7,7 @@ All business logic is in LIVELLO 1 consumers via adapters.
 """
 
 import logging
+import os
 import time
 import uuid
 from typing import Any, Dict
@@ -161,3 +162,55 @@ async def keyword_match(request: WeaveRequest) -> Dict[str, Any]:
         "matches": result.data.get("matches", []),
         "method": "keyword",
     }
+
+
+# =============================================================================
+# v3 — Semantic Compilation Endpoint
+# =============================================================================
+
+_COMPILE_ENABLED = os.getenv("PATTERN_WEAVERS_V3", "0") == "1"
+
+
+@router.post("/compile")
+async def compile_ontology(request: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Semantic compilation: query → OntologyPayload via LLM.
+
+    Feature flag: PATTERN_WEAVERS_V3=1 (off by default).
+
+    Flow:
+    1. Select domain plugin (auto-detect or explicit)
+    2. Call LLM with domain system prompt
+    3. Parse response into OntologyPayload (strict schema)
+    4. Domain plugin validation
+    5. Return CompileResponse
+    """
+    if not _COMPILE_ENABLED:
+        raise HTTPException(
+            status_code=404,
+            detail="Compile endpoint disabled. Set PATTERN_WEAVERS_V3=1 to enable.",
+        )
+
+    from ..adapters.llm_compiler import get_compiler_adapter
+
+    try:
+        from contracts.pattern_weavers import CompileRequest
+    except ModuleNotFoundError:
+        from vitruvyan_core.contracts.pattern_weavers import CompileRequest
+
+    try:
+        compile_req = CompileRequest(
+            query=request.get("query", ""),
+            user_id=request.get("user_id", "anonymous"),
+            language=request.get("language", "auto"),
+            domain=request.get("domain", "auto"),
+            context=request.get("context", {}),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+    adapter = get_compiler_adapter()
+    response = adapter.compile(compile_req)
+
+    return response.model_dump()
+

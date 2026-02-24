@@ -53,6 +53,15 @@ from .consumers import (
     ProcessResult,
     WeaverConsumer,
     KeywordMatcherConsumer,
+    LLMCompilerConsumer,
+)
+
+# Governance layer (v3 plugin system)
+from .governance import (
+    GenericSemanticPlugin,
+    SemanticPluginRegistry,
+    get_plugin_registry,
+    register_semantic_plugin,
 )
 
 # Events
@@ -95,6 +104,12 @@ __all__ = [
     "ProcessResult",
     "WeaverConsumer",
     "KeywordMatcherConsumer",
+    "LLMCompilerConsumer",
+    # Governance / Plugin System (v3)
+    "GenericSemanticPlugin",
+    "SemanticPluginRegistry",
+    "get_plugin_registry",
+    "register_semantic_plugin",
     # Events
     "Channels",
     "EventEnvelope",

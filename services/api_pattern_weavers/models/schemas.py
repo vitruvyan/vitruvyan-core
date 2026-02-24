@@ -86,3 +86,26 @@ class ErrorResponse(BaseModel):
     error: str
     detail: Optional[str] = None
     request_id: Optional[str] = None
+
+
+# =============================================================================
+# Compile API Models (v3 — Semantic Compilation)
+# =============================================================================
+
+class CompileRequest(BaseModel):
+    """Request to compile a query into structured ontology."""
+
+    query: str = Field(..., min_length=1, description="User query text")
+    user_id: str = Field("anonymous", description="User identifier")
+    language: str = Field("auto", description="ISO 639-1 language hint or 'auto'")
+    domain: str = Field("auto", description="Domain hint: 'auto', 'generic', 'finance', etc.")
+    context: Dict[str, Any] = Field(default_factory=dict, description="Additional context")
+
+
+class CompileResponse(BaseModel):
+    """Result of semantic compilation."""
+
+    request_id: str = Field(..., description="Unique request ID")
+    payload: Dict[str, Any] = Field(..., description="OntologyPayload dict")
+    fallback_used: bool = Field(False, description="Whether LLM fallback was used")
+    processing_time_ms: float = Field(0.0)

@@ -170,8 +170,14 @@ from core.orchestration.langgraph.node.llm_mcp_node import llm_mcp_node
 # 🧠 VSGS (Vitruvyan Semantic Grounding System) - PR-A Bootstrap
 from core.orchestration.langgraph.node.semantic_grounding_node import semantic_grounding_node
 
-# Pattern Weavers - Semantic enrichment (v2 — HTTP adapter)
-from core.orchestration.langgraph.node.pattern_weavers_node import pattern_weavers_node as weaver_node
+# Pattern Weavers - Semantic enrichment
+# v3 (PATTERN_WEAVERS_V3=1): LLM-based semantic compilation → OntologyPayload
+# v2 (default): Embedding-based taxonomy matching via /weave
+import os as _os
+if _os.getenv("PATTERN_WEAVERS_V3", "0") == "1":
+    from core.orchestration.langgraph.node.pw_compile_node import pw_compile_node as weaver_node
+else:
+    from core.orchestration.langgraph.node.pattern_weavers_node import pattern_weavers_node as weaver_node
 
 # 🎯 Advisor Node - Decision-making layer (Dec 27, 2025)
 from core.orchestration.langgraph.node.advisor_node import advisor_node
@@ -188,6 +194,9 @@ from core.orchestration.langgraph.node.early_exit_node import early_exit_node, i
 class GraphState(BaseGraphState, total=False):
     # ── Additional core fields (not in BaseGraphState) ──
     raw_output: Optional[Dict[str, Any]]
+
+    # ── Pattern Weavers v3 — Semantic Compilation (Feb 24, 2026) ──
+    ontology_payload: Optional[Dict[str, Any]]  # OntologyPayload from /compile (v3)
 
     # ── Domain-agnostic entity/signal fields ──
     entities: Optional[List[Dict[str, Any]]]  # Generic entities (id, type, attributes)

@@ -16,6 +16,7 @@ Base:
 from .base import BaseConsumer, ProcessResult
 from .weaver import WeaverConsumer
 from .keyword_matcher import KeywordMatcherConsumer
+from .llm_compiler import LLMCompilerConsumer
 
 
 __all__ = [
@@ -23,4 +24,5 @@ __all__ = [
     "ProcessResult",
     "WeaverConsumer",
     "KeywordMatcherConsumer",
+    "LLMCompilerConsumer",
 ]

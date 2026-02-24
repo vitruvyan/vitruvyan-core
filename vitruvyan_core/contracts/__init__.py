@@ -54,6 +54,15 @@ from .neural_engine.scoring_strategy import (
     InvalidProfileError,
     InvalidWeightsError,
 )
+from .pattern_weavers import (
+    GateVerdict,
+    DomainGate,
+    OntologyEntity,
+    OntologyPayload,
+    CompileRequest,
+    CompileResponse,
+    ISemanticPlugin,
+)
 
 __all__ = [
     # LLM
@@ -95,4 +104,12 @@ __all__ = [
     "ScoringStrategyError",
     "InvalidProfileError",
     "InvalidWeightsError",
+    # Pattern Weavers v3
+    "GateVerdict",
+    "DomainGate",
+    "OntologyEntity",
+    "OntologyPayload",
+    "CompileRequest",
+    "CompileResponse",
+    "ISemanticPlugin",
 ]
