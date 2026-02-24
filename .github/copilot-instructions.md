@@ -1,4 +1,5 @@
 # Copilot Instructions — Vitruvyan OS (`vitruvyan-core`)
+> **Last updated**: Feb 21, 2026 15:30 UTC
 *Domain-agnostic epistemic operating system. Finance/trading terms in this repo are legacy from an upstream implementation and should be treated as **examples**, not as the repo’s identity.*
 
 ---
@@ -123,9 +124,31 @@ services/api_<order>/
 
 **All Sacred Orders (both LIVELLO 1 and LIVELLO 2) MUST have comprehensive documentation for developer onboarding.**
 
+#### File Versioning Standards (MANDATORY for ALL files)
+
+**ALL files (code, documentation, configuration) MUST include a versioning timestamp for change tracking.**
+
+**Format by file type**:
+
+- **Markdown files** (`.md`): `> **Last updated**: Feb 21, 2026 15:30 UTC` (first line after H1 title)
+- **Python files** (`.py`): `# Last updated: Feb 21, 2026 15:30 UTC` (first or second line, after shebang if present)
+- **TypeScript/JavaScript** (`.ts`, `.js`, `.tsx`, `.jsx`): `// Last updated: Feb 21, 2026 15:30 UTC` (first line or after imports block header comment)
+- **YAML/JSON** (`.yaml`, `.yml`, `.json`): `# Last updated: Feb 21, 2026 15:30 UTC` (first line, JSON as comment in header if applicable)
+- **Dockerfile**: `# Last updated: Feb 21, 2026 15:30 UTC` (after FROM statement)
+- **Shell scripts** (`.sh`): `# Last updated: Feb 21, 2026 15:30 UTC` (second line, after shebang)
+- **CSS/SCSS** (`.css`, `.scss`): `/* Last updated: Feb 21, 2026 15:30 UTC */` (first line)
+- **HTML** (`.html`): `<!-- Last updated: Feb 21, 2026 15:30 UTC -->` (after DOCTYPE or in head)
+
+**Rules**:
+- **Format**: `<comment-syntax> Last updated: <date> <time> UTC`
+- **Date format**: `Feb 21, 2026 15:30 UTC` (abbreviated month, day, year, 24h time, UTC timezone)
+- **Update requirement**: MUST update timestamp on EVERY edit (automated or manual)
+- **Placement**: Near file header (after shebang/imports/docstring where applicable)
+- **Purpose**: Precise file-level versioning, change tracking, audit trail
+
 #### README.md Requirements
 - **Location**: Root of each Sacred Order module (`vitruvyan_core/core/governance/<order>/` and `services/api_<order>/`)
-- **Versioning**: Every .md file (README, documentation, planning docs) **MUST** include `> **Last updated**: <date> <time>` (format: `Feb 17, 2026 14:30 UTC`) as the first line after the title (H1). Update this timestamp on every edit for precise versioning.
+- **Versioning**: MUST include `> **Last updated**: <date> <time> UTC` as first line after H1 title (see File Versioning Standards above)
 - **Content**: 
   - Module purpose and domain responsibility
   - Quick start (code examples)

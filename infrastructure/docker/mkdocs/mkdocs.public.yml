@@ -77,10 +77,10 @@ nav:
   - Home: index.md
 
 extra_css:
-  - assets/kb/material_v1.css?v=20260219m
+  - assets/kb/material_v1.css?v=20260224g
 
 extra_javascript:
-  - assets/kb/vitruvyan.js?v=20260219k
+  - assets/kb/vitruvyan.js?v=20260224b
 
 # Copyright
 copyright: Copyright &copy; 2026 Vitruvyan Team
