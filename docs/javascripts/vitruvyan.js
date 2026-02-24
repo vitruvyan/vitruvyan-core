@@ -600,8 +600,19 @@
   function setupMaterialMegaMenu() {
     const tabs = document.querySelector(".md-tabs");
     const tabsList = tabs?.querySelector(".md-tabs__list");
-    const primaryList = document.querySelector(".md-nav--primary > .md-nav__list");
+    const primaryList =
+      document.querySelector(".md-nav--primary > .md-nav__list") ||
+      document.querySelector(".md-sidebar--primary .md-nav__list");
     if (!tabs || !tabsList || !primaryList) return;
+
+    // Keep mega-menu typography aligned with the actual tab typography
+    // from the active Material theme.
+    const tabSample = tabsList.querySelector(":scope > .md-tabs__item > .md-tabs__link");
+    if (tabSample) {
+      const computed = window.getComputedStyle(tabSample);
+      document.documentElement.style.setProperty("--kb-tabs-font-size", computed.fontSize);
+      document.documentElement.style.setProperty("--kb-tabs-font-family", computed.fontFamily);
+    }
 
     const normalize = (label) => (label || "").toLowerCase().replace(/\s+/g, " ").trim();
     const descriptionMap = [

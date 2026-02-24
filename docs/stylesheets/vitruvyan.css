@@ -375,7 +375,10 @@ a#component-site-name:hover {
 }
 
 .md-tabs__list {
-  justify-content: center;
+  justify-content: flex-start;
+  margin-left: 0;
+  margin-inline-start: 0;
+  margin-inline-end: auto;
 }
 
 .md-tabs__link {
