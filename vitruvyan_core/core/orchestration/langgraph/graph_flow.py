@@ -131,7 +131,14 @@ _graph_nodes_ext, _graph_edges_ext, _graph_routes_ext = _load_domain_graph_exten
 
 # Configure route_node AFTER domain graph extension is loaded
 # so that direct_routes (intent → route_value) are available.
-_direct_routes = {route_key: route_key for route_key in _graph_routes_ext.keys()}
+# Exclude route overrides (e.g. "dispatcher_exec") — those are resolved by
+# _decide_route_targets, not by intent matching in route_node.
+_ROUTE_OVERRIDES = {"dispatcher_exec", "llm_soft", "semantic_fallback", "slot_filler"}
+_direct_routes = {
+    route_key: route_key
+    for route_key in _graph_routes_ext.keys()
+    if route_key not in _ROUTE_OVERRIDES
+}
 _route_mod.configure(
     exec_intents=_intent_reg.get_exec_intent_names(),
     soft_intents=_intent_reg.get_soft_intent_names(),
