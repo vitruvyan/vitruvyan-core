@@ -201,26 +201,29 @@ class MemoryPersistence:
     
     def check_babel_gardens_health(self) -> ComponentHealth:
         """Check Babel Gardens health."""
-        try:
-            response = httpx.get(
-                f"{settings.BABEL_GARDENS_URL}/sacred-health",
-                timeout=5.0
-            )
-            response.raise_for_status()
-            
-            return ComponentHealth(
-                component="babel_gardens",
-                status="healthy",
-                metrics=(("url", settings.BABEL_GARDENS_URL),),
-                error=None
-            )
-        except Exception as e:
-            return ComponentHealth(
-                component="babel_gardens",
-                status="unhealthy",
-                metrics=(),
-                error=str(e)
-            )
+        # Prefer canonical /health, fallback to legacy /sacred-health.
+        for suffix in ("/health", "/sacred-health"):
+            try:
+                response = httpx.get(
+                    f"{settings.BABEL_GARDENS_URL}{suffix}",
+                    timeout=5.0
+                )
+                response.raise_for_status()
+                return ComponentHealth(
+                    component="babel_gardens",
+                    status="healthy",
+                    metrics=(("url", settings.BABEL_GARDENS_URL), ("endpoint", suffix)),
+                    error=None
+                )
+            except Exception:
+                continue
+
+        return ComponentHealth(
+            component="babel_gardens",
+            status="unhealthy",
+            metrics=(),
+            error=f"Health endpoints unreachable at {settings.BABEL_GARDENS_URL}"
+        )
     
     def check_redis_health(self) -> ComponentHealth:
         """Check Redis connection."""

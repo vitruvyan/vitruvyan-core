@@ -131,19 +131,50 @@ async def _process_linguistic_event(
         results["sentiment_error"] = str(e)
 
     # ── Emit completion event ──
+    completed_payload = {
+        "entity_id": entity_id,
+        "source_channel": channel,
+        "emotion": results.get("emotion"),
+        "sentiment": results.get("sentiment"),
+    }
     try:
         bus.emit(
             channel="babel.linguistic.completed",
-            payload={
-                "entity_id": entity_id,
-                "source_channel": channel,
-                "emotion": results.get("emotion"),
-                "sentiment": results.get("sentiment"),
-            },
+            payload=completed_payload,
             emitter="babel_gardens.listener",
         )
     except Exception as e:
         logger.warning("🌿 Failed to emit babel.linguistic.completed: %s", e)
+
+    # ── Bridge to Pattern Weavers for ontological classification ──
+    # PW listener consumes pattern.weave.request and performs Qdrant
+    # semantic search + taxonomy matching on the ingested entity.
+    if text:
+        try:
+            emotion_label = (results.get("emotion") or {}).get("emotion", "neutral")
+            sentiment_label = (results.get("sentiment") or {}).get("label", "neutral")
+            bus.emit(
+                channel="pattern.weave.request",
+                payload={
+                    "text": text[:4000],
+                    "entity_id": entity_id,
+                    "source_channel": channel,
+                    "context": {
+                        "emotion": emotion_label,
+                        "sentiment": sentiment_label,
+                        "pipeline": "ingestion",
+                    },
+                    "limit": 10,
+                    "threshold": 0.35,
+                },
+                emitter="babel_gardens.listener",
+            )
+            logger.info(
+                "🌿→🕸️ bridged entity=%s to pattern.weave.request (emotion=%s sentiment=%s)",
+                entity_id, emotion_label, sentiment_label,
+            )
+        except Exception as e:
+            logger.warning("🌿 Failed to emit pattern.weave.request for %s: %s", entity_id, e)
 
 
 async def _process_comprehension_event(

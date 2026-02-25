@@ -113,6 +113,13 @@ def _emit_success(
     response_payload = dict(result)
     response_payload["request_id"] = request_id
 
+    # Ensure matches are plain dicts (PatternMatch → dict)
+    raw_matches = response_payload.get("matches", [])
+    response_payload["matches"] = [
+        m.model_dump() if hasattr(m, "model_dump") else (m.dict() if hasattr(m, "dict") else m)
+        for m in raw_matches
+    ]
+
     metadata = response_payload.get("metadata")
     if not isinstance(metadata, dict):
         metadata = {}

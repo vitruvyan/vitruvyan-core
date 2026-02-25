@@ -559,6 +559,9 @@ services:
       - QDRANT_URL=${QDRANT_URL:-http://mercator_qdrant:6333}
       # Embedding Service
       - EMBEDDING_SERVICE_URL=http://embedding:8010/embed
+      - EMBEDDING_API_URL=http://embedding:8010
+      # Babel Gardens
+      - BABEL_GARDENS_URL=http://babel_gardens:8009
       # Memory config
       - MEMORY_API_HOST=0.0.0.0
       - MEMORY_API_PORT=8016
@@ -612,6 +615,7 @@ services:
       - QDRANT_URL=${QDRANT_URL:-http://mercator_qdrant:6333}
       # Embedding Service
       - EMBEDDING_SERVICE_URL=http://embedding:8010/embed
+      - EMBEDDING_API_URL=http://embedding:8010
       # Babel Gardens
       - BABEL_GARDENS_URL=http://babel_gardens:8009
       # Config
@@ -702,6 +706,8 @@ services:
       # Embedding Service
       - EMBEDDING_URL=http://embedding:8010
       - EMBEDDING_ENDPOINT=/v1/embeddings/create
+      # Qdrant collection for semantic search
+      - PATTERN_COLLECTION=entity_embeddings
       # Vertical activation
       - PATTERN_DOMAIN=finance
       - PATTERN_TAXONOMY_PATH=/app/vitruvyan_core/domains/finance/pattern_weavers/taxonomy_finance.yaml
@@ -745,6 +751,8 @@ services:
       # Embedding Service
       - EMBEDDING_URL=http://embedding:8010
       - EMBEDDING_ENDPOINT=/v1/embeddings/create
+      # Qdrant collection for semantic search
+      - PATTERN_COLLECTION=entity_embeddings
       # Vertical activation
       - PATTERN_DOMAIN=finance
       - PATTERN_TAXONOMY_PATH=/app/vitruvyan_core/domains/finance/pattern_weavers/taxonomy_finance.yaml
