@@ -2,9 +2,8 @@
 """
 BaseComposer ABC for domain-agnostic response composition.
 
-This coordinates ResponseFormatter and SlotFiller from the domain plugin
+This coordinates ResponseFormatter from the domain plugin
 to produce the final response, while handling generic concerns like:
-- Slot merging
 - Conversational routing
 - Language detection
 - UX metadata
@@ -20,11 +19,7 @@ from core.orchestration.compose.response_formatter import (
     ConversationType,
     GenericResponseFormatter,
 )
-from core.orchestration.compose.slot_filler import (
-    SlotFiller,
-    SlotBundle,
-    GenericSlotFiller,
-)
+from core.orchestration.compose.slot_filler import SlotFiller
 
 if TYPE_CHECKING:
     from core.orchestration.graph_engine import GraphPlugin
@@ -39,13 +34,13 @@ class ComposerResult:
     combining generic response fields with domain-specific data.
     """
     # Response action
-    action: str = "answer"  # "answer", "clarify", "info", "error"
+    action: str = "answer"  # "answer", "info", "error"
     
     # Core response fields
     narrative: str = ""
     conversation_type: str = "conversational"
     
-    # Slot-filling fields
+    # Legacy compatibility fields (slot filling removed from core flow)
     needed_slots: List[str] = field(default_factory=list)
     questions: List[str] = field(default_factory=list)
     
@@ -101,16 +96,14 @@ class BaseComposer(ABC):
     """
     Base class for response composition.
     
-    Coordinates between domain-specific ResponseFormatter and SlotFiller
+    Coordinates between domain-specific ResponseFormatter
     while handling generic concerns (language, emotion, UX).
     
     The composition pipeline:
-    1. Merge slots from state
-    2. Check for slot-filling needs (via SlotFiller)
-    3. Handle conversational routing (non-entity queries)
-    4. Detect conversation type (via ResponseFormatter)
-    5. Format response (via ResponseFormatter)
-    6. Inject UX metadata
+    1. Handle conversational routing (non-entity queries)
+    2. Detect conversation type (via ResponseFormatter)
+    3. Format response (via ResponseFormatter)
+    4. Inject UX metadata
     
     Subclasses can override individual steps while using the base flow.
     """
@@ -125,10 +118,10 @@ class BaseComposer(ABC):
         
         Args:
             response_formatter: Domain-specific response formatter
-            slot_filler: Domain-specific slot filler
+            slot_filler: Deprecated. Ignored in LLM-first core flow.
         """
         self.response_formatter = response_formatter or GenericResponseFormatter()
-        self.slot_filler = slot_filler or GenericSlotFiller()
+        self.slot_filler = slot_filler
     
     @classmethod
     def from_plugin(cls, plugin: "GraphPlugin") -> "BaseComposer":
@@ -141,16 +134,13 @@ class BaseComposer(ABC):
         Returns:
             Configured BaseComposer (or subclass)
         """
-        # Try to get formatter and filler from plugin
+        # Try to get formatter from plugin.
         formatter = None
-        filler = None
         
         if hasattr(plugin, "get_response_formatter"):
             formatter = plugin.get_response_formatter()
-        if hasattr(plugin, "get_slot_filler"):
-            filler = plugin.get_slot_filler()
         
-        return cls(response_formatter=formatter, slot_filler=filler)
+        return cls(response_formatter=formatter)
     
     def compose(
         self,
@@ -170,23 +160,14 @@ class BaseComposer(ABC):
         # Extract common fields
         language = self._get_language(state)
         entity_ids = state.get("entity_ids", [])
-        intent = state.get("intent", "")
         user_id = state.get("user_id")
-        
-        # 1. Merge slots
-        merged_slots = self._merge_slots(state)
-        
-        # 2. Check for missing slots
-        missing_slots = self.slot_filler.check_missing_slots(merged_slots, intent)
-        if missing_slots:
-            return self._compose_slot_filling(missing_slots, language, state, user_id)
-        
-        # 3. Detect conversation type
+
+        # 1. Detect conversation type
         conversation_type = self.response_formatter.detect_conversation_type(
             state, raw_output
         )
         
-        # 4. Format based on conversation type
+        # 2. Format based on conversation type
         formatted = self._format_by_type(
             conversation_type,
             entity_ids,
@@ -195,7 +176,7 @@ class BaseComposer(ABC):
             state,
         )
         
-        # 5. Build result with UX metadata
+        # 3. Build result with UX metadata
         return self._build_result(
             formatted,
             state,
@@ -204,15 +185,6 @@ class BaseComposer(ABC):
             raw_output,
         )
     
-    def _merge_slots(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Merge slots from various state fields.
-        
-        Override this to customize slot merging for your domain.
-        """
-        slots = state.get("slots", {})
-        return {**slots}
-    
     def _get_language(self, state: Dict[str, Any]) -> str:
         """
         Get the language from state.
@@ -220,35 +192,6 @@ class BaseComposer(ABC):
         Defaults to English if not set.
         """
         return state.get("detected_language") or state.get("language") or "en"
-    
-    def _compose_slot_filling(
-        self,
-        missing_slots: List[str],
-        language: str,
-        state: Dict[str, Any],
-        user_id: Optional[str],
-    ) -> ComposerResult:
-        """
-        Compose a slot-filling response.
-        """
-        bundle = self.slot_filler.generate_bundled_questions(
-            missing_slots, language, state
-        )
-        
-        return ComposerResult(
-            action="clarify",
-            narrative=bundle.bundled_question,
-            conversation_type=ConversationType.SLOT_FILLING.value,
-            needed_slots=missing_slots,
-            questions=[bundle.bundled_question],
-            semantic_fallback=True,
-            explainability={
-                "simple": f"Missing slots: {', '.join(missing_slots)}",
-                "technical": f"Slot filling for intent: {state.get('intent')}",
-                "detailed": bundle.chain_of_thought or "",
-            },
-            user_id=user_id,
-        )
     
     def _format_by_type(
         self,
@@ -363,13 +306,10 @@ class BaseComposer(ABC):
 
 class GenericComposer(BaseComposer):
     """
-    Generic composer using GenericResponseFormatter and GenericSlotFiller.
+    Generic composer using GenericResponseFormatter.
     
     Used when no domain plugin is registered.
     """
     
     def __init__(self):
-        super().__init__(
-            response_formatter=GenericResponseFormatter(),
-            slot_filler=GenericSlotFiller(),
-        )
+        super().__init__(response_formatter=GenericResponseFormatter())

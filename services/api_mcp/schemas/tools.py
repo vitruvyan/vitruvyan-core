@@ -1,7 +1,12 @@
 # services/api_mcp/schemas/tools.py
 """OpenAI Function Calling compatible tool schemas."""
 
-TOOL_SCHEMAS = [
+from __future__ import annotations
+
+from config import get_config
+
+
+_GENERIC_TOOL_SCHEMAS = [
     {
         "type": "function",
         "function": {
@@ -15,18 +20,18 @@ TOOL_SCHEMAS = [
                         "items": {"type": "string"},
                         "description": "List of entity identifiers (e.g., ['entity_1', 'entity_2']). Max 10 entities per call. Entity type is deployment-configured.",
                         "minItems": 1,
-                        "maxItems": 10
+                        "maxItems": 10,
                     },
                     "profile": {
                         "type": "string",
                         "enum": ["balanced", "aggressive", "conservative", "custom"],
                         "description": "Scoring profile (factor weighting strategy). Default: balanced. Profiles are deployment-configured.",
-                        "default": "balanced"
-                    }
+                        "default": "balanced",
+                    },
                 },
-                "required": ["entity_ids"]
-            }
-        }
+                "required": ["entity_ids"],
+            },
+        },
     },
     {
         "type": "function",
@@ -38,18 +43,18 @@ TOOL_SCHEMAS = [
                 "properties": {
                     "entity_id": {
                         "type": "string",
-                        "description": "Entity identifier (e.g., 'entity_1'). Entity type is deployment-configured."
+                        "description": "Entity identifier (e.g., 'entity_1'). Entity type is deployment-configured.",
                     },
                     "language": {
                         "type": "string",
                         "enum": ["it", "en"],
                         "description": "Output language. Default: it",
-                        "default": "it"
-                    }
+                        "default": "it",
+                    },
                 },
-                "required": ["entity_id"]
-            }
-        }
+                "required": ["entity_id"],
+            },
+        },
     },
     {
         "type": "function",
@@ -61,24 +66,24 @@ TOOL_SCHEMAS = [
                 "properties": {
                     "entity_id": {
                         "type": "string",
-                        "description": "Entity identifier (e.g., 'entity_1'). Entity type is deployment-configured."
+                        "description": "Entity identifier (e.g., 'entity_1'). Entity type is deployment-configured.",
                     },
                     "time_window": {
                         "type": "integer",
                         "minimum": 1,
                         "maximum": 90,
                         "description": "Time window in days to look back. Default: 7",
-                        "default": 7
+                        "default": 7,
                     },
                     "include_context": {
                         "type": "boolean",
                         "description": "Include sample context (phrases, events, metadata). Default: true",
-                        "default": True
-                    }
+                        "default": True,
+                    },
                 },
-                "required": ["entity_id"]
-            }
-        }
+                "required": ["entity_id"],
+            },
+        },
     },
     {
         "type": "function",
@@ -93,18 +98,18 @@ TOOL_SCHEMAS = [
                         "items": {"type": "string"},
                         "description": "List of entity identifiers to compare (e.g., ['entity_1', 'entity_2']). Min 2, max 5 entities.",
                         "minItems": 2,
-                        "maxItems": 5
+                        "maxItems": 5,
                     },
                     "criteria": {
                         "type": "string",
                         "enum": ["composite", "factor_1", "factor_2", "factor_3", "factor_4", "factor_5"],
                         "description": "Comparison criteria (factor name). Default: composite. Factor names are deployment-configured.",
-                        "default": "composite"
-                    }
+                        "default": "composite",
+                    },
                 },
-                "required": ["entity_ids"]
-            }
-        }
+                "required": ["entity_ids"],
+            },
+        },
     },
     {
         "type": "function",
@@ -116,11 +121,129 @@ TOOL_SCHEMAS = [
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "User query text"
+                        "description": "User query text",
                     }
                 },
-                "required": ["query"]
-            }
-        }
-    }
+                "required": ["query"],
+            },
+        },
+    },
 ]
+
+
+_FINANCE_TOOL_SCHEMAS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "screen_tickers",
+            "description": "Screen tickers using Vitruvyan Neural Engine multi-factor ranking system. Returns composite scores and factor-based ranking.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "tickers": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of ticker symbols (e.g., ['AAPL', 'NVDA']). Max 10 tickers per call.",
+                        "minItems": 1,
+                        "maxItems": 10,
+                    },
+                    "profile": {
+                        "type": "string",
+                        "enum": [
+                            "momentum_focus",
+                            "balanced_mid",
+                            "trend_follow",
+                            "short_spec",
+                            "sentiment_boost",
+                        ],
+                        "description": "Finance screening profile. Default: balanced_mid.",
+                        "default": "balanced_mid",
+                    },
+                    "horizon": {
+                        "type": "string",
+                        "enum": ["short", "medium", "long"],
+                        "description": "Investment horizon. Default: medium.",
+                        "default": "medium",
+                    },
+                },
+                "required": ["tickers"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "compare_tickers",
+            "description": "Compare tickers side-by-side and return winner/loser with factor deltas.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "tickers": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of ticker symbols to compare. Min 2, max 5.",
+                        "minItems": 2,
+                        "maxItems": 5,
+                    },
+                    "criteria": {
+                        "type": "string",
+                        "enum": ["composite", "momentum", "trend", "volatility", "sentiment", "fundamentals"],
+                        "description": "Comparison criteria. Default: composite.",
+                        "default": "composite",
+                    },
+                },
+                "required": ["tickers"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_sentiment",
+            "description": "Query sentiment scores from database for a ticker. Returns average sentiment, trend, and optional phrase context.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ticker": {
+                        "type": "string",
+                        "description": "Ticker symbol (e.g., 'AAPL').",
+                    },
+                    "days": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 30,
+                        "description": "Lookback window in days. Default: 7.",
+                        "default": 7,
+                    },
+                    "include_phrases": {
+                        "type": "boolean",
+                        "description": "Include phrase context. Default: true.",
+                        "default": True,
+                    },
+                },
+                "required": ["ticker"],
+            },
+        },
+    },
+]
+
+
+def get_tool_schemas():
+    """Return tool schemas according to current domain mode."""
+    config = get_config()
+    tools = list(_GENERIC_TOOL_SCHEMAS)
+    if config.service.domain != "finance" or not config.finance.expose_legacy_tools:
+        return tools
+
+    names = {tool["function"]["name"] for tool in tools}
+    for finance_tool in _FINANCE_TOOL_SCHEMAS:
+        name = finance_tool["function"]["name"]
+        if name in names:
+            continue
+        tools.append(finance_tool)
+    return tools
+
+
+# Backward-compatible export used by existing imports.
+TOOL_SCHEMAS = get_tool_schemas()
+

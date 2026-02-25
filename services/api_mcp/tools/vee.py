@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 async def execute_generate_vee_summary(args: Dict[str, Any], user_id: str) -> Dict[str, Any]:
     """Execute generate_vee_summary tool via LangGraph VEE Engine."""
     config = get_config()
-    entity_id = args.get("entity_id")
+    entity_id = args.get("entity_id") or args.get("ticker")
     language = args.get("language", "it")
     level = args.get("level", "summary")
     

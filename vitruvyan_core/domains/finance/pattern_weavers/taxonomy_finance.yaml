@@ -1,0 +1,68 @@
+version: 1
+domain: finance
+description: Canonical finance taxonomy for Pattern Weavers.
+
+categories:
+  sectors:
+    - name: Technology
+      keywords: [technology, tech, software, semiconductor, ai, cloud]
+      gics_sector: Information Technology
+      pattern_weaver_concept: Tech Innovation
+    - name: Financials
+      keywords: [bank, banking, insurance, broker, asset management, credito]
+      gics_sector: Financials
+      pattern_weaver_concept: Capital Flows
+    - name: Energy
+      keywords: [energy, oil, gas, petrol, renewables, utility]
+      gics_sector: Energy
+      pattern_weaver_concept: Commodity Dynamics
+    - name: Healthcare
+      keywords: [healthcare, pharma, biotech, medical, ospedale, sanità]
+      gics_sector: Health Care
+      pattern_weaver_concept: Life Sciences
+
+  instruments:
+    - name: Equities
+      keywords: [stock, stocks, equity, azione, azioni, shares]
+      class: listed_security
+    - name: Fixed Income
+      keywords: [bond, bonds, obbligazione, obbligazioni, treasury, yield]
+      class: debt_security
+    - name: Derivatives
+      keywords: [option, options, futures, derivative, swap, forward]
+      class: derivative
+    - name: Digital Assets
+      keywords: [crypto, bitcoin, ethereum, token, blockchain, stablecoin]
+      class: digital_asset
+
+  macro:
+    - name: Rates and Inflation
+      keywords: [interest rate, rates, inflation, cpi, fed, bce, ecb]
+      signal_family: macro_policy
+    - name: Growth and Labor
+      keywords: [gdp, pil, unemployment, payroll, productivity, recession]
+      signal_family: macro_cycle
+
+  risk_terms:
+    - name: Volatility Events
+      keywords: [volatility, crash, drawdown, correction, panic, stress]
+      severity: high
+    - name: Credit Risk
+      keywords: [default, downgrade, spread, leverage, liquidity crunch]
+      severity: high
+
+  regions:
+    - name: North America
+      keywords: [usa, us, canada, north america, nasdaq, nyse]
+      market: developed
+    - name: Europe
+      keywords: [europe, eu, eurozone, ftse, dax, cac, mib]
+      market: developed
+    - name: Asia Pacific
+      keywords: [asia, japan, china, india, nikkei, hang seng]
+      market: mixed
+
+metadata:
+  owner: pattern-weavers-finance
+  contact: pattern-weavers@vitruvyan.ai
+  last_updated: "2026-02-23"

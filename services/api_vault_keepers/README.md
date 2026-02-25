@@ -95,6 +95,16 @@ All endpoints are under `/vault`.
 - `POST /vault/restore` — Dry-run or execute restore workflow
 - `POST /vault/archive` — Archive external content payload
 
+### Finance vertical (conditional)
+
+When `VAULT_DOMAIN=finance`, additional endpoints are exposed:
+
+- `GET /v1/finance/config`
+- `POST /v1/finance/integrity`
+- `POST /v1/finance/backup`
+- `POST /v1/finance/archive`
+- `POST /v1/finance/signal-timeseries/archive`
+
 ---
 
 ## Configuration

@@ -62,7 +62,7 @@ def test_pipeline_with_entity_search():
     payload = {
         "input_text": f"Should I invest in {selected_entity}?",
         "user_id": "pipeline_autocomplete_user",
-        "validated_entities": [selected_entity]
+        "validated_tickers": [selected_entity]
     }
     
     graph_response = httpx.post(f"{BASE_URL}/run", json=payload, timeout=45.0)
@@ -90,7 +90,7 @@ def test_pipeline_slot_filling():
     payload2 = {
         "input_text": "Apple and Microsoft",
         "user_id": "pipeline_slots_user",
-        "validated_entities": ["AAPL", "MSFT"]
+        "validated_tickers": ["AAPL", "MSFT"]
     }
     
     response2 = httpx.post(f"{BASE_URL}/run", json=payload2, timeout=45.0)
@@ -113,7 +113,7 @@ def test_pipeline_comparison():
     payload = {
         "input_text": "Compare Apple vs Microsoft",
         "user_id": "pipeline_comparison_user",
-        "validated_entities": ["AAPL", "MSFT"]
+        "validated_tickers": ["AAPL", "MSFT"]
     }
     
     response = httpx.post(f"{BASE_URL}/run", json=payload, timeout=60.0)

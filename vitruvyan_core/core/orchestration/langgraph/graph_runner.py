@@ -135,6 +135,10 @@ def run_graph_once(
     state["input_text"] = input_text
     state["user_id"] = user_id
     
+    # Clear stale error/route/result from previous sessions (avoid codex_trigger false positives)
+    for _clear_key in ("error", "codex_error_message", "route", "result", "ok", "raw_output"):
+        state.pop(_clear_key, None)
+
     # Golden Rule: validated_entities are authoritative (client validation contract)
     # None → server may attempt extraction; [] → user chose "no entities"; [...] → trust list
     if validated_entities is not None:
@@ -312,6 +316,17 @@ def run_graph_once(
         response["advisor_recommendation"] = final_state.get("advisor_recommendation")
         response["user_requests_action"] = final_state.get("user_requests_action")
         
+        # 📊 FIX (Feb 24, 2026): Add finance domain fields to API response
+        response["numerical_panel"] = final_state.get("numerical_panel")
+        response["vee_explanations"] = final_state.get("vee_explanations")
+        response["vare_risk"] = final_state.get("vare_risk")
+        response["vwre_attribution"] = final_state.get("vwre_attribution")
+        response["screening_meta"] = final_state.get("screening_meta")
+        response["gauge"] = final_state.get("gauge")
+        response["final_verdict"] = final_state.get("final_verdict")
+        response["narrative"] = final_state.get("narrative")
+        response["ok"] = final_state.get("ok")
+        
         return response
     
     # CASE 2: Flattened structure - response fields at root level
@@ -367,6 +382,16 @@ def run_graph_once(
             # 🎯 FIX (Dec 28, 2025): Add Advisor Node fields to API response
             "advisor_recommendation": final_state.get("advisor_recommendation"),
             "user_requests_action": final_state.get("user_requests_action"),
+            # 📊 FIX (Feb 24, 2026): Add finance domain fields to API response
+            "numerical_panel": final_state.get("numerical_panel"),
+            "vee_explanations": final_state.get("vee_explanations"),
+            "vare_risk": final_state.get("vare_risk"),
+            "vwre_attribution": final_state.get("vwre_attribution"),
+            "screening_meta": final_state.get("screening_meta"),
+            "gauge": final_state.get("gauge"),
+            "final_verdict": final_state.get("final_verdict"),
+            "narrative": final_state.get("narrative"),
+            "ok": final_state.get("ok"),
         }
         
         return result
@@ -426,6 +451,16 @@ def run_graph_once(
         # Advisor
         "advisor_recommendation": _s.get("advisor_recommendation"),
         "user_requests_action": _s.get("user_requests_action"),
+        # Finance domain
+        "numerical_panel": _s.get("numerical_panel"),
+        "vee_explanations": _s.get("vee_explanations"),
+        "vare_risk": _s.get("vare_risk"),
+        "vwre_attribution": _s.get("vwre_attribution"),
+        "screening_meta": _s.get("screening_meta"),
+        "gauge": _s.get("gauge"),
+        "final_verdict": _s.get("final_verdict"),
+        "narrative": _s.get("narrative"),
+        "ok": _s.get("ok"),
     }
 
 

@@ -29,7 +29,6 @@ RUN chmod +x /app/build-all.sh
 RUN mkdir -p /app/site /app/site_public /app/site_docs_public /app/docs_root /app/docs_root_public && \
     ln -s /app/docs /app/docs_root/docs && \
     ln -s /app/vitruvyan_core /app/docs_root/vitruvyan_core && \
-    ln -s /app/vitruvyan_edge /app/docs_root/vitruvyan_edge && \
     ln -s /app/services /app/docs_root/services && \
     ln -s /app/infrastructure /app/docs_root/infrastructure && \
     ln -s /app/tests /app/docs_root/tests && \

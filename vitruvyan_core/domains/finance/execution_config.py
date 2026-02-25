@@ -2,14 +2,22 @@
 Finance Domain — Execution Configuration
 =========================================
 
-Example domain-specific execution handler for finance vertical.
+Execution handler registered with the core ExecutionRegistry.
 
-This demonstrates how to register a domain-specific execution handler
-with the ExecutionRegistry hook pattern.
+NOTE (Feb 24, 2026): For the finance vertical, most exec intents are routed
+to screener_node via the GRAPH_DOMAIN hook (dispatcher_exec → screener).
+This handler is a fallback for any finance intents that reach the generic
+exec_node path (e.g. when screener_node is unavailable or when a new exec
+intent is added without a corresponding route override in the registry).
+
+See also:
+  - domains/finance/graph_nodes/screener_node.py  (primary NE screening)
+  - domains/finance/graph_nodes/registry.py       (route: dispatcher_exec → screener)
 
 Author: Vitruvyan Core Team
 Created: February 14, 2026
-Status: EXAMPLE (not auto-loaded)
+Updated: February 24, 2026 (docstring updated — screener_node is primary)
+Status: FALLBACK (not auto-loaded; screener_node handles primary exec path)
 """
 
 import logging

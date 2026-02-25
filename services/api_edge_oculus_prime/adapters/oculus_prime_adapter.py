@@ -12,13 +12,13 @@ from typing import Any
 
 from fastapi import HTTPException, UploadFile
 
-from vitruvyan_edge.oculus_prime.core.agents.audio_intake import AudioIntakeAgent
-from vitruvyan_edge.oculus_prime.core.agents.cad_intake import CADIntakeAgent
-from vitruvyan_edge.oculus_prime.core.agents.document_intake import DocumentIntakeAgent
-from vitruvyan_edge.oculus_prime.core.agents.geo_intake import GeoIntakeAgent
-from vitruvyan_edge.oculus_prime.core.agents.image_intake import ImageIntakeAgent
-from vitruvyan_edge.oculus_prime.core.agents.landscape_intake import LandscapeIntakeAgent
-from vitruvyan_edge.oculus_prime.core.agents.video_stream_intake import VideoStreamIntakeAgent
+from infrastructure.edge.oculus_prime.core.agents.audio_intake import AudioIntakeAgent
+from infrastructure.edge.oculus_prime.core.agents.cad_intake import CADIntakeAgent
+from infrastructure.edge.oculus_prime.core.agents.document_intake import DocumentIntakeAgent
+from infrastructure.edge.oculus_prime.core.agents.geo_intake import GeoIntakeAgent
+from infrastructure.edge.oculus_prime.core.agents.image_intake import ImageIntakeAgent
+from infrastructure.edge.oculus_prime.core.agents.landscape_intake import LandscapeIntakeAgent
+from infrastructure.edge.oculus_prime.core.agents.video_stream_intake import VideoStreamIntakeAgent
 
 from .persistence import OculusPrimePersistence
 from .runtime import build_runtime_dependencies

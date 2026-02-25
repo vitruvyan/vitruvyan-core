@@ -133,7 +133,7 @@ _graph_nodes_ext, _graph_edges_ext, _graph_routes_ext = _load_domain_graph_exten
 # so that direct_routes (intent → route_value) are available.
 # Exclude route overrides (e.g. "dispatcher_exec") — those are resolved by
 # _decide_route_targets, not by intent matching in route_node.
-_ROUTE_OVERRIDES = {"dispatcher_exec", "llm_soft", "semantic_fallback", "slot_filler"}
+_ROUTE_OVERRIDES = {"dispatcher_exec", "llm_soft", "semantic_fallback"}
 _direct_routes = {
     route_key: route_key
     for route_key in _graph_routes_ext.keys()
@@ -242,6 +242,27 @@ class GraphState(BaseGraphState, total=False):
     # ── Advisor Node Fields ──
     advisor_recommendation: Optional[Dict[str, Any]]  # Actionable recommendation
     user_requests_action: Optional[bool]     # Trigger for advisor activation
+
+    # ── Finance Domain Fields (populated by domain graph_nodes) ──
+    numerical_panel: Optional[List[Dict[str, Any]]]   # NE/PG z-scores for compose/advisor
+    vee_explanations: Optional[Dict[str, Any]]        # VEE narratives (summary, technical, detailed...)
+    vare_risk: Optional[Dict[str, Any]]               # VARE risk assessment per ticker
+    vwre_attribution: Optional[Dict[str, Any]]        # VWRE factor attribution per ticker
+    conversation_type: Optional[str]                  # single_ticker, comparison, portfolio...
+    gauge: Optional[Dict[str, Any]]                   # Gauge visualization data
+    final_verdict: Optional[str]                       # Final verdict text
+    screening_meta: Optional[Dict[str, Any]]           # Screener metadata (total_evaluated, etc.)
+
+    # ── Compose Node Output Fields ──
+    narrative: Optional[str]                           # Natural language synthesis from compose_node
+    action: Optional[str]                              # Action type: synthesis, conversation, clarify
+    service_result: Optional[Dict[str, Any]]           # Service result payload for compose
+    questions: Optional[List[str]]                     # Clarification questions (LLM/MCP follow-up)
+    needed_slots: Optional[List[str]]                  # Legacy compatibility field
+
+    # ── Quality Check / Validation Fields ──
+    ok: Optional[bool]                                 # Quality check pass/fail
+    validation: Optional[Dict[str, Any]]               # Validation errors/warnings
 
 
 # run_graph_once() REMOVED — consolidated into graph_runner.py
@@ -393,7 +414,6 @@ def build_graph():
         "semantic_fallback": "qdrant",
         "dispatcher_exec": "exec",            # Direct execution (no sentiment prereq)
         "llm_mcp": "llm_mcp",                 # 🔌 Phase 4: MCP routing (when USE_MCP=1)
-        "slot_filler": "compose",
         "llm_soft": "llm_soft",
         "codex_expedition": "codex_hunters",  # 🗝️ Codex Hunters (maintenance system)
     }

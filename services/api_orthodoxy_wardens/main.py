@@ -16,6 +16,10 @@ from api_orthodoxy_wardens.api.routes import router
 from api_orthodoxy_wardens.config import settings
 from api_orthodoxy_wardens.monitoring.health import setup_synaptic_conclave_listeners, metrics_endpoint
 from api_orthodoxy_wardens.adapters.bus_adapter import OrthodoxyBusAdapter
+from api_orthodoxy_wardens.adapters.finance_adapter import (
+    get_finance_adapter,
+    is_finance_enabled,
+)
 from api_orthodoxy_wardens.adapters import event_handlers
 from api_orthodoxy_wardens.adapters.roles import (
     OrthodoxConfessor, OrthodoxPenitent, OrthodoxChronicler, OrthodoxInquisitor, OrthodoxAbbot
@@ -48,7 +52,20 @@ async def lifespan(app: FastAPI):
     test_mode = os.getenv("VITRUVYAN_TEST_MODE", "false").lower() == "true"
     logger.info("Initializing Orthodoxy Wardens (test_mode=%s)", test_mode)
 
-    bus_adapter = OrthodoxyBusAdapter()
+    ruleset = None
+    if is_finance_enabled():
+        finance_adapter = get_finance_adapter()
+        if finance_adapter is not None:
+            ruleset = finance_adapter.build_ruleset()
+            stats = finance_adapter.get_rules_stats()
+            logger.info(
+                "Finance vertical enabled: ruleset=%s active_rules=%d total_rules=%d",
+                stats["ruleset_version"],
+                stats["active_rules"],
+                stats["total_rules"],
+            )
+
+    bus_adapter = OrthodoxyBusAdapter(ruleset=ruleset)
 
     if not test_mode:
         llm_agent = get_llm_agent()
@@ -87,6 +104,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Orthodoxy Wardens", version="2.0.0", lifespan=lifespan)
 app.include_router(router)
+if is_finance_enabled():
+    from api_orthodoxy_wardens.api.routes_finance import router as finance_router
+
+    app.include_router(finance_router)
 app.add_middleware(AuthMiddleware)
 app.add_middleware(
     CORSMiddleware,

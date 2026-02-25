@@ -1,0 +1,37 @@
+# Shadow Broker Agent - Python Dependencies
+# Sacred Order: Reason + Perception
+
+# FastAPI & ASGI server
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+
+# Authentication (Keycloak JWT validation)
+PyJWT[crypto]==2.8.0
+cryptography==41.0.7
+requests==2.31.0
+
+# Market data
+yfinance==0.2.35
+pandas==2.1.4
+numpy==1.26.3
+pytz==2024.1
+
+# Database & Vector Store
+psycopg2-binary==2.9.9
+redis[hiredis]==5.0.1
+qdrant-client==1.7.0
+
+# HTTP client
+httpx==0.26.0
+
+# LLM (OpenAI for VEE narratives)
+openai==1.12.0
+
+# Logging & Monitoring
+python-json-logger==2.0.7
+prometheus-client==0.19.0
+structlog==24.1.0
+
+# Utilities
+python-dotenv==1.0.0

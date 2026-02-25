@@ -4,7 +4,7 @@ Runtime Oculus Prime API service following LIVELLO 2 service structure.
 
 ## Scope
 
-- Exposes HTTP endpoints for `vitruvyan_edge/oculus_prime/core` agents.
+- Exposes HTTP endpoints for `infrastructure/edge/oculus_prime/core` agents.
 - Persists immutable Evidence Packs in PostgreSQL.
 - Emits canonical `oculus_prime.evidence.created` via Redis Streams.
 - Supports versioned migration with legacy alias `intake.evidence.created`.

@@ -34,7 +34,14 @@ class PersistenceAdapter:
         if self._pg_agent is None:
             try:
                 from core.agents.postgres_agent import PostgresAgent
-                self._pg_agent = PostgresAgent()
+                pg_cfg = self._config.postgres
+                self._pg_agent = PostgresAgent(
+                    host=pg_cfg.host,
+                    port=str(pg_cfg.port),
+                    dbname=pg_cfg.database,
+                    user=pg_cfg.user,
+                    password=pg_cfg.password,
+                )
                 logger.info("✅ PostgresAgent initialized")
             except ImportError as e:
                 logger.warning(f"⚠️ PostgresAgent not available: {e}")

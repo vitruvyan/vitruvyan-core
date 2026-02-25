@@ -16,6 +16,10 @@ sys.path.append("/app")
 from api_vault_keepers.api.routes import router, set_bus_adapter
 from api_vault_keepers.config import settings
 from api_vault_keepers.adapters.bus_adapter import VaultBusAdapter
+from api_vault_keepers.adapters.finance_adapter import (
+    get_finance_adapter,
+    is_finance_enabled,
+)
 
 logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL))
 logger = logging.getLogger("VaultKeepers")
@@ -27,6 +31,10 @@ async def lifespan(app: FastAPI):
     logger.info("Port: %s | Redis: %s:%s", settings.SERVICE_PORT, settings.REDIS_HOST, settings.REDIS_PORT)
     logger.info("PostgreSQL: %s:%s/%s", settings.POSTGRES_HOST, settings.POSTGRES_PORT, settings.POSTGRES_DB)
     logger.info("Qdrant: %s:%s", settings.QDRANT_HOST, settings.QDRANT_PORT)
+    if is_finance_enabled():
+        finance_adapter = get_finance_adapter()
+        if finance_adapter is not None:
+            logger.info("Finance vertical enabled: %s", finance_adapter.get_runtime_config())
     bus_adapter = VaultBusAdapter()
     set_bus_adapter(bus_adapter)
     logger.info("Sacred Channels: %s", ", ".join(settings.SACRED_CHANNELS))
@@ -44,6 +52,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.include_router(router)
+if is_finance_enabled():
+    from api_vault_keepers.api.routes_finance import router as finance_router
+
+    app.include_router(finance_router)
 app.add_middleware(AuthMiddleware)
 app.add_middleware(
     CORSMiddleware,

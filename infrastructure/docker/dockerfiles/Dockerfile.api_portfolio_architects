@@ -1,0 +1,30 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY services/api_portfolio_architects/requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r /app/requirements.txt
+
+COPY services/api_portfolio_architects/ /app/api_portfolio_architects/
+COPY vitruvyan_core/core/ /app/core/
+COPY vitruvyan_core/domains/ /app/domains/
+COPY scripts/ /app/scripts/
+
+RUN chmod +x /app/api_portfolio_architects/entrypoint.sh
+
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+EXPOSE 8021 8023
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -fsS http://localhost:8021/health || exit 1
+
+CMD ["/app/api_portfolio_architects/entrypoint.sh"]

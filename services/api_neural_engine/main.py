@@ -6,16 +6,16 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from core.middleware.auth import AuthMiddleware
+from vitruvyan_core.core.middleware.auth import AuthMiddleware
 
-from api_neural_engine.api.routes import router
-from api_neural_engine.config import PORT, LOG_LEVEL, CORS_ORIGINS
-from api_neural_engine.modules.engine_orchestrator import EngineOrchestrator
-from api_neural_engine.monitoring.metrics import (
+from .api.routes import router
+from .config import PORT, LOG_LEVEL, CORS_ORIGINS
+from .modules.engine_orchestrator import EngineOrchestrator
+from .monitoring.metrics import (
     http_requests_total, http_request_duration_seconds, service_is_healthy,
 )
 
-logging.basicConfig(level=getattr(logging, LOG_LEVEL))
+logging.basicConfig(level=getattr(logging, str(LOG_LEVEL).upper(), logging.INFO))
 logger = logging.getLogger(__name__)
 
 

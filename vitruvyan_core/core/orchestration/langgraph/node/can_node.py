@@ -35,6 +35,7 @@ from core.agents.llm_agent import get_llm_agent
 logger = logging.getLogger(__name__)
 
 # Environment configuration
+CAN_ENABLED = int(os.getenv("CAN_ENABLED", "1"))
 CAN_VSGS_CONTEXT_LIMIT = int(os.getenv("CAN_VSGS_CONTEXT_LIMIT", "3"))
 
 
@@ -44,6 +45,7 @@ def can_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     Contract-compliant LLM orchestrator: extracts pre-calculated context
     and generates conversation without semantic thresholds or calculations.
+    Disabled when CAN_ENABLED=0 (pass-through).
     
     Args:
         state: LangGraph state with pre-calculated intent, emotion, vsgs_context
@@ -51,6 +53,10 @@ def can_node(state: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Updated state with narrative, follow_ups, routing decision
     """
+    if not CAN_ENABLED:
+        logger.info("🚫 CAN: Disabled (CAN_ENABLED=0)")
+        return state
+
     logger.info("🧠 [can_node] Orchestrating conversational response")
     
     # Extract pre-calculated data (domain-agnostic)

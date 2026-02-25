@@ -50,7 +50,7 @@ def test_slot_filling_flow():
     payload2 = {
         "input_text": "Apple and Microsoft",
         "user_id": "test_user",
-        "validated_entities": ["AAPL", "MSFT"]
+        "validated_tickers": ["AAPL", "MSFT"]
     }
     
     response2 = httpx.post(f"{BASE_URL}/run", json=payload2, timeout=30.0)
@@ -97,7 +97,7 @@ def test_skip_slots_with_entities():
     payload = {
         "input_text": "Should I buy these?",
         "user_id": "test_user",
-        "validated_entities": ["AAPL", "GOOGL", "MSFT"]  # Pre-validated
+        "validated_tickers": ["AAPL", "GOOGL", "MSFT"]  # Pre-validated
     }
     
     response = httpx.post(f"{BASE_URL}/run", json=payload, timeout=30.0)
@@ -124,7 +124,7 @@ def test_slot_memory():
     payload1 = {
         "input_text": "I'm interested in Apple",
         "user_id": user_id,
-        "validated_entities": ["AAPL"]
+        "validated_tickers": ["AAPL"]
     }
     
     response1 = httpx.post(f"{BASE_URL}/run", json=payload1, timeout=30.0)

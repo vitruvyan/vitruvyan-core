@@ -44,7 +44,7 @@ TEST_CASES = [
         "name": "Sentiment Analysis (Technical Intent)",
         "input_text": "sentiment Apple",
         "user_id": "integration_test_ortho_1",
-        "validated_entities": ["AAPL"],  # Force entity recognition → technical intent
+        "validated_tickers": ["AAPL"],  # Force entity recognition → technical intent
         "expect_audit": True,
         "description": "'sentiment' intent triggers dispatcher_exec → orthodoxy"
     },
@@ -52,7 +52,7 @@ TEST_CASES = [
         "name": "Risk Analysis (Technical Intent)",
         "input_text": "risk Apple",
         "user_id": "integration_test_ortho_2",
-        "validated_entities": ["AAPL"],
+        "validated_tickers": ["AAPL"],
         "expect_audit": True,
         "description": "'risk' intent triggers dispatcher_exec → orthodoxy"
     },
@@ -60,7 +60,7 @@ TEST_CASES = [
         "name": "Trend Analysis (Technical Intent)",
         "input_text": "trend Apple",
         "user_id": "integration_test_ortho_3",
-        "validated_entities": ["AAPL"],
+        "validated_tickers": ["AAPL"],
         "expect_audit": True,
         "description": "'trend' intent triggers dispatcher_exec → orthodoxy"
     }
@@ -186,9 +186,9 @@ def test_orthodoxy_integration(
             "user_id": test_case["user_id"]
         }
         
-        # Add validated_entities if provided (forces intent recognition)
-        if "validated_entities" in test_case:
-            payload["validated_entities"] = test_case["validated_entities"]
+        # Add validated_tickers if provided (forces intent recognition)
+        if "validated_tickers" in test_case:
+            payload["validated_tickers"] = test_case["validated_tickers"]
         
         response = httpx.post(
             f"{GRAPH_API_URL}/run",

@@ -24,6 +24,7 @@ sys.path.insert(0, '/app')
 from api_memory_orders.api import router, set_bus_adapter
 from api_memory_orders.config import settings
 from api_memory_orders.adapters import MemoryBusAdapter
+from api_memory_orders.adapters.finance_adapter import is_finance_enabled
 from api_memory_orders.monitoring import metrics_endpoint
 
 logging.basicConfig(
@@ -54,6 +55,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.include_router(router)
+if is_finance_enabled():
+    from api_memory_orders.api.routes_finance import router as finance_router
+
+    app.include_router(finance_router)
 app.add_middleware(AuthMiddleware)
 app.add_middleware(
     CORSMiddleware,

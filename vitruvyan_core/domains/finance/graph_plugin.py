@@ -38,9 +38,8 @@ from core.orchestration import (
 from core.agents.postgres_agent import PostgresAgent
 
 # Import compose layer abstractions
-from core.orchestration.compose import ResponseFormatter, SlotFiller
+from core.orchestration.compose import ResponseFormatter
 from domains.finance.response_formatter import FinanceResponseFormatter
-from domains.finance.slot_filler import FinanceSlotFiller
 
 logger = logging.getLogger(__name__)
 
@@ -467,12 +466,6 @@ def create_finance_route_registry() -> RouteRegistry:
         description="Empathetic advisor for emotional/soft queries",
     ))
     
-    # Slot filling for incomplete queries
-    registry.register_route(RouteDefinition(
-        name="slot_filler",
-        description="Slot filling for incomplete queries",
-    ))
-    
     # Codex Hunters for ticker discovery
     registry.register_route(RouteDefinition(
         name="codex_expedition",
@@ -504,10 +497,10 @@ def create_finance_route_registry() -> RouteRegistry:
         priority=10,
     ))
     
-    # Unknown → slot_filler (higher priority than default fallback)
+    # Unknown → semantic_fallback (LLM-first, no slot filling)
     registry.register_intent_mapping(IntentRouteMapping(
         intent="unknown",
-        route="slot_filler",
+        route="semantic_fallback",
         priority=5,
     ))
     
@@ -549,15 +542,10 @@ class FinanceGraphPlugin(GraphPlugin):
         self._intent_registry = create_finance_intent_registry()
         self._route_registry = create_finance_route_registry()
         self._response_formatter = FinanceResponseFormatter()
-        self._slot_filler = FinanceSlotFiller()
     
     def get_response_formatter(self) -> ResponseFormatter:
         """Return finance-specific response formatter."""
         return self._response_formatter
-    
-    def get_slot_filler(self) -> SlotFiller:
-        """Return finance-specific slot filler."""
-        return self._slot_filler
     
     def get_domain_name(self) -> str:
         return "finance"

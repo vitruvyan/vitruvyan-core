@@ -80,30 +80,49 @@ class MemoryStreamsListener:
             except Exception as e:
                 logger.warning(f"Consumer group may already exist for {channel}: {e}")
         
-        # Start consuming
+        # Start consuming with one task per stream.
+        # `StreamBus.consume()` is an infinite generator for a single channel,
+        # so multi-channel consumption must run in parallel tasks.
         logger.info(f"🎧 Listening on {len(self.channels)} channels...")
-        
+        tasks = [
+            asyncio.create_task(self._consume_channel(channel))
+            for channel in self.channels
+        ]
+        await asyncio.gather(*tasks)
+
+    async def _consume_channel(self, channel: str) -> None:
+        """Consume one channel forever and acknowledge processed events."""
+        consumer_name = f"{self.consumer_id}_{channel.replace('.', '_')}"
+        iterator = self.bus.consume(
+            channel,
+            self.group,
+            consumer_name,
+            count=1,
+            block_ms=1000,
+        )
         while True:
             try:
-                for channel in self.channels:
-                    # Consume events (generator pattern)
-                    for event in self.bus.consume(channel, self.group, self.consumer_id, count=1, block_ms=1000):
-                        await self.handle_event(event)
-                        
-                        # Acknowledge after successful handling
-                        self.bus.ack(event, group=self.group)
-                        logger.info(f"✅ ACK {event.event_id} from {event.stream}")
-                
-                # Small delay to prevent tight loop
-                await asyncio.sleep(0.1)
-            
+                event = await asyncio.to_thread(lambda: next(iterator, None))
+                if event is None:
+                    await asyncio.sleep(0.1)
+                    continue
+
+                await self.handle_event(event)
+                self.bus.ack(event, group=self.group)
+                logger.info(f"✅ ACK {event.event_id} from {event.stream}")
             except KeyboardInterrupt:
                 logger.info("Received shutdown signal")
                 break
-            
             except Exception as e:
-                logger.error(f"Error in consumer loop: {e}")
-                await asyncio.sleep(1)  # Back off on error
+                logger.error(f"Error in consumer loop for {channel}: {e}")
+                iterator = self.bus.consume(
+                    channel,
+                    self.group,
+                    consumer_name,
+                    count=1,
+                    block_ms=1000,
+                )
+                await asyncio.sleep(1)
     
     async def handle_event(self, event):
         """

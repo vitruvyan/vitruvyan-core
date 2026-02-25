@@ -1,5 +1,5 @@
 """
-🕯 Synaptic Conclave — Prometheus Metrics
+Synaptic Conclave — Prometheus Metrics
 
 Centralized metric definitions.
 Uses _safe_* wrappers to prevent double-registration errors.
@@ -40,6 +40,25 @@ streams_events_emitted_total = _safe_counter(
     ["channel"],
 )
 
+# ── Cognitive Bus ────────────────────────────────────────────
+cognitive_events_published = _safe_counter(
+    "conclave_cognitive_events_published_total",
+    "Total cognitive events published to Redis",
+    ["domain", "intent"],
+)
+
+cognitive_events_subscribed = _safe_counter(
+    "conclave_cognitive_events_subscribed_total",
+    "Total cognitive events subscribed to",
+    ["domain"],
+)
+
+cognitive_event_processing_duration = _safe_histogram(
+    "conclave_cognitive_event_processing_seconds",
+    "Time to process and publish cognitive events",
+    ["domain"],
+)
+
 # ── HTTP ─────────────────────────────────────────────────────
 http_requests_total = _safe_counter(
     "conclave_http_requests_total",
@@ -57,4 +76,14 @@ http_request_duration_seconds = _safe_histogram(
 redis_connection_status = _safe_gauge(
     "conclave_redis_connected",
     "Redis connection status (1=connected, 0=disconnected)",
+)
+
+active_orders_gauge = _safe_gauge(
+    "conclave_active_orders",
+    "Number of active orchestration orders",
+)
+
+pulse_active_status = _safe_gauge(
+    "conclave_pulse_active",
+    "System pulse status (1=active, 0=inactive)",
 )

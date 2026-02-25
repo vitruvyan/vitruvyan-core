@@ -8,7 +8,7 @@ All configurable values must be defined here - no os.getenv() elsewhere.
 
 import os
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -52,6 +52,16 @@ class RedisConfig:
 
 
 @dataclass(frozen=True)
+class SourceRegistryConfig:
+    """Database-backed source registry configuration."""
+
+    registry_table: str = "codex_source_registry"
+    topics_table: str = "codex_source_topics"
+    refresh_interval_seconds: int = 60
+    default_source_key: Optional[str] = None
+
+
+@dataclass(frozen=True)
 class CodexHuntersConfig:
     """Complete Codex Hunters service configuration."""
     
@@ -59,6 +69,7 @@ class CodexHuntersConfig:
     postgres: PostgresConfig = field(default_factory=PostgresConfig)
     qdrant: QdrantConfig = field(default_factory=QdrantConfig)
     redis: RedisConfig = field(default_factory=RedisConfig)
+    source_registry: SourceRegistryConfig = field(default_factory=SourceRegistryConfig)
 
 
 def load_config() -> CodexHuntersConfig:
@@ -95,12 +106,20 @@ def load_config() -> CodexHuntersConfig:
         port=int(os.getenv("REDIS_PORT", "6379")),
         db=int(os.getenv("REDIS_DB", "0")),
     )
-    
+
+    source_registry = SourceRegistryConfig(
+        registry_table=os.getenv("CODEX_SOURCE_REGISTRY_TABLE", "codex_source_registry"),
+        topics_table=os.getenv("CODEX_SOURCE_TOPICS_TABLE", "codex_source_topics"),
+        refresh_interval_seconds=int(os.getenv("CODEX_SOURCE_REFRESH_INTERVAL_SEC", "60")),
+        default_source_key=(os.getenv("CODEX_DEFAULT_SOURCE_KEY") or None),
+    )
+
     return CodexHuntersConfig(
         service=service,
         postgres=postgres,
         qdrant=qdrant,
         redis=redis,
+        source_registry=source_registry,
     )
 
 

@@ -15,6 +15,7 @@ import logging
 import os
 import sys
 from contextlib import asynccontextmanager
+from datetime import datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,6 +36,23 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing Synaptic Conclave (observatory mode)")
     bus_adapter = ConclaveBusAdapter()
     set_bus_adapter(bus_adapter)
+
+    # Emit awakening event
+    if bus_adapter.is_connected:
+        try:
+            bus_adapter.emit(
+                channel="conclave.awakened",
+                data={
+                    "type": "awakened",
+                    "conclave_version": settings.SERVICE_VERSION,
+                    "startup_time": datetime.utcnow().isoformat() + "Z",
+                    "components": ["bus_adapter", "routes", "metrics", "listener"],
+                },
+                emitter="conclave.startup",
+            )
+        except Exception as exc:
+            logger.warning("Awakening event emission failed: %s", exc)
+
     logger.info("Conclave ready (bus_adapter=%s)", bus_adapter.is_connected)
     yield
 
@@ -56,7 +74,6 @@ app.add_middleware(
 )
 
 
-# ── Entry point ──────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn
 

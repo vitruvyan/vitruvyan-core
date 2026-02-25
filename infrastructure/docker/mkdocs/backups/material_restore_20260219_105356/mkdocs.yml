@@ -155,16 +155,11 @@ nav:
   - Infrastructure:
     - Overview: infrastructure/README_INFRASTRUCTURE.md
     - Docker Setup: infrastructure/docker/README.md
-    - Edge (Deprecated): infrastructure/edge/README.md
+    - Oculus Prime: infrastructure/edge/oculus_prime/README.md
+    - Oculus Prime Flow Graph: docs/knowledge_base/oculus_prime/intake_flow_graph.md
     - Monitoring: infrastructure/docker/monitoring/README.md
     - Synaptic Topology (Mermaid): infrastructure/docker/monitoring/grafana/SYNAPTIC_CONCLAVE_TOPOLOGY.md
     - KB Access Control: infrastructure/docker/mkdocs/ACCESS_CONTROL.md
-
-  - Edge Modules:
-    - Overview: vitruvyan_edge/README.md
-    - Oculus Prime: vitruvyan_edge/oculus_prime/README.md
-    - Oculus Prime Core: vitruvyan_edge/oculus_prime/core/README.md
-    - Oculus Prime Flow Graph: docs/knowledge_base/oculus_prime/intake_flow_graph.md
     
   - Development:
     - Testing: tests/README_TESTS.md

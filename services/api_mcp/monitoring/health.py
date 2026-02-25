@@ -12,7 +12,7 @@ async def health_check() -> dict:
     stream_bus = get_stream_bus()
     return {
         "status": "healthy",
-        "service": "vitruvyan_mcp_server",
+        "service": "mercator_mcp_server",
         "bus": "connected" if stream_bus else "disconnected",
         "timestamp": datetime.utcnow().isoformat(),
     }

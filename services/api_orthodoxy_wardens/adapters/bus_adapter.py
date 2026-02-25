@@ -57,11 +57,16 @@ class OrthodoxyBusAdapter:
 
     def __init__(self, ruleset=None):
         self.confessor = Confessor()
-        self.inquisitor = Inquisitor()
+        self.ruleset = ruleset or DEFAULT_RULESET
+        self.inquisitor = Inquisitor(ruleset=self.ruleset)
         self.verdict_engine = VerdictEngine()
         self.penitent = Penitent()
         self.chronicler = Chronicler()
-        self.ruleset = ruleset or DEFAULT_RULESET
+        logger.info(
+            "OrthodoxyBusAdapter initialized with ruleset=%s total_rules=%d",
+            self.ruleset.version,
+            self.ruleset.rule_count,
+        )
 
     def handle_event(self, event: Dict[str, Any]) -> Dict[str, Any]:
         """

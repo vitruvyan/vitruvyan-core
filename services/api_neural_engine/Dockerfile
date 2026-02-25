@@ -46,6 +46,10 @@ WORKDIR /app
 
 # Copy vitruvyan_core package (domain-agnostic neural engine)
 COPY vitruvyan_core/ /app/vitruvyan_core/
+# Compatibility aliases for legacy absolute imports used across core/contracts.
+COPY vitruvyan_core/core/ /app/core/
+COPY vitruvyan_core/contracts/ /app/contracts/
+COPY vitruvyan_core/domains/ /app/domains/
 
 # Copy service code
 COPY services/api_neural_engine/ /app/services/api_neural_engine/

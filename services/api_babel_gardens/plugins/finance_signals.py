@@ -14,7 +14,7 @@ This is LIVELLO 2 (Service) code:
 Sacred Law: "Explainability is sacred — every signal must trace its origin"
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 from datetime import datetime, timezone
 from dataclasses import dataclass
 import logging
@@ -25,6 +25,7 @@ from core.cognitive.babel_gardens.domain import (
     SignalExtractionResult,
     SignalConfig,
 )
+from domains.finance.babel_gardens.sentiment_config import FinanceSentimentConfig
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,11 @@ class FinanceSignalsPlugin:
     State: Model is loaded on first extraction (lazy loading)
     """
     
-    def __init__(self, model_name: str = "ProsusAI/finbert", device: str = "cpu"):
+    def __init__(
+        self,
+        model_name: Optional[str] = None,
+        device: Optional[str] = None,
+    ):
         """
         Initialize plugin with model configuration.
         
@@ -58,13 +63,23 @@ class FinanceSignalsPlugin:
             model_name: HuggingFace model identifier
             device: "cpu" or "cuda"
         """
-        self.model_name = model_name
-        self.device = device
+        self._sentiment_config = FinanceSentimentConfig()
+        self.model_name = model_name or self._sentiment_config.finbert_model
+        self.device = device or self._sentiment_config.finbert_device
         self._model = None
         self._tokenizer = None
         self._initialized = False
         
-        logger.info(f"FinanceSignalsPlugin created (model: {model_name}, device: {device})")
+        logger.info(
+            "FinanceSignalsPlugin created (model: %s, device: %s)",
+            self.model_name,
+            self.device,
+        )
+
+    @property
+    def fusion_weights(self) -> Dict[str, float]:
+        """Expose finance fusion weights for adapter-level orchestration."""
+        return dict(self._sentiment_config.fusion_weights)
     
     def _ensure_model_loaded(self):
         """Lazy load model on first use."""
@@ -110,7 +125,7 @@ class FinanceSignalsPlugin:
             text,
             return_tensors="pt",
             truncation=True,
-            max_length=512,
+            max_length=self._sentiment_config.finbert_max_length,
             padding=True,
         )
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
@@ -244,6 +259,18 @@ class FinanceSignalsPlugin:
                 "device": self.device,
             },
         )
+
+    def extract_volatility_perception(
+        self,
+        text: str,
+        schema: SignalSchema,
+    ) -> SignalExtractionResult:
+        """Extract `volatility_perception` using finance lexicon heuristic."""
+        from domains.finance.babel_gardens.volatility_lexicon import (
+            extract_volatility_perception,
+        )
+
+        return extract_volatility_perception(text, schema)
     
     def extract_signals(self, text: str, config: SignalConfig) -> List[SignalExtractionResult]:
         """
@@ -265,6 +292,8 @@ class FinanceSignalsPlugin:
                 result = self.extract_sentiment_valence(text, schema)
             elif schema.name == "market_fear_index":
                 result = self.extract_market_fear_index(text, schema)
+            elif schema.name == "volatility_perception":
+                result = self.extract_volatility_perception(text, schema)
             else:
                 logger.warning(f"Signal '{schema.name}' not implemented in FinanceSignalsPlugin, skipping")
                 continue

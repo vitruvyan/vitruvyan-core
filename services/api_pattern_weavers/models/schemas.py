@@ -20,9 +20,14 @@ class WeaveRequest(BaseModel):
     
     query: str = Field(..., description="Query text to analyze")
     user_id: Optional[str] = Field(None, description="User identifier")
+    language: str = Field("auto", description="ISO 639-1 language code or 'auto'")
     context: Optional[Dict[str, Any]] = Field(
         default_factory=dict,
         description="Additional context for weaving",
+    )
+    categories: Optional[List[str]] = Field(
+        default=None,
+        description="Optional category filter (e.g., sectors, instruments)",
     )
     limit: int = Field(10, ge=1, le=100, description="Maximum matches")
     threshold: float = Field(0.4, ge=0.0, le=1.0, description="Minimum score")

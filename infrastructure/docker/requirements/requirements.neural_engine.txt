@@ -23,8 +23,8 @@ requests==2.32.3
 python-dateutil==2.9.0
 
 # --- Database (optional, for domain providers) ---
-# Commented out by default - uncomment if using PostgreSQL domain provider
-# psycopg2-binary==2.9.10
+# Required for finance domain provider (TickerDataProvider via PostgresAgent)
+psycopg2-binary==2.9.10
 
 # --- Redis (optional, for caching) ---
 # Commented out by default - uncomment if using Redis cache

@@ -30,10 +30,10 @@ def output_normalizer_node(state: Dict[str, Any]) -> Dict[str, Any]:
         }
 
     # Route: Batch scoring / domain execution
-    elif route in ("batch_eval", "screener", "exec_valid") and "raw_output" in state:
+    elif route in ("batch_eval", "screener", "exec_valid", "ne_valid", "pg_fallback") and "raw_output" in state:
         result = {
-            "route": "batch_eval",
-            "summary": "Batch scoring results",
+            "route": route,
+            "summary": state.get("raw_output", {}).get("summary", "Domain analysis results"),
             "raw_output": state["raw_output"],
         }
 

@@ -41,6 +41,7 @@ structlog==23.2.0
 click==8.2.1
 python-dateutil==2.9.0.post0
 
-# Optional: Market data providers (commented for now)
+# Optional: Market data providers
+finnhub-python>=2.4.0
 # alpha-vantage==2.3.1
 # quandl==3.7.0

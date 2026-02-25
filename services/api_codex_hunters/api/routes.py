@@ -123,6 +123,13 @@ async def health_check() -> Dict[str, Any]:
     }
 
 
+@router.get("/sources", response_model=Dict[str, Any])
+async def get_sources() -> Dict[str, Any]:
+    """Expose DB-backed source registry used by Codex Hunters."""
+    bus_adapter = get_bus_adapter()
+    return bus_adapter.get_source_registry_snapshot()
+
+
 @router.get("/stats", response_model=StatsResponse)
 async def get_stats() -> StatsResponse:
     """Get system statistics."""
@@ -208,13 +215,16 @@ async def get_expedition_history(hours: int = 24) -> List[Dict[str, Any]]:
 async def discover_entity(request: DiscoveryRequest) -> DiscoveryResponse:
     """Discover and track an entity."""
     bus_adapter = get_bus_adapter()
-    
-    result = bus_adapter.process_discovery(
-        entity_id=request.entity_id,
-        source=request.source_type,
-        raw_data=request.raw_data or {},
-        metadata=request.metadata,
-    )
+
+    try:
+        result = bus_adapter.process_discovery(
+            entity_id=request.entity_id,
+            source=request.source_type,
+            raw_data=request.raw_data or {},
+            metadata=request.metadata,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     
     return DiscoveryResponse(
         success=result["success"],
@@ -229,12 +239,15 @@ async def discover_entity(request: DiscoveryRequest) -> DiscoveryResponse:
 async def restore_entity(request: RestoreRequest) -> RestoreResponse:
     """Restore and normalize entity data."""
     bus_adapter = get_bus_adapter()
-    
-    result = bus_adapter.process_restore(
-        entity_id=request.entity_id,
-        raw_data=request.raw_data,
-        source=request.source_type,
-    )
+
+    try:
+        result = bus_adapter.process_restore(
+            entity_id=request.entity_id,
+            raw_data=request.raw_data,
+            source=request.source_type,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     
     return RestoreResponse(
         success=result["success"],

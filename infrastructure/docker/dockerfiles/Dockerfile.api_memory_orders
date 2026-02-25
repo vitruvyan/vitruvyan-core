@@ -27,6 +27,9 @@ COPY services/api_memory_orders/ /app/api_memory_orders/
 # Copy ALL core modules (includes foundation, governance, cognitive, etc.)
 COPY vitruvyan_core/core/ /app/core/
 
+# Copy domain plugins/config packages (finance vertical, etc.)
+COPY vitruvyan_core/domains/ /app/domains/
+
 # Create logs directory and setup user
 RUN useradd --create-home --shell /bin/bash memory && \
     mkdir -p /app/logs && \

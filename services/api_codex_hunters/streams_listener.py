@@ -92,7 +92,7 @@ def _build_discovery_request(
     fallback_event_id: str,
     transport_emitter: str,
 ) -> Dict[str, Any]:
-    source = str(os.getenv("CODEX_OCULUS_SOURCE", "primary")).strip() or "primary"
+    source = str(os.getenv("CODEX_OCULUS_SOURCE", "")).strip()
 
     event_payload_any: Any = payload.get("payload")
     event_payload: Dict[str, Any] = event_payload_any if isinstance(event_payload_any, dict) else {}
@@ -115,15 +115,17 @@ def _build_discovery_request(
         "transport_emitter": transport_emitter,
     }
 
-    return {
+    request: Dict[str, Any] = {
         "entity_id": evidence_id,
-        "source_type": source,
         "raw_data": raw_data,
         "metadata": {
             "correlation_id": correlation_id,
             "stream_channel": channel,
         },
     }
+    if source:
+        request["source_type"] = source
+    return request
 
 
 def _dispatch_spec_for_channel(

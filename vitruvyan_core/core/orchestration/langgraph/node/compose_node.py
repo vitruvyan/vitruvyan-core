@@ -66,6 +66,15 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     print(f"🎨 [compose_node] Intent: {intent}, Route: {route}, Language: {language}")
     print(f"🎨 [compose_node] Service results available: {list(service_result.keys()) if service_result else 'none'}")
+    print(f"🎨 [compose_node] raw_output keys: {list(raw_output.keys()) if raw_output else 'empty'}")
+    
+    # Auto-detect conversation_type from entity count
+    entity_ids = state.get("entity_ids", [])
+    if not state.get("conversation_type") and entity_ids:
+        if len(entity_ids) == 1:
+            state["conversation_type"] = "single_ticker"
+        elif len(entity_ids) > 1:
+            state["conversation_type"] = "comparison"
     
     # Conversational mode (no service results)
     if not service_result and not raw_output and intent in ["greeting", "help", "clarify", "unknown"]:
@@ -208,6 +217,22 @@ def _synthesize_from_results(
             summary = raw_output.get("summary")
             if summary:
                 context_parts.append(f"Analysis summary: {summary}")
+            # Extract ranking data if available (finance domain)
+            ranking = raw_output.get("ranking", {})
+            stocks = ranking.get("stocks", []) if isinstance(ranking, dict) else []
+            if stocks:
+                for s in stocks[:5]:  # Limit to top 5
+                    tk = s.get("ticker", "?")
+                    parts = [f"{tk}:"]
+                    for metric in ("composite_score", "trend_z", "momentum_z", "vola_z"):
+                        v = s.get(metric)
+                        if v is not None:
+                            parts.append(f"{metric}={v}")
+                    if s.get("short_trend"):
+                        parts.append(f"trend={s['short_trend']}/{s.get('medium_trend','?')}/{s.get('long_trend','?')}")
+                    if s.get("rsi"):
+                        parts.append(f"RSI={s['rsi']}")
+                    context_parts.append(" ".join(parts))
         
         context_str = "\n".join(context_parts) if context_parts else "No detailed results available"
         

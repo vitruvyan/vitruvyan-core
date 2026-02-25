@@ -53,7 +53,7 @@ def test_graph_with_dispatch():
     payload = {
         "input_text": "Compare Apple and Microsoft",
         "user_id": "test_user",
-        "validated_entities": ["AAPL", "MSFT"]
+        "validated_tickers": ["AAPL", "MSFT"]
     }
     
     response = httpx.post(f"{BASE_URL}/graph/dispatch", json=payload, timeout=30.0)
@@ -88,12 +88,12 @@ def test_graph_timeout():
         print(f"✅ Timeout handled gracefully: {response.status_code}")
 
 
-def test_graph_with_prevalidated_entities():
-    """Test graph execution with pre-validated entities (skip resolution)."""
+def test_graph_with_prevalidated_tickers():
+    """Test graph execution with pre-validated tickers (skip resolution)."""
     payload = {
         "input_text": "Should I invest?",
         "user_id": "test_user",
-        "validated_entities": ["AAPL", "GOOGL"]  # Skip entity resolution
+        "validated_tickers": ["AAPL", "GOOGL"]  # Skip entity resolution
     }
     
     response = httpx.post(f"{BASE_URL}/run", json=payload, timeout=30.0)

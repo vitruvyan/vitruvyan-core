@@ -663,14 +663,31 @@ class HTTPClient:
                 )
             
             except httpx.HTTPStatusError as e:
-                logger.error(f"HTTP error {e.response.status_code}: {e}")
+                status = e.response.status_code
+                logger.error(f"HTTP error {status}: {e}")
                 
-                # Don't retry on 4xx errors (client errors)
-                if 400 <= e.response.status_code < 500:
+                # 429 Too Many Requests → retry with Retry-After or backoff
+                if status == 429:
+                    retry_after = e.response.headers.get("Retry-After")
+                    if retry_after and retry_after.isdigit():
+                        wait = int(retry_after)
+                    else:
+                        wait = config.retry_backoff ** (attempt + 1)
+                    attempt += 1
+                    if attempt < config.max_retries:
+                        logger.warning(
+                            f"Rate limited (429). Waiting {wait}s before retry "
+                            f"{attempt}/{config.max_retries}…"
+                        )
+                        time.sleep(wait)
+                    continue
+                
+                # Don't retry on other 4xx errors (client errors)
+                if 400 <= status < 500:
                     return APIResponse(
                         success=False,
-                        status_code=e.response.status_code,
-                        error_message=f"HTTP {e.response.status_code}: {str(e)}"
+                        status_code=status,
+                        error_message=f"HTTP {status}: {str(e)}"
                     )
                 
                 # Retry on 5xx errors (server errors)

@@ -1,0 +1,2 @@
+# Finance MCP domain tests
+

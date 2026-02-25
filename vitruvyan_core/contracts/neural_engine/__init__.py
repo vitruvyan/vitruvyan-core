@@ -12,6 +12,10 @@ from .scoring_strategy import (
     InvalidProfileError,
     InvalidWeightsError,
 )
+from .filter_strategy import (
+    IFilterStrategy,
+    FilterStrategyError,
+)
 
 __all__ = [
     "IDataProvider",
@@ -22,4 +26,6 @@ __all__ = [
     "ScoringStrategyError",
     "InvalidProfileError",
     "InvalidWeightsError",
+    "IFilterStrategy",
+    "FilterStrategyError",
 ]

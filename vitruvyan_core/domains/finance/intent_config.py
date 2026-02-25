@@ -125,7 +125,31 @@ def register_finance_intents(registry: IntentRegistry) -> IntentRegistry:
                 "buy", "acquista", "acquisto",
             ],
             requires_amount=True,
-            route_type="exec",
+            route_type="direct",
+        ),
+        IntentDefinition(
+            name="comparison",
+            description="Compare two or more stocks/entities",
+            examples=[
+                "Compare AAPL vs MSFT",
+                "Confronta AAPL e GOOGL",
+                "Which is better, TSLA or NVDA?",
+            ],
+            synonyms=["compare", "confronta", "vs", "versus", "meglio"],
+            requires_entities=True,
+            route_type="direct",
+        ),
+        IntentDefinition(
+            name="portfolio_review",
+            description="Conversational portfolio analysis and rebalancing",
+            examples=[
+                "Analizza il mio portafoglio",
+                "Review my portfolio",
+                "Come sta il mio portfolio?",
+                "Portfolio analysis",
+            ],
+            synonyms=["portfolio", "portafoglio", "holdings", "posizioni"],
+            route_type="direct",
         ),
         IntentDefinition(
             name="horizon_advice",
@@ -136,6 +160,62 @@ def register_finance_intents(registry: IntentRegistry) -> IntentRegistry:
             ],
             synonyms=[],
             route_type="soft",
+        ),
+        # ----------------------------------------------------------
+        # Shadow Trading intents (direct-routed via GRAPH_DOMAIN hook)
+        # ----------------------------------------------------------
+        IntentDefinition(
+            name="shadow_buy",
+            description="Buy/acquire shares in shadow (paper) trading",
+            examples=[
+                "Compra 100 AAPL",
+                "Buy 50 TSLA",
+                "Acquista 200 NVDA",
+                "Shadow buy 100 MSFT",
+            ],
+            synonyms=[
+                "compra", "buy", "acquista", "acquisto",
+                "shadow_buy", "paper buy",
+            ],
+            requires_entities=True,
+            route_type="direct",
+        ),
+        IntentDefinition(
+            name="shadow_sell",
+            description="Sell shares in shadow (paper) trading",
+            examples=[
+                "Vendi 100 AAPL",
+                "Sell 50 TSLA",
+                "Shadow sell 200 NVDA",
+            ],
+            synonyms=[
+                "vendi", "sell", "vendita",
+                "shadow_sell", "paper sell",
+            ],
+            requires_entities=True,
+            route_type="direct",
+        ),
+        IntentDefinition(
+            name="shadow_portfolio",
+            description="View shadow (paper) trading portfolio",
+            examples=[
+                "Mostra il mio portafoglio shadow",
+                "Shadow portfolio",
+                "My paper trading positions",
+            ],
+            synonyms=["shadow portfolio", "paper portfolio"],
+            route_type="direct",
+        ),
+        IntentDefinition(
+            name="portfolio_monitor",
+            description="Portfolio health monitoring and guardian alerts",
+            examples=[
+                "Monitora il mio portafoglio",
+                "Portfolio health check",
+                "Guardian check",
+            ],
+            synonyms=["monitor", "guardian", "health check"],
+            route_type="direct",
         ),
     ]
     for intent in intents:
@@ -249,6 +329,14 @@ CONTEXT_KEYWORDS: dict[str, list[str]] = {
     "soft": [],
     "horizon_advice": [],
     "unknown": [],
+    # Shadow trading intents — always allowed
+    "shadow_buy": [],
+    "shadow_sell": [],
+    "shadow_portfolio": [],
+    "portfolio_monitor": [],
+    # Phase 2 intents
+    "comparison": [],
+    "portfolio_review": [],
 }
 
 # Ambiguous patterns (regex) — always reject regardless of GPT classification

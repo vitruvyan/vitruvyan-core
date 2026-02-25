@@ -12,6 +12,7 @@ Adapters:
 
 from .bus_adapter import BusAdapter, get_bus_adapter
 from .embedding import EmbeddingAdapter, get_embedding_adapter
+from .finance_adapter import get_finance_adapter, is_finance_enabled
 from .persistence import PersistenceAdapter, get_persistence
 
 __all__ = [
@@ -24,4 +25,7 @@ __all__ = [
     # Bus
     "BusAdapter",
     "get_bus_adapter",
+    # Finance vertical
+    "get_finance_adapter",
+    "is_finance_enabled",
 ]

@@ -7,12 +7,12 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
-from api_neural_engine.schemas.api_models import (
+from ..schemas.api_models import (
     ScreenRequest, ScreenResponse,
     RankRequest, RankResponse,
     HealthResponse,
 )
-from api_neural_engine.monitoring.metrics import (
+from ..monitoring.metrics import (
     screening_requests_total, screening_duration_seconds,
     entities_processed_total, service_is_healthy,
 )
@@ -28,10 +28,21 @@ async def screen_entities(request: ScreenRequest, raw: Request = None):
     try:
         result = await raw.app.state.orchestrator.screen(
             profile=request.profile,
+            entity_ids=request.entity_ids,
             filters=request.filters,
             top_k=request.top_k,
             stratification_mode=request.stratification_mode or "global",
             risk_tolerance=request.risk_tolerance or "medium",
+            mode=request.mode or "discovery",
+            sector=request.sector,
+            momentum_breakout=request.momentum_breakout,
+            value_screening=request.value_screening,
+            divergence_detection=request.divergence_detection,
+            multi_timeframe_filter=request.multi_timeframe_filter,
+            smart_money_flow=request.smart_money_flow,
+            earnings_safety_days=request.earnings_safety_days,
+            portfolio_diversification=request.portfolio_diversification,
+            macro_factor=request.macro_factor,
         )
         screening_requests_total.labels(
             profile=request.profile,

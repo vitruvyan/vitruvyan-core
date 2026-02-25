@@ -3,7 +3,7 @@
 > **Last updated**: February 13, 2026
 
 **Port**: 8003  
-**Status**: ✅ Production Ready (Domain-Agnostic v2.0)  
+**Status**: ✅ Production Ready (Domain-Agnostic core + Finance vertical)  
 **Architecture**: Pluggable domain providers via contracts (IDataProvider, IScoringStrategy)
 
 ---
@@ -251,27 +251,39 @@ curl http://localhost:8003/profiles
 | `DB_USER` | Database user | - | `vitruvyan_user` |
 | `DB_PASS` | Database password | - | `***` |
 
-### Domain Loading (TODO)
+### Domain Loading
 
-Currently uses `MockDataProvider` for testing. In production:
+The orchestrator loads provider/strategy by `DOMAIN`:
 
 ```python
-# modules/engine_orchestrator.py (TODO)
+# modules/engine_orchestrator.py
 domain = os.getenv("DOMAIN", "mock")
 
 if domain == "finance":
-    from vitruvyan.domains.finance import TickerDataProvider, FinancialScoringStrategy
-    self.data_provider = TickerDataProvider(db_connection_string)
-    self.scoring_strategy = FinancialScoringStrategy(config_path)
-elif domain == "healthcare":
-    from vitruvyan.domains.healthcare import PatientDataProvider, ClinicalScoringStrategy
-    self.data_provider = PatientDataProvider(ehr_api_url)
-    self.scoring_strategy = ClinicalScoringStrategy(config_path)
+    from vitruvyan_core.domains.finance.neural_engine import (
+        TickerDataProvider,
+        FinancialScoringStrategy,
+    )
+    self.data_provider = TickerDataProvider()
+    self.scoring_strategy = FinancialScoringStrategy()
 else:  # mock
     from vitruvyan_core.core.neural_engine.domain_examples import MockDataProvider, MockScoringStrategy
     self.data_provider = MockDataProvider(num_entities=100)
     self.scoring_strategy = MockScoringStrategy()
 ```
+
+Finance profiles imported from legacy monolith:
+- `short_spec`
+- `balanced_mid`
+- `trend_follow`
+- `momentum_focus`
+- `sentiment_boost`
+- `low_risk`
+
+Compatibility aliases:
+- `balanced` -> `balanced_mid`
+- `aggressive` -> `momentum_focus`
+- `conservative` -> `low_risk`
 
 ---
 
@@ -374,6 +386,6 @@ When modifying this service:
 
 ---
 
-**Status**: ✅ Phase 1 Complete (Mock domain ready for testing)  
-**Next Phase**: Integrate TickerDataProvider + FinancialScoringStrategy from vitruvyan monolith  
+**Status**: ✅ Finance domain integrated (TickerDataProvider + FinancialScoringStrategy)  
+**Next Phase**: Add advanced finance filters (momentum breakout/value screening/divergence) as optional filter strategy  
 **Last Updated**: February 13, 2026

@@ -1,137 +1,44 @@
-# 🏛️ MCP Server — Model Context Protocol Gateway
+# MCP Server - Model Context Protocol Gateway
 
-> **Last updated**: February 13, 2026
+MCP is a stateless gateway that exposes function-calling tools and applies Sacred Orders governance to each execution.
 
-MCP è un **gateway stateless** che espone tool in formato "function-calling" e applica una pipeline di governance/audit (Sacred Orders) a ogni esecuzione.
+Canonical docs: `docs/services/mcp.md`
 
-> **Feb 13, 2026**: Added `adapters/` (bus_adapter.py, persistence.py) and
-> `monitoring/` (__init__.py with Prometheus metrics, health.py). Inline metric
-> declarations extracted from `api/routes.py` to `monitoring/`. Service now at
-> 100% SACRED_ORDER_PATTERN conformance.
+## Runtime Modes
 
-Documentazione canonica (vitruvyan-core): `docs/services/mcp.md`
+- `MCP_DOMAIN=generic` (default): domain-agnostic tool catalog.
+- `MCP_DOMAIN=finance`: enables finance adapter (Vitruvyan-compatible aliases and args normalization).
 
-## Architettura (alto livello)
+Finance alias examples:
 
-```
-LLM → MCP (8020) → tool executor (vertical-specific)
-              ↓
- Redis bus (event) → Orthodoxy (validate) → Postgres (audit)
-```
+- `screen_tickers` -> `screen_entities`
+- `compare_tickers` -> `compare_entities`
+- `query_sentiment` -> `query_signals`
 
-## Endpoints
+## API Endpoints
 
-- `GET /tools` — discovery tool schemas
-- `POST /execute` — execute tool + governance/audit
-- `GET /health` — healthcheck
-- `GET /metrics` — Prometheus metrics
+- `GET /tools` - Tool discovery (OpenAI function-calling schema)
+- `POST /execute` - Execute tool + governance/audit pipeline
+- `GET /health` - Service health
+- `GET /metrics` - Prometheus metrics
 
-## Configurazione (env)
+Finance mode extra endpoints:
 
-Infrastruttura:
+- `GET /v1/finance/config` - Active finance config and source candidates
+- `GET /v1/finance/tools` - Finance-oriented tool catalog + executor names
+- `POST /v1/finance/normalize` - Resolve alias tool/args to canonical request
 
+## Core Environment Variables
+
+- `PORT`, `LOG_LEVEL`, `MCP_DOMAIN`
 - `REDIS_HOST`, `REDIS_PORT`
 - `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`
+- `LANGGRAPH_URL`/`LANGGRAPH_API`, `NEURAL_ENGINE_API`, `PATTERN_WEAVERS_API`
+- `MCP_Z_THRESHOLD`, `MCP_COMPOSITE_THRESHOLD`, `MCP_MIN_SUMMARY_WORDS`, `MCP_MAX_SUMMARY_WORDS`, `MCP_FACTOR_KEYS`
 
-Dipendenze esterne (se usate dagli executor attivi):
+Finance-specific:
 
-- `LANGGRAPH_URL` / `LANGGRAPH_API`
-- `NEURAL_ENGINE_API`, `VEE_ENGINE_API`, `PATTERN_WEAVERS_API`
+- `MCP_FINANCE_EXPOSE_LEGACY_TOOLS` (default `true`)
+- `MCP_FINANCE_SIGNAL_TABLE` (optional override)
+- `MCP_FINANCE_SIGNAL_ENTITY_COLUMN` (optional override)
 
-## Nota sulla neutralità di dominio
-
-Il catalogo tool e i relativi executor **devono essere definiti dal vertical**. Se vedi tool con terminologia legata a un dominio specifico, considerali **placeholder/migrazione**.
-
-## Esempio docker-compose (minimo)
-
-```yaml
-vitruvyan_mcp:
-  build:
-    context: ../..
-    dockerfile: services/mcp/Dockerfile
-  environment:
-    PYTHONPATH: /app
-    REDIS_HOST: omni_redis
-    REDIS_PORT: 6379
-    POSTGRES_HOST: omni_postgres
-    POSTGRES_PORT: 5432
-    POSTGRES_DB: vitruvyan
-    POSTGRES_USER: vitruvyan
-    POSTGRES_PASSWORD: vitruvyan
-  ports:
-    - "9020:8020"
-  restart: unless-stopped
-  networks:
-    - omni-net
-  depends_on:
-    - vitruvyan_postgres
-    - vitruvyan_redis
-  healthcheck:
-    test: ["CMD", "curl", "-f", "http://localhost:8020/health"]
-    interval: 30s
-    timeout: 10s
-    retries: 3
-```
-
-## Schema PostgreSQL Required
-
-```sql
--- Migration: 001_mcp_tool_calls.sql
-CREATE TABLE IF NOT EXISTS mcp_tool_calls (
-    id SERIAL PRIMARY KEY,
-    conclave_id TEXT NOT NULL,
-    tool_name TEXT NOT NULL,
-    args JSONB NOT NULL,
-    result JSONB NOT NULL,
-    orthodoxy_status TEXT NOT NULL,
-    user_id TEXT,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE INDEX idx_mcp_conclave_id ON mcp_tool_calls(conclave_id);
-CREATE INDEX idx_mcp_tool_name ON mcp_tool_calls(tool_name);
-CREATE INDEX idx_mcp_created_at ON mcp_tool_calls(created_at DESC);
-```
-
-## Endpoints
-
-- **POST /tools/list** - Lista tool disponibili (OpenAI format)
-- **POST /tools/execute** - Esegue tool con Sacred Orders pipeline
-- **GET /health** - Health check
-- **GET /metrics** - Prometheus metrics
-
-## Testing
-
-```bash
-# Health check
-curl http://localhost:9020/health
-
-# List tools
-curl -X POST http://localhost:9020/tools/list
-
-# Execute tool (screen entity_id)
-curl -X POST http://localhost:9020/tools/execute \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tool_name": "screen_ticker",
-    "arguments": {"entity_id": "EXAMPLE_ENTITY_1"},
-    "user_id": "test_user"
-  }'
-```
-
-## Blockers per Deployment
-
-1. ❌ **Pattern Weavers** service non presente in docker-compose
-   - Opzioni:
-     a. Commentare dipendenza (service opzionale)
-     b. Creare servizio Pattern Weavers
-     c. Mock endpoint in MCP per fallback graceful
-
-2. ✅ **Schema PostgreSQL** - Verifica che migration `001_mcp_tool_calls.sql` sia applicata
-
-## Note
-
-- Porta host: **9020** (mapped da container 8020)
-- Il servizio NON è mai stato aggiunto al docker-compose originale
-- Codice completo e funzionante, ready for deployment
-- Prometheus metrics integrate per monitoring

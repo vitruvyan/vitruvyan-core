@@ -6,7 +6,7 @@ import logging
 
 from vitruvyan_core.core.agents.postgres_agent import PostgresAgent
 from vitruvyan_core.core.synaptic_conclave.transport.streams import StreamBus
-from vitruvyan_edge.oculus_prime.core.event_emitter import OculusPrimeEventEmitter
+from infrastructure.edge.oculus_prime.core.event_emitter import OculusPrimeEventEmitter
 
 from ..config import OculusPrimeSettings
 

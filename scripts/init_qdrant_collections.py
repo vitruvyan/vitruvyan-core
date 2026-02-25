@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 """
-Initialize Qdrant Collections for Vitruvyan Core
-================================================
+Initialize Qdrant Collections for Mercator
+===========================================
 
 Creates required Qdrant collections if they don't exist.
 Safe to run multiple times (won't delete existing data).
 
-Collections:
-- semantic_states: VSGS semantic grounding (384-dim, MiniLM-L6-v2)
-- patterns: Pattern Weavers ontology (384-dim, MiniLM-L6-v2)
+All collections use 384-dim vectors (MiniLM-L6-v2) with Cosine distance,
+except graph_states (dim=1, metadata-only collection).
+
+Migrated from vitruvyan production (27 collections, 1.87M vectors).
 
 Usage:
     python scripts/init_qdrant_collections.py
-    
+
 Environment Variables:
     QDRANT_HOST, QDRANT_PORT, QDRANT_URL
 """
@@ -33,20 +34,59 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Collection configurations
+# Collection configurations — full inventory from vitruvyan
+# Grouped by Sacred Order / domain function
 COLLECTIONS = [
-    {
-        "name": "semantic_states",
-        "vector_size": 384,  # MiniLM-L6-v2 embedding dimension
-        "distance": "Cosine",
-        "description": "VSGS semantic grounding contexts"
-    },
-    {
-        "name": "patterns",
-        "vector_size": 384,  # MiniLM-L6-v2 embedding dimension
-        "distance": "Cosine",
-        "description": "Pattern Weavers ontology taxonomy"
-    },
+    # === CORE: Semantic Engine ===
+    {"name": "semantic_states",          "vector_size": 384, "distance": "Cosine", "description": "VSGS semantic grounding contexts"},
+    {"name": "embeddings",               "vector_size": 384, "distance": "Cosine", "description": "General-purpose embeddings"},
+    {"name": "phrases_embeddings",       "vector_size": 384, "distance": "Cosine", "description": "NLP phrase embeddings (api_embedding)"},
+    {"name": "explanations_embeddings",  "vector_size": 384, "distance": "Cosine", "description": "Explanation text embeddings"},
+
+    # === CORE: Pattern Weavers ===
+    {"name": "patterns",                 "vector_size": 384, "distance": "Cosine", "description": "Pattern Weavers ontology taxonomy"},
+    {"name": "language_patterns",        "vector_size": 384, "distance": "Cosine", "description": "Language pattern recognition"},
+    {"name": "weave_embeddings",         "vector_size": 384, "distance": "Cosine", "description": "Pattern weave result embeddings"},
+
+    # === CORE: Babel Gardens ===
+    {"name": "conversations_embeddings", "vector_size": 384, "distance": "Cosine", "description": "Conversation history embeddings"},
+    {"name": "sentiment_context",        "vector_size": 384, "distance": "Cosine", "description": "Sentiment contextual embeddings"},
+    {"name": "sentiment_embeddings",     "vector_size": 384, "distance": "Cosine", "description": "Sentiment analysis embeddings"},
+
+    # === CORE: Graph / Orchestration ===
+    {"name": "graph_states",             "vector_size": 1,   "distance": "Cosine", "description": "LangGraph state metadata (dim=1, payload-only)"},
+
+    # === CORE: Orthodoxy / Audit ===
+    {"name": "audit_embeddings",         "vector_size": 384, "distance": "Cosine", "description": "Audit trail embeddings"},
+
+    # === CORE: Codex Hunters ===
+    {"name": "entity_embeddings",        "vector_size": 384, "distance": "Cosine", "description": "Codex Hunters entity semantic embeddings"},
+
+    # === CORE: Knowledge Base ===
+    {"name": "vitruvyan_docs",           "vector_size": 384, "distance": "Cosine", "description": "System documentation embeddings"},
+    {"name": "vitruvyan_notes",          "vector_size": 384, "distance": "Cosine", "description": "System notes embeddings"},
+    {"name": "aegis_demo_kb",            "vector_size": 384, "distance": "Cosine", "description": "Demo knowledge base"},
+
+    # === FINANCE: Market Data ===
+    {"name": "financial_templates",      "vector_size": 384, "distance": "Cosine", "description": "Financial template embeddings (1.7M vectors)"},
+    {"name": "market_data",              "vector_size": 384, "distance": "Cosine", "description": "Market data embeddings"},
+    {"name": "ticker_embeddings",        "vector_size": 384, "distance": "Cosine", "description": "Ticker/entity embeddings"},
+
+    # === FINANCE: Factor Analysis ===
+    {"name": "momentum_vectors",         "vector_size": 384, "distance": "Cosine", "description": "Momentum factor vectors"},
+    {"name": "volatility_vectors",       "vector_size": 384, "distance": "Cosine", "description": "Volatility factor vectors"},
+    {"name": "trend_vectors",            "vector_size": 384, "distance": "Cosine", "description": "Trend factor vectors"},
+    {"name": "vare_embeddings",          "vector_size": 384, "distance": "Cosine", "description": "VaRE risk embeddings"},
+    {"name": "vhsw_embeddings",          "vector_size": 384, "distance": "Cosine", "description": "VHSW strength embeddings"},
+    {"name": "vmfl_embeddings",          "vector_size": 384, "distance": "Cosine", "description": "VMFL factor embeddings"},
+
+    # === DOMAIN: Tracking / Demo ===
+    {"name": "ship_tracking_vectors",    "vector_size": 384, "distance": "Cosine", "description": "Ship tracking embeddings"},
+    {"name": "ship_tracker_embeddings",  "vector_size": 384, "distance": "Cosine", "description": "Ship tracker embeddings"},
+    {"name": "air_traffic_embeddings",   "vector_size": 384, "distance": "Cosine", "description": "Air traffic embeddings"},
+
+    # === TEST ===
+    {"name": "test_collection",          "vector_size": 384, "distance": "Cosine", "description": "Test/development collection"},
 ]
 
 

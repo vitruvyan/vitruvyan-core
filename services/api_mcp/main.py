@@ -9,8 +9,13 @@ from core.middleware.auth import AuthMiddleware
 
 from config import get_config
 from api import router
+from adapters.finance_adapter import get_finance_adapter, is_finance_enabled
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+_bootstrap_config = get_config()
+logging.basicConfig(
+    level=getattr(logging, _bootstrap_config.service.log_level.upper(), logging.INFO),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 
@@ -18,18 +23,24 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     config = get_config()
     logger.info("=" * 60)
-    logger.info("🏛️ Vitruvyan MCP Server starting")
+    logger.info("🏛️ Mercator MCP Server starting")
+    logger.info(f"   Domain: {config.service.domain}")
     logger.info(f"   LangGraph: {config.api.langgraph}")
     logger.info(f"   Pattern Weavers: {config.api.pattern_weavers}")
     logger.info(f"   Redis: {config.redis.host}:{config.redis.port}")
+    logger.info(f"   PostgreSQL: {config.postgres.host}:{config.postgres.port}/{config.postgres.database}")
     logger.info(f"   Port: {config.service.port}")
+    if is_finance_enabled():
+        finance_adapter = get_finance_adapter()
+        if finance_adapter is not None:
+            logger.info("   Finance aliases: %s", sorted(finance_adapter.config.tool_aliases.keys()))
     logger.info("=" * 60)
     yield
     logger.info("🛑 MCP Server shutting down")
 
 
 app = FastAPI(
-    title="Vitruvyan MCP Server",
+    title="Mercator MCP Server",
     description="Model Context Protocol Bridge to Sacred Orders",
     version="1.0.0",
     lifespan=lifespan,
@@ -39,6 +50,10 @@ _ALLOWED_ORIGINS = os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:3000
 app.add_middleware(AuthMiddleware)
 app.add_middleware(CORSMiddleware, allow_origins=_ALLOWED_ORIGINS, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.include_router(router)
+if is_finance_enabled():
+    from api.routes_finance import router as finance_router
+
+    app.include_router(finance_router)
 
 
 if __name__ == "__main__":

@@ -11,6 +11,44 @@ Layer: Service (LIVELLO 2)
 import os
 
 
+def _default_postgres_host() -> str:
+    """Resolve PostgreSQL host for docker and local shells."""
+    explicit = os.getenv("POSTGRES_HOST")
+    if explicit:
+        return explicit
+    if os.path.exists("/.dockerenv"):
+        return "mercator_postgres"
+    return "localhost"
+
+
+def _default_postgres_port(host: str) -> int:
+    """Resolve PostgreSQL port for docker network vs local mapped port."""
+    explicit = os.getenv("POSTGRES_PORT")
+    if explicit:
+        return int(explicit)
+    return 5432 if host == "mercator_postgres" else 2432
+
+
+def _default_qdrant_host() -> str:
+    """Resolve Qdrant host for docker and local shells."""
+    explicit = os.getenv("QDRANT_HOST")
+    if explicit:
+        return explicit
+    if os.path.exists("/.dockerenv"):
+        return "mercator_qdrant"
+    return "localhost"
+
+
+def _default_redis_host() -> str:
+    """Resolve Redis host for docker and local shells."""
+    explicit = os.getenv("REDIS_HOST")
+    if explicit:
+        return explicit
+    if os.path.exists("/.dockerenv"):
+        return "mercator_redis"
+    return "localhost"
+
+
 class Settings:
     """Memory Orders service configuration."""
     
@@ -18,28 +56,33 @@ class Settings:
     SERVICE_NAME = "api_memory_orders"
     SERVICE_PORT = int(os.getenv("MEMORY_API_PORT", "8016"))
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+    MEMORY_DOMAIN = os.getenv("MEMORY_DOMAIN", "generic").lower()
     
     # PostgreSQL (Archivarium)
-    POSTGRES_HOST = os.getenv("POSTGRES_HOST", "core_postgres")
-    POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
-    POSTGRES_DB = os.getenv("POSTGRES_DB", "vitruvyan_core")
-    POSTGRES_USER = os.getenv("POSTGRES_USER", "vitruvyan_user")
-    POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "")
+    POSTGRES_HOST = _default_postgres_host()
+    POSTGRES_PORT = _default_postgres_port(POSTGRES_HOST)
+    POSTGRES_DB = os.getenv("POSTGRES_DB", "mercator")
+    POSTGRES_USER = os.getenv("POSTGRES_USER", "mercator_user")
+    POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "mercator_pass")
     
     # Qdrant (Mnemosyne)
-    QDRANT_HOST = os.getenv("QDRANT_HOST", "core_qdrant")
+    QDRANT_HOST = _default_qdrant_host()
     QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
     QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "entities_embeddings")
     
     # Redis (Cognitive Bus)
-    REDIS_HOST = os.getenv("REDIS_HOST", "core_redis")
+    REDIS_HOST = _default_redis_host()
     REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
     REDIS_DB = int(os.getenv("REDIS_DB", "0"))
     REDIS_URL = os.getenv("REDIS_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}")
     
     # External services (for health checks)
-    EMBEDDING_API_URL = os.getenv("EMBEDDING_API_URL", "http://vitruvyan_api_embedding:8010")
-    BABEL_GARDENS_URL = os.getenv("BABEL_GARDENS_URL", "http://vitruvyan_babel_gardens:8009")
+    EMBEDDING_API_URL = os.getenv("EMBEDDING_API_URL", "http://localhost:8010")
+    BABEL_GARDENS_URL = os.getenv("BABEL_GARDENS_URL", "http://localhost:8009")
+
+    # Finance vertical source override (optional)
+    MEMORY_FINANCE_TABLE = os.getenv("MEMORY_FINANCE_TABLE", "")
+    MEMORY_FINANCE_COLLECTION = os.getenv("MEMORY_FINANCE_COLLECTION", "")
     
     # Coherence thresholds
     COHERENCE_THRESHOLD_HEALTHY = float(os.getenv("COHERENCE_THRESHOLD_HEALTHY", "5.0"))
@@ -66,6 +109,9 @@ class Settings:
 
 
 settings = Settings()
+
+if settings.MEMORY_DOMAIN not in {"generic", "finance"}:
+    settings.MEMORY_DOMAIN = "generic"
 
 if settings.MEMORY_RECONCILIATION_MODE not in {"dry_run", "assisted", "autonomous"}:
     settings.MEMORY_RECONCILIATION_MODE = "dry_run"

@@ -44,7 +44,10 @@ class DiscoveryRequest(BaseModel):
     """Request for entity discovery."""
     
     entity_id: str = Field(..., description="Unique entity identifier")
-    source_type: str = Field(..., description="Source type (configurable)")
+    source_type: Optional[str] = Field(
+        default=None,
+        description="Source type (optional: resolved from DB source registry)"
+    )
     raw_data: Optional[Dict[str, Any]] = Field(
         default=None,
         description="Raw data from source"

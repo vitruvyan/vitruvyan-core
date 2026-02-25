@@ -39,10 +39,32 @@ class _FakePersistence:
 class _FakeListenerAdapter:
     def __init__(self):
         self.calls: list[tuple[dict, str | None]] = []
+        self.signal_calls: list[dict] = []
 
     def ingest_external_audit(self, payload, correlation_id=None):
         self.calls.append((payload, correlation_id))
         return {"status": "stored"}
+
+    def handle_signal_timeseries_archival(
+        self,
+        entity_id,
+        signal_results,
+        vertical,
+        schema_version,
+        retention_days,
+        correlation_id,
+    ):
+        self.signal_calls.append(
+            {
+                "entity_id": entity_id,
+                "signal_results": signal_results,
+                "vertical": vertical,
+                "schema_version": schema_version,
+                "retention_days": retention_days,
+                "correlation_id": correlation_id,
+            }
+        )
+        return {"status": "completed"}
 
 
 def test_ingest_external_audit_maps_memory_orders_to_vault_record():
@@ -97,3 +119,28 @@ def test_stream_listener_routes_audit_vault_requested_to_ingest():
     assert len(adapter.calls) == 1
     assert adapter.calls[0][0] == payload
     assert adapter.calls[0][1] == "corr-listener"
+
+
+def test_stream_listener_routes_babel_sentiment_to_signal_archive_in_finance_mode():
+    adapter = _FakeListenerAdapter()
+    payload = {
+        "entity_id": "AAPL",
+        "signal_results": [
+            {"signal_name": "sentiment_valence", "value": 0.7, "confidence": 0.9}
+        ],
+        "schema_version": "2.1",
+    }
+
+    asyncio.run(
+        _handle_event(
+            adapter=adapter,
+            channel="babel.sentiment.completed",
+            payload=payload,
+            correlation_id="corr-babel",
+            finance_mode=True,
+        )
+    )
+
+    assert len(adapter.signal_calls) == 1
+    assert adapter.signal_calls[0]["entity_id"] == "AAPL"
+    assert adapter.signal_calls[0]["vertical"] == "finance"

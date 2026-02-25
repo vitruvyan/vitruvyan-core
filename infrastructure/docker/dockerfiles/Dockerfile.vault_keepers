@@ -29,6 +29,9 @@ COPY --chown=vitruvyan:vitruvyan services/api_vault_keepers/ /app/api_vault_keep
 # Copy ALL core modules (includes governance, foundation, etc.)
 COPY --chown=vitruvyan:vitruvyan vitruvyan_core/core/ /app/core/
 
+# Copy domain plugins/config packages (finance vertical, etc.)
+COPY --chown=vitruvyan:vitruvyan vitruvyan_core/domains/ /app/domains/
+
 ENV PYTHONPATH=/app
 ENV PATH="/home/vitruvyan/.local/bin:$PATH"
 

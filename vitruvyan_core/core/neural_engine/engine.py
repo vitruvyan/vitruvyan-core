@@ -160,14 +160,21 @@ class NeuralEngine:
             raise ValueError(f"Invalid profile '{profile}'. Available: {available_profiles}")
         
         # STEP 1: Extract universe
+        # Always fetch the full universe for z-score computation (needs reference population).
+        # If entity_ids is provided, we filter AFTER scoring to preserve z-score distribution.
+        full_universe_df = self.data_provider.get_universe(filters=filters)
+        
         if entity_ids:
-            # Filter universe to specific entities
-            universe_df = self.data_provider.get_universe(filters=filters)
-            universe_df = universe_df[universe_df["entity_id"].isin(entity_ids)]
-            logger.info(f"Universe filtered to {len(universe_df)} specified entities")
+            # Verify requested entities exist in universe
+            requested_set = set(entity_ids)
+            universe_set = set(full_universe_df["entity_id"].tolist())
+            found = requested_set & universe_set
+            if not found:
+                return self._empty_result(f"No requested entities found in universe: {entity_ids}")
+            universe_df = full_universe_df  # Use full universe for z-score computation
+            logger.info(f"Universe: {len(universe_df)} entities (will filter to {len(found)} after scoring)")
         else:
-            # Get full universe (optionally filtered)
-            universe_df = self.data_provider.get_universe(filters=filters)
+            universe_df = full_universe_df
             logger.info(f"Universe extracted: {len(universe_df)} entities")
         
         if universe_df.empty:
@@ -235,6 +242,11 @@ class NeuralEngine:
                 risk_tolerance=risk_tolerance
             )
             logger.info(f"Risk adjustment applied: tolerance={risk_tolerance}")
+        
+        # STEP 6b: Filter to requested entities (after z-scores are computed on full universe)
+        if entity_ids:
+            df = df[df["entity_id"].isin(entity_ids)].copy()
+            logger.info(f"Post-scoring filter: {len(df)} requested entities retained")
         
         # STEP 7: Rank entities
         ranked_df = self.ranker.rank_entities(

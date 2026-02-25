@@ -24,7 +24,7 @@ CREATE INDEX IF NOT EXISTS idx_mcp_tool_calls_orthodoxy ON mcp_tool_calls(orthod
 CREATE INDEX IF NOT EXISTS idx_mcp_tool_calls_conclave ON mcp_tool_calls(conclave_id);
 
 -- Grant permissions
-GRANT SELECT, INSERT ON mcp_tool_calls TO vitruvyan_core_user;
+GRANT SELECT, INSERT ON mcp_tool_calls TO mercator_user;
 
 -- Comment for documentation
 COMMENT ON TABLE mcp_tool_calls IS 'MCP Gateway Vault Keepers audit trail - tracks all tool executions with Sacred Orders validation status (blessed/purified/heretical)';

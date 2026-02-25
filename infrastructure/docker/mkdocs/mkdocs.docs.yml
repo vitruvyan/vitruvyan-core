@@ -141,9 +141,9 @@ nav:
     - Pattern Weavers: docs/orders/PATTERN_WEAVERS.md
 
 extra_css:
-  - docs/stylesheets/material_v1.css?v=20260224g
+  - docs/stylesheets/material_v1.css?v=20260219m
 
 extra_javascript:
-  - docs/javascripts/vitruvyan.js?v=20260224b
+  - docs/javascripts/vitruvyan.js?v=20260219k
 
 copyright: Copyright &copy; 2026 Vitruvyan Team
