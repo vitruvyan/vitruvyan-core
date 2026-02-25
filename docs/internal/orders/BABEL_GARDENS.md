@@ -1,6 +1,6 @@
 # Babel Gardens
 
-> **Last Updated**: February 14, 2026
+> **Last Updated**: February 25, 2026
 
 <p class="kb-subtitle">Text-to-signal extraction: embeddings, sentiment/signals, and explainable linguistic outputs.</p>
 
@@ -102,3 +102,70 @@ Finance binds Babel Gardens by providing:
 - optional service plugins: `services/api_babel_gardens/plugins/finance_signals.py`
 
 Rule: the **schema/config lives in the vertical**, not in the Babel Gardens core.
+
+---
+
+## Comprehension Engine v3 (February 25, 2026)
+
+With `BABEL_COMPREHENSION_V3=1`, Babel Gardens gains a unified comprehension pipeline that produces both semantic signals and ontology structure in a **single LLM call**.
+
+### Architecture
+
+| Layer | Component | Responsibility |
+|-------|-----------|----------------|
+| **L1** | `ComprehensionConsumer` | Parse LLM JSON → `ComprehensionResult` (ontology + semantics) |
+| **L2** | Domain models (FinBERT, etc.) | Produce `SignalEvidence[]` via `ISignalContributor` |
+| **L3** | `SignalFusionConsumer` | Weighted/bayesian/LLM-arbitrated fusion → `FusionResult` |
+
+### New endpoints
+
+- `POST /v2/comprehend` — full comprehension (ontology + semantics in one call)
+- `POST /v2/fuse` — multi-source signal fusion
+
+### Consumers (LIVELLO 1)
+
+#### `ComprehensionConsumer` — LLM JSON parsing
+- File: `vitruvyan_core/core/cognitive/babel_gardens/consumers/comprehension_consumer.py`
+- Assembles prompt from domain plugin (ontology + semantics sections)
+- Returns `ComprehensionResult` with separate `OntologyPayload` and `SemanticPayload`
+
+#### `SignalFusionConsumer` — signal fusion
+- File: `vitruvyan_core/core/cognitive/babel_gardens/consumers/signal_fusion_consumer.py`
+- Strategies: `weighted` (default), `bayesian`, `llm_arbitrated`
+- Fuses L1 (LLM) + L2 (domain model) signals into `FusionResult`
+
+### Registries (LIVELLO 1)
+
+#### `ComprehensionPluginRegistry` + `SignalContributorRegistry`
+- File: `vitruvyan_core/core/cognitive/babel_gardens/governance/signal_registry.py`
+- Domain plugins (`IComprehensionPlugin`) shape both ontology and semantics prompts
+- Signal contributors (`ISignalContributor`) add domain-calibrated signals (lazy-loaded)
+
+### Adapters (LIVELLO 2)
+
+- `ComprehensionAdapter` (`services/api_babel_gardens/adapters/comprehension_adapter.py`) — LLM orchestration
+- `SignalFusionAdapter` (`services/api_babel_gardens/adapters/signal_fusion_adapter.py`) — fusion + LLM arbitration
+
+### Graph integration
+
+- `comprehension_node` (`core/orchestration/langgraph/node/comprehension_node.py`) replaces both `pattern_weavers_node` and `emotion_detector_node` with full backward compatibility
+
+### Plugin system
+
+- `IComprehensionPlugin` — shapes both ontology and semantics prompt sections
+- `ISignalContributor` — contributes domain-specific signals to fusion
+- Built-in: `GenericComprehensionPlugin` (domain-agnostic)
+- Finance: `FinanceComprehensionPlugin` (11 entity types, FinBERT signals) + `FinBERTContributor`
+
+### Contracts
+
+- `contracts/comprehension.py` — `ComprehensionResult`, `SemanticPayload`, `IComprehensionPlugin`, `ISignalContributor`, `SignalEvidence`, `FusionResult`
+- `contracts/pattern_weavers.py` — `OntologyPayload` (reused, PW-owned)
+
+### Tests
+
+- 49 core tests (`tests/test_comprehension_engine.py`): contracts, consumers, registries, cross-domain
+- 29 finance tests (`tests/test_finance_comprehension_plugin.py`): plugin, FinBERT, fusion
+- All 78 pass ✅
+
+For the full architectural rationale, see [Semantic & Ontology Architecture](../architecture/SEMANTIC_ONTOLOGY_ARCHITECTURE.md).

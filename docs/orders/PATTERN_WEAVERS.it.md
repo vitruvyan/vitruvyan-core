@@ -48,3 +48,17 @@ Definiti in `vitruvyan_core/core/cognitive/pattern_weavers/events/__init__.py`:
 ## Verticalizzazione (pilota finanza)
 
 Finanza fornisce tassonomie YAML (settori/strumenti/regioni) e keyword; il core resta solo il resolver.
+
+## v3 — Compilazione Semantica LLM
+
+Con `PATTERN_WEAVERS_V3=1`, la pipeline embedding a due stadi viene sostituita da una **singola chiamata LLM** (`LLMAgent.complete_json()`) che produce un `OntologyPayload` a schema strict. Il sistema di plugin (`ISemanticPlugin`) permette ai domini di iniettare prompt, tipi entità e regole di validazione.
+
+Finanza: `FinanceSemanticPlugin` — 11 tipi entità, keyword multilingua (en/it/es/fr/de), normalizzazione ticker uppercase.
+
+## Comprehension Engine v3
+
+Con `BABEL_COMPREHENSION_V3=1`, la risoluzione ontologica di Pattern Weavers è unificata con l'estrazione semantica di Babel Gardens in una **singola chiamata LLM** — il Comprehension Engine. L'`OntologyPayload` (di proprietà PW) e il `SemanticPayload` (di proprietà BG) vengono prodotti insieme ma restano contratti architetturalmente separati.
+
+PW continua a possedere la dimensione ontologica (gate, entità, intent, topic) mentre BG possiede la semantica (sentiment, emozione, registro linguistico).
+
+Per la filosofia architetturale completa, vedi [Architettura Semantica & Ontologica](../architecture/SEMANTIC_ONTOLOGY_ARCHITECTURE.it.md).

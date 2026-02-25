@@ -1,8 +1,8 @@
 # Pattern Weavers
 
-> **Last Updated**: February 14, 2026
+> **Last Updated**: February 25, 2026
 
-<p class="kb-subtitle">Semantic contextualization: taxonomy weaving, concept extraction, and signal-ready structure.</p>
+<p class="kb-subtitle">Semantic contextualization: taxonomy weaving, concept extraction, and LLM semantic compilation.</p>
 
 ## What it does
 
@@ -133,12 +133,96 @@ Service location: `services/api_pattern_weavers/`.
 
 ## Domain specialization (finance pilot)
 
-Pattern Weavers stays domain-agnostic: finance specialization lives in the **taxonomy file** (YAML) and in downstream consumers.
+Pattern Weavers stays domain-agnostic: finance specialization lives in the **taxonomy file** (YAML, v2) and in **semantic plugins** (Python ABC, v3), plus downstream consumers.
 
 Finance examples:
 
 - taxonomy categories: sectors (GICS), regions, instruments, risk terms, macro terms
+- **(v3)** `FinanceSemanticPlugin`: 11 entity types (ticker, sector, index, currency, etc.), multilingual gate keywords, ticker normalization
 - extracted concepts feed:
   - Neural Engine feature generation
   - Orthodoxy Wardens compliance checks (guardrails)
   - Vault Keepers archival of weave results
+
+---
+
+## v3 — LLM Semantic Compilation (February 25, 2026)
+
+### Overview
+
+v3 replaces the two-stage embedding pipeline with a **single LLM call** (`LLMAgent.complete_json()`) that produces a strict-schema `OntologyPayload`. Enabled via feature flag `PATTERN_WEAVERS_V3=1`.
+
+### Architecture
+
+| Layer | Component | File | Purpose |
+|-------|-----------|------|---------|
+| Contract | `OntologyPayload`, `ISemanticPlugin` | `contracts/pattern_weavers.py` | Output schema + plugin ABC |
+| LIVELLO 1 | `LLMCompilerConsumer` | `consumers/llm_compiler.py` | Pure JSON→OntologyPayload parsing |
+| LIVELLO 1 | `SemanticPluginRegistry` | `governance/semantic_plugin.py` | Domain plugin registration |
+| LIVELLO 2 | `LLMCompilerAdapter` | `adapters/llm_compiler.py` | LLM orchestration + validation |
+| LIVELLO 2 | `/compile` endpoint | `api/routes.py` | HTTP surface (feature-flagged) |
+| Graph | `pw_compile_node` | `node/pw_compile_node.py` | LangGraph integration |
+
+### OntologyPayload (strict schema)
+
+All models use `extra="forbid"` — LLM hallucinations rejected at parse time.
+
+Key fields: `gate` (DomainGate: verdict + confidence + reasoning), `entities` (List[OntologyEntity]: raw + canonical + type), `intent_hint`, `topics`, `sentiment_hint`, `temporal_context`, `language`, `complexity`.
+
+### Plugin System (ISemanticPlugin)
+
+Domains inject behavior via Python ABC:
+- `system_prompt()` → domain-specific LLM instructions
+- `gate_keywords()` → fast-path embedding detection
+- `entity_types()` / `intent_vocabulary()` → domain schema
+- `validate_payload()` → post-processing (e.g., ticker uppercase)
+
+Built-in: `GenericSemanticPlugin` (fallback). Finance: `FinanceSemanticPlugin`.
+
+### Feature Flag
+
+| Env Var | Value | Behavior |
+|---------|-------|----------|
+| `PATTERN_WEAVERS_V3` | `0` (default) | v2 embedding pipeline |
+| `PATTERN_WEAVERS_V3` | `1` | v3 LLM compilation |
+
+### Graph Node
+
+`pw_compile_node` sets `ontology_payload` (v3) AND backward-compat fields (`weaver_context`, `matched_concepts`, `semantic_context`, `weave_confidence`). Downstream nodes work without changes.
+
+### Tests
+
+- 25 core tests (`tests/test_pattern_weavers_v3.py`): schema, parsing, registry
+- 12 finance tests (`tests/test_finance_semantic_plugin.py`): plugin compliance, E2E simulation
+- All 37 pass ✅
+
+---
+
+## Comprehension Engine v3 (February 25, 2026)
+
+With `BABEL_COMPREHENSION_V3=1`, Pattern Weavers' ontology resolution is **unified** with Babel Gardens' semantic extraction in the Comprehension Engine — a single LLM call that produces both `OntologyPayload` (PW) and `SemanticPayload` (BG).
+
+### Relationship to PW v3
+
+| | PW v3 (`PATTERN_WEAVERS_V3=1`) | Comprehension Engine (`BABEL_COMPREHENSION_V3=1`) |
+|-|---|---------|
+| **LLM call** | Ontology only | Ontology + Semantics (single call) |
+| **Output** | `OntologyPayload` | `ComprehensionResult` (ontology + semantics) |
+| **Plugin** | `ISemanticPlugin` | `IComprehensionPlugin` (extends ontology + adds semantics) |
+| **Graph node** | `pw_compile_node` | `comprehension_node` (replaces PW + emotion nodes) |
+| **Supersedes** | v2 embedding pipeline | PW v3 + separate emotion detection |
+
+PW v3's `ISemanticPlugin` and `OntologyPayload` remain the foundation — the Comprehension Engine wraps them with semantic extraction, not replaces them.
+
+### What PW owns in Comprehension Engine
+- `OntologyPayload` schema (gate, entities, intent, topics)
+- Ontology section of the LLM prompt (via `IComprehensionPlugin.get_ontology_prompt_section()`)
+- Entity type vocabulary and gate rules
+- Post-processing validation (e.g., ticker normalization)
+
+### What PW does NOT own
+- `SemanticPayload` — belongs to Babel Gardens
+- Signal fusion (L2/L3) — belongs to Babel Gardens
+- Sentiment/emotion/linguistic analysis — belongs to Babel Gardens
+
+For the full architectural rationale, see [Semantic & Ontology Architecture](../architecture/SEMANTIC_ONTOLOGY_ARCHITECTURE.md).

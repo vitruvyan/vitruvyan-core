@@ -156,6 +156,7 @@ nav:
   - Architecture:
     - Overview: docs/architecture/README.md
     - Dual Memory Layer: docs/architecture/DUAL_MEMORY_LAYER.md
+    - Semantic & Ontology: docs/architecture/SEMANTIC_ONTOLOGY_ARCHITECTURE.md
     - Sacred Orders Pattern: vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md
     - Technical Debt Audit: docs/architecture/TECHNICAL_DEBT_AUDIT.md
 
