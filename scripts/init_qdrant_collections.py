@@ -34,51 +34,78 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Collection configurations — curated inventory for active runtime paths
-# Grouped by Sacred Order / domain function
+# Governed by RAG_GOVERNANCE_CONTRACT_V1 (docs/contracts/rag/)
+# Format: "TIER: Owner — Purpose"
 COLLECTIONS = [
-    # === CORE: Semantic Engine ===
-    {"name": "semantic_states",          "vector_size": 384, "distance": "Cosine", "description": "VSGS semantic grounding contexts"},
-    {"name": "phrases_embeddings",       "vector_size": 384, "distance": "Cosine", "description": "NLP phrase embeddings (api_embedding)"},
+    # ═══════════════════════════════════════════════════════════════════════
+    # CORE: OS-level, domain-agnostic, permanent
+    # ═══════════════════════════════════════════════════════════════════════
+    {"name": "semantic_states",          "vector_size": 384, "distance": "Cosine",
+     "description": "CORE: VSGS Engine — Semantic grounding contexts"},
+    {"name": "phrases_embeddings",       "vector_size": 384, "distance": "Cosine",
+     "description": "CORE: Embedding Service — NLP phrase embeddings (general-purpose RAG)"},
+    {"name": "conversations_embeddings", "vector_size": 384, "distance": "Cosine",
+     "description": "CORE: LangGraph — Conversational memory for RAG retrieval"},
 
-    # === CORE: Pattern Weavers ===
-    {"name": "patterns",                 "vector_size": 384, "distance": "Cosine", "description": "Pattern Weavers ontology taxonomy"},
-    {"name": "weave_embeddings",         "vector_size": 384, "distance": "Cosine", "description": "Pattern weave result embeddings"},
+    # ═══════════════════════════════════════════════════════════════════════
+    # ORDER: Sacred Order operational data
+    # ═══════════════════════════════════════════════════════════════════════
+    {"name": "entity_embeddings",        "vector_size": 384, "distance": "Cosine",
+     "description": "ORDER: Codex Hunters — Ingested entity semantic embeddings"},
+    {"name": "weave_embeddings",         "vector_size": 384, "distance": "Cosine",
+     "description": "ORDER: Pattern Weavers — Ontological pattern result embeddings"},
+    {"name": "sentiment_embeddings",     "vector_size": 384, "distance": "Cosine",
+     "description": "ORDER: Babel Gardens — Linguistic and emotion analysis embeddings"},
+    {"name": "audit_embeddings",         "vector_size": 384, "distance": "Cosine",
+     "description": "ORDER: Orthodoxy Wardens — Audit trail embeddings"},
 
-    # === CORE: Babel Gardens ===
-    {"name": "conversations_embeddings", "vector_size": 384, "distance": "Cosine", "description": "Conversation history embeddings"},
-    {"name": "sentiment_embeddings",     "vector_size": 384, "distance": "Cosine", "description": "Sentiment analysis embeddings"},
+    # ═══════════════════════════════════════════════════════════════════════
+    # DOMAIN: Finance vertical
+    # ═══════════════════════════════════════════════════════════════════════
+    {"name": "financial_templates",      "vector_size": 384, "distance": "Cosine",
+     "description": "DOMAIN: Finance/Shadow Traders — Financial template embeddings (1.7M vectors)"},
+    {"name": "market_data",              "vector_size": 384, "distance": "Cosine",
+     "description": "DOMAIN: Finance — Market data embeddings"},
+    {"name": "ticker_embeddings",        "vector_size": 384, "distance": "Cosine",
+     "description": "DOMAIN: Finance/Codex Hunters — Ticker entity embeddings"},
+    {"name": "momentum_vectors",         "vector_size": 384, "distance": "Cosine",
+     "description": "DOMAIN: Finance — Momentum factor vectors"},
+    {"name": "volatility_vectors",       "vector_size": 384, "distance": "Cosine",
+     "description": "DOMAIN: Finance — Volatility factor vectors"},
+    {"name": "trend_vectors",            "vector_size": 384, "distance": "Cosine",
+     "description": "DOMAIN: Finance — Trend factor vectors"},
+    {"name": "vare_embeddings",          "vector_size": 384, "distance": "Cosine",
+     "description": "DOMAIN: Finance — VaRE risk embeddings"},
+    {"name": "vhsw_embeddings",          "vector_size": 384, "distance": "Cosine",
+     "description": "DOMAIN: Finance — VHSW strength embeddings"},
+    {"name": "vmfl_embeddings",          "vector_size": 384, "distance": "Cosine",
+     "description": "DOMAIN: Finance — VMFL factor embeddings"},
 
-    # === CORE: Orthodoxy / Audit ===
-    {"name": "audit_embeddings",         "vector_size": 384, "distance": "Cosine", "description": "Audit trail embeddings"},
+    # ═══════════════════════════════════════════════════════════════════════
+    # DOMAIN: Mercator vertical
+    # ═══════════════════════════════════════════════════════════════════════
+    {"name": "ship_tracking_vectors",    "vector_size": 384, "distance": "Cosine",
+     "description": "DOMAIN: Mercator — Ship tracking embeddings"},
+    {"name": "ship_tracker_embeddings",  "vector_size": 384, "distance": "Cosine",
+     "description": "DOMAIN: Mercator — Ship tracker embeddings"},
+    {"name": "air_traffic_embeddings",   "vector_size": 384, "distance": "Cosine",
+     "description": "DOMAIN: Mercator — Air traffic embeddings"},
 
-    # === CORE: Codex Hunters ===
-    {"name": "entity_embeddings",        "vector_size": 384, "distance": "Cosine", "description": "Codex Hunters entity semantic embeddings"},
+    # ═══════════════════════════════════════════════════════════════════════
+    # DOMAIN: Knowledge Base
+    # ═══════════════════════════════════════════════════════════════════════
+    {"name": "vitruvyan_docs",           "vector_size": 384, "distance": "Cosine",
+     "description": "DOMAIN: System — Documentation embeddings"},
+    {"name": "vitruvyan_notes",          "vector_size": 384, "distance": "Cosine",
+     "description": "DOMAIN: System — Notes embeddings (utility)"},
+    {"name": "aegis_demo_kb",            "vector_size": 384, "distance": "Cosine",
+     "description": "DOMAIN: Demo — Demo knowledge base"},
 
-    # === CORE: Knowledge Base ===
-    {"name": "vitruvyan_docs",           "vector_size": 384, "distance": "Cosine", "description": "System documentation embeddings"},
-    {"name": "vitruvyan_notes",          "vector_size": 384, "distance": "Cosine", "description": "System notes embeddings"},
-    {"name": "aegis_demo_kb",            "vector_size": 384, "distance": "Cosine", "description": "Demo knowledge base"},
-
-    # === FINANCE: Market Data ===
-    {"name": "financial_templates",      "vector_size": 384, "distance": "Cosine", "description": "Financial template embeddings (1.7M vectors)"},
-    {"name": "market_data",              "vector_size": 384, "distance": "Cosine", "description": "Market data embeddings"},
-    {"name": "ticker_embeddings",        "vector_size": 384, "distance": "Cosine", "description": "Ticker/entity embeddings"},
-
-    # === FINANCE: Factor Analysis ===
-    {"name": "momentum_vectors",         "vector_size": 384, "distance": "Cosine", "description": "Momentum factor vectors"},
-    {"name": "volatility_vectors",       "vector_size": 384, "distance": "Cosine", "description": "Volatility factor vectors"},
-    {"name": "trend_vectors",            "vector_size": 384, "distance": "Cosine", "description": "Trend factor vectors"},
-    {"name": "vare_embeddings",          "vector_size": 384, "distance": "Cosine", "description": "VaRE risk embeddings"},
-    {"name": "vhsw_embeddings",          "vector_size": 384, "distance": "Cosine", "description": "VHSW strength embeddings"},
-    {"name": "vmfl_embeddings",          "vector_size": 384, "distance": "Cosine", "description": "VMFL factor embeddings"},
-
-    # === DOMAIN: Tracking / Demo ===
-    {"name": "ship_tracking_vectors",    "vector_size": 384, "distance": "Cosine", "description": "Ship tracking embeddings"},
-    {"name": "ship_tracker_embeddings",  "vector_size": 384, "distance": "Cosine", "description": "Ship tracker embeddings"},
-    {"name": "air_traffic_embeddings",   "vector_size": 384, "distance": "Cosine", "description": "Air traffic embeddings"},
-
-    # === TEST ===
-    {"name": "test_collection",          "vector_size": 384, "distance": "Cosine", "description": "Test/development collection"},
+    # ═══════════════════════════════════════════════════════════════════════
+    # EPHEMERAL: Test/dev (auto-eligible for cleanup in production)
+    # ═══════════════════════════════════════════════════════════════════════
+    {"name": "test_collection",          "vector_size": 384, "distance": "Cosine",
+     "description": "EPHEMERAL: Dev — Test/development collection"},
 ]
 
 

@@ -93,6 +93,21 @@ from .comprehension import (
     IComprehensionPlugin,
     ISignalContributor,
 )
+from .rag import (
+    CollectionTier,
+    CollectionDeclaration,
+    DistanceMetric,
+    RAGPayload,
+    RAG_NAMESPACE,
+    deterministic_point_id,
+    content_hash_id,
+    validate_collection_name,
+    CORE_COLLECTIONS,
+    ORDER_COLLECTIONS,
+    ALL_DECLARED_COLLECTIONS,
+    get_collection_declaration,
+    is_declared_collection,
+)
 
 __all__ = [
     # LLM
@@ -158,4 +173,18 @@ __all__ = [
     "FuseResponse",
     "IComprehensionPlugin",
     "ISignalContributor",
+    # RAG Governance Contract V1
+    "CollectionTier",
+    "CollectionDeclaration",
+    "DistanceMetric",
+    "RAGPayload",
+    "RAG_NAMESPACE",
+    "deterministic_point_id",
+    "content_hash_id",
+    "validate_collection_name",
+    "CORE_COLLECTIONS",
+    "ORDER_COLLECTIONS",
+    "ALL_DECLARED_COLLECTIONS",
+    "get_collection_declaration",
+    "is_declared_collection",
 ]
