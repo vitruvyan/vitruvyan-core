@@ -68,6 +68,12 @@ COPY services/api_babel_gardens/ /app/api_babel_gardens/
 # Copy ALL core modules (includes foundation, governance, cognitive, etc.)
 COPY vitruvyan_core/core/ /app/core/
 
+# Copy contracts (shared cross-service interfaces)
+COPY vitruvyan_core/contracts/ /app/contracts/
+
+# Copy domain plugins/config packages (finance vertical, etc.)
+COPY vitruvyan_core/domains/ /app/domains/
+
 # Copy configuration files (optional)
 # COPY .env.template /app/.env.template
 

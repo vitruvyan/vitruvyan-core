@@ -10,6 +10,15 @@ from core.middleware.auth import AuthMiddleware
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 from .config import get_config
+
+# Ensure core agents initialized at import-time see coherent DB defaults.
+_bootstrap_cfg = get_config()
+os.environ.setdefault("POSTGRES_HOST", _bootstrap_cfg.postgres.host)
+os.environ.setdefault("POSTGRES_PORT", str(_bootstrap_cfg.postgres.port))
+os.environ.setdefault("POSTGRES_DB", _bootstrap_cfg.postgres.database)
+os.environ.setdefault("POSTGRES_USER", _bootstrap_cfg.postgres.user)
+os.environ.setdefault("POSTGRES_PASSWORD", _bootstrap_cfg.postgres.password)
+
 from .modules.embedding_engine import EmbeddingEngineModule
 from .modules.profile_processor import ProfileProcessorModule
 from .modules.cognitive_bridge import CognitiveBridgeModule
@@ -21,6 +30,10 @@ from .api.routes_embeddings import router as embedding_router
 from .api.routes_admin import router as admin_router
 from .api.routes_emotion import router as emotion_router
 from .api.routes_sentiment import router as sentiment_router
+from .adapters.finance_adapter import is_finance_enabled
+
+# Comprehension Engine v3 (feature-flagged)
+_COMPREHENSION_V3 = os.getenv("BABEL_COMPREHENSION_V3", "0") == "1"
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +46,9 @@ class BabelGardensService:
         self.cognitive_bridge = CognitiveBridgeModule()
         self.emotion_detector = EmotionDetectorModule()
         self.sentiment_fusion = SentimentFusionModule()
+        # Comprehension Engine v3 (created only when feature-flagged)
+        self.comprehension_adapter = None
+        self.signal_fusion_adapter = None
 
 service: BabelGardensService = None
 
@@ -44,6 +60,38 @@ async def lifespan(app: FastAPI):
     logger.info(f"✅ Babel Gardens starting on port {config.service.port}")
     service = BabelGardensService()
     await model_manager.initialize()
+
+    # Comprehension Engine v3 bootstrap (feature-flagged)
+    if _COMPREHENSION_V3:
+        from .adapters.comprehension_adapter import ComprehensionAdapter
+        from .adapters.signal_fusion_adapter import SignalFusionAdapter
+        from core.cognitive.babel_gardens.governance.signal_registry import (
+            get_comprehension_registry,
+            get_signal_contributor_registry,
+        )
+
+        service.comprehension_adapter = ComprehensionAdapter()
+        service.signal_fusion_adapter = SignalFusionAdapter()
+
+        # Register finance plugins when BABEL_DOMAIN=finance
+        if is_finance_enabled():
+            from domains.finance.babel_gardens.finance_comprehension_plugin import (
+                FinanceComprehensionPlugin,
+            )
+            registry = get_comprehension_registry()
+            registry.register(FinanceComprehensionPlugin())
+            registry.set_default_domain("finance")
+
+            from .plugins.finbert_contributor import FinBERTContributor
+            contributor = FinBERTContributor()
+            if contributor.is_available():
+                get_signal_contributor_registry().register(contributor)
+                logger.info("FinBERTContributor registered (transformers available)")
+            else:
+                logger.info("FinBERTContributor skipped (transformers not installed)")
+
+        logger.info("Comprehension Engine v3 initialized")
+
     yield
     logger.info("🛑 Babel Gardens shutting down")
     await model_manager.cleanup()
@@ -90,6 +138,16 @@ app.include_router(embedding_router)
 app.include_router(admin_router)
 app.include_router(emotion_router)
 app.include_router(sentiment_router)
+
+if is_finance_enabled():
+    from .api.routes_finance import router as finance_router
+
+    app.include_router(finance_router)
+
+if _COMPREHENSION_V3:
+    from .api.routes_comprehension import router as comprehension_router
+
+    app.include_router(comprehension_router)
 
 
 if __name__ == "__main__":

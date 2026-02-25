@@ -11,10 +11,10 @@
 | Sacred Order | Domain | Status |
 |-------------|--------|--------|
 | Orthodoxy Wardens | Truth & Governance | ✅ Refactored |
-| Vault Keepers | Memory & Archival | ⏳ Planned |
-| Codex Hunters | Perception & Discovery | ⏳ Planned |
-| Pattern Weavers | Semantic Contextualization | ⏳ Planned |
-| Babel Gardens | Linguistic & Sentiment | ⏳ Planned |
+| Vault Keepers | Memory & Archival | ✅ Refactored |
+| Codex Hunters | Perception & Discovery | ✅ Refactored|
+| Pattern Weavers | Ontology | ✅ Refactored |
+| Babel Gardens | Semantic Linguistic & Sentiment | ✅ Refactored |
 
 ---
 

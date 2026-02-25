@@ -10,3 +10,5 @@ python-dotenv==1.0.0
 redis==5.0.1
 alembic==1.13.1
 numpy==2.4.0
+structlog==23.2.0
+openai>=1.0.0

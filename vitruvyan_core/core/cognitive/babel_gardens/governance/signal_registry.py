@@ -138,6 +138,7 @@ class ComprehensionPluginRegistry:
         self._plugins: Dict[str, IComprehensionPlugin] = {}
         self._generic = GenericComprehensionPlugin()
         self._plugins["generic"] = self._generic
+        self._default_domain: Optional[str] = None
 
     def register(self, plugin: IComprehensionPlugin) -> None:
         """Register a domain comprehension plugin."""
@@ -150,13 +151,36 @@ class ComprehensionPluginRegistry:
             f"entity_types={plugin.get_entity_types()}"
         )
 
+    def set_default_domain(self, domain: str) -> None:
+        """Set the default domain used when resolve() gets 'auto'."""
+        if domain not in self._plugins:
+            logger.warning(
+                f"set_default_domain('{domain}') — domain not yet registered, "
+                f"available: {list(self._plugins.keys())}"
+            )
+        self._default_domain = domain
+        logger.info(f"Default comprehension domain set to '{domain}'")
+
     def get(self, domain: str) -> IComprehensionPlugin:
         """Get plugin by domain. Falls back to generic."""
         return self._plugins.get(domain, self._generic)
 
     def resolve(self, domain: str) -> IComprehensionPlugin:
-        """Resolve 'auto' → generic, or look up specific domain."""
+        """
+        Resolve domain to plugin.
+
+        - 'auto' → default domain if set, else best available, else generic
+        - explicit domain → look up or fall back to generic
+        """
         if domain == "auto":
+            # 1. Explicit default set by service layer
+            if self._default_domain and self._default_domain in self._plugins:
+                return self._plugins[self._default_domain]
+            # 2. Single domain-specific plugin registered → use it
+            non_generic = [d for d in self._plugins if d != "generic"]
+            if len(non_generic) == 1:
+                return self._plugins[non_generic[0]]
+            # 3. Fall back to generic
             return self._generic
         return self.get(domain)
 

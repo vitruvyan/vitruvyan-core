@@ -1,0 +1,47 @@
+# Finance Vertical - Signal Schema Configuration
+# Babel Gardens v2.1 - Domain-Agnostic Signal Extraction
+# Canonical location: vitruvyan_core/domains/finance/babel_gardens/signals_finance.yaml
+
+signals:
+  - name: sentiment_valence
+    range: [-1.0, 1.0]
+    aggregation_method: weighted
+    fusion_weight: 0.8
+    explainability_required: true
+    extraction_method: "model:finbert"
+    description: "Overall market sentiment polarity (positive/negative)"
+
+  - name: market_fear_index
+    range: [0.0, 1.0]
+    aggregation_method: max
+    fusion_weight: 0.6
+    explainability_required: true
+    extraction_method: "model:finbert"
+    description: "Market stress and uncertainty indicator"
+
+  - name: volatility_perception
+    range: [0.0, 1.0]
+    aggregation_method: mean
+    fusion_weight: 0.5
+    explainability_required: false
+    extraction_method: "heuristic:lexicon"
+    description: "Perceived market volatility from text signals"
+
+taxonomy:
+  categories:
+    - earnings
+    - macroeconomic
+    - fed_policy
+    - geopolitical
+    - sector_rotation
+    - market_structure
+
+  embeddings:
+    model: "sentence-transformers/all-MiniLM-L6-v2"
+    dimension: 384
+
+metadata:
+  vertical: finance
+  version: "2.1.0"
+  created: "2026-02-11"
+  contact: "babel-finance@vitruvyan.ai"

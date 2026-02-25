@@ -42,18 +42,31 @@ from .graph_response import (
     OrthodoxyStatusType,
     build_correlation_id,
 )
-from .neural_engine.data_provider import (
-    IDataProvider,
-    DataProviderError,
-    EntityNotFoundError,
-    FeatureNotAvailableError,
-)
-from .neural_engine.scoring_strategy import (
-    IScoringStrategy,
-    ScoringStrategyError,
-    InvalidProfileError,
-    InvalidWeightsError,
-)
+
+# Neural Engine contracts depend on pandas — lazy-load to avoid crashes
+# in services that don't have pandas installed (Pattern Weavers, Babel Gardens, etc.)
+try:
+    from .neural_engine.data_provider import (
+        IDataProvider,
+        DataProviderError,
+        EntityNotFoundError,
+        FeatureNotAvailableError,
+    )
+    from .neural_engine.scoring_strategy import (
+        IScoringStrategy,
+        ScoringStrategyError,
+        InvalidProfileError,
+        InvalidWeightsError,
+    )
+except ImportError:
+    IDataProvider = None  # type: ignore[assignment,misc]
+    DataProviderError = None  # type: ignore[assignment,misc]
+    EntityNotFoundError = None  # type: ignore[assignment,misc]
+    FeatureNotAvailableError = None  # type: ignore[assignment,misc]
+    IScoringStrategy = None  # type: ignore[assignment,misc]
+    ScoringStrategyError = None  # type: ignore[assignment,misc]
+    InvalidProfileError = None  # type: ignore[assignment,misc]
+    InvalidWeightsError = None  # type: ignore[assignment,misc]
 from .pattern_weavers import (
     GateVerdict,
     DomainGate,
