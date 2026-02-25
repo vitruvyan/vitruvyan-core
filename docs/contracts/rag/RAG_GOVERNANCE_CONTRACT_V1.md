@@ -101,14 +101,12 @@ Collection names MUST be passed explicitly by callers or resolved from configura
 - `semantic_states` (VSGS)
 - `conversations_embeddings` (LangGraph)
 - `weave_embeddings` (Pattern Weavers)
-- `sentiment_embeddings` (Babel Gardens)
 
 ### 4.3 Sacred Order Collection Ownership
 
 | Sacred Order | Domain | Owned Collections | Purpose |
 |--------------|--------|-------------------|---------|
 | **Codex Hunters** | Perception | `entity_embeddings` | Ingested entity semantic vectors |
-| **Babel Gardens** | Perception | `sentiment_embeddings` | Linguistic/emotion analysis vectors |
 | **Embedding Service** | Perception | `phrases_embeddings` | NLP phrase embeddings (general-purpose) |
 | **Pattern Weavers** | Reason | `weave_embeddings` | Ontological pattern results |
 | **VSGS Engine** | Reason | `semantic_states` | Semantic grounding context |
@@ -348,64 +346,60 @@ A deployment is RAG-compliant when:
 
 ---
 
-## 11. Current State Assessment (Feb 2026)
+## 11. Current State Assessment (Feb 25, 2026)
 
-### 11.1 Healthy Collections
+### 11.1 Live Collections (5 total — all 384-dim Cosine)
 
-| Collection | Tier | Status | Compliant |
-|---|---|---|---|
-| `entity_embeddings` | ORDER | Active, writer+reader verified | ✅ |
-| `phrases_embeddings` | CORE | Active, writer+reader verified | ✅ |
-| `semantic_states` | CORE | Active, writer+reader verified | ✅ |
-| `conversations_embeddings` | CORE | Active reader, **ghost writer** | ⚠️ |
+| Collection | Tier | Points | Owner | Writer | Reader | Status |
+|---|---|---|---|---|---|---|
+| `semantic_states` | CORE | 3,538 | VSGS Engine | `upsert_semantic_state` | `semantic_grounding_node` | ✅ Healthy |
+| `phrases_embeddings` | CORE | 38,238 | Embedding Service | `api_embedding` | `qdrant_node` (fallback) | ✅ Healthy |
+| `conversations_embeddings` | CORE | 4,752 | LangGraph | *(upstream import)* | `qdrant_node` (primary) | ⚠️ Ghost writer |
+| `entity_embeddings` | ORDER | 4 | Codex Hunters | `codex bus_adapter` | Memory Orders, PW, Vault | ✅ Healthy |
+| `weave_embeddings` | ORDER | 97 | Pattern Weavers | `PW streams_listener` | *(none yet)* | ⚠️ Write-only |
 
-### 11.2 Needs Investigation
+### 11.2 Open Items
 
-| Collection | Points | Issue |
+| Item | Priority | Description |
 |---|---|---|
-| `sentiment_embeddings` | 1,048 | Ghost — no writer/reader in codebase |
-| `weave_embeddings` | 97 | Write-only — PW writes, no reader |
-| `conversations_embeddings` | 4,752 | Reader exists (qdrant_node), writer unknown |
+| `conversations_embeddings` writer | Medium | Reader active in qdrant_node; writer was upstream vitruvyan. Need to implement write path (e.g., from compose_node or CAN) |
+| `weave_embeddings` reader | Low | PW writes ontological patterns; wire a reader in LangGraph or Memory Orders for ontological retrieval |
+| QdrantAgent hardcoded defaults | Medium | `search_phrases()` and `upsert_semantic_state()` have hardcoded collection defaults — should be explicit |
 
-### 11.3 Finance Domain — Legacy Ghost Collections
+### 11.3 Cleanup Completed (Feb 25, 2026)
 
-| Collection | Points | Issue |
+Deleted 10 orphaned collections (~1.83M vectors freed):
+
+| Collection | Points | Reason |
 |---|---|---|
-| `financial_templates` | 1,777,364 | **No code reference** — likely populated by external script |
-| `market_data` | 3,214 | No code reference |
-| `ticker_embeddings` | 519 | Config-only (yaml), no runtime code |
-| `momentum_vectors` | 519 | No code reference |
-| `volatility_vectors` | 519 | No code reference |
-| `trend_vectors` | 517 | No code reference |
-| `vare_embeddings` | 27 | No code reference |
-
-**Decision required**: Archive (snapshot + delete) or adopt (create owning code).
-
-### 11.4 Dead Collections
-
-| Collection | Points | Action |
-|---|---|---|
-| `test_collection` | 0 | DELETE — no code reference, 0 points |
-| `vitruvyan_notes` | 1 | EVALUATE — only QdrantAgent CLI default |
+| `financial_templates` | 1,777,364 | Kaggle import, no code reference |
+| `market_data` | 3,214 | Upstream import, no code reference |
+| `ticker_embeddings` | 519 | Upstream import, yaml config only |
+| `momentum_vectors` | 519 | Upstream import, no code reference |
+| `volatility_vectors` | 519 | Upstream import, no code reference |
+| `trend_vectors` | 517 | Upstream import, no code reference |
+| `vare_embeddings` | 27 | Upstream import, no code reference |
+| `sentiment_embeddings` | 1,048 | BG dead code (store_embedding never called) |
+| `test_collection` | 0 | Development artifact |
+| `vitruvyan_notes` | 1 | CLI default only |
 
 ---
 
 ## 12. Remediation Roadmap
 
-### Phase 1: Cleanup (Immediate)
-- [ ] Delete `test_collection`
-- [ ] Evaluate `vitruvyan_notes` (keep as utility or delete)
-- [ ] Update init script descriptions to follow `"<TIER>: <Owner> — <Purpose>"` format
+### Phase 1: Cleanup ✅ COMPLETED (Feb 25, 2026)
+- [x] Delete 10 orphaned/ghost collections from Qdrant
+- [x] Remove from init script
+- [x] Update init script descriptions to follow `"<TIER>: <Owner> — <Purpose>"` format
+- [x] Clean contract registry (rag.py) to match live state
+
+### Phase 2: Wire Missing Paths (Short-term)
+- [ ] Implement `conversations_embeddings` writer (compose_node or CAN → embed user exchanges)
+- [ ] Wire `weave_embeddings` reader (ontological retrieval in LangGraph or Memory Orders)
 - [ ] Remove hardcoded collection defaults from QdrantAgent methods
 
-### Phase 2: Ghost Resolution (Short-term)
-- [ ] Trace `conversations_embeddings` writer (likely in graph compose or an external process)
-- [ ] Trace `sentiment_embeddings` writer (likely legacy Babel or external import)
-- [ ] Decide: archive finance ghost collections or create owning code
-- [ ] Wire `weave_embeddings` reader (PW writes but nothing reads)
-
 ### Phase 3: Contract Enforcement (Medium-term)
-- [ ] Implement collection audit script
+- [ ] Implement collection audit script (compare Qdrant vs init script)
 - [ ] Add payload schema validation to QdrantAgent.upsert()
 - [ ] Add collection name validation (reject names not in registry)
 - [ ] Add vertical_manifest.yaml RAG section for domain collections

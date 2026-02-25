@@ -77,10 +77,17 @@ class TestCollectionManagement:
         assert "result" in data
         assert "collections" in data["result"]
 
-    def test_weave_embeddings_collection_exists(self, qdrant_http):
-        """The production weave_embeddings collection should exist."""
-        r = httpx.get(f"{qdrant_http}/collections/weave_embeddings", timeout=5.0)
-        assert r.status_code == 200
+    @pytest.mark.parametrize("collection", [
+        "entity_embeddings",
+        "phrases_embeddings",
+        "semantic_states",
+        "conversations_embeddings",
+        "weave_embeddings",
+    ])
+    def test_contract_collections_exist(self, qdrant_http, collection):
+        """All RAG contract collections (CORE + ORDER) must exist."""
+        r = httpx.get(f"{qdrant_http}/collections/{collection}", timeout=5.0)
+        assert r.status_code == 200, f"Collection {collection} missing from Qdrant"
 
 
 class TestEmbeddingGeneration:

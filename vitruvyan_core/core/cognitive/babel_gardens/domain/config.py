@@ -98,10 +98,15 @@ class TableConfig:
 
 @dataclass(frozen=True)
 class CollectionConfig:
-    """Configuration for Qdrant collections."""
+    """Configuration for Qdrant collections.
     
-    semantic: str = "babel_semantic"
-    sentiment: str = "babel_sentiment"
+    NOTE: Babel Gardens does NOT currently own any Qdrant collection.
+    These defaults are placeholders for future wiring.
+    See RAG_GOVERNANCE_CONTRACT_V1 Section 4.3.
+    """
+    
+    semantic: str = "phrases_embeddings"
+    sentiment: str = "phrases_embeddings"
 
 
 @dataclass

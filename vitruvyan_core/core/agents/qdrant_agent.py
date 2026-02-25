@@ -365,7 +365,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="QdrantAgent CLI")
     parser.add_argument("--mode", choices=["health", "ensure"], default="health")
-    parser.add_argument("--collection", type=str, default="vitruvyan_notes")
+    parser.add_argument("--collection", type=str, default="entity_embeddings")
     parser.add_argument("--dim", type=int, default=384)
     args = parser.parse_args()
 

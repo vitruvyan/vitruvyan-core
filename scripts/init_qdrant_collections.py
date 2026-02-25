@@ -36,6 +36,10 @@ logger = logging.getLogger(__name__)
 # Collection configurations — curated inventory for active runtime paths
 # Governed by RAG_GOVERNANCE_CONTRACT_V1 (docs/contracts/rag/)
 # Format: "TIER: Owner — Purpose"
+#
+# ONLY collections with active writer+reader in codebase are declared here.
+# Domain/vertical collections are added when their owning code is implemented.
+# See contract Section 6.1 for creation rules.
 COLLECTIONS = [
     # ═══════════════════════════════════════════════════════════════════════
     # CORE: OS-level, domain-agnostic, permanent
@@ -54,58 +58,6 @@ COLLECTIONS = [
      "description": "ORDER: Codex Hunters — Ingested entity semantic embeddings"},
     {"name": "weave_embeddings",         "vector_size": 384, "distance": "Cosine",
      "description": "ORDER: Pattern Weavers — Ontological pattern result embeddings"},
-    {"name": "sentiment_embeddings",     "vector_size": 384, "distance": "Cosine",
-     "description": "ORDER: Babel Gardens — Linguistic and emotion analysis embeddings"},
-    {"name": "audit_embeddings",         "vector_size": 384, "distance": "Cosine",
-     "description": "ORDER: Orthodoxy Wardens — Audit trail embeddings"},
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # DOMAIN: Finance vertical
-    # ═══════════════════════════════════════════════════════════════════════
-    {"name": "financial_templates",      "vector_size": 384, "distance": "Cosine",
-     "description": "DOMAIN: Finance/Shadow Traders — Financial template embeddings (1.7M vectors)"},
-    {"name": "market_data",              "vector_size": 384, "distance": "Cosine",
-     "description": "DOMAIN: Finance — Market data embeddings"},
-    {"name": "ticker_embeddings",        "vector_size": 384, "distance": "Cosine",
-     "description": "DOMAIN: Finance/Codex Hunters — Ticker entity embeddings"},
-    {"name": "momentum_vectors",         "vector_size": 384, "distance": "Cosine",
-     "description": "DOMAIN: Finance — Momentum factor vectors"},
-    {"name": "volatility_vectors",       "vector_size": 384, "distance": "Cosine",
-     "description": "DOMAIN: Finance — Volatility factor vectors"},
-    {"name": "trend_vectors",            "vector_size": 384, "distance": "Cosine",
-     "description": "DOMAIN: Finance — Trend factor vectors"},
-    {"name": "vare_embeddings",          "vector_size": 384, "distance": "Cosine",
-     "description": "DOMAIN: Finance — VaRE risk embeddings"},
-    {"name": "vhsw_embeddings",          "vector_size": 384, "distance": "Cosine",
-     "description": "DOMAIN: Finance — VHSW strength embeddings"},
-    {"name": "vmfl_embeddings",          "vector_size": 384, "distance": "Cosine",
-     "description": "DOMAIN: Finance — VMFL factor embeddings"},
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # DOMAIN: Mercator vertical
-    # ═══════════════════════════════════════════════════════════════════════
-    {"name": "ship_tracking_vectors",    "vector_size": 384, "distance": "Cosine",
-     "description": "DOMAIN: Mercator — Ship tracking embeddings"},
-    {"name": "ship_tracker_embeddings",  "vector_size": 384, "distance": "Cosine",
-     "description": "DOMAIN: Mercator — Ship tracker embeddings"},
-    {"name": "air_traffic_embeddings",   "vector_size": 384, "distance": "Cosine",
-     "description": "DOMAIN: Mercator — Air traffic embeddings"},
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # DOMAIN: Knowledge Base
-    # ═══════════════════════════════════════════════════════════════════════
-    {"name": "vitruvyan_docs",           "vector_size": 384, "distance": "Cosine",
-     "description": "DOMAIN: System — Documentation embeddings"},
-    {"name": "vitruvyan_notes",          "vector_size": 384, "distance": "Cosine",
-     "description": "DOMAIN: System — Notes embeddings (utility)"},
-    {"name": "aegis_demo_kb",            "vector_size": 384, "distance": "Cosine",
-     "description": "DOMAIN: Demo — Demo knowledge base"},
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # EPHEMERAL: Test/dev (auto-eligible for cleanup in production)
-    # ═══════════════════════════════════════════════════════════════════════
-    {"name": "test_collection",          "vector_size": 384, "distance": "Cosine",
-     "description": "EPHEMERAL: Dev — Test/development collection"},
 ]
 
 

@@ -73,8 +73,8 @@ class QdrantServiceConfig:
     
     host: str = "localhost"
     port: int = 6333
-    collection_semantic: str = "babel_semantic"
-    collection_sentiment: str = "babel_sentiment"
+    collection_semantic: str = "phrases_embeddings"
+    collection_sentiment: str = "phrases_embeddings"
 
 
 @dataclass(frozen=True)
@@ -136,8 +136,8 @@ class Config:
             qdrant=QdrantServiceConfig(
                 host=os.getenv("QDRANT_HOST", "localhost"),
                 port=int(os.getenv("QDRANT_PORT", "6333")),
-                collection_semantic=os.getenv("QDRANT_COLLECTION_SEMANTIC", "babel_semantic"),
-                collection_sentiment=os.getenv("QDRANT_COLLECTION_SENTIMENT", "babel_sentiment"),
+                collection_semantic=os.getenv("QDRANT_COLLECTION_SEMANTIC", "phrases_embeddings"),
+                collection_sentiment=os.getenv("QDRANT_COLLECTION_SENTIMENT", "phrases_embeddings"),
             ),
             postgres=PostgresServiceConfig(
                 host=resolved_pg_host,

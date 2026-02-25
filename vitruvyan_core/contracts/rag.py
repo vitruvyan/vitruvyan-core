@@ -246,14 +246,6 @@ ORDER_COLLECTIONS: List[CollectionDeclaration] = [
         owner="Pattern Weavers",
         purpose="Ontological pattern result embeddings",
     ),
-    CollectionDeclaration(
-        name="sentiment_embeddings",
-        vector_size=384,
-        distance=DistanceMetric.COSINE,
-        tier=CollectionTier.ORDER,
-        owner="Babel Gardens",
-        purpose="Linguistic and emotion analysis embeddings",
-    ),
 ]
 
 # All declared collections (core + order)

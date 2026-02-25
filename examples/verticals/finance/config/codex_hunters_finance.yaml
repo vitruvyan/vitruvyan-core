@@ -11,10 +11,10 @@ entity_table:
   description: "Canonical finance entities (tickers)"
 
 embedding_collection:
-  name: ticker_embeddings
+  name: entity_embeddings
   vector_size: 384
   distance_metric: Cosine
-  description: "Ticker semantic embeddings"
+  description: "Finance entity embeddings (uses shared entity_embeddings collection)"
 
 # Event streams namespace for the vertical (requires CodexConfig.from_yaml to parse `streams`)
 streams:
