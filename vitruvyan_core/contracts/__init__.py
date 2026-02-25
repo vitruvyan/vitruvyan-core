@@ -63,6 +63,23 @@ from .pattern_weavers import (
     CompileResponse,
     ISemanticPlugin,
 )
+from .comprehension import (
+    SentimentPayload,
+    EmotionPayload,
+    LinguisticPayload,
+    SemanticPayload,
+    ComprehensionResult,
+    ComprehendRequest,
+    ComprehendResponse,
+    SignalEvidence,
+    FusionStrategy,
+    FusionContributor,
+    FusionResult,
+    FuseRequest,
+    FuseResponse,
+    IComprehensionPlugin,
+    ISignalContributor,
+)
 
 __all__ = [
     # LLM
@@ -112,4 +129,20 @@ __all__ = [
     "CompileRequest",
     "CompileResponse",
     "ISemanticPlugin",
+    # Comprehension Engine
+    "SentimentPayload",
+    "EmotionPayload",
+    "LinguisticPayload",
+    "SemanticPayload",
+    "ComprehensionResult",
+    "ComprehendRequest",
+    "ComprehendResponse",
+    "SignalEvidence",
+    "FusionStrategy",
+    "FusionContributor",
+    "FusionResult",
+    "FuseRequest",
+    "FuseResponse",
+    "IComprehensionPlugin",
+    "ISignalContributor",
 ]
