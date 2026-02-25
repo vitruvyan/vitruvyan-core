@@ -793,8 +793,8 @@ Codex Hunters listeners support:
 
 ## 📚 References
 
-- **Oculus Prime Implementation**: `/vitruvyan_edge/oculus_prime/`
-- **Event Emitter**: `/vitruvyan_edge/oculus_prime/core/event_emitter.py`
+- **Oculus Prime Implementation**: `/infrastructure/edge/oculus_prime/`
+- **Event Emitter**: `/infrastructure/edge/oculus_prime/core/event_emitter.py`
 - **Codex Hunters Consumer**: `/services/api_codex_hunters/streams_listener.py`
 - **Pattern Weavers Consumer**: `/services/api_pattern_weavers/adapters/bus_adapter.py`
 - **Memory Orders Coherence**: `/services/api_memory_orders/adapters/bus_adapter.py`

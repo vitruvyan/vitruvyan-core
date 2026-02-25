@@ -62,6 +62,16 @@ class SourceRegistryConfig:
 
 
 @dataclass(frozen=True)
+class EmbeddingConfig:
+    """Embedding service configuration for auto-embed in bind pipeline."""
+
+    url: str = "http://embedding:8010"
+    endpoint: str = "/v1/embeddings/create"
+    timeout: float = 15.0
+    auto_embed: bool = True
+
+
+@dataclass(frozen=True)
 class CodexHuntersConfig:
     """Complete Codex Hunters service configuration."""
     
@@ -70,6 +80,7 @@ class CodexHuntersConfig:
     qdrant: QdrantConfig = field(default_factory=QdrantConfig)
     redis: RedisConfig = field(default_factory=RedisConfig)
     source_registry: SourceRegistryConfig = field(default_factory=SourceRegistryConfig)
+    embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
 
 
 def load_config() -> CodexHuntersConfig:
@@ -114,12 +125,20 @@ def load_config() -> CodexHuntersConfig:
         default_source_key=(os.getenv("CODEX_DEFAULT_SOURCE_KEY") or None),
     )
 
+    embedding = EmbeddingConfig(
+        url=os.getenv("EMBEDDING_API_URL", os.getenv("EMBEDDING_SERVICE_URL", "http://embedding:8010")),
+        endpoint=os.getenv("EMBEDDING_ENDPOINT", "/v1/embeddings/create"),
+        timeout=float(os.getenv("EMBEDDING_TIMEOUT", "15.0")),
+        auto_embed=os.getenv("CODEX_AUTO_EMBED", "true").lower() in ("1", "true", "yes"),
+    )
+
     return CodexHuntersConfig(
         service=service,
         postgres=postgres,
         qdrant=qdrant,
         redis=redis,
         source_registry=source_registry,
+        embedding=embedding,
     )
 
 

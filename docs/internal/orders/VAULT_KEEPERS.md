@@ -122,3 +122,22 @@ Vault Keepers follows the “pure role” model:
   - `timestamp` from `extraction_trace.timestamp` (or `utcnow()` fallback)
   - `source_text_hash = sha256(source_text)[:16]` (optional)
 - Sorts points chronologically before returning
+
+---
+
+## Finance runtime wiring
+
+- `STATUS: ENABLED (finance vertical wiring available)`
+- Runtime behavior:
+  - startup reads `VAULT_DOMAIN` (`generic` or `finance`)
+  - when `VAULT_DOMAIN=finance`, LIVELLO 2 loads finance defaults from:
+    - `vitruvyan_core/domains/finance/vault_keepers/finance_config.py`
+  - archive metadata is normalized to core-allowed content types
+  - finance defaults apply to backup mode/vectors and signal retention
+  - Redis listener supports finance signal archival from `babel.sentiment.completed`
+
+Finance-only HTTP endpoints are conditionally exposed under:
+
+```text
+/v1/finance/*
+```

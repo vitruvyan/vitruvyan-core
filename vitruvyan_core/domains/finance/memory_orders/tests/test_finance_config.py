@@ -30,7 +30,11 @@ def test_source_candidates_include_vitruvyan_fallback():
     candidates = get_finance_source_candidates()
 
     assert candidates["tables"] == ("entities", "phrases")
-    assert candidates["collections"] == ("entities_embeddings", "phrases_embeddings")
+    assert candidates["collections"] == (
+        "entity_embeddings",
+        "entities_embeddings",
+        "phrases_embeddings",
+    )
 
 
 def test_source_candidates_keep_override_first():

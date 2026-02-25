@@ -47,6 +47,11 @@ _config_path = os.path.join(os.path.dirname(__file__), "..", "config")
 if _config_path not in sys.path:
     sys.path.insert(0, os.path.abspath(_config_path))
 
+# Add repo root for infrastructure.edge imports (edge agents, Oculus Prime)
+_repo_root = os.path.join(os.path.dirname(__file__), "..")
+if os.path.abspath(_repo_root) not in sys.path:
+    sys.path.insert(0, os.path.abspath(_repo_root))
+
 
 # ═══════════════════════════════════════════════════════════════════
 # MOCK PROVIDERS — Implement domain contracts for testing

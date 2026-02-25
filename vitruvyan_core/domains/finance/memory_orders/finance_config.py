@@ -34,7 +34,8 @@ class FinanceMemoryConfig:
     """
 
     primary_table: str = "entities"
-    primary_collection: str = "entities_embeddings"
+    primary_collection: str = "entity_embeddings"
+    deprecated_collection_alias: str = "entities_embeddings"
     legacy_table: str = "phrases"
     legacy_collection: str = "phrases_embeddings"
 
@@ -85,6 +86,7 @@ def get_finance_source_candidates(
             (
                 collection_override or "",
                 cfg.primary_collection,
+                cfg.deprecated_collection_alias,
                 cfg.legacy_collection,
             )
         ),

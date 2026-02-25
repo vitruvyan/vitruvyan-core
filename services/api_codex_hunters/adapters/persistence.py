@@ -4,6 +4,7 @@ Persistence Adapter for Codex Hunters
 
 ONLY I/O point for database operations.
 All PostgresAgent and QdrantAgent access must go through this adapter.
+Embedding generation delegated to the embedding service (api_embedding).
 """
 
 import hashlib
@@ -11,6 +12,8 @@ import logging
 import re
 import uuid
 from typing import Any, Dict, List, Optional
+
+import httpx
 
 from ..config import get_config
 
@@ -63,6 +66,39 @@ class PersistenceAdapter:
                 logger.warning(f"⚠️ QdrantAgent not available: {e}")
         return self._qdrant_agent
     
+    # =========================================================================
+    # Embedding Service (auto-embed)
+    # =========================================================================
+
+    def generate_embedding(self, text: str) -> Optional[List[float]]:
+        """
+        Generate embedding vector via the external embedding service.
+
+        Calls api_embedding (port 8010) POST /v1/embeddings/create.
+        Returns None on any failure (caller should handle gracefully).
+        """
+        cfg = self._config.embedding
+        if not cfg.auto_embed:
+            return None
+
+        try:
+            with httpx.Client(base_url=cfg.url, timeout=cfg.timeout) as client:
+                resp = client.post(
+                    cfg.endpoint,
+                    json={"text": text, "model": "all-MiniLM-L6-v2"},
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                embedding = data.get("embedding")
+                if embedding and isinstance(embedding, list) and len(embedding) > 0:
+                    logger.debug("Embedding generated: dim=%d", len(embedding))
+                    return embedding
+                logger.warning("Embedding service returned empty vector")
+                return None
+        except Exception as e:
+            logger.warning("Embedding generation failed: %s", e)
+            return None
+
     # =========================================================================
     # PostgreSQL Operations
     # =========================================================================

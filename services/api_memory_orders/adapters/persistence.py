@@ -77,7 +77,7 @@ class MemoryPersistence:
         Count points in Qdrant collection.
         
         Args:
-            collection: Collection name (e.g., 'entities_embeddings')
+            collection: Collection name (e.g., 'entity_embeddings')
         
         Returns:
             Count of points

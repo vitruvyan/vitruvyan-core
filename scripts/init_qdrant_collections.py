@@ -6,8 +6,7 @@ Initialize Qdrant Collections for Mercator
 Creates required Qdrant collections if they don't exist.
 Safe to run multiple times (won't delete existing data).
 
-All collections use 384-dim vectors (MiniLM-L6-v2) with Cosine distance,
-except graph_states (dim=1, metadata-only collection).
+All collections use 384-dim vectors (MiniLM-L6-v2) with Cosine distance.
 
 Migrated from vitruvyan production (27 collections, 1.87M vectors).
 
@@ -34,27 +33,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Collection configurations — full inventory from vitruvyan
+# Collection configurations — curated inventory for active runtime paths
 # Grouped by Sacred Order / domain function
 COLLECTIONS = [
     # === CORE: Semantic Engine ===
     {"name": "semantic_states",          "vector_size": 384, "distance": "Cosine", "description": "VSGS semantic grounding contexts"},
-    {"name": "embeddings",               "vector_size": 384, "distance": "Cosine", "description": "General-purpose embeddings"},
     {"name": "phrases_embeddings",       "vector_size": 384, "distance": "Cosine", "description": "NLP phrase embeddings (api_embedding)"},
-    {"name": "explanations_embeddings",  "vector_size": 384, "distance": "Cosine", "description": "Explanation text embeddings"},
 
     # === CORE: Pattern Weavers ===
     {"name": "patterns",                 "vector_size": 384, "distance": "Cosine", "description": "Pattern Weavers ontology taxonomy"},
-    {"name": "language_patterns",        "vector_size": 384, "distance": "Cosine", "description": "Language pattern recognition"},
     {"name": "weave_embeddings",         "vector_size": 384, "distance": "Cosine", "description": "Pattern weave result embeddings"},
 
     # === CORE: Babel Gardens ===
     {"name": "conversations_embeddings", "vector_size": 384, "distance": "Cosine", "description": "Conversation history embeddings"},
-    {"name": "sentiment_context",        "vector_size": 384, "distance": "Cosine", "description": "Sentiment contextual embeddings"},
     {"name": "sentiment_embeddings",     "vector_size": 384, "distance": "Cosine", "description": "Sentiment analysis embeddings"},
-
-    # === CORE: Graph / Orchestration ===
-    {"name": "graph_states",             "vector_size": 1,   "distance": "Cosine", "description": "LangGraph state metadata (dim=1, payload-only)"},
 
     # === CORE: Orthodoxy / Audit ===
     {"name": "audit_embeddings",         "vector_size": 384, "distance": "Cosine", "description": "Audit trail embeddings"},

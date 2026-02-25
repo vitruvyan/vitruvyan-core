@@ -138,7 +138,7 @@ def main():
         qdrant_data=(850, "embedding_1", "embedding_2"),   # Simplified data
         mode="incremental",
         source_table="entities",
-        target_collection="entities_embeddings"
+        target_collection="entity_embeddings"
     )
 
     sync_plan = planner.process(sync_input)

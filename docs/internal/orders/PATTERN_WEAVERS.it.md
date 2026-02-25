@@ -131,12 +131,31 @@ Service: `services/api_pattern_weavers/`.
 
 ## Specializzazione dominio (finanza, pilota)
 
-Pattern Weavers resta domain-agnostic: la finanza vive nella **tassonomia** (YAML) e nei consumer downstream.
+Pattern Weavers resta domain-agnostic: la finanza vive nella **tassonomia** (YAML, v2) e nei **semantic plugin** (Python ABC, v3), più consumer downstream.
 
 Esempi finanza:
 
 - tassonomia: settori (GICS), regioni, strumenti, risk terms, macro terms
+- **(v3)** `FinanceSemanticPlugin`: 11 tipi entità (ticker, sector, index, currency, ecc.), gate keywords multilingue, normalizzazione ticker uppercase
 - concetti estratti alimentano:
   - Neural Engine (feature generation)
   - Orthodoxy Wardens (guardrails/compliance)
   - Vault Keepers (archiviazione risultati weaving)
+
+---
+
+## v3 — Compilazione Semantica LLM (25 Febbraio 2026)
+
+v3 sostituisce la pipeline a due stadi (embedding + keyword) con una **singola chiamata LLM** (`LLMAgent.complete_json()`) che produce un `OntologyPayload` a schema stretto. Attivabile con `PATTERN_WEAVERS_V3=1`.
+
+**Componenti chiave**:
+- `OntologyPayload` + `ISemanticPlugin` ABC (contratti in `contracts/pattern_weavers.py`)
+- `LLMCompilerConsumer` (LIVELLO 1, parsing puro JSON→OntologyPayload)
+- `SemanticPluginRegistry` (LIVELLO 1, registro plugin per dominio)
+- `LLMCompilerAdapter` (LIVELLO 2, orchestrazione LLM + validazione)
+- `/compile` endpoint (LIVELLO 2, feature-flagged)
+- `pw_compile_node` (nodo grafo LangGraph, backward-compat con campi v2)
+
+**Plugin finanza**: `FinanceSemanticPlugin` — 11 tipi entità, 11 intent, 26 topic, multilingue, normalizzazione ticker.
+
+**Test**: 37 totali (25 core + 12 finanza) — tutti ✅

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart Test - Vitruvyan</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f9fafb;
+        }
+        h1 { color: #111827; }
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .status { 
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.ok { background: #d1fae5; color: #065f46; }
+        .status.error { background: #fee2e2; color: #991b1b; }
+        .status.pending { background: #fef3c7; color: #92400e; }
+        pre {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        button {
+            background: #333333;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button:hover { background: #1f2937; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Vitruvyan Chart System Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Backend Endpoint (/api/chart/{ticker})</h2>
+        <button onclick="testBackendEndpoint()">🔍 Test Backend</button>
+        <div id="backend-status" class="status pending">Pending...</div>
+        <pre id="backend-response">Click button to test</pre>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Full Graph API (/run)</h2>
+        <button onclick="testGraphAPI()">🔍 Test Graph API</button>
+        <div id="graph-status" class="status pending">Pending...</div>
+        <pre id="graph-response">Click button to test</pre>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Frontend Chart Component</h2>
+        <p>Open browser console (F12) and check:</p>
+        <ol>
+            <li>Go to: <a href="http://161.97.140.157:3001" target="_blank">http://161.97.140.157:3001</a></li>
+            <li>Type query: <strong>"analizza AAPL"</strong></li>
+            <li>Check Network tab for:</li>
+            <ul>
+                <li>✅ POST /run → Should return final_state</li>
+                <li>✅ GET /api/chart/AAPL → Should return OHLCV data</li>
+            </ul>
+            <li>Check Elements tab: Look for <code>&lt;CandlestickChart&gt;</code> in DOM</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 4: Browser Compatibility</h2>
+        <div id="browser-info"></div>
+    </div>
+
+    <script>
+        // Display browser info
+        document.getElementById('browser-info').innerHTML = `
+            <p><strong>User Agent:</strong> ${navigator.userAgent}</p>
+            <p><strong>Cookies Enabled:</strong> ${navigator.cookieEnabled}</p>
+            <p><strong>Language:</strong> ${navigator.language}</p>
+        `;
+
+        async function testBackendEndpoint() {
+            const statusDiv = document.getElementById('backend-status');
+            const responseDiv = document.getElementById('backend-response');
+            
+            statusDiv.className = 'status pending';
+            statusDiv.textContent = 'Testing...';
+            
+            try {
+                const response = await fetch('http://161.97.140.157:8004/api/chart/AAPL?days=90');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    statusDiv.className = 'status ok';
+                    statusDiv.textContent = `✅ SUCCESS - ${data.count} data points received`;
+                    
+                    responseDiv.textContent = JSON.stringify({
+                        ticker: data.ticker,
+                        period: data.period,
+                        count: data.count,
+                        duration_ms: data.duration_ms,
+                        first_candle: data.data[0],
+                        last_candle: data.data[data.data.length - 1]
+                    }, null, 2);
+                } else {
+                    throw new Error(data.message || 'Unknown error');
+                }
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = `❌ ERROR: ${error.message}`;
+                responseDiv.textContent = error.stack;
+            }
+        }
+
+        async function testGraphAPI() {
+            const statusDiv = document.getElementById('graph-status');
+            const responseDiv = document.getElementById('graph-response');
+            
+            statusDiv.className = 'status pending';
+            statusDiv.textContent = 'Testing...';
+            
+            try {
+                const response = await fetch('http://161.97.140.157:8004/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        input_text: 'analizza AAPL',
+                        user_id: 'test_chart_debug'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                const hasChartData = data.explainability?.detailed?.ranking?.stocks?.[0];
+                
+                if (hasChartData) {
+                    statusDiv.className = 'status ok';
+                    statusDiv.textContent = '✅ SUCCESS - Chart data available';
+                    
+                    const stock = data.explainability.detailed.ranking.stocks[0];
+                    responseDiv.textContent = JSON.stringify({
+                        ticker: data.tickers[0],
+                        has_factors: !!stock.factors,
+                        has_risk: !!stock.risk,
+                        factor_count: Object.keys(stock.factors || {}).length,
+                        risk_fields: Object.keys(stock.risk || {})
+                    }, null, 2);
+                } else {
+                    throw new Error('Chart data not found in response');
+                }
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = `❌ ERROR: ${error.message}`;
+                responseDiv.textContent = error.stack;
+            }
+        }
+    </script>
+</body>
+</html>

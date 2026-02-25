@@ -2,6 +2,11 @@
 
 Il servizio **MCP** è un **gateway stateless** che espone un set di tool “function-calling” e applica una catena di governance/audit (Sacred Orders) a ogni esecuzione.
 
+## Runtime mode
+
+- `MCP_DOMAIN=generic` (default): catalogo tool agnostico.
+- `MCP_DOMAIN=finance`: abilita adapter finance (alias compatibili Vitruvyan come `screen_tickers`, `compare_tickers`, `query_sentiment`).
+
 ## Scopo (domain-agnostic)
 
 - Fornire un endpoint per **scoprire** i tool disponibili (`GET /tools`).
@@ -26,6 +31,12 @@ Il servizio **MCP** è un **gateway stateless** che espone un set di tool “fun
 - `POST /execute` esegue un tool con audit/validazione
 - `GET /metrics` metriche Prometheus
 
+Finance mode (`MCP_DOMAIN=finance`) aggiunge:
+
+- `GET /v1/finance/config`
+- `GET /v1/finance/tools`
+- `POST /v1/finance/normalize`
+
 ## Configurazione (env)
 
 Minime:
@@ -40,7 +51,7 @@ Dipendenze esterne (tipicamente vertical-specific):
 
 ## Eventing (Redis)
 
-Per ogni esecuzione tool, pubblica su `cognitive_bus:mcp_request` un payload con:
+Per ogni esecuzione tool, pubblica su `conclave.mcp.actions` un payload con:
 
 - `conclave_id`
 - `tool`, `args`
@@ -63,9 +74,8 @@ Espone contatori/istogrammi per:
 
 ## Come aggiungere un tool (workflow)
 
-1. Definisci lo schema in `services/mcp/main.py` dentro `TOOL_SCHEMAS`.
-2. Implementa l’executor async `execute_<tool>()`.
-3. Registra l’executor in `TOOL_EXECUTORS`.
-4. (Opzionale) aggiungi regole di validazione specifiche in `sacred_orders_middleware()`.
+1. Definisci lo schema in `services/api_mcp/schemas/tools.py`.
+2. Implementa l’executor async in `services/api_mcp/tools/`.
+3. Registra/normalizza in `services/api_mcp/tools/__init__.py`.
+4. (Opzionale) aggiungi regole di validazione specifiche in `services/api_mcp/middleware.py`.
 5. Aggiorna (se serve) le migrazioni DB per audit.
-

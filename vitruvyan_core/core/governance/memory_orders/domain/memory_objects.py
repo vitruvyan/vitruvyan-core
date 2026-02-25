@@ -29,7 +29,7 @@ class CoherenceInput:
     qdrant_count: int
     thresholds: tuple[tuple[str, float], ...]
     table: str = "entities"
-    collection: str = "entities_embeddings"
+    collection: str = "entity_embeddings"
     
     def __post_init__(self):
         if self.pg_count < 0:
@@ -69,7 +69,7 @@ class CoherenceReport:
     drift_absolute: int
     timestamp: str
     table: str = "entities"
-    collection: str = "entities_embeddings"
+    collection: str = "entity_embeddings"
     
     VALID_STATUSES = frozenset(["healthy", "warning", "critical"])
     
@@ -179,7 +179,7 @@ class SyncInput:
     qdrant_data: tuple[Any, ...]
     mode: str
     source_table: str = "entities"
-    target_collection: str = "entities_embeddings"
+    target_collection: str = "entity_embeddings"
     
     VALID_MODES = frozenset(["incremental", "full"])
     

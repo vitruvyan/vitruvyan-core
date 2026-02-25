@@ -72,14 +72,14 @@ def test_get_finance_adapter_returns_none_when_disabled(monkeypatch):
 def test_resolve_sources_prefers_mercator_defaults():
     persistence = _FakePersistence(
         existing_tables=("entities",),
-        existing_collections=("entities_embeddings",),
+        existing_collections=("entity_embeddings",),
     )
     adapter = FinanceAdapter()
 
     resolved = adapter.resolve_sources(persistence)
 
     assert resolved["table"] == "entities"
-    assert resolved["collection"] == "entities_embeddings"
+    assert resolved["collection"] == "entity_embeddings"
     assert resolved["resolved_table_from_db"] is True
     assert resolved["resolved_collection_from_qdrant"] is True
 

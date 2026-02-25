@@ -166,28 +166,28 @@ These live under the same folder but **are not LIVELLO 1-pure** (they use LLM an
 
 ### Runtime status
 
-- `STATUS: PLANNED/EXPERIMENTAL`
-- Why:
-  - the hook exists and works at module level
-  - default service startup does not call `register_domain(...)`
-  - `GOVERNANCE_DOMAIN` is mentioned in comments/docstrings but is not wired in startup/runtime selection
-  - current legacy `ComplianceValidator` path (`_legacy/inquisitor_agent.py`) uses its own local regex ruleset
+- `STATUS: ENABLED (finance vertical wiring active)`
+- Runtime behavior:
+  - startup reads `ORTHODOXY_DOMAIN` (`generic` or `finance`)
+  - when `ORTHODOXY_DOMAIN=finance`, LIVELLO 2 loads finance rules from:
+    - `vitruvyan_core/domains/finance/governance_rules.py`
+  - combined ruleset (generic + finance) is injected into `Inquisitor(ruleset=...)`
+  - same finance-aware ruleset is used by API startup and Redis Streams listener
+  - optional override via `ORTHODOXY_RULESET_VERSION`
 
-### How to enable domain rules (startup wiring)
+### How to enable domain rules (ops)
 
-At service startup (LIVELLO 2), initialize registry and pass a domain-aware `RuleSet` to the consumer used for governance decisions.
+Set environment variables in service and listener:
 
-```python
-from core.governance.orthodoxy_wardens.governance.rule import DEFAULT_RULES
-from core.governance.orthodoxy_wardens.governance.rule_registry import get_governance_rule_registry
-from core.governance.orthodoxy_wardens.consumers.inquisitor import Inquisitor
+```bash
+ORTHODOXY_DOMAIN=finance
+ORTHODOXY_RULESET_VERSION=v1.1-finance
+```
 
-registry = get_governance_rule_registry()
-registry.set_generic_rules(DEFAULT_RULES)
-registry.register_domain("<domain>")  # imports domains.<domain>.governance_rules.get_domain_rules()
-ruleset = registry.get_ruleset(domain="<domain>")
+Finance-only HTTP endpoints are conditionally exposed under:
 
-inquisitor = Inquisitor(ruleset=ruleset)
+```text
+/v1/finance/*
 ```
 
 For end-to-end vertical implementation steps, use:

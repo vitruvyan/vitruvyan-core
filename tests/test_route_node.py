@@ -1,8 +1,8 @@
 
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from route_node import route_node
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'vitruvyan_core'))
+from core.orchestration.langgraph.node.route_node import route_node, configure
 
 def test_route_node():
     # Soft intent

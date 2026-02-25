@@ -92,7 +92,7 @@ class Settings:
     # Qdrant (vector database, aligned with docker-compose)
     QDRANT_HOST = _default_qdrant_host()
     QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
-    QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "entities_embeddings")
+    QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "entity_embeddings")
     
     # Backup & Archive settings
     BACKUP_RETENTION_DAYS = int(os.getenv("BACKUP_RETENTION_DAYS", "30"))

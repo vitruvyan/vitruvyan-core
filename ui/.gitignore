@@ -1,36 +1,27 @@
-# UI Dependencies
-node_modules/
-.next/
-.vercel/
-dist/
-build/
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Testing
-coverage/
-.nyc_output/
+# dependencies
+/node_modules
 
-# Environment
-.env
-.env.local
-.env.*.local
+# next.js
+/.next/
+/out/
 
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# production
+/build
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
+.pnpm-debug.log*
 
-# Misc
-*.log
-.cache/
+# env files
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts

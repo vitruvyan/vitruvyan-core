@@ -22,3 +22,11 @@ See `services/api_orthodoxy_wardens/README.md` for the current endpoint list:
 - Evidence & audit (`/evidence/*`, `/audit/*`)
 - Tribunal operations (`/tribunal/*`)
 
+## Finance vertical (conditional)
+
+When `ORTHODOXY_DOMAIN=finance`, additional endpoints are exposed:
+
+- `/v1/finance/config`
+- `/v1/finance/rules/stats`
+- `/v1/finance/validate`
+- `/v1/finance/audit`

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head><title>CORS Test</title></head>
+<body>
+<h1>CORS Test - Real /run Endpoint</h1>
+<button onclick="testRun()">Test POST /run (Real Query)</button>
+<pre id="result"></pre>
+
+<script>
+async function testRun() {
+  const result = document.getElementById('result');
+  result.textContent = 'Testing POST /run...';
+  
+  try {
+    console.log('Starting fetch to /run endpoint...');
+    const response = await fetch('http://161.97.140.157:8004/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        input_text: 'analizza MSFT momentum', 
+        user_id: 'cors_test' 
+      })
+    });
+    
+    console.log('Response status:', response.status);
+    const data = await response.json();
+    result.textContent = '✅ SUCCESS!\n' + JSON.stringify(data, null, 2);
+  } catch (error) {
+    console.error('Fetch error:', error);
+    result.textContent = '❌ ERROR:\n' + error.toString();
+  }
+}
+</script>
+</body>
+</html>

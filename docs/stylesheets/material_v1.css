@@ -1,38 +1,82 @@
-/* Minimal Material overrides for Vitruvyan KB.
-   Keep behavior close to upstream Material to avoid regressions. */
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Inconsolata:wght@400;500;600&display=swap");
 
-:root {
-  /* Login control follows navbar tabs typography. */
-  --kb-login-font-size: var(--kb-tabs-font-size, 0.875rem);
+html {
+  font-size: 16px; /* Aumentato da default 100% per font più grandi */
 }
 
-/* Top navigation tabs: force left alignment. */
-.md-tabs__inner {
-  justify-content: flex-start;
+:root {
+  --md-text-font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+  --md-code-font-family: var(--md-text-font-family);
+  --kb-nav-font-size: 1.0rem; /* Aumentato da 0.85rem → 0.90rem → 1.0rem per allineamento */
+  --kb-nav-font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* Larghezza fluida 80% invece di max-width fisso */
+.md-main__inner {
+  max-width: 80% !important;
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Header, tabs e footer alla stessa larghezza del contenuto */
+.md-header__inner,
+.md-tabs,
+.md-footer__inner {
+  max-width: 80% !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Navbar (tabs) allineata a sinistra con Montserrat */
+.md-tabs {
+  justify-content: flex-start !important;
 }
 
 .md-tabs__list {
-  justify-content: flex-start;
-  margin-left: 0;
-  margin-inline-start: 0;
-  margin-inline-end: auto;
+  margin-left: 0 !important;
+  justify-content: flex-start !important;
 }
 
-/* Keep active state visible when mega menu is open. */
-.md-tabs__item.kb-mega-tab--open > .md-tabs__link {
-  background: var(--md-accent-fg-color);
-  color: var(--md-primary-bg-color);
+.md-tabs__link {
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, sans-serif !important;
+  font-weight: 600 !important;
+  font-size: var(--kb-nav-font-size) !important;
 }
 
-/* Material header account dropdown (injected by vitruvyan.js). */
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4,
+.md-typeset h5,
+.md-typeset h6,
+.md-header__title,
+.md-header__topic {
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, sans-serif;
+}
+
+.md-typeset p,
+.md-typeset li {
+  font-size: 1.05rem; /* Aumentato da 0.95rem per leggibilità migliore */
+  line-height: 1.65; /* Aumentato da 1.55 per maggior respiro */
+}
+
+/* Content breathing room: prevent headings/text from touching card edges. */
+.md-content__inner {
+  padding: 1.5rem 2rem; /* Aumentato padding per contenuto più arioso */
+}
+
+/* Material header account dropdown (Keycloak auth controls). */
 .kb-auth-controls-material {
   display: inline-flex;
   align-items: center;
-  margin-left: 0.5rem;
+  margin-left: 0.45rem;
   position: relative;
   z-index: 1200;
-  font-size: var(--kb-login-font-size);
-  font-family: var(--kb-tabs-font-family, inherit);
 }
 
 .kb-auth-controls-material__toggle {
@@ -41,31 +85,24 @@
   justify-content: center;
   min-height: 2rem;
   min-width: 5.6rem;
+  border: 1px solid #000;
+  background: #000;
+  color: #fff;
   padding: 0.2rem 0.62rem;
-  border: 1px solid var(--md-default-fg-color--lighter);
-  background: var(--md-default-bg-color);
-  color: var(--md-default-fg-color);
-  border-radius: 0.2rem;
-  font: inherit;
+  font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.95rem; /* Aumentato da 0.84rem per leggibilità */
   cursor: pointer;
-}
-
-.kb-auth-controls-material__toggle:hover,
-.kb-auth-controls-material__toggle:focus {
-  border-color: var(--md-accent-fg-color);
 }
 
 .kb-auth-controls-material__menu {
   position: absolute;
   top: calc(100% + 0.35rem);
   right: 0;
-  min-width: 15rem;
-  border: 1px solid var(--md-default-fg-color--lightest);
-  background: var(--md-default-bg-color);
-  color: var(--md-default-fg-color);
-  font-size: var(--kb-login-font-size);
-  font-family: var(--kb-tabs-font-family, inherit);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  min-width: 15.5rem;
+  border: 1px solid #222;
+  background: #0f1014;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
   opacity: 0;
   transform: translateY(-6px);
   pointer-events: none;
@@ -80,9 +117,12 @@
 
 .kb-auth-controls-material__header {
   padding: 0.58rem 0.74rem 0.52rem;
-  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, sans-serif;
+  font-size: 0.86rem;
   font-weight: 700;
-  color: var(--md-default-fg-color);
+  color: #f7f7f7;
 }
 
 .kb-auth-controls-material__actions {
@@ -95,28 +135,178 @@
   align-items: center;
   min-height: 2.05rem;
   padding: 0.42rem 0.74rem;
-  border-top: 1px solid var(--md-default-fg-color--lightest);
-  color: var(--md-default-fg-color);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.88rem;
+  color: #ffffff !important;
   text-decoration: none;
 }
 
 .kb-auth-controls-material__item:hover,
 .kb-auth-controls-material__item:focus {
-  background: var(--md-default-fg-color--lightest);
+  background: #000;
+  color: #ffffff !important;
 }
 
 .kb-auth-controls-material__item--danger {
-  color: #c62828;
+  color: #ffd4d4 !important;
 }
 
-/* Desktop mega-menu styling (injected by vitruvyan.js). */
+[data-md-color-scheme="slate"] .kb-auth-controls-material__toggle {
+  border-color: #2c2f36;
+  background: #0f1014;
+  color: #f7f7f7;
+}
+
+[data-md-color-scheme="slate"] .kb-auth-controls-material__toggle:hover,
+[data-md-color-scheme="slate"] .kb-auth-controls-material__toggle:focus {
+  background: #1a1d23;
+}
+
+/* Sidebar hierarchy: clear visual split between titles and links. */
+.md-sidebar .md-nav__title,
+.md-sidebar .md-nav__title[for] {
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, sans-serif;
+  font-weight: 700;
+  color: #000000;
+}
+
+.md-sidebar .md-nav__link {
+  font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-weight: 500;
+}
+
+/* Primary (left) sidebar: mirror TOC hierarchy and improve separation. */
+.md-sidebar--primary .md-nav__title,
+.md-sidebar--primary .md-nav__title[for] {
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem; /* Aumentato da 0.9rem per allineamento con base 16px */
+  letter-spacing: 0.01em;
+  color: #000000;
+}
+
+.md-sidebar--primary .md-nav__link {
+  font-family: var(--kb-nav-font-family) !important;
+  font-weight: 500;
+  font-size: var(--kb-nav-font-size) !important;
+}
+
+/* White logo on header (light+dark), with dedicated hover asset. */
+.md-header__button.md-logo img,
+.md-nav__button.md-logo img {
+  content: url("vitruvyan-logo-white.png");
+  height: 2.5rem; /* Aumentato per logo più grande (default ~1.5rem) */
+  width: auto;
+}
+
+.md-header__button.md-logo:hover img,
+.md-header__button.md-logo:focus img,
+.md-nav__button.md-logo:hover img,
+.md-nav__button.md-logo:focus img {
+  content: url("vitruvyan-logo-white-hover.png");
+  height: 2.5rem;
+  width: auto;
+}
+
+/* Search bar più grande e allineata al resto del sito */
+.md-search__form {
+  height: 2.5rem !important;
+  border-radius: 0.25rem;
+}
+
+.md-search__input {
+  font-size: 1.0rem !important; /* Allineato a --kb-nav-font-size */
+  height: 2.5rem !important;
+  padding: 0 2.8rem 0 3rem !important;
+  font-family: var(--kb-nav-font-family) !important;
+}
+
+.md-search__icon {
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+}
+
+.md-search__icon[for="__search"] {
+  top: 0 !important;
+}
+
+/* Dark palette tuned to a Figma-like UI feel */
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: #1f2023;
+  --md-default-fg-color: #f1f3f5;
+  --md-default-fg-color--light: #b8bec8;
+  --md-default-fg-color--lighter: #8e96a3;
+  --md-default-fg-color--lightest: rgba(184, 190, 200, 0.18);
+
+  --md-primary-fg-color: #191b1f;
+  --md-primary-bg-color: #f1f3f5;
+
+  --md-accent-fg-color: #2d9cff;
+  --md-accent-fg-color--transparent: rgba(45, 156, 255, 0.18);
+  --md-typeset-a-color: #57b0ff;
+
+  --md-code-bg-color: #24262b;
+}
+
+[data-md-color-scheme="slate"] .md-header,
+[data-md-color-scheme="slate"] .md-tabs {
+  background: #191b1f;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-md-color-scheme="slate"] .md-sidebar .md-nav__title,
+[data-md-color-scheme="slate"] .md-sidebar .md-nav__title[for] {
+  color: #57b0ff;
+}
+
+[data-md-color-scheme="slate"] .md-sidebar--primary .md-nav__title,
+[data-md-color-scheme="slate"] .md-sidebar--primary .md-nav__title[for] {
+  color: #57b0ff;
+}
+
+[data-md-color-scheme="slate"] .md-sidebar--primary .md-nav__link {
+  color: #e8edf5;
+}
+
+[data-md-color-scheme="slate"] .md-sidebar--primary .md-nav__link:hover,
+[data-md-color-scheme="slate"] .md-sidebar--primary .md-nav__link:focus,
+[data-md-color-scheme="slate"] .md-sidebar--primary .md-nav__link--active {
+  color: #57b0ff;
+}
+
+[data-md-color-scheme="slate"] .md-content__inner,
+[data-md-color-scheme="slate"] .md-sidebar__scrollwrap,
+[data-md-color-scheme="slate"] .md-search__form,
+[data-md-color-scheme="slate"] .md-search__output {
+  background: #24262b;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .md-button,
+[data-md-color-scheme="slate"] .md-typeset .md-button--primary {
+  background: #2d9cff;
+  border-color: #2d9cff;
+  color: #ffffff;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .md-button:hover,
+[data-md-color-scheme="slate"] .md-typeset .md-button:focus,
+[data-md-color-scheme="slate"] .md-typeset .md-button--primary:hover,
+[data-md-color-scheme="slate"] .md-typeset .md-button--primary:focus {
+  background: #57b0ff;
+  border-color: #57b0ff;
+}
+
+/* Custom mega-menu (desktop). */
 .kb-mega-menu {
-  border-top: 1px solid var(--md-default-fg-color--lightest);
-  border-bottom: 1px solid var(--md-default-fg-color--lightest);
-  background: var(--md-default-bg-color);
-  color: var(--md-default-fg-color);
-  font-size: var(--kb-tabs-font-size, 1rem);
-  font-family: var(--kb-tabs-font-family, inherit);
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: #ffffff;
   opacity: 0;
   transform: translateY(-8px);
   pointer-events: none;
@@ -137,11 +327,13 @@
 }
 
 .kb-mega-menu__title {
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, sans-serif;
   font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--md-default-fg-color--light);
+  color: #111;
   margin-bottom: 0.55rem;
 }
 
@@ -152,26 +344,27 @@
 }
 
 .kb-mega-menu__col {
-  border: 1px solid var(--md-default-fg-color--lightest);
-  background: var(--md-default-bg-color);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: #fff;
   padding: 0.55rem 0.62rem 0.62rem;
 }
 
 .kb-mega-menu__heading {
+  font-family: var(--kb-nav-font-family);
+  font-size: var(--kb-nav-font-size);
   font-weight: 600;
+  color: #000;
   margin-bottom: 0.35rem;
   line-height: 1.25;
-  color: var(--md-default-fg-color);
-  font-size: var(--kb-tabs-font-size, 1rem);
-  font-family: var(--kb-tabs-font-family, inherit);
 }
 
 .kb-mega-menu__desc {
   margin: 0 0 0.5rem 0;
+  font-family: var(--kb-nav-font-family);
+  font-size: var(--kb-nav-font-size);
   line-height: 1.25;
-  color: var(--md-default-fg-color--light);
-  font-size: var(--kb-tabs-font-size, 1rem);
-  font-family: var(--kb-tabs-font-family, inherit);
+  color: #4a4a4a;
+  font-style: italic;
 }
 
 .kb-mega-menu__list {
@@ -182,11 +375,10 @@
 
 .kb-mega-menu__link {
   display: block;
+  font-family: var(--kb-nav-font-family);
+  font-size: var(--kb-nav-font-size);
   line-height: 1.3;
-  color: var(--md-typeset-a-color);
-  font-weight: 600;
-  font-size: var(--kb-tabs-font-size, 1rem);
-  font-family: var(--kb-tabs-font-family, inherit);
+  color: #111 !important;
   text-decoration: none;
   padding: 0.24rem 0.1rem;
 }
@@ -198,33 +390,130 @@
 .kb-mega-menu__link-desc {
   display: block;
   margin-top: 0.15rem;
-  font-size: var(--kb-tabs-font-size, 1rem);
+  font-size: var(--kb-nav-font-size);
   line-height: 1.24;
-  color: var(--md-default-fg-color--light);
-  font-family: var(--kb-tabs-font-family, inherit);
+  color: #4a4a4a;
+  font-style: italic;
+}
+
+/* Hard normalization across sidebars and mega-menu (escluso md-tabs__link che usa Montserrat sopra). */
+.md-sidebar--primary .md-nav__link,
+.md-sidebar--secondary .md-nav__link,
+.md-nav--secondary .md-nav__link,
+.md-sidebar--secondary .md-nav__link .md-typeset,
+.md-nav--secondary .md-nav__link .md-typeset,
+.kb-mega-menu__heading,
+.kb-mega-menu__desc,
+.kb-mega-menu__link,
+.kb-mega-menu__link-desc {
+  font-family: var(--kb-nav-font-family) !important;
+  font-size: var(--kb-nav-font-size) !important;
 }
 
 .kb-mega-menu__link:hover,
 .kb-mega-menu__link:focus {
-  color: var(--md-accent-fg-color);
   text-decoration: underline;
   text-underline-offset: 0.14em;
 }
 
-@media screen and (max-width: 76.2344em) {
-  .kb-mega-menu {
+.md-tabs__item.kb-mega-tab--open > .md-tabs__link {
+  background: #000;
+  color: #fff !important;
+}
+
+/* Content cards/code blocks: keep text readable and consistent with nav scale. */
+.md-typeset pre > code,
+.md-typeset code,
+.md-typeset .grid.cards > ol > li,
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid > .card {
+  font-size: var(--kb-nav-font-size) !important;
+}
+
+/* Light mode: code cards/blocks in black with white text. */
+[data-md-color-scheme="default"] .md-typeset pre > code,
+[data-md-color-scheme="default"] .md-typeset .highlight pre,
+[data-md-color-scheme="default"] .md-typeset .highlighttable {
+  background: #000 !important;
+  color: #fff !important;
+}
+
+[data-md-color-scheme="default"] .md-typeset pre > code *,
+[data-md-color-scheme="default"] .md-typeset .highlight pre * {
+  color: #f5f7ff !important;
+}
+
+[data-md-color-scheme="default"] .md-clipboard,
+[data-md-color-scheme="slate"] .md-clipboard {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  border-radius: 0.25rem !important;
+  color: #fff !important;
+  opacity: 1 !important;
+}
+
+[data-md-color-scheme="default"] .md-clipboard:hover,
+[data-md-color-scheme="default"] .md-clipboard:focus,
+[data-md-color-scheme="slate"] .md-clipboard:hover,
+[data-md-color-scheme="slate"] .md-clipboard:focus {
+  background: #ffffff !important;
+  border-color: #ffffff !important;
+  color: #000 !important;
+}
+
+@media screen and (min-width: 76.25em) {
+  body.kb-mega-enabled .md-sidebar--primary {
     display: none;
+  }
+
+  body.kb-mega-enabled .md-main__inner {
+    grid-template-columns: minmax(0, 1fr) 14rem;
   }
 }
 
-/* Desktop navigation mode: navbar + mega-menu only (no sidebars). */
-@media screen and (min-width: 76.25em) {
-  .md-sidebar--primary,
-  .md-sidebar--secondary {
-    display: none;
+@media screen and (max-width: 76.2344em) {
+  .kb-mega-menu {
+    display: none !important;
   }
+}
 
-  .md-main__inner {
-    grid-template-columns: minmax(0, 1fr);
+[data-md-color-scheme="slate"] .kb-mega-menu {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: #191b1f;
+}
+
+[data-md-color-scheme="slate"] .kb-mega-menu__title {
+  color: #b8bec8;
+}
+
+[data-md-color-scheme="slate"] .kb-mega-menu__col {
+  background: #24262b;
+  border-color: rgba(255, 255, 255, 0.09);
+}
+
+[data-md-color-scheme="slate"] .kb-mega-menu__heading {
+  color: #57b0ff;
+}
+
+[data-md-color-scheme="slate"] .kb-mega-menu__desc {
+  color: #b8bec8;
+}
+
+[data-md-color-scheme="slate"] .kb-mega-menu__link {
+  color: #eef2f8 !important;
+}
+
+[data-md-color-scheme="slate"] .kb-mega-menu__link-desc {
+  color: #b8bec8;
+}
+
+[data-md-color-scheme="slate"] .md-tabs__item.kb-mega-tab--open > .md-tabs__link {
+  background: #2d9cff;
+  color: #fff !important;
+}
+
+@media screen and (max-width: 76.2344em) {
+  .md-content__inner {
+    padding: 1.05rem 1.15rem;
   }
 }

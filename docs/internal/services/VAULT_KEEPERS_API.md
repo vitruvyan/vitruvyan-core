@@ -22,3 +22,12 @@ See `services/api_vault_keepers/README.md` for the current endpoint list:
 - Recovery operations (`/recovery/*`)
 - Audit trail (`/audit/*`)
 
+## Finance vertical (conditional)
+
+When `VAULT_DOMAIN=finance`, additional endpoints are exposed:
+
+- `/v1/finance/config`
+- `/v1/finance/integrity`
+- `/v1/finance/backup`
+- `/v1/finance/archive`
+- `/v1/finance/signal-timeseries/archive`

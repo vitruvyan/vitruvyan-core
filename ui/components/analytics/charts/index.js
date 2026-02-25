@@ -1,0 +1,12 @@
+// analytics/charts/index.js - Centralized chart exports
+export { default as CandlestickChart } from './CandlestickChart'
+export { default as ComparativeRadarChart } from './ComparativeRadarChart'
+export { default as CompositeBarChart } from './CompositeBarChart'
+export { default as CompositeScoreGauge } from './CompositeScoreGauge'
+export { default as FactorRadarChart } from './FactorRadarChart'
+export { default as MetricsHeatmap } from './MetricsHeatmap'
+export { default as MiniRadarGrid } from './MiniRadarGrid'
+export { default as NormalizedPerformanceChart } from './NormalizedPerformanceChart'
+export { default as RiskBreakdownChart } from './RiskBreakdownChart'
+export { default as RiskRewardScatter } from './RiskRewardScatter'
+export { default as SignalRadarChart, SignalRadarChart as SignalRadar, SIGNAL_METADATA } from './SignalRadarChart'

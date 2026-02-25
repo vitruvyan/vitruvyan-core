@@ -291,7 +291,7 @@ class BusAdapter:
             try:
                 from core.governance.codex_hunters.events import Channels
                 self.bus.emit(
-                    Channels.DISCOVERED,
+                    Channels.entity_discovered(),
                     {
                         "entity_id": entity_id,
                         "source": resolved_source,
@@ -355,7 +355,7 @@ class BusAdapter:
             try:
                 from core.governance.codex_hunters.events import Channels
                 self.bus.emit(
-                    Channels.RESTORED,
+                    Channels.with_prefix(Channels.ENTITY_RESTORED),
                     {
                         "entity_id": entity_id,
                         "quality_score": result.data.get("quality_score", 0.0),
@@ -428,6 +428,20 @@ class BusAdapter:
             quality_score = result.data.get("quality_score", 1.0)
             dedupe_key = result.data.get("dedupe_key")
             
+            # ── AUTO-EMBED ──────────────────────────────────────────────
+            # If no embedding was provided, generate one via the embedding
+            # service.  We build a searchable text string from the
+            # normalized_data and delegate to persistence.generate_embedding.
+            if not embedding_out:
+                embed_text = self._build_embed_text(entity_id, normalized_data_out)
+                if embed_text:
+                    embedding_out = self._persistence.generate_embedding(embed_text)
+                    if embedding_out:
+                        logger.info(
+                            "Auto-embedding generated for %s (dim=%d)",
+                            entity_id, len(embedding_out),
+                        )
+            
             # LIVELLO 2 responsibility: Construct provider-specific payloads
             # PostgreSQL payload (JSONB storage)
             postgres_payload = {
@@ -485,6 +499,37 @@ class BusAdapter:
             "dedupe_key": dedupe_key,
         }
     
+    def _build_embed_text(self, entity_id: str, data: Dict[str, Any], max_len: int = 2000) -> str:
+        """
+        Build a single text string from normalized_data suitable for embedding.
+
+        Heuristic: join all string-valued fields (title, text, description,
+        normalized_text, etc.) up to *max_len* characters.
+        """
+        parts: List[str] = []
+
+        # Prefer specific keys first (order matters for truncation)
+        priority_keys = [
+            "title", "normalized_text", "text", "description",
+            "selftext", "content", "notes", "summary",
+        ]
+        seen = set()
+        for key in priority_keys:
+            val = data.get(key)
+            if isinstance(val, str) and val.strip():
+                parts.append(val.strip())
+                seen.add(key)
+
+        # Then any remaining string fields
+        for key, val in data.items():
+            if key in seen:
+                continue
+            if isinstance(val, str) and len(val) > 10:
+                parts.append(val.strip())
+
+        joined = " ".join(parts)[:max_len]
+        return joined if joined.strip() else entity_id
+
     def _extract_searchable_fields(self, data: Dict[str, Any], max_fields: int = 10) -> Dict[str, Any]:
         """
         Extract searchable fields from normalized data for Qdrant payload.

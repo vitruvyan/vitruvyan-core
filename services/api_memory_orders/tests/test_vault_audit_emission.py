@@ -75,7 +75,7 @@ def test_coherence_pipeline_emits_vault_audit_request(monkeypatch):
     )
 
     adapter = MemoryBusAdapter()
-    report = asyncio.run(adapter.handle_coherence_check(table="entities", collection="entities_embeddings"))
+    report = asyncio.run(adapter.handle_coherence_check(table="entities", collection="entity_embeddings"))
 
     assert report.status in {"healthy", "warning", "critical"}
 

@@ -68,7 +68,7 @@ class Settings:
     # Qdrant (Mnemosyne)
     QDRANT_HOST = _default_qdrant_host()
     QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
-    QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "entities_embeddings")
+    QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "entity_embeddings")
     
     # Redis (Cognitive Bus)
     REDIS_HOST = _default_redis_host()

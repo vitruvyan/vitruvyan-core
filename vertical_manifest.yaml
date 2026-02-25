@@ -1,0 +1,87 @@
+domain_name: "finance"
+domain_version: "0.1.0"
+status: "draft"
+
+# ============================================================================
+# COMPATIBILITY (UPDATE SYSTEM CONTRACT V1)
+# ============================================================================
+compatibility:
+  min_core_version: "1.2.1"
+  max_core_version: "1.x.x"
+  contracts_major: 1
+  update_channel: "stable"
+  breaking_changes_allowlist: []
+  smoke_tests_timeout: 300
+
+# ============================================================================
+# NOTIFICATIONS
+# ============================================================================
+notifications:
+  enabled: true
+  channels:
+    - "log"
+  check_on_startup: true
+  check_interval_hours: 24
+  desktop_urgency: "normal"
+
+# ============================================================================
+# OWNERSHIP
+# ============================================================================
+ownership:
+  team: "mercator"
+  tech_lead: "dbaldoni"
+  contact: "dbaldoni@mercator.finance"
+
+# ============================================================================
+# REQUIRED COMPONENTS (Vertical Contract V1)
+# ============================================================================
+required_components:
+  intent_config: true
+  readme: true
+  manifest: true
+
+optional_components:
+  graph_plugin: true
+  graph_nodes: false
+  governance_rules: true
+  slot_filler: true
+  response_formatter: true
+  execution_config: true
+  entity_resolver_config: true
+
+# ============================================================================
+# ADAPTERS
+# ============================================================================
+adapters:
+  langgraph_plugin: true
+  langgraph_graph_nodes_hook: false
+  sacred_orders_rules: true
+  neural_engine_contracts: true
+
+# ============================================================================
+# CONTRACTS USED
+# ============================================================================
+contracts_used:
+  - contracts.GraphPlugin
+  - contracts.BaseParser
+  - contracts.IDataProvider
+  - contracts.IScoringStrategy
+  - contracts.StreamBus
+  - contracts.Verdict
+  - contracts.RuleSet
+
+# ============================================================================
+# DOCKER STACK (Mercator-specific)
+# ============================================================================
+docker:
+  stack_name: "mercator"
+  port_range: "2000-2999"
+  compose_file: "infrastructure/docker/docker-compose.yml"
+
+# ============================================================================
+# UPSTREAM TRACKING
+# ============================================================================
+upstream:
+  repo: "dbaldoni/vitruvyan-core"
+  remote_name: "upstream"
+  env_var: "VITRUVYAN_REPO"

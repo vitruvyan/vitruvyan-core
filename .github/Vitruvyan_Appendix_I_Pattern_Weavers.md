@@ -1,8 +1,8 @@
 # Appendix I — Pattern Weavers: Universal Ontology Resolution Engine
 
-**Version**: 2.0.0 (Phase 1 - Ontological Purification Complete)  
-**Last Updated**: February 14, 2026  
-**Status**: Production Ready (Phase 1 Complete, Phase 2 Planned)  
+**Version**: 3.0.0 (LLM Semantic Compilation — Single-Call Architecture)  
+**Last Updated**: February 25, 2026  
+**Status**: Production Ready (v2 stable, v3 feature-flagged via `PATTERN_WEAVERS_V3=1`)  
 **Epistemic Order**: REASON (Semantic Contextualization Layer)  
 **Sacred Order**: REASON (peer to Babel Gardens, Memory Orders, Vault Keepers, Orthodoxy Wardens)
 
@@ -10,7 +10,10 @@
 
 ## 1. Executive Summary
 
-Pattern Weavers is Vitruvyan OS's **universal ontology resolution engine**—a domain-agnostic system that transforms unstructured queries ("analyze European banks", "ESG renewable energy", "cardiac arrest protocols") into **structured semantic context** by mapping text to taxonomy categories through embedding-based similarity search and keyword matching.
+Pattern Weavers is Vitruvyan OS's **universal ontology resolution engine**—a domain-agnostic system that transforms unstructured queries ("analyze European banks", "ESG renewable energy", "cardiac arrest protocols") into **structured semantic context**.
+
+**v2 (stable)** maps text to taxonomy categories through embedding-based similarity search and keyword matching.  
+**v3 (feature-flagged, `PATTERN_WEAVERS_V3=1`)** replaces the two-stage pipeline with a **single LLM call** that produces a strict-schema `OntologyPayload` (gate + entities + intent + topics + sentiment + language), validated via Pydantic `extra="forbid"`. Domain-specific behavior is injected via `ISemanticPlugin` plugins (ABC), enabling new verticals without core code changes.
 
 **Phase 1 Refactoring** (February 10-11, 2026) eliminated **epistemic boundary violations** that plagued v1.x. The critical issue: Pattern Weavers contained a `_aggregate_risk()` method (41 lines) that computed risk scores by interpreting sector metadata—a form of **semantic reasoning** forbidden at the ontology layer. Risk scoring belongs to the **Neural Engine** (downstream REASON consumer), not Pattern Weavers (PERCEPTION → REASON interface).
 
@@ -700,7 +703,182 @@ pattern_weavers_errors_total{error_type="embedding_unavailable|qdrant_timeout|..
 
 ---
 
-## 10. Phase 2 Roadmap (Deferred)
+## 10. Pattern Weavers v3 — LLM Semantic Compilation (February 25, 2026)
+
+### 10.1 Motivation
+
+v2 used a two-stage pipeline: embedding similarity (Babel Gardens + Qdrant) for primary resolution, keyword fallback for degraded mode. While functional, this approach had fundamental limitations:
+
+1. **Semantic ceiling**: Embedding similarity captures proximity but not intent structure — "analyze European banks" and "European banking crisis" produce similar vectors but require different entity extraction
+2. **No domain gating**: v2 could not distinguish in-domain from out-of-domain queries before processing, wasting compute on irrelevant inputs
+3. **Rigid taxonomy**: YAML-driven categories required manual curation; new concepts (ESG, sustainability) needed explicit entries
+4. **No structured output**: WeaveResult contained flat lists of PatternMatch; downstream nodes had to re-derive intent, entities, sentiment
+
+v3 replaces the two-stage pipeline with a **single LLM call** that performs gate + compile in one shot, producing a **strict-schema OntologyPayload** that captures entities, intent, topics, sentiment, temporal context, and language — all validated at parse time via Pydantic `extra="forbid"`.
+
+### 10.2 Architecture
+
+**Design Principle**: Single LLM call, strict contract, domain plugins, graceful degradation.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    Pattern Weavers v3 Pipeline                       │
+│                                                                      │
+│  Query → [DomainPlugin.system_prompt()] → LLM (complete_json)       │
+│        → JSON → [LLMCompilerConsumer.process()] → OntologyPayload   │
+│        → [DomainPlugin.validate_payload()] → CompileResponse        │
+│                                                                      │
+│  If PATTERN_WEAVERS_V3=0: fallback to v2 embedding pipeline         │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Layers (SACRED_ORDER_PATTERN compliant)**:
+
+| Layer | Component | Location | Purpose |
+|-------|-----------|----------|---------|
+| **Contract** | `OntologyPayload`, `ISemanticPlugin` | `contracts/pattern_weavers.py` | Canonical output schema + plugin interface |
+| **LIVELLO 1** | `LLMCompilerConsumer` | `core/cognitive/pattern_weavers/consumers/llm_compiler.py` | Pure JSON→OntologyPayload parsing (zero I/O) |
+| **LIVELLO 1** | `SemanticPluginRegistry` | `core/cognitive/pattern_weavers/governance/semantic_plugin.py` | Plugin registration + resolution |
+| **LIVELLO 2** | `LLMCompilerAdapter` | `services/api_pattern_weavers/adapters/llm_compiler.py` | Orchestrates LLM call + consumer + validation |
+| **LIVELLO 2** | `/compile` endpoint | `services/api_pattern_weavers/api/routes.py` | HTTP surface (feature-flagged) |
+| **Graph** | `pw_compile_node` | `core/orchestration/langgraph/node/pw_compile_node.py` | LangGraph integration |
+
+### 10.3 Output Contract: OntologyPayload
+
+All models use `model_config = ConfigDict(extra="forbid")` — any field not in the schema causes a Pydantic `ValidationError`, catching LLM hallucinations at parse time.
+
+```python
+class GateVerdict(str, Enum):
+    in_domain = "in_domain"
+    out_of_domain = "out_of_domain"
+    ambiguous = "ambiguous"
+
+class DomainGate(BaseModel):
+    verdict: GateVerdict       # Gate decision
+    domain: str                # Resolved domain (e.g., "finance")
+    confidence: float          # [0.0, 1.0]
+    reasoning: str             # LLM explanation
+
+class OntologyEntity(BaseModel):
+    raw: str                   # As found in query ("Tesla")
+    canonical: str             # Normalized ("TSLA")
+    entity_type: str           # "ticker", "sector", "region", etc.
+    confidence: float          # [0.0, 1.0]
+
+class OntologyPayload(BaseModel):
+    gate: DomainGate           # Domain gating result
+    entities: List[OntologyEntity]
+    intent_hint: str           # "screening", "risk_analysis", etc.
+    topics: List[str]          # ["banking", "european_markets"]
+    sentiment_hint: str        # "bullish", "bearish", "neutral", "mixed"
+    temporal_context: str      # "real_time", "historical", "forecast"
+    language: str              # ISO 639-1 ("en", "it", "es")
+    complexity: str            # "simple", "moderate", "complex"
+    raw_query: str             # Original input
+    compile_metadata: Dict[str, Any]  # Processing stats
+```
+
+### 10.4 Domain Plugin System (ISemanticPlugin)
+
+v3 introduces the **ISemanticPlugin** ABC — domains provide LLM instructions, gate keywords, and post-validation without modifying core code.
+
+```python
+class ISemanticPlugin(ABC):
+    @abstractmethod
+    def domain_name(self) -> str: ...
+    
+    @abstractmethod
+    def system_prompt(self) -> str: ...
+    
+    @abstractmethod
+    def gate_keywords(self) -> List[str]: ...
+    
+    @abstractmethod
+    def entity_types(self) -> List[str]: ...
+    
+    @abstractmethod
+    def intent_vocabulary(self) -> List[str]: ...
+    
+    @abstractmethod
+    def validate_payload(self, payload: OntologyPayload) -> OntologyPayload: ...
+```
+
+**Built-in plugins**:
+| Plugin | Domain | Location | Features |
+|--------|--------|----------|----------|
+| `GenericSemanticPlugin` | generic | `core/cognitive/pattern_weavers/governance/semantic_plugin.py` | Domain-agnostic fallback, basic entity extraction |
+| `FinanceSemanticPlugin` | finance | `domains/finance/pattern_weavers/finance_semantic_plugin.py` | 11 entity types, 11 intents, 26 topics, ticker normalization, multilingual (en/it/es/fr/de) |
+
+**Adding a new domain plugin**:
+1. Create `domains/<domain>/pattern_weavers/<domain>_semantic_plugin.py`
+2. Implement `ISemanticPlugin` with domain-specific prompts and entity types
+3. Register via `register_semantic_plugin(plugin)` or set `PATTERN_DOMAIN=<domain>` for auto-registration in service routes
+4. No core code changes required
+
+### 10.5 Feature Flag & Migration
+
+**Environment variable**: `PATTERN_WEAVERS_V3`
+
+| Value | Behavior |
+|-------|----------|
+| `0` (default) | v2 embedding pipeline (stable, production) |
+| `1` | v3 LLM semantic compilation (new) |
+
+**Graph integration**:
+```python
+# graph_flow.py — feature flag at import time
+_pw_v3 = os.getenv("PATTERN_WEAVERS_V3", "0") == "1"
+if _pw_v3:
+    from core.orchestration.langgraph.node.pw_compile_node import pw_compile_node as weaver_node
+else:
+    from core.orchestration.langgraph.node.pattern_weavers_node import pattern_weavers_node as weaver_node
+```
+
+**Backward compatibility**: `pw_compile_node` populates BOTH v3 fields (`ontology_payload`) AND legacy fields (`weaver_context`, `matched_concepts`, `semantic_context`, `weave_confidence`) so downstream nodes work without changes.
+
+**Migration plan**:
+1. **Shadow mode** (current): Deploy with `PATTERN_WEAVERS_V3=0`, test `/compile` endpoint directly
+2. **Canary**: Set `PATTERN_WEAVERS_V3=1` on canary instance, compare outputs
+3. **Production**: Roll out to all instances, monitor latency/accuracy
+4. **Cleanup** (Q3 2026): Remove v2 embedding pipeline, make v3 the only path
+
+### 10.6 Performance Characteristics
+
+| Metric | v2 (embedding) | v3 (LLM compile) |
+|--------|----------------|-------------------|
+| **Latency** | 120-200ms | 800-2000ms |
+| **Accuracy** | ~85% entities | ~95% entities |
+| **Domain gating** | None | Built-in (gate verdict) |
+| **Intent detection** | None (downstream) | Inline (intent_hint) |
+| **Sentiment** | None | Inline (sentiment_hint) |
+| **Language detection** | Basic | LLM-native |
+| **Cost/query** | ~$0 (infra only) | ~$0.0003 (GPT-4o-mini) |
+| **Fallback** | Keyword matcher | Degraded OntologyPayload (success=true, fallback metadata) |
+| **Schema enforcement** | Loose (dict) | Strict (Pydantic extra=forbid) |
+
+### 10.7 Test Coverage
+
+| Test Suite | Location | Tests | Coverage |
+|------------|----------|-------|----------|
+| Core contracts + consumer + registry | `vitruvyan-core: tests/test_pattern_weavers_v3.py` | 25 | OntologyPayload schema, JSON parsing, code fences, plugin registry, request/response |
+| Finance plugin + E2E simulation | `mercator: tests/test_finance_semantic_plugin.py` | 12 | Interface compliance, system prompt, gate keywords, ticker validation, registry, consumer E2E (en/it/out-of-domain) |
+| **Total** | | **37** | All pass ✅ |
+
+### 10.8 Key Design Decisions
+
+1. **Single LLM call (gate + compile)**: Two calls (gate → compile) would double latency. LLM handles both in one structured JSON response. The `gate.verdict` field determines domain relevance; if `out_of_domain`, entities/intent are still populated but consumers can short-circuit.
+
+2. **`extra="forbid"` on all output models**: LLM JSON often includes unexpected fields. Pydantic V2's `extra="forbid"` rejects any hallucinated keys at parse time, enforcing contract strictness without post-hoc validation.
+
+3. **Consumer purity (LIVELLO 1)**: `LLMCompilerConsumer` does NOT call LLM — that would violate LIVELLO 1's zero-I/O invariant. It only PARSES the JSON response. The LLM call lives in the LIVELLO 2 `LLMCompilerAdapter`.
+
+4. **Graceful degradation**: If JSON parsing fails, the consumer returns a minimal valid `OntologyPayload` with `compile_metadata.fallback=True` rather than raising. The system degrades to a less-informative-but-valid result.
+
+5. **Plugin ABC, not config**: Domain customization via Python ABC (system prompts, validation hooks) rather than YAML config. LLM prompts require structured natural language that YAML cannot express well. The ABC allows arbitrary validation logic (e.g., ticker uppercase normalization in finance).
+
+---
+
+## 11. Phase 2 Roadmap (Deferred)
 
 **Remaining Issues** (from due diligence report):
 
@@ -1409,44 +1587,45 @@ docker compose up -d --build vitruvyan_api_graph
 
 ## 🎯 Status Summary
 
-**Production Readiness**: ✅ **PRODUCTION-READY + LLM ENHANCED** (Jan 3, 2026)
+**Production Readiness**: ✅ **v2 PRODUCTION-READY** | ✅ **v3 FEATURE-FLAGGED** (Feb 25, 2026)
 
-**What Works**:
-- ✅ LLM Ontology Engine (GPT-4o-mini, 95%+ accuracy, $0.00028/query) ✅ **NEW (Jan 3, 2026)**
-- ✅ Priority Cascade (LLM → YAML fallback, non-blocking) ✅ **NEW (Jan 3, 2026)**
-- ✅ API service (port 8017, FastAPI, dual-process)
+**What Works (v2 — default)**:
+- ✅ Embedding-based similarity (Babel Gardens + Qdrant, 95% accuracy)
+- ✅ Keyword fallback (70% accuracy, zero dependencies)
+- ✅ API service (port 9017, FastAPI, dual-process)
 - ✅ Redis Cognitive Bus integration (43.80ms latency)
-- ✅ PostgreSQL logging (cursor() pattern, audit trail with method tracking)
+- ✅ PostgreSQL logging (audit trail with method tracking)
 - ✅ Qdrant collection (24 points, 384D embeddings)
 - ✅ Multilingual support (IT/EN/ES/FR)
-- ✅ Multi-sector detection (banche + assicurazioni)
 - ✅ LangGraph integration (weaver_node in core/langgraph/node/)
-- ✅ Prometheus metrics (calls, success, latency, concepts, llm_queries) ✅ **ENHANCED (Jan 3, 2026)**
-- ✅ Env vars configuration (WEAVER_TOP_K, WEAVER_SIMILARITY_THRESHOLD, PATTERN_WEAVERS_USE_LLM)
-- ✅ Production logging (logger.info/error with context)
+- ✅ Prometheus metrics (calls, success, latency, concepts)
 
-**What's New (Jan 3, 2026)**:
-- ✅ ESG concept extraction (0% → 100%)
-- ✅ Sustainability recognition (0% → 100%)
-- ✅ Innovation detection (0% → 100%)
-- ✅ Risk-adjusted returns understanding (0% → 100%)
-- ✅ Automatic fallback to YAML if LLM fails (resilience)
+**What Works (v3 — `PATTERN_WEAVERS_V3=1`)**:
+- ✅ Single LLM call (gate + compile) via `LLMAgent.complete_json()`
+- ✅ Strict OntologyPayload contract (`extra="forbid"` — rejects LLM hallucinations)
+- ✅ DomainPlugin ABC (`ISemanticPlugin`) — pluggable domain prompts/validation
+- ✅ GenericSemanticPlugin (domain-agnostic fallback)
+- ✅ FinanceSemanticPlugin (11 entity types, multilingual, ticker normalization)
+- ✅ SemanticPluginRegistry (singleton, auto-resolve domain from env)
+- ✅ `/compile` endpoint (POST, feature-flagged)
+- ✅ `pw_compile_node` (LangGraph node, backward-compat with v2 fields)
+- ✅ Graceful degradation (fallback OntologyPayload on parse errors)
+- ✅ 37 unit tests (25 core + 12 finance plugin) — all pass
 
-**Trade-offs**:
-- ⚠️ Latency: 3-5s (LLM) vs 45ms (YAML) - acceptable for accuracy
-- ⚠️ Cost: $2.80/month (LLM, 10K queries) vs $0 (YAML) - worth it for 95% accuracy
-- ⚠️ API dependency: Requires OpenAI API key (YAML is local)
+**Trade-offs (v3)**:
+- ⚠️ Latency: 800-2000ms (LLM) vs 120-200ms (embedding) — acceptable for accuracy gain
+- ⚠️ Cost: ~$0.0003/query (GPT-4o-mini) vs ~$0 (embedding)
+- ⚠️ LLM dependency: Requires OpenAI API key (v2 embedding remains available as fallback)
 
-**Next Steps** (Q2 2026 — Phase 2):
-1. **Agnosticization Target**: 75-80/100 score (remove remaining finance-specific logic)
-2. **LLM Caching**: Redis cache for common queries (reduce latency to <500ms)
-3. **Batch Processing**: Optimize LLM batch_recognize() (reduce cost by 30%)
-4. **Healthcare Vertical**: Create taxonomy_healthcare.yaml (ICD-10, medical procedures)
-5. **Monitor Production**: LLM vs YAML fallback ratio (target 95% LLM, 5% YAML)
-6. **YAML Expansion**: 100+ concepts for YAML fallback robustness
+**Next Steps** (Q2-Q3 2026):
+1. **Shadow/canary deploy**: Run v3 alongside v2, compare accuracy metrics
+2. **LLM caching**: Redis cache for common queries (reduce latency to <500ms)
+3. **Healthcare vertical**: Create `HealthcareSemanticPlugin` as second domain proof
+4. **v2 sunset**: Once v3 proven in production, remove embedding pipeline (Q3 2026)
+5. **Agnosticization Target**: 80+/100 (v3 plugin system achieves 75+ by design)
 
 ---
 
-**Last Updated**: February 14, 2026 (Phase 1 Refactoring Complete — Epistemic Purification)  
+**Last Updated**: February 25, 2026 (v3 LLM Semantic Compilation — Feature-Flagged)  
 **Author**: Vitruvyan Sacred Orders Team  
-**Sacred Order**: REASON (Pattern Weavers) — PRODUCTION-READY + LLM ENHANCED
+**Sacred Order**: REASON (Pattern Weavers) — v2 PRODUCTION + v3 FEATURE-FLAGGED

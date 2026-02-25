@@ -1,36 +1,32 @@
-// ui/components/adapters/index.js
-// Adapter Registry — Central Export
-// Last updated: Feb 20, 2026
+// adapters/index.js
+import { conversationalAdapter } from './conversationalAdapter'
+import { singleTickerAdapter } from './singleTickerAdapter'
+import { comparisonAdapter } from './comparisonAdapter'
+import { allocationAdapter } from './allocationAdapter'
+import { screeningAdapter } from './screeningAdapter'
+import { portfolioAdapter } from './portfolioAdapter'
+import { portfolioGuardianAdapter } from './portfolioGuardianAdapter'
+import { approvalAdapter } from './approvalAdapter'
 
-/**
- * Adapter Registry
- * 
- * Import this to access the global adapter registry
- * and register new adapters.
- */
+const adapterMap = {
+  'conversational': conversationalAdapter,
+  'single': singleTickerAdapter,
+  'comparison': comparisonAdapter,
+  'allocation': allocationAdapter,
+  'screening': screeningAdapter,
+  'portfolio': portfolioAdapter,
+  'portfolio_guardian': portfolioGuardianAdapter,
+  'approval': approvalAdapter,
+  // Fallback
+  'default': conversationalAdapter
+}
 
-export { adapterRegistry } from '../../contracts'
+export function selectAdapter(conversationType) {
+  return adapterMap[conversationType] || adapterMap.default
+}
 
-// Example adapters (for reference)
-export { ConversationalAdapter } from './_base/BaseAdapterExample'
-export { FinanceSingleTickerAdapter } from './_examples/FinanceSingleTickerAdapter'
-
-/**
- * Usage:
- * 
- * ```javascript
- * import { adapterRegistry, ConversationalAdapter } from '@/ui/components/adapters'
- * 
- * // Register adapter
- * adapterRegistry.register(new ConversationalAdapter())
- * 
- * // Get adapter by name
- * const adapter = adapterRegistry.get('conversational')
- * 
- * // Get adapter by conversation type
- * const adapter = adapterRegistry.getByConversationType('single_ticker')
- * 
- * // Use adapter
- * const uiPayload = adapter.map(backendFinalState)
- * ```
- */
+export function adaptFinalState(finalState) {
+  const type = finalState.conversation_type || 'conversational'
+  const adapter = selectAdapter(type)
+  return adapter.map(finalState)
+}
