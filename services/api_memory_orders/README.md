@@ -95,6 +95,12 @@ api_memory_orders/
 - `idempotency_key` → safe retry without duplicate execution
 - `allow_mass_delete` → explicit override when delete ratio policy blocks execution
 
+`ENABLE_AUTO_SYNC=true` behavior:
+- Triggered by `memory.coherence.requested` flow when coherence status is `critical`
+- Calls reconciliation with `execute=true`
+- Skips execution when `MEMORY_RECONCILIATION_MODE=dry_run`
+- Still enforces delete-ratio guard (`allow_mass_delete` required when blocked)
+
 ---
 
 ## Configuration

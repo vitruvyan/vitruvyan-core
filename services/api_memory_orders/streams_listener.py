@@ -159,15 +159,68 @@ class MemoryStreamsListener:
         """Handle coherence check request."""
         table = payload.get("table", "entities")
         collection = payload.get("collection")
+        embedded_column = payload.get("embedded_column", "embedded")
+        reconcile_limit = payload.get("reconcile_limit", 1000)
+        allow_mass_delete = bool(payload.get("allow_mass_delete", False))
+        idempotency_key = payload.get("idempotency_key")
+
+        try:
+            reconcile_limit = int(reconcile_limit)
+            if reconcile_limit <= 0:
+                raise ValueError("reconcile_limit must be > 0")
+        except (TypeError, ValueError):
+            logger.warning("Invalid reconcile_limit=%r, fallback to 1000", reconcile_limit)
+            reconcile_limit = 1000
         
         logger.info(f"Processing coherence check: {table} ↔ {collection}")
         
         report = await self.adapter.handle_coherence_check(
             table=table,
-            collection=collection
+            collection=collection,
+            embedded_column=embedded_column,
         )
         
         logger.info(f"Coherence check complete: status={report.status}, drift={report.drift_percentage:.2f}%")
+
+        if not settings.ENABLE_AUTO_SYNC:
+            return
+
+        if report.status != "critical":
+            logger.info(
+                "Auto-sync enabled but coherence status is %s; skipping auto-reconciliation",
+                report.status,
+            )
+            return
+
+        if settings.MEMORY_RECONCILIATION_MODE == "dry_run":
+            logger.warning(
+                "Auto-sync skipped: MEMORY_RECONCILIATION_MODE=dry_run does not execute repairs"
+            )
+            return
+
+        logger.warning(
+            "Critical drift detected for %s ↔ %s; triggering auto-reconciliation "
+            "(mode=%s, limit=%s, allow_mass_delete=%s)",
+            table,
+            collection,
+            settings.MEMORY_RECONCILIATION_MODE,
+            reconcile_limit,
+            allow_mass_delete,
+        )
+        result = await self.adapter.handle_reconciliation(
+            table=table,
+            collection=collection,
+            limit=reconcile_limit,
+            execute=True,
+            idempotency_key=idempotency_key,
+            allow_mass_delete=allow_mass_delete,
+        )
+        logger.info(
+            "Auto-reconciliation result: status=%s severity=%s operations=%s",
+            result.get("status"),
+            result.get("severity"),
+            result.get("operations_count"),
+        )
     
     async def handle_health_request(self, payload: dict):
         """Handle health check request."""
