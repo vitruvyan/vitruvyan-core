@@ -224,6 +224,8 @@ nav:
         - Manifest Template: docs/contracts/verticals/templates/vertical_manifest.yaml
       - Finance:
         - Codex Hunters Domain Pack: examples/verticals/finance/CODEX_HUNTERS_DOMAIN_PACK.md
+      - Security:
+        - AICOMSEC Brainstorm Report: docs/knowledge_base/development/verticals/security/AICOMSEC_BRAINSTORM_REPORT.md
     - Examples: examples/README_EXAMPLES.md
     - Configuration: config/README_CONFIG.md
     - Scripts: scripts/README_SCRIPTS.md
