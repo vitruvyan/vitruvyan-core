@@ -6,10 +6,11 @@ Thin endpoints: validate → delegate to bus_adapter → return.
 Zero business logic here.
 
 Endpoints:
-    POST /run_dse          — Execute DSE compute (stateless)
-    POST /dse/prepare      — Prepare design points from Pattern Weavers context
-    POST /dse/log_rejection — Log a Conclave governance rejection
-    GET  /health           — Service health
+    POST /run_dse                — Execute DSE compute (stateless)
+    POST /dse/prepare            — Prepare design points from Pattern Weavers context
+    POST /dse/run_from_context   — Full synchronous pipeline (LangGraph entry point)
+    POST /dse/log_rejection      — Log a Conclave governance rejection
+    GET  /health                 — Service health
 
 Last updated: Feb 26, 2026
 """
@@ -29,6 +30,8 @@ from ..models.schemas import (
     PrepareDSEResponse,
     RunDSERequest,
     RunDSEResponse,
+    RunFromContextRequest,
+    RunFromContextResponse,
 )
 from infrastructure.edge.dse.domain.schemas import (
     DesignPoint,
@@ -159,6 +162,53 @@ async def log_rejection_endpoint(request: LogRejectionRequest, adapter: DSEBusAd
     logger.info("/dse/log_rejection trace_id=%s reason=%s", request.trace_id, request.reason)
     adapter.log_rejection(request.trace_id, request.reason, request.rejected_by)
     return {"status": "logged", "trace_id": request.trace_id}
+
+
+# ---------------------------------------------------------------------------
+# POST /dse/run_from_context  (LangGraph synchronous entry point)
+# ---------------------------------------------------------------------------
+
+@router.post("/dse/run_from_context", response_model=RunFromContextResponse)
+async def run_from_context_endpoint(
+    request: RunFromContextRequest,
+    adapter: DSEBusAdapter = Depends(get_adapter),
+):
+    """
+    Full synchronous DSE pipeline from a Pattern Weavers weaver_context.
+
+    Called by the LangGraph dse_node. Single call → prepare + sample + Pareto
+    + dottrinale ranking + persist + StreamBus events.
+    """
+    logger.info(
+        "/dse/run_from_context trace_id=%s user_id=%s",
+        request.trace_id, request.user_id,
+    )
+    try:
+        result = adapter.run_from_context(
+            weaver_context=request.weaver_context,
+            user_id=request.user_id,
+            trace_id=request.trace_id,
+            seed=request.seed,
+            use_case=request.use_case,
+        )
+        return RunFromContextResponse(
+            status="success",
+            trace_id=request.trace_id,
+            total_design_points=result["total_design_points"],
+            pareto_count=result["pareto_count"],
+            strategy=result["strategy"],
+            confidence=result["confidence"],
+            input_hash=result["input_hash"],
+            asof=result["asof"],
+            top_designs=result["ranking_dottrinale"][:3],
+            artifact={
+                "pareto_frontier":    result["pareto_frontier"],
+                "ranking_dottrinale": result["ranking_dottrinale"],
+            },
+        )
+    except Exception as exc:
+        logger.error("/dse/run_from_context failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 # ---------------------------------------------------------------------------

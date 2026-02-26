@@ -197,6 +197,93 @@ class DSEBusAdapter:
 
     def log_rejection(self, trace_id: str, reason: str, rejected_by: Optional[str] = None) -> None:
         self.persistence.log_rejection(trace_id, reason, rejected_by)
+
+    # ------------------------------------------------------------------
+    # run_from_context — synchronous full-pipeline (LangGraph entry point)
+    # ------------------------------------------------------------------
+
+    def run_from_context(
+        self,
+        weaver_context: Dict[str, Any],
+        user_id: str,
+        trace_id: str,
+        seed: int = 42,
+        use_case: str = "graph_pipeline",
+    ) -> Dict[str, Any]:
+        """
+        Full synchronous pipeline: prepare → sample → run_dse → persist.
+
+        Called by the LangGraph dse_node via POST /dse/run_from_context.
+        Combines prepare() + execute_run() in a single blocking call.
+
+        Returns:
+            dict with artifact data + metadata for LangGraph state.
+        """
+        logger.info(
+            "DSEBusAdapter.run_from_context trace_id=%s user_id=%s use_case=%s",
+            trace_id, user_id, use_case,
+        )
+
+        # Step 1: Prepare (strategy + design points)
+        prep = self.prepare(
+            weaver_context=weaver_context,
+            user_id=user_id,
+            trace_id=trace_id,
+            trigger="langgraph",
+        )
+        design_points: List[DesignPoint] = prep["design_points"]
+
+        # Step 2: Build minimal PolicySet + NormalizationProfile from context
+        policy = PolicySet(
+            policy_name="default",
+            optimization_objective="maximize",
+            doctrine_weights=weaver_context.get("doctrine_weights", {}),
+        )
+        profile = NormalizationProfile(
+            profile_name="default",
+            kpi_configs=[
+                KPIConfig(
+                    kpi_name=k,
+                    min_value=0.0,
+                    max_value=1.0,
+                    direction=OptimizationDirection.MAXIMIZE,
+                    weight=1.0,
+                )
+                for k in weaver_context.get("kpis", ["score"])
+            ],
+        )
+        run_context = RunContext(
+            user_id=user_id,
+            trace_id=trace_id,
+            use_case=use_case,
+            metadata={
+                "strategy": prep["strategy"],
+                "confidence": prep["confidence"],
+                "source": "langgraph",
+            },
+        )
+
+        # Step 3: Full DSE run (Pareto + ranking + persist + events)
+        artifact = self.execute_run(
+            design_points=design_points,
+            policy_set=policy,
+            normalization_profile=profile,
+            run_context=run_context,
+            seed=seed,
+        )
+
+        return {
+            "pareto_frontier":      artifact.pareto_frontier,
+            "ranking_dottrinale":   artifact.ranking_dottrinale,
+            "input_hash":           artifact.input_hash,
+            "total_design_points":  artifact.total_design_points,
+            "pareto_count":         artifact.pareto_count,
+            "strategy":             prep["strategy"],
+            "confidence":           prep["confidence"],
+            "seed":                 artifact.seed,
+            "asof":                 artifact.asof.isoformat(),
+            "trace_id":             trace_id,
+        }
         logger.warning("DSE run rejected: trace_id=%s reason=%s", trace_id, reason)
 
     # ------------------------------------------------------------------

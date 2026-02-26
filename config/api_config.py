@@ -52,6 +52,7 @@ class APIService(Enum):
     CODEX = ("codex", 8008, "/codex")
     QDRANT = ("qdrant", 6333, "/qdrant")
     DOCS = ("docs", 8013, "/docs")  # Vitruvyan Docs Synapse
+    DSE = ("api_edge_dse", 8021, "/dse")  # Design Space Exploration (edge)
     
     def __init__(self, service_name: str, port: int, prod_path: str):
         self.service_name = service_name
@@ -269,6 +270,11 @@ def get_docs_url(endpoint: str = "") -> str:
     return get_api_url_with_fallback(APIService.DOCS, endpoint)
 
 
+def get_dse_url(endpoint: str = "") -> str:
+    """Get Design Space Exploration API URL."""
+    return get_api_url_with_fallback(APIService.DSE, endpoint)
+
+
 # Export all
 __all__ = [
     "APIService",
@@ -284,6 +290,7 @@ __all__ = [
     "get_gemma_url",
     "get_codex_url",
     "get_docs_url",
+    "get_dse_url",
 ]
 
 

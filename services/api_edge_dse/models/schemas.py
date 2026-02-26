@@ -67,3 +67,41 @@ class LogRejectionRequest(BaseModel):
     trace_id: str
     reason: str
     rejected_by: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# POST /dse/run_from_context  (LangGraph synchronous entry point)
+# ---------------------------------------------------------------------------
+
+class RunFromContextRequest(BaseModel):
+    """
+    Full synchronous DSE pipeline from a Pattern Weavers context.
+    Designed for the LangGraph dse_node: one call → full artifact.
+    """
+    weaver_context: Dict[str, Any] = Field(
+        ..., description="Pattern Weavers context (concepts, dimensions, kpis)"
+    )
+    user_id: str
+    trace_id: str
+    seed: int = 42
+    use_case: str = "graph_pipeline"
+
+
+class RunFromContextResponse(BaseModel):
+    """Response from /dse/run_from_context."""
+    status: str
+    trace_id: str
+    total_design_points: int
+    pareto_count: int
+    strategy: str
+    confidence: float
+    input_hash: str
+    asof: str
+    top_designs: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Top-3 designs from ranking_dottrinale"
+    )
+    artifact: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Full artifact (pareto_frontier + ranking_dottrinale)"
+    )
