@@ -1,30 +1,32 @@
 {
-  "version": "1.6.0",
+  "version": "1.6.1",
   "channel": "stable",
-  "release_date": "2026-02-26T15:00:00Z",
+  "release_date": "2026-02-26T16:00:00Z",
   "contracts_version": "1.0.0",
   "changes": {
     "features": [
       "DSE service refactored to SACRED_ORDER_PATTERN (LIVELLO 1 + LIVELLO 2)",
-      "infrastructure/edge/dse/: pure domain layer — LHS/Cartesian/Sobol sampling, Pareto frontier, dottrinale ranking",
+      "infrastructure/edge/dse/: pure domain layer \u2014 LHS/Cartesian/Sobol sampling, Pareto frontier, dottrinale ranking",
       "services/api_edge_dse/: FastAPI service on port 8021",
       "StreamBus consumer groups replace legacy redis.asyncio PubSub",
       "DSEPersistenceAdapter (PostgresAgent) replaces raw psycopg2",
       "26 unit tests (sampling + Pareto frontier)",
-      "SamplingStrategySelector with ML injection point"
+      "SamplingStrategySelector with ML injection point",
+      "LangGraph dse_node.py \u2014 synchronous HTTP adapter for api_edge_dse",
+      "/dse/run_from_context endpoint \u2014 full prepare+sample+Pareto+persist pipeline in one call"
     ],
     "fixes": [],
     "documentation": [
-      "infrastructure/edge/dse/docs/README.md — full architecture documentation",
-      "infrastructure/edge/dse/philosophy/charter.md — mandate and invariants",
-      "services/api_edge_dse/README.md — API reference and quick start"
+      "infrastructure/edge/dse/docs/README.md \u2014 full architecture documentation",
+      "infrastructure/edge/dse/philosophy/charter.md \u2014 mandate and invariants",
+      "services/api_edge_dse/README.md \u2014 API reference and quick start"
     ],
     "breaking_changes": []
   },
   "commits": [
     {
-      "hash": "7739afe",
-      "message": "feat(dse): refactor aegis DSE service → SACRED_ORDER_PATTERN LIVELLO 1+2"
+      "hash": "TBD",
+      "message": "feat(dse): add dse_node.py + /dse/run_from_context synchronous endpoint"
     }
   ],
   "validation": [
