@@ -656,6 +656,12 @@ services:
       - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       - CONCLAVE_LISTENER_ENABLED=1
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "streams_listener.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     volumes:
       - ./logs/conclave_listener:/app/logs
     depends_on:
