@@ -399,11 +399,11 @@ Deleted 10 orphaned collections (~1.83M vectors freed):
 - [x] Remove hardcoded collection defaults from QdrantAgent methods → keyword-only `collection=`
 - [x] `qdrant_node` passes explicit `collection="phrases_embeddings"` to `search_phrases()`
 
-### Phase 3: Contract Enforcement (Medium-term)
-- [ ] Implement collection audit script (compare Qdrant vs init script)
-- [ ] Add payload schema validation to QdrantAgent.upsert()
-- [ ] Add collection name validation (reject names not in registry)
-- [ ] Add vertical_manifest.yaml RAG section for domain collections
+### Phase 3: Contract Enforcement ✅ COMPLETED (Feb 26, 2026)
+- [x] Audit script: `scripts/audit_rag_collections.py` — compares live Qdrant vs registry, reports OK/MISSING/MISMATCH/ORPHAN, supports `--json` and `--strict` modes
+- [x] Payload validation: `QdrantAgent.upsert()` warns if any point payload missing `source` field (MUST per Section 5.2)
+- [x] Collection name guard: `QdrantAgent.upsert()`, `.search()`, `.ensure_collection()` warn on undeclared collection names (env `RAG_ENFORCE_REGISTRY=warn|strict|off`)
+- [x] `vertical_manifest.yaml` RAG section: `rag.collections[]` for domain-tier collection declarations
 
 ### Phase 4: Growth (Long-term)
 - [ ] Multi-model support (different dimensions per collection tier)
@@ -426,6 +426,7 @@ Deleted 10 orphaned collections (~1.83M vectors freed):
 
 - QdrantAgent: `vitruvyan_core/core/agents/qdrant_agent.py`
 - Init script: `scripts/init_qdrant_collections.py`
+- Audit script: `scripts/audit_rag_collections.py`
 - Python contract interface: `vitruvyan_core/contracts/rag.py`
 - Vertical contract: `docs/contracts/verticals/VERTICAL_CONTRACT_V1.md`
 - VSGS engine: `vitruvyan_core/core/vpar/vsgs/`

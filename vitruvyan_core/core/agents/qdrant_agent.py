@@ -19,6 +19,59 @@ from qdrant_client.http.models import (
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+# ── RAG Contract enforcement (soft guard — warn, never block) ────────────────
+# Lazy-loaded to avoid circular imports at module level.
+_RAG_REGISTRY_LOADED = False
+_DECLARED_NAMES: set = set()
+_RAG_ENFORCE = os.getenv("RAG_ENFORCE_REGISTRY", "warn")  # "warn" | "strict" | "off"
+
+
+def _ensure_rag_registry() -> None:
+    """Load declared collection names once (lazy)."""
+    global _RAG_REGISTRY_LOADED, _DECLARED_NAMES
+    if _RAG_REGISTRY_LOADED:
+        return
+    try:
+        from contracts.rag import ALL_DECLARED_COLLECTIONS
+        _DECLARED_NAMES = {d.name for d in ALL_DECLARED_COLLECTIONS}
+    except ImportError:
+        logger.debug("contracts.rag not importable — registry guard disabled")
+        _DECLARED_NAMES = set()
+    _RAG_REGISTRY_LOADED = True
+
+
+def _check_collection_registered(collection: str, operation: str) -> None:
+    """Warn (or raise in strict mode) if collection is not in the registry."""
+    if _RAG_ENFORCE == "off":
+        return
+    _ensure_rag_registry()
+    if not _DECLARED_NAMES:
+        return  # registry not available
+    if collection not in _DECLARED_NAMES:
+        msg = (
+            f"[RAG GUARD] Collection '{collection}' used in {operation} "
+            f"is NOT declared in contracts.rag registry. "
+            f"Declared: {sorted(_DECLARED_NAMES)}"
+        )
+        if _RAG_ENFORCE == "strict":
+            raise ValueError(msg)
+        logger.warning(msg)
+
+
+def _check_payload_contract(points: List[Dict[str, Any]], collection: str) -> None:
+    """Warn if any point payload is missing the MUST-level 'source' field."""
+    if _RAG_ENFORCE == "off":
+        return
+    for i, p in enumerate(points):
+        payload = p.get("payload", {})
+        if not payload.get("source"):
+            logger.warning(
+                f"[RAG GUARD] Point {i} in '{collection}' missing payload.source "
+                f"(MUST per RAG Contract Section 5.2). "
+                f"Payload keys: {sorted(payload.keys()) if payload else '(empty)'}"
+            )
+            break  # warn once per batch, not per point
+
 
 class QdrantAgent:
     def __init__(self):
@@ -65,6 +118,7 @@ class QdrantAgent:
         Returns:
             Dict with status and action taken
         """
+        _check_collection_registered(name, "ensure_collection")
         dist = Distance.COSINE if distance.lower() == "cosine" else Distance.DOT
         
         try:
@@ -99,6 +153,8 @@ class QdrantAgent:
 
     # Upsert points
     def upsert(self, collection: str, points: List[Dict[str, Any]]):
+        _check_collection_registered(collection, "upsert")
+        _check_payload_contract(points, collection)
         start = time.time()
         try:
             qdrant_points = [
@@ -123,6 +179,7 @@ class QdrantAgent:
         qfilter: Optional[Filter] = None,
         with_payload: bool = True,
     ):
+        _check_collection_registered(collection, "search")
         try:
             top_k = max(1, min(top_k, 50))
             res = self.client.search(
