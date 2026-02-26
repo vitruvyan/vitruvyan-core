@@ -58,6 +58,10 @@ try:
         InvalidProfileError,
         InvalidWeightsError,
     )
+    from .neural_engine.filter_strategy import (
+        IFilterStrategy,
+        FilterStrategyError,
+    )
 except ImportError:
     IDataProvider = None  # type: ignore[assignment,misc]
     DataProviderError = None  # type: ignore[assignment,misc]
@@ -67,6 +71,8 @@ except ImportError:
     ScoringStrategyError = None  # type: ignore[assignment,misc]
     InvalidProfileError = None  # type: ignore[assignment,misc]
     InvalidWeightsError = None  # type: ignore[assignment,misc]
+    IFilterStrategy = None  # type: ignore[assignment,misc]
+    FilterStrategyError = None  # type: ignore[assignment,misc]
 from .pattern_weavers import (
     GateVerdict,
     DomainGate,
@@ -149,6 +155,9 @@ __all__ = [
     "ScoringStrategyError",
     "InvalidProfileError",
     "InvalidWeightsError",
+    # Filter Strategy
+    "IFilterStrategy",
+    "FilterStrategyError",
     # Pattern Weavers v3
     "GateVerdict",
     "DomainGate",

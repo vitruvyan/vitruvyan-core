@@ -13,7 +13,7 @@
 | Orthodoxy Wardens | Truth & Governance | ✅ Refactored |
 | Vault Keepers | Memory & Archival | ✅ Refactored |
 | Codex Hunters | Perception & Discovery | ✅ Refactored|
-| Pattern Weavers | Ontology | ✅ Refactored |
+| Pattern Weavers | Ontology Layer | ✅ Refactored |
 | Babel Gardens | Semantic Linguistic & Sentiment | ✅ Refactored |
 
 ---

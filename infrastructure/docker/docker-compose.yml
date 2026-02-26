@@ -1,16 +1,16 @@
 # ============================================================================
-# MERCATOR — Docker Compose Stack (Finance Vertical)
+# VITRUVYAN CORE — Docker Compose Stack
 # ============================================================================
-# Naming:    mercator_<service>
-# Network:   mercator-net
-# Ports:     2xxx (external) → 8xxx (internal)
-# Volumes:   <service>_data_mercator
-# Database:  mercator / mercator_user
-# Portainer: mercator stack
+# Naming:    core_<service>
+# Network:   core-net
+# Ports:     9xxx (external) → 8xxx (internal)
+# Volumes:   <service>_data_core
+# Database:  vitruvyan_core / vitruvyan_core_user
+# Portainer: vitruvyan-core stack
 # ============================================================================
 
 # Stack name (for Portainer visibility)
-name: mercator
+name: vitruvyan-core
 
 services:
 
@@ -20,15 +20,15 @@ services:
 
   redis:
     image: redis:7.2-alpine
-    container_name: mercator_redis
+    container_name: core_redis
     restart: always
     command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save 60 1
     ports:
-      - "2379:6379"
+      - "9379:6379"
     volumes:
-      - redis_data_mercator:/data
+      - redis_data_core:/data
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -37,22 +37,21 @@ services:
 
   postgres:
     image: postgres:16-alpine
-    container_name: mercator_postgres
+    container_name: core_postgres
     restart: always
     environment:
-      POSTGRES_DB: mercator
-      POSTGRES_USER: mercator_user
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-mercator_pass}"
+      POSTGRES_DB: vitruvyan_core
+      POSTGRES_USER: vitruvyan_core_user
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
     ports:
-      - "2432:5432"
+      - "9432:5432"
     volumes:
-      - postgres_data_mercator:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+      - postgres_data_core:/var/lib/postgresql/data
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mercator_user -d mercator"]
+      test: ["CMD-SHELL", "pg_isready -U vitruvyan_core_user -d vitruvyan_core"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -60,19 +59,19 @@ services:
 
   qdrant:
     image: qdrant/qdrant:v1.15.0
-    container_name: mercator_qdrant
+    container_name: core_qdrant
     restart: always
     ports:
-      - "2333:6333"
-      - "2334:6334"
+      - "9333:6333"
+      - "9334:6334"
     volumes:
-      - qdrant_data_mercator:/qdrant/storage
+      - qdrant_data_core:/qdrant/storage
     networks:
-      - mercator-net
+      - core-net
 
   keycloak_db:
     image: postgres:16-alpine
-    container_name: mercator_keycloak_db
+    container_name: core_keycloak_db
     restart: always
     env_file:
       - ./keycloak/keycloak.env
@@ -82,7 +81,7 @@ services:
     volumes:
       - keycloak_db_data:/var/lib/postgresql/data
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
       interval: 10s
@@ -92,7 +91,7 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.1
-    container_name: mercator_keycloak
+    container_name: core_keycloak
     restart: always
     depends_on:
       keycloak_db:
@@ -115,13 +114,13 @@ services:
       KC_DB_USERNAME: keycloak
       KEYCLOAK_ADMIN: admin
     ports:
-      - "127.0.0.1:2080:8080"
+      - "127.0.0.1:9080:8080"
     env_file:
       - ./keycloak/keycloak.env
     volumes:
       - ./keycloak/bootstrap-kb.sh:/bootstrap-kb.sh:ro
     networks:
-      - mercator-net
+      - core-net
 
 
   # ══════════════════════════════════════════════════════════════════════════
@@ -132,47 +131,35 @@ services:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_graph
-    container_name: mercator_graph
+    container_name: core_graph
     restart: unless-stopped
     ports:
-      - "2004:8004"
+      - "9004:8004"
     environment:
-      # ── Domain verticalization (finance) ──
-      - INTENT_DOMAIN=finance
-      - GRAPH_DOMAIN=finance
-      - ENTITY_DOMAIN=finance
-      - CAN_ENABLED=0
-      - DISABLE_SLOT_FILLING=1
-      - USE_MCP=0
-      # ── Core ──
       - LANGGRAPH_ENABLED=0
       - DISPATCHER_URL=http://graph:8004/dispatch
       - DISPATCHER_HEALTH_URL=http://graph:8004/health
       - GRAPH_HTTP_TIMEOUT=120
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-mercator}
-      - POSTGRES_USER=${POSTGRES_USER:-mercator_user}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_MODEL=gpt-4o-mini
       - GRAPH_LLM_MODEL=gpt-4o-mini
-      - INTENT_LLM_MODEL=gpt-4o
-      - QDRANT_HOST=${QDRANT_HOST:-mercator_qdrant}
+      - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
       - QDRANT_PORT=${QDRANT_PORT:-6333}
       - NE_BASE_URL=http://neural_engine:8003
-      - NEURAL_ENGINE_URL=http://neural_engine:8003
       - SENTIMENT_API_URL=http://babel_gardens:8009
       - BABEL_GARDENS_URL=http://babel_gardens:8009
-      - BABEL_API_URL=http://babel_gardens:8009
       - EMBEDDING_API_URL=http://embedding:8010
-      - REDIS_HOST=mercator_redis
+      - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       - LLM_CACHE_ENABLED=true
       - LLM_CACHE_TTL_HOURS=24
       - LLM_CACHE_MAX_SIZE=10000
       # VSGS (Semantic Grounding)
-      - VSGS_ENABLED=${VSGS_ENABLED:-1}
+      - VSGS_ENABLED=${VSGS_ENABLED:-0}
       - VSGS_GROUNDING_TOPK=${VSGS_GROUNDING_TOPK:-3}
       - VSGS_PROMPT_BUDGET_CHARS=${VSGS_PROMPT_BUDGET_CHARS:-800}
       - VSGS_STORE_EVERY_N=${VSGS_STORE_EVERY_N:-1}
@@ -180,84 +167,43 @@ services:
       - redis
       - postgres
     networks:
-      - mercator-net
+      - core-net
 
   neural_engine:
     build:
       context: ../..
       dockerfile: services/api_neural_engine/Dockerfile
-    container_name: mercator_neural_engine
+    container_name: core_neural_engine
     restart: unless-stopped
     ports:
-      - "2003:8003"
+      - "9003:8003"
     environment:
       PYTHONPATH: /app
       LOG_LEVEL: info
-      DOMAIN: finance
-      POSTGRES_HOST: ${POSTGRES_HOST:-mercator_postgres}
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: ${POSTGRES_DB:-mercator}
-      POSTGRES_USER: ${POSTGRES_USER:-mercator_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    depends_on:
-      - postgres
+      DOMAIN: mock
     networks:
-      - mercator-net
-
-  edge_oculus_prime:
-    build:
-      context: ../..
-      dockerfile: services/api_edge_oculus_prime/Dockerfile
-    container_name: mercator_edge_oculus_prime
-    restart: unless-stopped
-    ports:
-      - "2050:8050"
-    environment:
-      - PYTHONPATH=/app:/app/vitruvyan_core
-      - HOST=0.0.0.0
-      - PORT=8050
-      - LOG_LEVEL=INFO
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-mercator}
-      - POSTGRES_USER=${POSTGRES_USER:-mercator_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - REDIS_HOST=mercator_redis
-      - REDIS_PORT=6379
-      - OCULUS_PRIME_EVENT_MIGRATION_MODE=${OCULUS_PRIME_EVENT_MIGRATION_MODE:-dual_write}
-    depends_on:
-      - redis
-      - postgres
-    networks:
-      - mercator-net
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8050/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+      - core-net
 
   mcp:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_mcp
-    container_name: mercator_mcp
+    container_name: core_mcp
     restart: unless-stopped
     ports:
-      - "2020:8020"
+      - "8020:8020"
     environment:
       - PYTHONPATH=/app:/app/vitruvyan_core
       - LOG_LEVEL=${MCP_LOG_LEVEL:-INFO}
       - PORT=8020
-      - MCP_DOMAIN=finance
       # PostgreSQL
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-mercator}
-      - POSTGRES_USER=${POSTGRES_USER:-mercator_user}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       # Redis (StreamBus)
-      - REDIS_HOST=mercator_redis
+      - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       # MCP Validation Config (domain-agnostic thresholds)
       - MCP_Z_THRESHOLD=${MCP_Z_THRESHOLD:-3.0}
@@ -265,14 +211,10 @@ services:
       - MCP_MIN_SUMMARY_WORDS=${MCP_MIN_SUMMARY_WORDS:-100}
       - MCP_MAX_SUMMARY_WORDS=${MCP_MAX_SUMMARY_WORDS:-200}
       - MCP_FACTOR_KEYS=${MCP_FACTOR_KEYS:-factor_1,factor_2,factor_3,factor_4,factor_5}
-      # Finance vertical (Vitruvyan-compatible aliases + sentiment source)
-      - MCP_FINANCE_EXPOSE_LEGACY_TOOLS=${MCP_FINANCE_EXPOSE_LEGACY_TOOLS:-true}
-      - MCP_FINANCE_SIGNAL_TABLE=${MCP_FINANCE_SIGNAL_TABLE:-sentiment_scores}
-      - MCP_FINANCE_SIGNAL_ENTITY_COLUMN=${MCP_FINANCE_SIGNAL_ENTITY_COLUMN:-ticker}
       # External APIs
       - NEURAL_ENGINE_API=http://neural_engine:8003
       - LANGGRAPH_URL=http://graph:8004
-      - PATTERN_WEAVERS_API=http://pattern_weavers:8011
+      - PATTERN_WEAVERS_API=http://pattern_weavers:8017
       # OpenAI (Function Calling)
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_MODEL=${MCP_OPENAI_MODEL:-gpt-4o-mini}
@@ -282,7 +224,7 @@ services:
       - neural_engine
       - graph
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8020/health"]
       interval: 30s
@@ -294,25 +236,25 @@ services:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_embedding
-    container_name: mercator_embedding
+    container_name: core_embedding
     restart: unless-stopped
     ports:
-      - "2010:8010"
+      - "9010:8010"
     environment:
       - PYTHONPATH=/app
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_DB=${POSTGRES_DB:-mercator}
-      - POSTGRES_USER=${POSTGRES_USER:-mercator_user}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - QDRANT_URL=${QDRANT_URL:-http://mercator_qdrant:6333}
-      - REDIS_URL=${REDIS_URL:-redis://mercator_redis:6379}
+      - QDRANT_URL=${QDRANT_URL:-http://core_qdrant:6333}
+      - REDIS_URL=${REDIS_URL:-redis://core_redis:6379}
     depends_on:
       - redis
       - postgres
       - qdrant
     networks:
-      - mercator-net
+      - core-net
 
 
   # ══════════════════════════════════════════════════════════════════════════
@@ -323,21 +265,21 @@ services:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.orthodoxy_wardens
-    container_name: mercator_orthodoxy_wardens
+    container_name: core_orthodoxy_wardens
     restart: unless-stopped
     ports:
-      - "2006:8006"
+      - "9006:8006"
     environment:
       PYTHONPATH: /app
-      POSTGRES_HOST: ${POSTGRES_HOST:-mercator_postgres}
+      POSTGRES_HOST: ${POSTGRES_HOST:-core_postgres}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
-      POSTGRES_DB: ${POSTGRES_DB:-mercator}
-      POSTGRES_USER: ${POSTGRES_USER:-mercator_user}
+      POSTGRES_DB: ${POSTGRES_DB:-vitruvyan_core}
+      POSTGRES_USER: ${POSTGRES_USER:-vitruvyan_core_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      REDIS_HOST: mercator_redis
+      REDIS_HOST: core_redis
       REDIS_PORT: 6379
-      QDRANT_HOST: ${QDRANT_HOST:-mercator_qdrant}
+      QDRANT_HOST: ${QDRANT_HOST:-core_qdrant}
       QDRANT_PORT: ${QDRANT_PORT:-6333}
       SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL}
       # Sacred Configuration
@@ -345,19 +287,15 @@ services:
       DIVINE_AUTO_CORRECTION_ENABLED: "true"
       SACRED_COMPLIANCE_THRESHOLD: 0.8
       CONFESSION_AUTO_ABSOLUTION: "false"
-      # Vertical activation
-      ORTHODOXY_DOMAIN: finance
-      ORTHODOXY_RULESET_VERSION: ${ORTHODOXY_RULESET_VERSION:-v1.1-finance}
     volumes:
       - ../../services/api_orthodoxy_wardens:/app/api_orthodoxy_wardens:ro
       - ../../vitruvyan_core/core:/app/core:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
       - redis
-      - postgres
       - qdrant
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
       interval: 30s
@@ -369,35 +307,29 @@ services:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.vault_keepers
-    container_name: mercator_vault_keepers
+    container_name: core_vault_keepers
     restart: unless-stopped
     ports:
-      - "2007:8007"
+      - "9007:8007"
     environment:
       - PYTHONPATH=/app
       # Database
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_DB=${POSTGRES_DB:-mercator}
-      - POSTGRES_USER=${POSTGRES_USER:-mercator_user}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       # Vector DB
-      - QDRANT_HOST=${QDRANT_HOST:-mercator_qdrant}
+      - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
       - QDRANT_PORT=${QDRANT_PORT:-6333}
       # Redis (Cognitive Bus)
-      - REDIS_HOST=mercator_redis
+      - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       # API
       - VAULT_API_HOST=0.0.0.0
       - VAULT_API_PORT=8007
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - VAULT_LOG_LEVEL=INFO
-      # Vertical activation
-      - VAULT_DOMAIN=finance
-      - VAULT_FINANCE_DEFAULT_BACKUP_MODE=full
-      - VAULT_FINANCE_INCLUDE_VECTORS=true
-      - VAULT_FINANCE_ARCHIVE_RETENTION_DAYS=${VAULT_FINANCE_ARCHIVE_RETENTION_DAYS:-1825}
-      - VAULT_FINANCE_SIGNAL_RETENTION_DAYS=${VAULT_FINANCE_SIGNAL_RETENTION_DAYS:-1825}
       # Backup
       - BACKUP_MODE=auto
       - BACKUP_STORAGE=/var/vitruvyan/vaults
@@ -420,7 +352,7 @@ services:
       - redis
       - qdrant
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
       interval: 30s
@@ -432,17 +364,17 @@ services:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_conclave
-    container_name: mercator_conclave
+    container_name: core_conclave
     restart: unless-stopped
     ports:
-      - "2012:8012"
+      - "9012:8012"
     environment:
       # Redis (Cognitive Bus)
-      - REDIS_URL=redis://mercator_redis:6379/0
-      - REDIS_HOST=mercator_redis
+      - REDIS_URL=redis://core_redis:6379/0
+      - REDIS_HOST=core_redis
       - CONCLAVE_PORT=8012
       # Database
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=5432
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -466,7 +398,7 @@ services:
       - redis
       - babel_gardens
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8012/health"]
       interval: 30s
@@ -483,28 +415,24 @@ services:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_babel_gardens
-    container_name: mercator_babel_gardens
+    container_name: core_babel_gardens
     restart: unless-stopped
     ports:
-      - "2009:8009"
+      - "9009:8009"
     environment:
       # Redis (Cognitive Bus)
-      - REDIS_URL=redis://mercator_redis:6379/0
-      - REDIS_HOST=mercator_redis
+      - REDIS_URL=redis://core_redis:6379/0
+      - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       # Database
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-mercator}
-      - POSTGRES_USER=${POSTGRES_USER:-mercator_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-mercator_pass}
-      - QDRANT_URL=${QDRANT_URL:-http://mercator_qdrant:6333}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - QDRANT_URL=${QDRANT_URL:-http://core_qdrant:6333}
       # Service URLs
       - NEURAL_ENGINE_URL=http://neural_engine:8003
-      # Vertical activation
-      - BABEL_DOMAIN=finance
-      # Comprehension Engine v3
-      - BABEL_COMPREHENSION_V3=1
       # LLM (Nuclear Option - emotion/sentiment)
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       # Model config
@@ -526,7 +454,7 @@ services:
       - postgres
       - qdrant
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8009/health"]
       interval: 30s
@@ -538,34 +466,30 @@ services:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_memory_orders
-    container_name: mercator_memory_orders
+    container_name: core_memory_orders
     restart: unless-stopped
     ports:
-      - "2016:8016"
+      - "9016:8016"
     environment:
       # Redis (Cognitive Bus)
-      - REDIS_URL=redis://mercator_redis:6379/0
-      - REDIS_HOST=mercator_redis
+      - REDIS_URL=redis://core_redis:6379/0
+      - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       # Database (Archivarium)
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_DB=${POSTGRES_DB:-mercator}
-      - POSTGRES_USER=${POSTGRES_USER:-mercator_user}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       # Vector DB (Mnemosyne)
-      - QDRANT_HOST=${QDRANT_HOST:-mercator_qdrant}
+      - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
       - QDRANT_PORT=${QDRANT_PORT:-6333}
-      - QDRANT_URL=${QDRANT_URL:-http://mercator_qdrant:6333}
+      - QDRANT_URL=${QDRANT_URL:-http://core_qdrant:6333}
       # Embedding Service
       - EMBEDDING_SERVICE_URL=http://embedding:8010/embed
-      - EMBEDDING_API_URL=http://embedding:8010
-      # Babel Gardens
-      - BABEL_GARDENS_URL=http://babel_gardens:8009
       # Memory config
       - MEMORY_API_HOST=0.0.0.0
       - MEMORY_API_PORT=8016
-      - MEMORY_DOMAIN=finance
       - LOG_LEVEL=INFO
       - PYTHONUNBUFFERED=1
       # Performance
@@ -585,7 +509,7 @@ services:
       - embedding
       - babel_gardens
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8016/health"]
       interval: 30s
@@ -597,29 +521,27 @@ services:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_memory_orders
-    container_name: mercator_memory_orders_listener
+    container_name: core_memory_orders_listener
     restart: unless-stopped
     environment:
       # Redis (Cognitive Bus)
-      - REDIS_HOST=mercator_redis
+      - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       # Database (Archivarium)
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_DB=${POSTGRES_DB:-mercator}
-      - POSTGRES_USER=${POSTGRES_USER:-mercator_user}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       # Vector DB (Mnemosyne)
-      - QDRANT_HOST=${QDRANT_HOST:-mercator_qdrant}
+      - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
       - QDRANT_PORT=${QDRANT_PORT:-6333}
-      - QDRANT_URL=${QDRANT_URL:-http://mercator_qdrant:6333}
+      - QDRANT_URL=${QDRANT_URL:-http://core_qdrant:6333}
       # Embedding Service
       - EMBEDDING_SERVICE_URL=http://embedding:8010/embed
-      - EMBEDDING_API_URL=http://embedding:8010
       # Babel Gardens
       - BABEL_GARDENS_URL=http://babel_gardens:8009
       # Config
-      - MEMORY_DOMAIN=finance
       - LOG_LEVEL=INFO
       - PYTHONUNBUFFERED=1
       - MEMORY_LISTENER_ENABLED=1
@@ -632,9 +554,9 @@ services:
       - memory_orders
       - babel_gardens
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
-      test: ["CMD", "python3", "-c", "import os,redis; r=redis.Redis(host=os.getenv('REDIS_HOST','mercator_redis'), port=int(os.getenv('REDIS_PORT','6379'))); r.ping(); print('OK')"]
+      test: ["CMD", "python3", "-c", "import os,redis; r=redis.Redis(host=os.getenv('REDIS_HOST','core_redis'), port=int(os.getenv('REDIS_PORT','6379'))); r.ping(); print('OK')"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -645,35 +567,34 @@ services:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_codex_hunters
-    container_name: mercator_codex_hunters
+    container_name: core_codex_hunters
     restart: unless-stopped
     ports:
-      - "2008:8008"
+      - "9008:8008"
     environment:
       - PYTHONPATH=/app
       # Database
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-mercator}
-      - POSTGRES_USER=${POSTGRES_USER:-mercator_user}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       # Vector DB
-      - QDRANT_HOST=${QDRANT_HOST:-mercator_qdrant}
+      - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
       - QDRANT_PORT=${QDRANT_PORT:-6333}
       # Redis (Cognitive Bus)
-      - REDIS_HOST=mercator_redis
+      - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       # API
       - CODEX_API_HOST=0.0.0.0
       - CODEX_API_PORT=8008
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - CODEX_LOG_LEVEL=INFO
-      - CODEX_DEFAULT_SOURCE_KEY=${CODEX_DEFAULT_SOURCE_KEY:-primary}
     depends_on:
       - redis
       - qdrant
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8008/health"]
       interval: 30s
@@ -685,191 +606,40 @@ services:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_weavers
-    container_name: mercator_pattern_weavers
+    container_name: core_pattern_weavers
     restart: unless-stopped
     ports:
-      - "2017:8011"
+      - "9017:8011"
     environment:
       - PYTHONPATH=/app:/app/vitruvyan_core
       # Database
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-mercator}
-      - POSTGRES_USER=${POSTGRES_USER:-mercator_user}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       # Vector DB
-      - QDRANT_HOST=${QDRANT_HOST:-mercator_qdrant}
+      - QDRANT_HOST=${QDRANT_HOST:-core_qdrant}
       - QDRANT_PORT=${QDRANT_PORT:-6333}
       # Redis (Cognitive Bus)
-      - REDIS_HOST=mercator_redis
+      - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       # Embedding Service
       - EMBEDDING_URL=http://embedding:8010
       - EMBEDDING_ENDPOINT=/v1/embeddings/create
-      # Qdrant collection for semantic search
-      - PATTERN_COLLECTION=entity_embeddings
-      # Vertical activation
-      - PATTERN_DOMAIN=finance
-      - PATTERN_TAXONOMY_PATH=/app/vitruvyan_core/domains/finance/pattern_weavers/taxonomy_finance.yaml
-      # Pattern Weavers v3 (LLM compilation)
-      - PATTERN_WEAVERS_V3=1
       # OpenAI
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
       - redis
       - qdrant
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8011/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
-
-  pattern_listener:
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_weavers
-    container_name: mercator_pattern_listener
-    restart: unless-stopped
-    environment:
-      - PYTHONPATH=/app:/app/vitruvyan_core
-      - REDIS_HOST=mercator_redis
-      - REDIS_PORT=6379
-      - CONSUMER_GROUP=pattern_weavers
-      - CONSUMER_NAME=pattern_weavers:worker
-      # Database
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-mercator}
-      - POSTGRES_USER=${POSTGRES_USER:-mercator_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      # Vector DB
-      - QDRANT_HOST=${QDRANT_HOST:-mercator_qdrant}
-      - QDRANT_PORT=${QDRANT_PORT:-6333}
-      # Embedding Service
-      - EMBEDDING_URL=http://embedding:8010
-      - EMBEDDING_ENDPOINT=/v1/embeddings/create
-      # Qdrant collection for semantic search
-      - PATTERN_COLLECTION=entity_embeddings
-      # Vertical activation
-      - PATTERN_DOMAIN=finance
-      - PATTERN_TAXONOMY_PATH=/app/vitruvyan_core/domains/finance/pattern_weavers/taxonomy_finance.yaml
-      # OpenAI
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-    volumes:
-      - ./logs/pattern_listener:/app/logs
-    depends_on:
-      - redis
-      - postgres
-      - qdrant
-      - embedding
-      - pattern_weavers
-    networks:
-      - mercator-net
-    healthcheck:
-      test: ["CMD", "python3", "-c", "import redis; r = redis.Redis(host='mercator_redis', port=6379); r.ping(); print('OK')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    command: ["python3", "/app/api_pattern_weavers/streams_listener.py"]
-
-  shadow_traders:
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_shadow_traders
-    container_name: mercator_shadow_traders
-    restart: unless-stopped
-    ports:
-      - "2025:8020"
-    environment:
-      - PYTHONPATH=/app
-      - SHADOW_BROKER_PORT=8020
-      # Database
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-mercator}
-      - POSTGRES_USER=${POSTGRES_USER:-mercator_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      # Redis Cognitive Bus
-      - REDIS_HOST=mercator_redis
-      - REDIS_PORT=6379
-      - REDIS_URL=redis://mercator_redis:6379/0
-      - REDIS_ENABLED=1
-      # Qdrant
-      - QDRANT_HOST=${QDRANT_HOST:-mercator_qdrant}
-      - QDRANT_PORT=${QDRANT_PORT:-6333}
-      # Sacred order toggles
-      - CONCLAVE_ENABLED=1
-      - VAULT_ENABLED=1
-      - ORTHODOXY_ENABLED=1
-      # Market/API keys
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY}
-      - ALPACA_API_KEY=${ALPACA_API_KEY:-}
-      - POLYGON_API_KEY=${POLYGON_API_KEY:-}
-      # Pattern Weavers ontology
-      - PATTERN_WEAVERS_USE_LLM=1
-      # Local pub/sub listener disabled (use streams listener container)
-      - SHADOW_LOCAL_LISTENER_ENABLED=0
-    depends_on:
-      - redis
-      - postgres
-      - qdrant
-      - pattern_weavers
-    networks:
-      - mercator-net
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8020/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
-
-  portfolio_architects:
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_portfolio_architects
-    container_name: mercator_portfolio_architects
-    restart: unless-stopped
-    ports:
-      - "2021:8021"
-      - "2023:8023"
-    environment:
-      - PYTHONPATH=/app
-      - LOG_LEVEL=INFO
-      - REDIS_HOST=mercator_redis
-      - REDIS_PORT=6379
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=${POSTGRES_USER:-mercator_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB:-mercator}
-      - QDRANT_HOST=${QDRANT_HOST:-mercator_qdrant}
-      - QDRANT_PORT=${QDRANT_PORT:-6333}
-      - PATTERN_WEAVERS_API=http://pattern_weavers:8011
-      - NEURAL_ENGINE_API=http://neural_engine:8003
-      - GUARDIAN_METRICS_PORT=8023
-      - GUARDIAN_RUN_ON_STARTUP=false
-      - LEARNING_PROFILE_UPDATER_ENABLED=1
-      - LEARNING_PROFILE_UPDATE_INTERVAL_SECONDS=60
-      - LEARNING_PROFILE_BATCH_SIZE=500
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-    depends_on:
-      - redis
-      - postgres
-      - neural_engine
-      - pattern_weavers
-    networks:
-      - mercator-net
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8021/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
 
 
   # ══════════════════════════════════════════════════════════════════════════
@@ -880,10 +650,10 @@ services:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_conclave
-    container_name: mercator_conclave_listener
+    container_name: core_conclave_listener
     restart: unless-stopped
     environment:
-      - REDIS_HOST=mercator_redis
+      - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       - CONCLAVE_LISTENER_ENABLED=1
     volumes:
@@ -892,71 +662,57 @@ services:
       - redis
       - conclave
     networks:
-      - mercator-net
-    healthcheck:
-      test: ["CMD", "python3", "-c", "import redis; r = redis.Redis(host='mercator_redis', port=6379); r.ping(); print('OK')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+      - core-net
     command: ["python3", "/app/api_conclave/streams_listener.py"]
 
   orthodoxy_listener:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.orthodoxy_wardens
-    container_name: mercator_orthodoxy_listener
+    container_name: core_orthodoxy_listener
     restart: unless-stopped
     environment:
-      - REDIS_HOST=mercator_redis
+      - REDIS_HOST=core_redis
       - REDIS_PORT=6379
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-mercator}
-      - POSTGRES_USER=${POSTGRES_USER:-mercator_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - QDRANT_HOST=${QDRANT_HOST:-mercator_qdrant}
-      - QDRANT_PORT=${QDRANT_PORT:-6333}
-      - ORTHODOXY_DOMAIN=finance
-      - ORTHODOXY_RULESET_VERSION=${ORTHODOXY_RULESET_VERSION:-v1.1-finance}
-      - LOG_LEVEL=INFO
-      - PYTHONUNBUFFERED=1
       - ORTHODOXY_LISTENER_ENABLED=1
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "streams_listener.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     volumes:
       - ./logs/orthodoxy_listener:/app/logs
     depends_on:
       - redis
+      - postgres
       - orthodoxy_wardens
     networks:
-      - mercator-net
+      - core-net
     command: ["python3", "/app/api_orthodoxy_wardens/streams_listener.py"]
 
   vault_listener:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.vault_keepers
-    container_name: mercator_vault_listener
+    container_name: core_vault_listener
     restart: unless-stopped
     environment:
       - PYTHONPATH=/app
-      - REDIS_HOST=mercator_redis
+      - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       - VAULT_LISTENER_ENABLED=1
       # Database (local container)
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-mercator}
-      - POSTGRES_USER=${POSTGRES_USER:-mercator_user}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - QDRANT_HOST=${QDRANT_HOST:-mercator_qdrant}
-      - QDRANT_PORT=${QDRANT_PORT:-6333}
-      - VAULT_DOMAIN=finance
-      - VAULT_FINANCE_DEFAULT_BACKUP_MODE=full
-      - VAULT_FINANCE_INCLUDE_VECTORS=true
-      - VAULT_FINANCE_ARCHIVE_RETENTION_DAYS=${VAULT_FINANCE_ARCHIVE_RETENTION_DAYS:-1825}
-      - VAULT_FINANCE_SIGNAL_RETENTION_DAYS=${VAULT_FINANCE_SIGNAL_RETENTION_DAYS:-1825}
-      - LOG_LEVEL=INFO
-      - PYTHONUNBUFFERED=1
     volumes:
       - ./logs/vault_listener:/app/logs
     depends_on:
@@ -964,9 +720,9 @@ services:
       - postgres
       - vault_keepers
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
-      test: ["CMD", "python3", "-c", "import os,redis; r=redis.Redis(host=os.getenv('REDIS_HOST','mercator_redis'), port=int(os.getenv('REDIS_PORT','6379'))); r.ping(); print('OK')"]
+      test: ["CMD", "python3", "-c", "import os,redis; r=redis.Redis(host=os.getenv('REDIS_HOST','core_redis'), port=int(os.getenv('REDIS_PORT','6379'))); r.ping(); print('OK')"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -977,19 +733,19 @@ services:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_babel_gardens
-    container_name: mercator_babel_listener
+    container_name: core_babel_listener
     restart: unless-stopped
     environment:
       - PYTHONPATH=/app
-      - REDIS_HOST=mercator_redis
+      - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       - BABEL_LISTENER_ENABLED=1
       # Database (local container)
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-mercator}
-      - POSTGRES_USER=${POSTGRES_USER:-mercator_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-mercator_pass}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - ./logs/babel_listener:/app/logs
     depends_on:
@@ -997,9 +753,9 @@ services:
       - postgres
       - babel_gardens
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
-      test: ["CMD", "python3", "-c", "import redis; r = redis.Redis(host='mercator_redis', port=6379); r.ping(); print('OK')"]
+      test: ["CMD", "python3", "-c", "import redis; r = redis.Redis(host='core_redis', port=6379); r.ping(); print('OK')"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -1010,18 +766,18 @@ services:
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_codex_hunters
-    container_name: mercator_codex_listener
+    container_name: core_codex_listener
     restart: unless-stopped
     environment:
       - PYTHONPATH=/app
-      - REDIS_HOST=mercator_redis
+      - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       - CODEX_LISTENER_ENABLED=1
       # Database (local container)
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-mercator}
-      - POSTGRES_USER=${POSTGRES_USER:-mercator_user}
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - ./logs/codex_listener:/app/logs
@@ -1030,55 +786,14 @@ services:
       - postgres
       - codex_hunters
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
-      test: ["CMD", "python3", "-c", "import redis; r = redis.Redis(host='mercator_redis', port=6379); r.ping(); print('OK')"]
+      test: ["CMD", "python3", "-c", "import redis; r = redis.Redis(host='core_redis', port=6379); r.ping(); print('OK')"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
     command: ["python3", "/app/api_codex_hunters/streams_listener.py"]
-
-  shadow_traders_listener:
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_shadow_traders
-    container_name: mercator_shadow_traders_listener
-    restart: unless-stopped
-    environment:
-      - PYTHONPATH=/app
-      # Redis Streams
-      - REDIS_HOST=mercator_redis
-      - REDIS_PORT=6379
-      - REDIS_URL=redis://mercator_redis:6379/0
-      - STREAM_CONSUMER_GROUP=shadow_traders
-      - STREAM_CONSUMER_NAME=shadow_traders:worker
-      # Database
-      - POSTGRES_HOST=${POSTGRES_HOST:-mercator_postgres}
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-mercator}
-      - POSTGRES_USER=${POSTGRES_USER:-mercator_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      # Qdrant
-      - QDRANT_HOST=${QDRANT_HOST:-mercator_qdrant}
-      - QDRANT_PORT=${QDRANT_PORT:-6333}
-      # Logging
-      - PYTHONUNBUFFERED=1
-      - LOG_LEVEL=INFO
-    volumes:
-      - ./logs/shadow_traders_listener:/app/logs
-    depends_on:
-      - redis
-      - shadow_traders
-    networks:
-      - mercator-net
-    healthcheck:
-      test: ["CMD", "python3", "-c", "import redis; r = redis.Redis(host='mercator_redis', port=6379); r.ping(); print('OK')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    command: ["python3", "/app/api_shadow_traders/streams_listener.py"]
 
 
   # ══════════════════════════════════════════════════════════════════════════
@@ -1087,7 +802,7 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
-    container_name: mercator_prometheus
+    container_name: core_prometheus
     restart: always
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -1096,13 +811,13 @@ services:
       - '--web.console.templates=/usr/share/prometheus/consoles'
       - '--storage.tsdb.retention.time=30d'
     ports:
-      - "2500:9090"
+      - "15000:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./monitoring/alerts:/etc/prometheus/alerts:ro
       - prometheus_data:/prometheus
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
       interval: 30s
@@ -1111,7 +826,7 @@ services:
 
   grafana:
     image: grafana/grafana:latest
-    container_name: mercator_grafana
+    container_name: core_grafana
     restart: always
     environment:
       - GF_SECURITY_ADMIN_USER=admin
@@ -1122,14 +837,14 @@ services:
       - GF_PLUGINS_ANGULAR_SUPPORT=true
       - GF_FEATURE_TOGGLES_ENABLE=angularDeprecationUI
     ports:
-      - "2300:3000"
+      - "3000:3000"
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
     depends_on:
       - prometheus
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
       interval: 30s
@@ -1138,35 +853,35 @@ services:
 
   redis_exporter:
     image: oliver006/redis_exporter:latest
-    container_name: mercator_redis_exporter
+    container_name: core_redis_exporter
     restart: always
     environment:
-      - REDIS_ADDR=mercator_redis:6379
+      - REDIS_ADDR=core_redis:6379
     ports:
-      - "2121:9121"
+      - "9121:9121"
     depends_on:
       - redis
     networks:
-      - mercator-net
+      - core-net
 
   redis_streams_exporter:
     build:
       context: ../../services/redis_streams_exporter
       dockerfile: Dockerfile
-    container_name: mercator_redis_streams_exporter
+    container_name: core_redis_streams_exporter
     restart: always
     environment:
-      - REDIS_HOST=mercator_redis
+      - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       - REDIS_DB=0
       - EXPORTER_PORT=9121
       - SCRAPE_INTERVAL=15
     ports:
-      - "2122:9121"
+      - "9122:9121"
     depends_on:
       - redis
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9121/health')"]
       interval: 30s
@@ -1175,40 +890,40 @@ services:
 
   postgres_exporter:
     image: prometheuscommunity/postgres-exporter:latest
-    container_name: mercator_postgres_exporter
+    container_name: core_postgres_exporter
     restart: always
     environment:
       - DATA_SOURCE_NAME=postgresql://vitruvyan_user:${POSTGRES_PASSWORD}@172.17.0.1:5432/vitruvyan?sslmode=disable
       - PG_EXPORTER_EXTEND_QUERY_PATH=/etc/postgres_exporter/queries.yml
     ports:
-      - "2187:9187"
+      - "9187:9187"
     volumes:
       - ./monitoring/postgres_exporter_queries.yml:/etc/postgres_exporter/queries.yml:ro
     networks:
-      - mercator-net
+      - core-net
 
   node_exporter:
     image: prom/node-exporter:latest
-    container_name: mercator_node_exporter
+    container_name: core_node_exporter
     restart: always
     command:
       - '--path.rootfs=/host'
     ports:
-      - "2100:9100"
+      - "9100:9100"
     volumes:
       - /:/host:ro,rslave
     networks:
-      - mercator-net
+      - core-net
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
-    container_name: mercator_cadvisor
+    container_name: core_cadvisor
     restart: always
     privileged: true
     devices:
       - /dev/kmsg:/dev/kmsg
     ports:
-      - "2081:8080"
+      - "9081:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -1216,20 +931,20 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
     networks:
-      - mercator-net
+      - core-net
 
   portainer:
     image: portainer/portainer-ce:latest
-    container_name: mercator_portainer
+    container_name: core_portainer
     restart: always
     ports:
-      - "2900:9000"
-      - "2943:9443"
+      - "9000:9000"
+      - "9443:9443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data_mercator:/data
+      - portainer_data_core:/data
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9000/api/status"]
       interval: 30s
@@ -1243,7 +958,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "127.0.0.1:2800:8000"
+      - "127.0.0.1:9800:8000"
     volumes:
       - ../../docs:/app/docs:ro
       - ../../vitruvyan_core:/app/vitruvyan_core:ro
@@ -1265,7 +980,7 @@ services:
     working_dir: /app
     command: sh -c "/app/build-all.sh && mkdocs serve -a 0.0.0.0:8000 --config-file mkdocs.yml --dev-addr 0.0.0.0:8000"
     networks:
-      - mercator-net
+      - core-net
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000"]
       interval: 30s
@@ -1278,15 +993,15 @@ services:
 # ══════════════════════════════════════════════════════════════════════════
 
 volumes:
-  redis_data_mercator:
+  redis_data_core:
     external: true
-    name: docker_redis_data_mercator
-  postgres_data_mercator:
+    name: docker_redis_data_core
+  postgres_data_core:
     external: true
-    name: docker_postgres_data_mercator
-  qdrant_data_mercator:
+    name: docker_postgres_data_core
+  qdrant_data_core:
     external: true
-    name: docker_qdrant_data_mercator
+    name: docker_qdrant_data_core
   babel_gardens_models:
     external: true
     name: docker_babel_gardens_models
@@ -1302,13 +1017,13 @@ volumes:
   grafana_data:
     external: true
     name: docker_grafana_data
-  portainer_data_mercator:
+  portainer_data_core:
   mkdocs_site:
   mkdocs_site_public:
   mkdocs_site_docs_public:
   keycloak_db_data:
 
 networks:
-  mercator-net:
+  core-net:
     external: true
-    name: mercator_net
+    name: vitruvyan_core_net
