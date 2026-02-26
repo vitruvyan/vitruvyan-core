@@ -25,6 +25,22 @@ _RAG_REGISTRY_LOADED = False
 _DECLARED_NAMES: set = set()
 _RAG_ENFORCE = os.getenv("RAG_ENFORCE_REGISTRY", "warn")  # "warn" | "strict" | "off"
 
+# ── RAG Metrics (Phase 4) ───────────────────────────────────────────────────
+_RAG_METRICS_ENABLED = os.getenv("RAG_METRICS", "1") != "0"
+_rag_metrics_collector = None
+
+
+def _get_rag_metrics():
+    """Lazy singleton for RAG metrics collector."""
+    global _rag_metrics_collector
+    if _rag_metrics_collector is None:
+        try:
+            from contracts.rag import get_rag_metrics
+            _rag_metrics_collector = get_rag_metrics()
+        except ImportError:
+            _rag_metrics_collector = None
+    return _rag_metrics_collector
+
 
 def _ensure_rag_registry() -> None:
     """Load declared collection names once (lazy)."""
@@ -190,6 +206,20 @@ class QdrantAgent:
                 with_payload=with_payload,
             )
             results = [{"id": r.id, "score": r.score, "payload": r.payload} for r in res]
+
+            # Record RAG effectiveness metrics (Phase 4)
+            if _RAG_METRICS_ENABLED:
+                collector = _get_rag_metrics()
+                if collector is not None:
+                    metrics = collector.record_search(
+                        collection=collection,
+                        query_dim=len(query_vector),
+                        top_k=top_k,
+                        results=results,
+                    )
+                    if metrics.is_empty:
+                        logger.debug(f"RAG MISS: search({collection}, top_k={top_k}) returned 0 results")
+
             return {"status": "ok", "results": results}
         except Exception as e:
             logger.error(f"Search error: {e}")
@@ -422,7 +452,7 @@ if __name__ == "__main__":
     import argparse, json
 
     parser = argparse.ArgumentParser(description="QdrantAgent CLI")
-    parser.add_argument("--mode", choices=["health", "ensure"], default="health")
+    parser.add_argument("--mode", choices=["health", "ensure", "metrics"], default="health")
     parser.add_argument("--collection", type=str, default="entity_embeddings")
     parser.add_argument("--dim", type=int, default=384)
     args = parser.parse_args()
@@ -433,6 +463,9 @@ if __name__ == "__main__":
         out = agent.health()
     elif args.mode == "ensure":
         out = agent.ensure_collection(args.collection, args.dim)
+    elif args.mode == "metrics":
+        collector = _get_rag_metrics()
+        out = collector.summary() if collector else {"status": "disabled"}
     else:
         out = {"error": "Mode non supportato"}
 
