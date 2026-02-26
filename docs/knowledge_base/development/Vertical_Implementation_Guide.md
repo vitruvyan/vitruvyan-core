@@ -9,8 +9,9 @@
 1. [Why this guide exists](#why-this-guide-exists)
 2. [Verticalization without overwhelm](#verticalization-without-overwhelm)
 3. [The 4 verticalization areas](#the-4-verticalization-areas)
-4. [Recommended reading path](#recommended-reading-path)
-5. [Binding contracts](#binding-contracts)
+4. [Known vertical domains](#known-vertical-domains)
+5. [Recommended reading path](#recommended-reading-path)
+6. [Binding contracts](#binding-contracts)
 
 ## Why this guide exists
 
@@ -64,6 +65,15 @@ This is where reusable patterns and examples live. It does not replace implement
 
 - Page: `docs/knowledge_base/development/verticals/Vertical_Patterns.md`
 - Examples: `examples/verticals/README.md`
+
+## Known vertical domains
+
+Below is the current list of vertical domains with available documentation and brainstorm/design artefacts.
+
+| Domain | Status | Reference |
+|--------|--------|-----------|
+| **Finance** | Active (reference implementation) | [Codex Hunters Domain Pack](../../../examples/verticals/finance/CODEX_HUNTERS_DOMAIN_PACK.md) |
+| **Security / AICOMSEC** | Brainstorm / Design phase | [AICOMSEC Brainstorm Report](verticals/security/AICOMSEC_BRAINSTORM_REPORT.md) |
 
 ## Recommended reading path
 

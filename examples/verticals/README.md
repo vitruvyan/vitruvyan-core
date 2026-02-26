@@ -321,4 +321,4 @@ state["context"] = {
 
 **Created**: February 11, 2026  
 **Purpose**: Enable vertical extensions without polluting OS core  
-**Status**: ACTIVE (finance vertical archived, others planned)
+**Status**: ACTIVE (finance vertical archived, security vertical in design phase — see [AICOMSEC Brainstorm Report](../../docs/knowledge_base/development/verticals/security/AICOMSEC_BRAINSTORM_REPORT.md))
