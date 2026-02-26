@@ -144,7 +144,8 @@ class QdrantAgent:
         query_vector: List[float],
         top_k: int = 10,
         source_filter: Optional[List[str]] = None,
-        collection: str = "phrases_embeddings"
+        *,
+        collection: str,
     ) -> Dict[str, Any]:
         """
         Search seed phrases with optional source filtering.
@@ -155,7 +156,7 @@ class QdrantAgent:
             source_filter: Optional list of allowed source names for filtering.
                            If None, no source filtering is applied.
                            Domain verticals should pass their own source list.
-            collection: Qdrant collection name (default: phrases_embeddings)
+            collection: Qdrant collection name (REQUIRED — no hardcoded default)
         
         Returns:
             Dict with status, results (list of {score, phrase_text, source, context_type})
@@ -233,7 +234,7 @@ class QdrantAgent:
     # 🧠 VSGS PR-B — Semantic State Persistence to Qdrant
     # ============================================================
 
-    def upsert_semantic_state(self, matches: List[Dict[str, Any]], user_id: str, collection: str = "semantic_states"):
+    def upsert_semantic_state(self, matches: List[Dict[str, Any]], user_id: str, *, collection: str):
         """
         Upsert semantic grounding matches to Qdrant (VSGS PR-B).
         
@@ -241,7 +242,7 @@ class QdrantAgent:
             matches: List of semantic matches from grounding node
                      Each match must have: id, embedding, text, score, language
             user_id: User ID for payload
-            collection: Qdrant collection name (default: semantic_states)
+            collection: Qdrant collection name (REQUIRED — no hardcoded default)
         
         Returns:
             dict: {"status": "ok", "upserted": N} or {"status": "error", "error": str}
@@ -256,7 +257,7 @@ class QdrantAgent:
                     "language": "it"
                 }
             ]
-            result = agent.upsert_semantic_state(matches, user_id="user123")
+            result = agent.upsert_semantic_state(matches, user_id="user123", collection="semantic_states")
         """
         try:
             points = []
@@ -314,7 +315,7 @@ class QdrantAgent:
             logger.error(f"❌ count_points error for {collection}: {e}")
             return 0
 
-    def upsert_point_from_grounding(self, grounding_event: Dict[str, Any], collection: str = "semantic_states"):
+    def upsert_point_from_grounding(self, grounding_event: Dict[str, Any], *, collection: str):
         """
         Upsert single semantic grounding event to Qdrant (Memory Orders sync).
         

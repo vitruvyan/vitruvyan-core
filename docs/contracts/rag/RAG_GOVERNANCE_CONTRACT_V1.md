@@ -346,25 +346,25 @@ A deployment is RAG-compliant when:
 
 ---
 
-## 11. Current State Assessment (Feb 25, 2026)
+## 11. Current State Assessment (Feb 26, 2026)
 
 ### 11.1 Live Collections (5 total — all 384-dim Cosine)
 
 | Collection | Tier | Points | Owner | Writer | Reader | Status |
 |---|---|---|---|---|---|---|
-| `semantic_states` | CORE | 3,538 | VSGS Engine | `upsert_semantic_state` | `semantic_grounding_node` | ✅ Healthy |
-| `phrases_embeddings` | CORE | 38,238 | Embedding Service | `api_embedding` | `qdrant_node` (fallback) | ✅ Healthy |
-| `conversations_embeddings` | CORE | 4,752 | LangGraph | *(upstream import)* | `qdrant_node` (primary) | ⚠️ Ghost writer |
+| `semantic_states` | CORE | 3,538 | VSGS Engine | `upsert_semantic_state(collection=)` | `semantic_grounding_node` | ✅ Healthy |
+| `phrases_embeddings` | CORE | 38,238 | Embedding Service | `api_embedding` | `qdrant_node` tier 2 (explicit `collection=`) | ✅ Healthy |
+| `conversations_embeddings` | CORE | 4,752+ | LangGraph (CAN) | `can_node._store_conversation_exchange()` | `qdrant_node` tier 1 | ✅ Healthy |
 | `entity_embeddings` | ORDER | 4 | Codex Hunters | `codex bus_adapter` | Memory Orders, PW, Vault | ✅ Healthy |
-| `weave_embeddings` | ORDER | 97 | Pattern Weavers | `PW streams_listener` | *(none yet)* | ⚠️ Write-only |
+| `weave_embeddings` | ORDER | 97 | Pattern Weavers | `PW streams_listener` | `qdrant_node` tier 3 | ✅ Healthy |
 
 ### 11.2 Open Items
 
 | Item | Priority | Description |
 |---|---|---|
-| `conversations_embeddings` writer | Medium | Reader active in qdrant_node; writer was upstream vitruvyan. Need to implement write path (e.g., from compose_node or CAN) |
-| `weave_embeddings` reader | Low | PW writes ontological patterns; wire a reader in LangGraph or Memory Orders for ontological retrieval |
-| QdrantAgent hardcoded defaults | Medium | `search_phrases()` and `upsert_semantic_state()` have hardcoded collection defaults — should be explicit |
+| ~~`conversations_embeddings` writer~~ | ~~Medium~~ | ✅ DONE (Feb 26, 2026) — `can_node._store_conversation_exchange()` embeds user+assistant exchange, upserts to `conversations_embeddings` via RAGPayload + deterministic_point_id. Gated by `CAN_STORE_CONVERSATIONS` env var (default: 1). |
+| ~~`weave_embeddings` reader~~ | ~~Low~~ | ✅ DONE (Feb 26, 2026) — 3rd tier in `qdrant_node` cascade: conversations → phrases → weave_embeddings (ontological fallback). |
+| ~~QdrantAgent hardcoded defaults~~ | ~~Medium~~ | ✅ DONE (Feb 26, 2026) — `search_phrases()`, `upsert_semantic_state()`, `upsert_point_from_grounding()` now require `collection=` keyword argument (no defaults). |
 
 ### 11.3 Cleanup Completed (Feb 25, 2026)
 
@@ -393,10 +393,11 @@ Deleted 10 orphaned collections (~1.83M vectors freed):
 - [x] Update init script descriptions to follow `"<TIER>: <Owner> — <Purpose>"` format
 - [x] Clean contract registry (rag.py) to match live state
 
-### Phase 2: Wire Missing Paths (Short-term)
-- [ ] Implement `conversations_embeddings` writer (compose_node or CAN → embed user exchanges)
-- [ ] Wire `weave_embeddings` reader (ontological retrieval in LangGraph or Memory Orders)
-- [ ] Remove hardcoded collection defaults from QdrantAgent methods
+### Phase 2: Wire Missing Paths ✅ COMPLETED (Feb 26, 2026)
+- [x] Implement `conversations_embeddings` writer → `can_node._store_conversation_exchange()`
+- [x] Wire `weave_embeddings` reader → `qdrant_node` 3-tier cascade (tier 3 fallback)
+- [x] Remove hardcoded collection defaults from QdrantAgent methods → keyword-only `collection=`
+- [x] `qdrant_node` passes explicit `collection="phrases_embeddings"` to `search_phrases()`
 
 ### Phase 3: Contract Enforcement (Medium-term)
 - [ ] Implement collection audit script (compare Qdrant vs init script)
@@ -429,4 +430,5 @@ Deleted 10 orphaned collections (~1.83M vectors freed):
 - Vertical contract: `docs/contracts/verticals/VERTICAL_CONTRACT_V1.md`
 - VSGS engine: `vitruvyan_core/core/vpar/vsgs/`
 - Qdrant node (LangGraph): `vitruvyan_core/core/orchestration/langgraph/node/qdrant_node.py`
+- CAN node (conversations writer): `vitruvyan_core/core/orchestration/langgraph/node/can_node.py`
 - Semantic grounding node: `vitruvyan_core/core/orchestration/langgraph/node/semantic_grounding_node.py`

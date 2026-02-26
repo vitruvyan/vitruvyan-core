@@ -27,7 +27,10 @@ Contract Compliance:
 from typing import Dict, Any, List, Optional
 import os
 import logging
+import time
+import httpx
 from core.agents.llm_agent import get_llm_agent
+from core.agents.qdrant_agent import QdrantAgent
 
 # NOTE: Configuration via environment variables only.
 # load_dotenv() is called in service entrypoints (main.py), not in core modules.
@@ -37,6 +40,21 @@ logger = logging.getLogger(__name__)
 # Environment configuration
 CAN_ENABLED = int(os.getenv("CAN_ENABLED", "1"))
 CAN_VSGS_CONTEXT_LIMIT = int(os.getenv("CAN_VSGS_CONTEXT_LIMIT", "3"))
+CAN_STORE_CONVERSATIONS = int(os.getenv("CAN_STORE_CONVERSATIONS", "1"))
+
+# Embedding API endpoint (same used by qdrant_node)
+EMBEDDING_API = os.getenv("EMBEDDING_API_URL", "http://embedding:8010/v1/embeddings/batch")
+
+# Lazy-init Qdrant agent (only when storing conversations)
+_qdrant_agent: Optional[QdrantAgent] = None
+
+
+def _get_qdrant_agent() -> QdrantAgent:
+    """Lazy singleton for QdrantAgent (avoids connection at import time)."""
+    global _qdrant_agent
+    if _qdrant_agent is None:
+        _qdrant_agent = QdrantAgent()
+    return _qdrant_agent
 
 
 def can_node(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -99,7 +117,11 @@ def can_node(state: Dict[str, Any]) -> Dict[str, Any]:
     state["follow_ups"] = follow_ups
     state["route"] = route
     state["vsgs_context_used"] = bool(vsgs_context)
-    
+
+    # 📝 Store conversation exchange in conversations_embeddings (RAG Contract V1)
+    if CAN_STORE_CONVERSATIONS and narrative and user_input:
+        _store_conversation_exchange(user_input, narrative, language, intent, state)
+
     logger.info(f"🧠 [can_node] Narrative generated ({len(narrative)} chars), route: {route}")
     return state
 
@@ -137,6 +159,75 @@ def _extract_vsgs_context(state: Dict[str, Any]) -> List[Dict[str, Any]]:
     
     logger.info(f"🧠 [can_node] VSGS context extracted ({len(context_items)} matches)")
     return context_items
+
+
+def _store_conversation_exchange(
+    user_input: str,
+    narrative: str,
+    language: str,
+    intent: str,
+    state: Dict[str, Any],
+) -> None:
+    """
+    Embed and store the conversation exchange in conversations_embeddings.
+
+    RAG Contract V1 compliance: CAN node is the designated writer for
+    conversations_embeddings (CORE tier). The exchange text is the
+    concatenation of user input + assistant narrative, embedded via the
+    shared Embedding API and upserted with a deterministic point ID
+    to ensure idempotency.
+
+    Runs fire-and-forget: failures are logged but never block the pipeline.
+    Gated by CAN_STORE_CONVERSATIONS env var (default: 1).
+    """
+    try:
+        from contracts.rag import deterministic_point_id, RAGPayload
+
+        # Build exchange text for embedding (user turn + assistant turn)
+        exchange_text = f"USER: {user_input}\nASSISTANT: {narrative[:500]}"
+
+        # Generate embedding via shared API
+        resp = httpx.post(
+            EMBEDDING_API,
+            json={"texts": [exchange_text]},
+            timeout=10.0,
+        )
+        resp.raise_for_status()
+        vector = resp.json()["embeddings"][0]
+
+        # Deterministic point ID (same exchange = same ID = upsert idempotency)
+        point_id = deterministic_point_id(exchange_text, "conversations_embeddings")
+
+        # Build contract-compliant payload
+        payload = RAGPayload(
+            source="can_node",
+            text=exchange_text[:1000],
+            domain="generic",
+            extra={
+                "user_input": user_input[:500],
+                "language": language,
+                "intent": intent,
+                "emotion": state.get("emotion_detected", "neutral"),
+                "user_id": state.get("user_id", "anonymous"),
+                "trace_id": state.get("trace_id", ""),
+            },
+        )
+
+        # Upsert to Qdrant via agent
+        agent = _get_qdrant_agent()
+        agent.upsert(
+            collection="conversations_embeddings",
+            points=[{
+                "id": point_id,
+                "vector": vector,
+                "payload": payload.to_dict(),
+            }],
+        )
+        logger.info(f"📝 [can_node] Stored conversation exchange → conversations_embeddings (id={point_id[:12]}...)")
+
+    except Exception as e:
+        # Fire-and-forget: never block the pipeline
+        logger.warning(f"⚠️ [can_node] Failed to store conversation exchange: {e}")
 
 
 def _determine_route(
