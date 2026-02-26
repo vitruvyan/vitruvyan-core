@@ -117,4 +117,3 @@ curl -s -X POST http://localhost:8004/run \
 
 - Orchestration core: `vitruvyan_core/core/orchestration/README.md`
 - Vertical orchestration guide: `docs/knowledge_base/development/verticals/Vertical_Orchestration_LangGraph.md`
-- Slot-filling alignment note: `vitruvyan_core/core/orchestration/langgraph/docs/SLOT_FILLING_ARCHITECTURE_ALIGNMENT.md`

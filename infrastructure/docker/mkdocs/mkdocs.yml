@@ -131,15 +131,21 @@ nav:
   - System Core:
     - Orchestration:
       - Overview: vitruvyan_core/core/orchestration/README.md
-      - Slot Filling Alignment: vitruvyan_core/core/orchestration/langgraph/docs/SLOT_FILLING_ARCHITECTURE_ALIGNMENT.md
       - API Graph (Service): services/api_graph/README.md
     - Cognitive Bus (Synaptic Conclave):
       - Overview: vitruvyan_core/core/synaptic_conclave/docs/README.md
       - Topology (Mermaid): infrastructure/docker/monitoring/grafana/SYNAPTIC_CONCLAVE_TOPOLOGY.md
     - Core Agents:
       - Index: docs/internal/platform/README.md
-      - Dual Memory & RAG: docs/internal/platform/DUAL_MEMORY_RAG.md
       - LLM / AI Layer: docs/internal/platform/LLM_LAYER.md
+    - Cognitive Governance:
+      - Memory Orders: docs/internal/orders/MEMORY_ORDERS.md
+      - Semantic & Ontology: docs/architecture/SEMANTIC_ONTOLOGY_ARCHITECTURE.md
+      - Dual Memory & RAG: docs/internal/platform/DUAL_MEMORY_RAG.md
+      - RAG Governance:
+        - Overview: docs/contracts/rag/README.md
+        - Contract V1: docs/contracts/rag/RAG_GOVERNANCE_CONTRACT_V1.md
+        - Operations: docs/contracts/rag/RAG_GOVERNANCE_OPERATIONS.md
     - Sacred Orders:
       - Introduction: docs/foundational/SACRED_ORDERS_INTRO.md
       - Index: docs/internal/orders/README.md
@@ -201,10 +207,6 @@ nav:
       - Update System Contract V1: docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md
       - Package Manager Contract V1: docs/contracts/platform/PACKAGE_MANAGER_SYSTEM_CONTRACT_V1.md
       - Capabilities Summary: docs/knowledge_base/development/UPDATE_MANAGER_CAPABILITIES_SUMMARY.md
-    - RAG Governance:
-      - Overview: docs/contracts/rag/README.md
-      - Contract V1: docs/contracts/rag/RAG_GOVERNANCE_CONTRACT_V1.md
-      - Operations: docs/contracts/rag/RAG_GOVERNANCE_OPERATIONS.md
     - Templates: docs/foundational/TEMPLATE_SACRED_ORDER_COMPONENT.md
     - Verticals:
       - Implementation Guide (Overview): docs/knowledge_base/development/Vertical_Implementation_Guide.md

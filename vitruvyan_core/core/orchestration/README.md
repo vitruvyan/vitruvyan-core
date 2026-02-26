@@ -72,8 +72,7 @@ Slot-filling templates are not part of the active core orchestration path.
 
 - Current policy is LLM-first + semantic clarification.
 - MCP/tool contracts provide structured validation when needed.
-- See alignment note:
-  - `vitruvyan_core/core/orchestration/langgraph/docs/SLOT_FILLING_ARCHITECTURE_ALIGNMENT.md`
+- Legacy slot-filling docs are kept as archival engineering context only (not part of KB navigation).
 
 ## GraphPlugin Status
 

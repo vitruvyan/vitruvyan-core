@@ -130,6 +130,14 @@ nav:
   - Architecture:
     - Overview: docs/architecture/README.md
     - Dual Memory Layer: docs/architecture/DUAL_MEMORY_LAYER.md
+  - Cognitive Governance:
+    - LangGraph Orchestration: docs/knowledge_base/development/verticals/Vertical_Orchestration_LangGraph.md
+    - Semantic & Ontology: docs/architecture/SEMANTIC_ONTOLOGY_ARCHITECTURE.md
+    - Memory Orders: docs/orders/MEMORY_ORDERS.md
+    - RAG Governance:
+      - Overview: docs/contracts/rag/README.md
+      - Contract V1: docs/contracts/rag/RAG_GOVERNANCE_CONTRACT_V1.md
+      - Operations: docs/contracts/rag/RAG_GOVERNANCE_OPERATIONS.md
   - Sacred Orders:
     - Introduction: docs/foundational/SACRED_ORDERS_INTRO.md
     - Index: docs/orders/README.md

@@ -12,7 +12,9 @@
 5. [GRAPH_DOMAIN (`graph_nodes` hook)](#graph_domain-graph_nodes-hook)
 6. [Where to implement domain nodes](#where-to-implement-domain-nodes)
 7. [Full activation checklist](#full-activation-checklist)
-8. [GraphPlugin status](#graphplugin-status)
+8. [Async execution model (api_graph)](#async-execution-model-api_graph)
+9. [Slot filling status](#slot-filling-status)
+10. [GraphPlugin status](#graphplugin-status)
 
 ## Simple mental model
 
@@ -151,6 +153,28 @@ Since v1.4.0, `graph_flow.py` includes a **conditional edge** after `intent_dete
 - Route hooks, entity resolvers, and execution handlers are NOT invoked on the early-exit path.
 
 **Response contract**: All responses (including early-exit) are returned as `GraphResponseMin` (`vitruvyan_core/contracts/graph_response.py`), providing channel-agnostic `human` + `follow_ups` + `session_min`.
+
+## Async execution model (`api_graph`)
+
+`api_graph` is an async HTTP service wrapping mostly blocking graph execution.
+
+- graph execution is offloaded with `asyncio.to_thread(...)`.
+- same-user concurrent requests are serialized with per-user `asyncio.Lock`.
+- different users can execute in parallel.
+
+Practical implication for verticals:
+
+- handlers should remain stateless and idempotent.
+- avoid mutable global state in node/domain hooks.
+- `GraphResponseMin` remains the stable output contract in both sync/async paths.
+
+## Slot filling status
+
+Slot filling is **deprecated in the active core LangGraph path**.
+
+- `slot_filler.py` can still exist in vertical templates as legacy artifact.
+- current core flow is intent routing + semantic clarification + execution hooks.
+- the old slot-filling alignment article is intentionally not part of KB navigation anymore.
 
 ## GraphPlugin status
 
