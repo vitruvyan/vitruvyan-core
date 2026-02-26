@@ -603,6 +603,14 @@
     const primaryList = document.querySelector(".md-nav--primary > .md-nav__list");
     if (!tabs || !tabsList || !primaryList) return;
 
+    // Keep mega-menu typography aligned with the actual tab typography.
+    const tabSample = tabsList.querySelector(":scope > .md-tabs__item > .md-tabs__link");
+    if (tabSample) {
+      const computed = window.getComputedStyle(tabSample);
+      document.documentElement.style.setProperty("--kb-tabs-font-size", computed.fontSize);
+      document.documentElement.style.setProperty("--kb-tabs-font-family", computed.fontFamily);
+    }
+
     const normalize = (label) => (label || "").toLowerCase().replace(/\s+/g, " ").trim();
     const descriptionMap = [
       {

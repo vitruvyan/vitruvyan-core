@@ -245,10 +245,10 @@ extra:
     provider: mike  # Versioning provider (optional)
 
 extra_css:
-  - docs/stylesheets/material_v1.css?v=20260220q
+  - docs/stylesheets/material_v1.css?v=20260226a
 
 extra_javascript:
-  - docs/javascripts/vitruvyan.js?v=20260219k
+  - docs/javascripts/vitruvyan.js?v=20260226a
 
 # Copyright
 copyright: Copyright &copy; 2026 Vitruvyan Team
