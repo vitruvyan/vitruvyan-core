@@ -1,435 +1,271 @@
 # RAG Governance Contract V1
 
-> **Last updated**: Feb 21, 2026 16:00 UTC
-
-Status: **ACTIVE**
-Version: 1.0.0
+Last updated: February 26, 2026  
+Status: ACTIVE  
+Version: 1.1.0  
 Owner: Vitruvyan Core Architecture
 
 ---
 
 ## 1. Purpose
 
-This contract defines the **binding rules** for Retrieval-Augmented Generation (RAG) infrastructure in Vitruvyan.
+This contract defines binding governance rules for RAG infrastructure in Vitruvyan.
 
-RAG is the epistemic memory layer: it stores vectorized knowledge and retrieves it to augment reasoning.
-Without governance, collections proliferate, orphan, and rot — becoming technical debt instead of cognitive asset.
+RAG is a managed memory substrate. The objective is to prevent collection sprawl, hidden coupling, and silent quality decay.
 
-**vitruvyan-core** defines the RULES. Deployments (mercator, verticals) IMPLEMENT the rules.
-
-Normative terms use RFC 2119 semantics: MUST, MUST NOT, SHOULD, SHOULD NOT, MAY.
+Normative keywords follow RFC 2119 semantics: MUST, MUST NOT, SHOULD, SHOULD NOT, MAY.
 
 ---
 
 ## 2. Scope
 
 This contract applies to:
-- All Qdrant vector collections created or consumed by any Vitruvyan service
-- The `QdrantAgent` (`core.agents.qdrant_agent`) as the ONLY access gateway
-- The init script (`scripts/init_qdrant_collections.py`) as the ONLY bootstrap mechanism
-- Any vertical or domain that introduces new collections
 
-This contract does NOT govern:
-- The internal embedding model choice (that is deployment-specific)
-- The Qdrant cluster topology (infrastructure concern)
+- all Qdrant collections used by Vitruvyan services
+- `QdrantAgent` as the canonical runtime gateway
+- collection declarations and bootstrap via `scripts/init_qdrant_collections.py`
+- registry contracts in `vitruvyan_core/contracts/rag.py`
+- audit and compliance tooling (`scripts/audit_rag_collections.py`)
+
+This contract does not define Qdrant cluster topology (infra concern).
 
 ---
 
 ## 3. Core Principles
 
-### 3.1 Single Gateway — QdrantAgent
+### 3.1 Single Gateway
 
-All vector operations MUST go through `core.agents.qdrant_agent.QdrantAgent`.
+Service runtime code MUST use `QdrantAgent`.
 
-- ❌ FORBIDDEN: `from qdrant_client import QdrantClient` in any service/node code
-- ❌ FORBIDDEN: raw HTTP calls to Qdrant API from business logic
-- ✅ REQUIRED: `from core.agents.qdrant_agent import QdrantAgent`
-
-**Exception**: The init script (`init_qdrant_collections.py`) MAY use the Qdrant REST API directly for bootstrap operations.
+- forbidden: direct `QdrantClient` usage in business logic
+- forbidden: raw Qdrant REST calls in business logic
+- exception: bootstrap/ops scripts MAY use direct calls when needed
 
 ### 3.2 Declared Collections Only
 
-Every collection in production MUST be:
-1. **Declared** in the init script (`scripts/init_qdrant_collections.py`)
-2. **Owned** by exactly one Sacred Order or domain vertical
-3. **Documented** with a description in the init script
+Production collections MUST be declared and owned.
 
-Collections NOT declared in the init script are **rogue** and SHOULD be deleted.
+- declaration authority: `scripts/init_qdrant_collections.py`
+- programmatic registry: `vitruvyan_core/contracts/rag.py`
+- undeclared live collections are ORPHAN and SHOULD be remediated
 
-### 3.3 No Hardcoded Defaults in Agent Methods
+### 3.3 No Hardcoded Collection Defaults
 
-QdrantAgent methods MUST NOT have hardcoded collection name defaults.
-Collection names MUST be passed explicitly by callers or resolved from configuration.
+Collection names MUST be explicit at call sites.
 
-**Current violations** (to be remediated):
-- `search_phrases(collection="phrases_embeddings")` — hardcoded default
-- `upsert_semantic_state(collection="semantic_states")` — hardcoded default
-- `upsert_point_from_grounding(collection="semantic_states")` — hardcoded default
+Current implementation status:
 
-**Target**: All methods accept `collection: str` as required parameter (no default).
+- `search_phrases(..., collection=...)` -> enforced
+- `upsert_semantic_state(..., collection=...)` -> enforced
+- `upsert_point_from_grounding(..., collection=...)` -> enforced
+
+### 3.4 Soft Runtime Guards
+
+`QdrantAgent` includes non-blocking governance guards:
+
+- undeclared collection usage warning (`RAG_ENFORCE_REGISTRY=warn|strict|off`)
+- payload warning when `payload.source` is missing (MUST metadata)
 
 ---
 
 ## 4. Collection Taxonomy
 
-### 4.1 Collection Tiers
+### 4.1 Tiers
 
 | Tier | Scope | Lifecycle | Example |
-|------|-------|-----------|---------|
-| **CORE** | OS-level, domain-agnostic | Permanent — never deleted without contract change | `semantic_states`, `conversations_embeddings` |
-| **ORDER** | Sacred Order operational data | Managed by owning Order | `entity_embeddings`, `weave_embeddings` |
-| **DOMAIN** | Vertical/domain-specific | Created/destroyed with vertical lifecycle | `finance.templates`, `finance.ticker_embeddings` |
-| **EPHEMERAL** | Testing, experiments, migrations | Auto-expire or manual cleanup | `test_*`, `migration_*` |
+|---|---|---|---|
+| CORE | OS-level, domain-agnostic | long-lived | `semantic_states`, `conversations_embeddings` |
+| ORDER | Sacred Order operational | managed by owner order | `entity_embeddings`, `weave_embeddings` |
+| DOMAIN | vertical-specific | vertical lifecycle | `finance.templates` |
+| EPHEMERAL | tests/migration/temp | disposable | `test_*`, `tmp_*`, `migration_*` |
 
-### 4.2 Naming Convention
+### 4.2 Naming
 
-```
-<tier>.<purpose>
-```
+- lowercase, 3-64 chars
+- allowed chars: `[a-z0-9_.]`
+- domain collections SHOULD use `<domain>.<purpose>`
+- EPHEMERAL collections MUST use approved prefixes
 
-**Rules**:
-- Core collections: `<purpose>` (no prefix — legacy names grandfathered)
-- Order collections: `<order_short>.<purpose>` or legacy `<purpose>_embeddings`
-- Domain collections: `<domain>.<purpose>` (e.g., `finance.templates`, `mercator.entities`)
-- Ephemeral: `test_*` or `tmp_*` prefix (auto-eligible for cleanup)
-- All names: lowercase, underscores, max 64 characters
-- MUST NOT use dots in the purpose segment (dots separate tier/domain from purpose)
+Grandfathered active names:
 
-**Grandfathered names** (legacy, not subject to renaming until V2):
-- `entity_embeddings` (Codex Hunters)
-- `phrases_embeddings` (Embedding Service)
-- `semantic_states` (VSGS)
-- `conversations_embeddings` (LangGraph)
-- `weave_embeddings` (Pattern Weavers)
+- `semantic_states`
+- `phrases_embeddings`
+- `conversations_embeddings`
+- `entity_embeddings`
+- `weave_embeddings`
 
-### 4.3 Sacred Order Collection Ownership
+### 4.3 Ownership
 
-| Sacred Order | Domain | Owned Collections | Purpose |
-|--------------|--------|-------------------|---------|
-| **Codex Hunters** | Perception | `entity_embeddings` | Ingested entity semantic vectors |
-| **Embedding Service** | Perception | `phrases_embeddings` | NLP phrase embeddings (general-purpose) |
-| **Pattern Weavers** | Reason | `weave_embeddings` | Ontological pattern results |
-| **VSGS Engine** | Reason | `semantic_states` | Semantic grounding context |
-| **LangGraph** | Discourse | `conversations_embeddings` | Conversational memory for RAG retrieval |
-| **Memory Orders** | Memory | *(no owned collection)* | Reads `entity_embeddings` for coherence |
-| **Vault Keepers** | Memory | *(no owned collection)* | Reads `entity_embeddings` for archival |
-| **Orthodoxy Wardens** | Truth | *(no owned collection)* | MAY read any collection for audit |
-
-**Cross-Order access rules**:
-- Read access: Any Order MAY read any collection
-- Write access: ONLY the owning Order writes to its collection
-- Exception: `entity_embeddings` is the **shared ingestion target** — Codex Hunters (primary writer) and Pattern Weavers (secondary writer via search+enrich) both write
+- write path: owner-first responsibility
+- read path: cross-order reads allowed when contract-compliant
 
 ---
 
-## 5. Vector Standards
+## 5. Vector and Model Standards
 
-### 5.1 Dimensions and Distance
+### 5.1 Collection Declaration Fields
 
-| Parameter | Requirement | Current Standard |
-|-----------|-------------|-----------------|
-| Vector dimensions | MUST be consistent within a deployment | 384 (all-MiniLM-L6-v2) |
-| Distance metric | MUST be `Cosine` unless domain justifies otherwise | Cosine |
-| Embedding model | MUST be centralized (single model per deployment) | Configurable via `EMBEDDING_MODEL` |
+`CollectionDeclaration` supports:
 
-**Invariant**: All collections in a deployment MUST use the same embedding model and dimension.
-A deployment that changes models MUST re-embed all collections (no mixed dimensions).
+- `name`
+- `vector_size`
+- `distance`
+- `tier`
+- `owner`
+- `purpose`
+- `domain`
+- `model_name` (phase 4)
+- `version` (phase 4)
 
-### 5.2 Payload Schema
+### 5.2 Multi-Model Rules (Phase 4)
 
-Every point upserted to any collection MUST include these metadata fields:
+Multi-model deployments are supported with explicit declaration.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `source` | `str` | MUST | Origin identifier (e.g., `codex_hunters`, `babel_gardens`, `vsgs`) |
-| `created_at` | `str` (ISO 8601) | MUST | Timestamp of vector creation |
-| `text` | `str` | SHOULD | Original text that was embedded (for debugging/display) |
-| `version` | `str` | SHOULD | Schema version of the payload (e.g., `"1.0"`) |
-| `domain` | `str` | SHOULD | Domain tag (e.g., `"finance"`, `"generic"`) |
+- `model_name` MUST be declared per collection
+- `vector_size` MUST match declared model dimension
+- model registry lives in `contracts/rag.py` (`EMBEDDING_MODELS`)
+- cross-collection mixed dimensions are allowed only when each collection is internally consistent
 
-Additional payload fields are domain-specific and MAY be included freely.
+### 5.3 Versioning Rules (Phase 4)
 
-### 5.3 Point ID Convention
+Collection schema versioning is supported.
 
-- Point IDs MUST be deterministic UUIDs (UUID v5 from namespace + content hash) OR sequential integers
-- Point IDs SHOULD be UUIDs for deduplication (upsert idempotency)
-- Point IDs MUST NOT be random UUIDs (prevents dedup on re-ingestion)
-
----
-
-## 6. Lifecycle Management
-
-### 6.1 Collection Creation
-
-1. New collections MUST be proposed via code change to `init_qdrant_collections.py`
-2. The init script entry MUST include: `name`, `vector_size`, `distance`, `description`
-3. New collections MUST specify their **tier** and **owner** in the description
-4. The init script MUST be idempotent (safe to run multiple times)
-
-### 6.2 Collection Deletion
-
-1. Collections MUST NOT be deleted from production without:
-   - Removing all code references (writers AND readers)
-   - Removing from init script
-   - A migration period of at least 1 release cycle
-2. EPHEMERAL (`test_*`, `tmp_*`) collections MAY be deleted at any time
-3. Deletion of CORE/ORDER collections requires a contract amendment
-
-### 6.3 Collection Health Monitoring
-
-Each deployment SHOULD implement periodic checks:
-- **Ghost detection**: Collections with no writer in codebase
-- **Orphan detection**: Collections not in init script but present in Qdrant
-- **Stale detection**: Collections with no writes in > 30 days (configurable)
-- **Zero-point detection**: Collections with 0 points (dead or failed bootstrap)
-
-### 6.4 Migration Protocol
-
-When renaming or restructuring collections:
-1. Create new collection with new name
-2. Migrate data (re-embed or copy vectors)
-3. Update all readers to use new collection
-4. Update all writers to use new collection
-5. Keep old collection for 1 release cycle
-6. Delete old collection
+- `version` MUST be integer >= 1
+- v1 uses canonical collection name
+- v2+ MAY use suffix strategy (`<name>_vN`) during migration
+- migrations SHOULD use explicit migration planning (see Section 9)
 
 ---
 
-## 7. RAG Pipeline Integration
+## 6. Payload Contract
 
-### 7.1 Write Pipeline (Ingestion → Embedding → Store)
+Every upserted point MUST include:
 
-```
-Source → Provider → Codex Hunters → Embedding Service → Qdrant (entity_embeddings)
-                                  → Babel Gardens → Qdrant (sentiment_embeddings)
-                                  → Pattern Weavers → Qdrant (weave_embeddings)
-```
+- `source`
+- `created_at`
 
-**Rules**:
-- Embedding MUST happen via the centralized Embedding Service (api_embedding) or the embedding API endpoint
-- Services MUST NOT load embedding models locally (memory/consistency risk)
-- The embedding vector MUST be generated from the same model across all collections
+Recommended metadata:
 
-### 7.2 Read Pipeline (Query → Embed → Search → Augment)
+- `text`
+- `version`
+- `domain`
 
-```
-User Query → Embedding → Qdrant Search (conversations → phrases → entity) → LLM Context
-```
-
-**Rules**:
-- Search SHOULD follow a cascade: most-specific collection first, then fallback
-- Search results MUST be scored and filtered (top_k + minimum score threshold)
-- Retrieved context MUST be budget-limited (max chars/tokens) before injection into LLM prompt
-
-### 7.3 Grounding Pipeline (VSGS)
-
-```
-Conversation State → Embedding → Qdrant Search (semantic_states) → Grounding Context
-```
-
-**Rules**:
-- VSGS grounds the conversation in historical semantic context
-- Grounding is optional (controlled by `VSGS_ENABLED` env var)
-- Grounding data MUST NOT be exposed to end users (internal augmentation only)
+`RAGPayload` in `contracts/rag.py` is the canonical helper for payload normalization.
 
 ---
 
-## 8. Domain/Vertical Extension Rules
+## 7. Runtime Integration
 
-### 8.1 Domain Collections
+### 7.1 Write Path (Current)
 
-Verticals MAY create domain-specific collections following these rules:
+Representative active flows:
 
-1. Collection name MUST follow: `<domain>.<purpose>` (e.g., `finance.templates`)
-2. Collection MUST be declared in a domain-specific init section of the init script
-3. Domain collections MUST use the same vector dimensions as core
-4. Domain collections MUST include the standard payload fields (Section 5.2)
-5. Domain collections SHOULD be listed in `vertical_manifest.yaml`
+- Codex Hunters -> `entity_embeddings`
+- Embedding service -> `phrases_embeddings`
+- Pattern Weavers -> `weave_embeddings`
+- VSGS / semantic grounding sync -> `semantic_states`
+- CAN conversational memory -> `conversations_embeddings`
 
-### 8.2 Domain Collection Registration
+Note: legacy `sentiment_embeddings` is not part of the active declared registry.
 
-```yaml
-# In vertical_manifest.yaml
-rag:
-  collections:
-    - name: "finance.templates"
-      tier: domain
-      purpose: "Financial template embeddings for pattern matching"
-      owner: "shadow_traders"
-    - name: "finance.ticker_embeddings"
-      tier: domain
-      purpose: "Ticker entity semantic embeddings"
-      owner: "codex_hunters"
-```
+### 7.2 Read Path
 
-### 8.3 Domain Cleanup
+LangGraph retrieval follows tiered cascade behavior in current code:
 
-When a vertical is deactivated or removed:
-1. Its domain collections MUST be marked for archival
-2. Archival = snapshot + delete (not silent deletion)
-3. Snapshot MUST be stored in Vault Keepers or external storage
+- conversations memory
+- phrase memory
+- ontological fallback
+
+All retrieval calls should pass explicit collection names.
 
 ---
 
-## 9. Configuration Standards
+## 8. Audit and Compliance
 
-### 9.1 Environment Variables
+### 8.1 Canonical Audit Tool
 
-| Variable | Scope | Default | Description |
-|----------|-------|---------|-------------|
-| `QDRANT_HOST` | Global | `localhost` | Qdrant server host |
-| `QDRANT_PORT` | Global | `6333` | Qdrant server port |
-| `QDRANT_URL` | Global | `http://localhost:6333` | Full Qdrant URL (alternative to HOST+PORT) |
-| `QDRANT_API_KEY` | Global | *(none)* | API key for authenticated clusters |
-| `QDRANT_TIMEOUT` | Global | `30.0` | Client timeout in seconds |
-| `QDRANT_COLLECTION` | Per-service | *(varies)* | Default collection for the service |
-| `EMBEDDING_MODEL` | Global | `all-MiniLM-L6-v2` | Embedding model name |
-| `EMBEDDING_API_URL` | Global | `http://embedding:8010/v1/embeddings/batch` | Centralized embedding endpoint |
-| `VSGS_COLLECTION_NAME` | VSGS | `semantic_states` | VSGS grounding collection |
-| `VSGS_ENABLED` | VSGS | `0` | Enable/disable semantic grounding |
+`scripts/audit_rag_collections.py` reports:
 
-### 9.2 Per-Service Collection Config
+- OK
+- MISSING
+- MISMATCH
+- ORPHAN
 
-Each service MUST declare its collection(s) in its `config.py`:
+### 8.2 Stale Detection Utilities (Phase 4)
 
-```python
-# services/api_<service>/config.py
-QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "<default_collection>")
-```
+`contracts/rag.py` provides stale analysis helpers:
 
-Collection names MUST NOT be hardcoded in business logic. They MUST flow from config.
+- `StaleReport`
+- `check_stale_collection(...)`
+- `RAG_STALE_THRESHOLD_DAYS`
 
----
+### 8.3 Effectiveness Metrics Utilities (Phase 4)
 
-## 10. Audit & Compliance
+`contracts/rag.py` provides retrieval quality instrumentation:
 
-### 10.1 Init Script as Source of Truth
+- `SearchMetrics`
+- `RAGMetricsCollector`
+- global collector via `get_rag_metrics()`
 
-The init script (`scripts/init_qdrant_collections.py`) is the **single source of truth** for declared collections.
+`QdrantAgent.search()` can auto-record metrics when `RAG_METRICS != 0`.
 
-Each entry MUST include:
+### 8.4 Compliance Checklist
 
-```python
-{
-    "name": "<collection_name>",
-    "vector_size": 384,
-    "distance": "Cosine",
-    "description": "<tier>: <owner> — <purpose>",
-}
-```
+A deployment is compliant when:
 
-The description field MUST follow the format: `"<TIER>: <Owner> — <Purpose>"`.
-
-Example:
-```python
-{"name": "entity_embeddings", "vector_size": 384, "distance": "Cosine",
- "description": "ORDER: Codex Hunters — Ingested entity semantic embeddings"},
-```
-
-### 10.2 Collection Audit Script
-
-Deployments SHOULD implement an audit script that:
-1. Lists all Qdrant collections
-2. Compares against init script declarations
-3. Reports: rogue (in Qdrant, not in script), missing (in script, not in Qdrant), empty (0 points)
-4. Optionally reports stale collections (no writes in N days)
-
-### 10.3 Compliance Check
-
-A deployment is RAG-compliant when:
-1. All live collections are declared in init script (**no rogues**)
-2. All declared collections exist in Qdrant (**no missing**)
-3. All collections use the same vector dimensions (**no mixed**)
-4. All core/order collections have at least one writer and one reader in codebase
-5. No `test_*` or `tmp_*` collections exist in production
-6. QdrantAgent is the only Qdrant access path
+1. no undeclared live collections
+2. no missing declared collections
+3. declared vector/distance values match live config
+4. Qdrant access path is contract-compliant
+5. required payload metadata is enforced at adapter boundaries
 
 ---
 
-## 11. Current State Assessment (Feb 26, 2026)
+## 9. Migration Planning (Phase 4)
 
-### 11.1 Live Collections (5 total — all 384-dim Cosine)
+`contracts/rag.py` includes migration planning primitives:
 
-| Collection | Tier | Points | Owner | Writer | Reader | Status |
-|---|---|---|---|---|---|---|
-| `semantic_states` | CORE | 3,538 | VSGS Engine | `upsert_semantic_state(collection=)` | `semantic_grounding_node` | ✅ Healthy |
-| `phrases_embeddings` | CORE | 38,238 | Embedding Service | `api_embedding` | `qdrant_node` tier 2 (explicit `collection=`) | ✅ Healthy |
-| `conversations_embeddings` | CORE | 4,752+ | LangGraph (CAN) | `can_node._store_conversation_exchange()` | `qdrant_node` tier 1 | ✅ Healthy |
-| `entity_embeddings` | ORDER | 4 | Codex Hunters | `codex bus_adapter` | Memory Orders, PW, Vault | ✅ Healthy |
-| `weave_embeddings` | ORDER | 97 | Pattern Weavers | `PW streams_listener` | `qdrant_node` tier 3 | ✅ Healthy |
+- `MigrationPlan`
+- `plan_collection_migration(...)`
 
-### 11.2 Open Items
-
-| Item | Priority | Description |
-|---|---|---|
-| ~~`conversations_embeddings` writer~~ | ~~Medium~~ | ✅ DONE (Feb 26, 2026) — `can_node._store_conversation_exchange()` embeds user+assistant exchange, upserts to `conversations_embeddings` via RAGPayload + deterministic_point_id. Gated by `CAN_STORE_CONVERSATIONS` env var (default: 1). |
-| ~~`weave_embeddings` reader~~ | ~~Low~~ | ✅ DONE (Feb 26, 2026) — 3rd tier in `qdrant_node` cascade: conversations → phrases → weave_embeddings (ontological fallback). |
-| ~~QdrantAgent hardcoded defaults~~ | ~~Medium~~ | ✅ DONE (Feb 26, 2026) — `search_phrases()`, `upsert_semantic_state()`, `upsert_point_from_grounding()` now require `collection=` keyword argument (no defaults). |
-
-### 11.3 Cleanup Completed (Feb 25, 2026)
-
-Deleted 10 orphaned collections (~1.83M vectors freed):
-
-| Collection | Points | Reason |
-|---|---|---|
-| `financial_templates` | 1,777,364 | Kaggle import, no code reference |
-| `market_data` | 3,214 | Upstream import, no code reference |
-| `ticker_embeddings` | 519 | Upstream import, yaml config only |
-| `momentum_vectors` | 519 | Upstream import, no code reference |
-| `volatility_vectors` | 519 | Upstream import, no code reference |
-| `trend_vectors` | 517 | Upstream import, no code reference |
-| `vare_embeddings` | 27 | Upstream import, no code reference |
-| `sentiment_embeddings` | 1,048 | BG dead code (store_embedding never called) |
-| `test_collection` | 0 | Development artifact |
-| `vitruvyan_notes` | 1 | CLI default only |
+Use these for controlled v1 -> v2 and/or model migrations.
 
 ---
 
-## 12. Remediation Roadmap
+## 10. Current State (Feb 26, 2026)
 
-### Phase 1: Cleanup ✅ COMPLETED (Feb 25, 2026)
-- [x] Delete 10 orphaned/ghost collections from Qdrant
-- [x] Remove from init script
-- [x] Update init script descriptions to follow `"<TIER>: <Owner> — <Purpose>"` format
-- [x] Clean contract registry (rag.py) to match live state
+### 10.1 Completed
 
-### Phase 2: Wire Missing Paths ✅ COMPLETED (Feb 26, 2026)
-- [x] Implement `conversations_embeddings` writer → `can_node._store_conversation_exchange()`
-- [x] Wire `weave_embeddings` reader → `qdrant_node` 3-tier cascade (tier 3 fallback)
-- [x] Remove hardcoded collection defaults from QdrantAgent methods → keyword-only `collection=`
-- [x] `qdrant_node` passes explicit `collection="phrases_embeddings"` to `search_phrases()`
+- Phase 1 cleanup: orphan collection purge
+- Phase 2 wiring: explicit collection params and missing reader/writer paths
+- Phase 3 enforcement: audit script + runtime soft guards
+- Phase 4 core primitives:
+  - model registry (`EmbeddingModel`, `EMBEDDING_MODELS`)
+  - per-collection model/version fields
+  - stale detection utilities
+  - retrieval effectiveness metrics collector
+  - `QdrantAgent` CLI metrics mode
 
-### Phase 3: Contract Enforcement ✅ COMPLETED (Feb 26, 2026)
-- [x] Audit script: `scripts/audit_rag_collections.py` — compares live Qdrant vs registry, reports OK/MISSING/MISMATCH/ORPHAN, supports `--json` and `--strict` modes
-- [x] Payload validation: `QdrantAgent.upsert()` warns if any point payload missing `source` field (MUST per Section 5.2)
-- [x] Collection name guard: `QdrantAgent.upsert()`, `.search()`, `.ensure_collection()` warn on undeclared collection names (env `RAG_ENFORCE_REGISTRY=warn|strict|off`)
-- [x] `vertical_manifest.yaml` RAG section: `rag.collections[]` for domain-tier collection declarations
+### 10.2 Remaining Operational Work
 
-### Phase 4: Growth (Long-term)
-- [ ] Multi-model support (different dimensions per collection tier)
-- [ ] Collection versioning (v1, v2 with migration)
-- [ ] Automatic stale collection detection and alerting
-- [ ] RAG effectiveness metrics (retrieval relevance scoring)
+- stale alerting integration (automated scheduling + alert channel)
+- long-term metrics persistence/observability dashboards
+- migration playbook automation for large collections
 
 ---
 
-## 13. Change Control
+## 11. Change Control
 
-1. Changes to CORE/ORDER collection definitions require a contract amendment (new version)
-2. Adding DOMAIN collections follows Section 8 (no contract change needed)
-3. Changes to vector standards (Section 5) require re-embedding of all affected collections
-4. This contract is versioned; breaking changes require V2
+1. CORE/ORDER contract changes require contract amendment in this document.
+2. DOMAIN collection additions follow vertical governance and manifest policy.
+3. Breaking changes require V2 contract.
 
 ---
 
-## 14. References
+## 12. References
 
-- QdrantAgent: `vitruvyan_core/core/agents/qdrant_agent.py`
-- Init script: `scripts/init_qdrant_collections.py`
-- Audit script: `scripts/audit_rag_collections.py`
-- Python contract interface: `vitruvyan_core/contracts/rag.py`
-- Vertical contract: `docs/contracts/verticals/VERTICAL_CONTRACT_V1.md`
-- VSGS engine: `vitruvyan_core/core/vpar/vsgs/`
-- Qdrant node (LangGraph): `vitruvyan_core/core/orchestration/langgraph/node/qdrant_node.py`
-- CAN node (conversations writer): `vitruvyan_core/core/orchestration/langgraph/node/can_node.py`
-- Semantic grounding node: `vitruvyan_core/core/orchestration/langgraph/node/semantic_grounding_node.py`
+- `vitruvyan_core/contracts/rag.py`
+- `vitruvyan_core/core/agents/qdrant_agent.py`
+- `scripts/init_qdrant_collections.py`
+- `scripts/audit_rag_collections.py`
+- `docs/contracts/verticals/VERTICAL_CONTRACT_V1.md`

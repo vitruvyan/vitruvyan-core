@@ -201,6 +201,10 @@ nav:
       - Update System Contract V1: docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md
       - Package Manager Contract V1: docs/contracts/platform/PACKAGE_MANAGER_SYSTEM_CONTRACT_V1.md
       - Capabilities Summary: docs/knowledge_base/development/UPDATE_MANAGER_CAPABILITIES_SUMMARY.md
+    - RAG Governance:
+      - Overview: docs/contracts/rag/README.md
+      - Contract V1: docs/contracts/rag/RAG_GOVERNANCE_CONTRACT_V1.md
+      - Operations: docs/contracts/rag/RAG_GOVERNANCE_OPERATIONS.md
     - Templates: docs/foundational/TEMPLATE_SACRED_ORDER_COMPONENT.md
     - Verticals:
       - Implementation Guide (Overview): docs/knowledge_base/development/Vertical_Implementation_Guide.md

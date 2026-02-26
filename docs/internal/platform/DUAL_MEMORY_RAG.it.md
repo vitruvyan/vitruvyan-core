@@ -40,12 +40,12 @@ Codice: `vitruvyan_core/core/agents/postgres_agent.py`
 ### `QdrantAgent` — accesso Mnemosyne
 
 - **Ruolo**: connettività Qdrant + gestione collezioni + utility per search/upsert.
-- **Contratto**: naming collezioni e schema payload sono del chiamante (verticale/servizio).
+- **Contratto**: la logica chiamante resta del verticale, ma naming collezioni e metadati minimi sono governati da `docs/contracts/rag/RAG_GOVERNANCE_CONTRACT_V1.md`.
 - **Env**: `QDRANT_HOST`, `QDRANT_PORT` *(oppure `QDRANT_URL`)*, `QDRANT_API_KEY`, `QDRANT_TIMEOUT`.
 
 Codice: `vitruvyan_core/core/agents/qdrant_agent.py`
 
-> Nota: l’Appendix E descrive una policy “language-first” più restrittiva. Nell’implementazione attuale di `QdrantAgent.upsert()` la validazione della lingua nel payload **non è ancora applicata**; se serve, gli invarianti vanno enforceati a livello adapter.
+> Nota governance: `QdrantAgent` applica guardrail runtime (check collezioni dichiarate e warning su payload senza `source`) e metriche phase 4 (`RAG_METRICS`).
 
 ### `AlchemistAgent` — migrazioni schema (Alembic)
 
@@ -136,7 +136,7 @@ Direzione target: Babel Gardens diventa il front layer principale per embedding 
 Il core è domain-agnostic; il verticale finance possiede:
 
 - **Schema PostgreSQL**: tabelle, indici, vincoli (es. entità di mercato, log, audit, phrase store).
-- **Collezioni Qdrant**: naming, dimensioni vettore, schema payload (es. `phrases_embeddings`, `sentiment_embeddings`).
+- **Estensioni Qdrant di dominio**: collezioni e adapter nel rispetto dei vincoli RAG (es. `<domain>.<purpose>`, ownership dichiarata, metadati payload).
 - **Adapter**: cosa viene embedded, salvato, recuperato e filtrato (e come applicare scoring/thresholds).
 
 Esempio (finance pack): `examples/verticals/finance/CODEX_HUNTERS_DOMAIN_PACK.md`
@@ -144,5 +144,7 @@ Esempio (finance pack): `examples/verticals/finance/CODEX_HUNTERS_DOMAIN_PACK.md
 ## Riferimenti (approfondimento)
 
 - Agents: `vitruvyan_core/core/agents/__init__.py`
+- Contratto RAG: `docs/contracts/rag/RAG_GOVERNANCE_CONTRACT_V1.md`
+- Runbook operativo RAG: `docs/contracts/rag/RAG_GOVERNANCE_OPERATIONS.md`
 - RAG Appendix: `.github/Vitruvyan_Appendix_E_RAG_System.md`
 - Mappa architetturale (agent + integrazione): `docs/architecture/MAPPA_ARCHITETTURALE_MODULI.md`

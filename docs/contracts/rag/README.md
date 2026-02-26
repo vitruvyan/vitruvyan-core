@@ -1,6 +1,6 @@
 # RAG Governance Contracts
 
-> **Last updated**: Feb 21, 2026 16:00 UTC
+> **Last updated**: Feb 26, 2026 11:45 UTC
 
 This directory contains the binding contracts for RAG (Retrieval-Augmented Generation) infrastructure governance.
 
@@ -8,7 +8,8 @@ This directory contains the binding contracts for RAG (Retrieval-Augmented Gener
 
 | File | Description |
 |------|-------------|
-| `RAG_GOVERNANCE_CONTRACT_V1.md` | Full contract specification (naming, lifecycle, tiers, payload schema, compliance) |
+| `RAG_GOVERNANCE_CONTRACT_V1.md` | Contract specification (tiers, naming, payload, compliance, phase 4 updates) |
+| `RAG_GOVERNANCE_OPERATIONS.md` | Operational runbook (init, audit, metrics, stale checks, migration planning) |
 
 ## Python Interface
 
@@ -34,4 +35,11 @@ from vitruvyan_core.contracts import CollectionTier, RAGPayload, deterministic_p
 1. All access through `QdrantAgent` — no raw Qdrant clients
 2. All collections declared in `scripts/init_qdrant_collections.py`
 3. All payloads include `source` + `created_at` metadata
-4. One embedding model per deployment (currently 384-dim all-MiniLM-L6-v2)
+4. Collection declarations include model/version metadata (`model_name`, `version`) for phase 4 governance
+
+### Phase 4 Highlights
+
+- Embedding model registry (`EMBEDDING_MODELS`) with dimension validation
+- Collection versioning support in declaration model
+- Stale detection utilities (`StaleReport`, `check_stale_collection`)
+- Retrieval effectiveness metrics (`SearchMetrics`, `RAGMetricsCollector`)
