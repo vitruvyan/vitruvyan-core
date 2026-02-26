@@ -221,6 +221,15 @@ nav:
     - Examples: examples/README_EXAMPLES.md
     - Configuration: config/README_CONFIG.md
     - Scripts: scripts/README_SCRIPTS.md
+
+  # DOCS_FEDERATION_NAV_START
+  - Federated KB:
+    - Overview: docs/knowledge_base/federated/README.md
+    - Operations: docs/knowledge_base/federated/Docs_Federation_Operations.md
+    - Core Producers: docs/knowledge_base/federated/core/README.md
+    - Vertical Producers: docs/knowledge_base/federated/verticals/README.md
+    - Contract V1: docs/contracts/platform/DOCS_FEDERATION_CONTRACT_V1.md
+  # DOCS_FEDERATION_NAV_END
     
   # - Planning:
   #   - Roadmap: docs/planning/_ALBERATURA_FRAMEWORK_CONSOLIDATA_FEB14_2026.md

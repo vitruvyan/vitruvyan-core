@@ -1,0 +1,84 @@
+name: Docs Federation Hub CI
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+      - "scripts/docs/**"
+      - "infrastructure/docker/mkdocs/mkdocs.yml"
+      - ".github/workflows/docs-federation-hub.yml"
+  push:
+    branches: [main, master]
+    paths:
+      - "docs/**"
+      - "scripts/docs/**"
+      - "infrastructure/docker/mkdocs/mkdocs.yml"
+      - ".github/workflows/docs-federation-hub.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  federation-validate-and-build:
+    name: Validate Docs Federation + MkDocs Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install docs dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install \
+            mkdocs \
+            mkdocs-material \
+            mkdocs-static-i18n \
+            mkdocs-mermaid2-plugin \
+            mkdocs-minify-plugin \
+            pyyaml
+
+      - name: Build + validate sample federation bundle
+        run: |
+          mkdir -p /tmp/docs-federation-ci-source
+          cat > /tmp/docs-federation-ci-source/README.md <<'EOF'
+          # CI Federation Probe
+          This file validates bundle + ingest contract plumbing.
+          EOF
+
+          python scripts/docs/federate_docs.py bundle \
+            --scope vertical \
+            --producer mercator \
+            --vertical mercator \
+            --source /tmp/docs-federation-ci-source \
+            --output /tmp/docs-federation-ci-bundle.tar.gz
+
+          python scripts/docs/federate_docs.py validate \
+            --bundle /tmp/docs-federation-ci-bundle.tar.gz
+
+      - name: Dry-run ingest + KB hook check
+        env:
+          DOCS_KB_INGEST_CMD: "echo kb-ingest scope={scope} vertical={vertical} target={target_dir}"
+        run: |
+          python scripts/docs/federate_docs.py ingest \
+            --bundle /tmp/docs-federation-ci-bundle.tar.gz \
+            --repo-root . \
+            --dry-run
+
+      - name: Verify mkdocs federation nav markers
+        run: |
+          grep -q "DOCS_FEDERATION_NAV_START" infrastructure/docker/mkdocs/mkdocs.yml
+          grep -q "DOCS_FEDERATION_NAV_END" infrastructure/docker/mkdocs/mkdocs.yml
+
+      - name: Build MkDocs (CI config)
+        run: |
+          cp infrastructure/docker/mkdocs/mkdocs.yml /tmp/mkdocs-ci.yml
+          sed -i 's#^docs_dir: /app/docs_root#docs_dir: .#' /tmp/mkdocs-ci.yml
+          sed -i 's#^site_dir: /app/site#site_dir: /tmp/site#' /tmp/mkdocs-ci.yml
+          mkdocs build -f /tmp/mkdocs-ci.yml --strict
