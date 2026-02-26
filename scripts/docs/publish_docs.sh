@@ -1,121 +1,55 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-FEDERATE_SCRIPT="${SCRIPT_DIR}/federate_docs.py"
+# Producer-side publisher.
+# 1) Build docs bundle with metadata manifest
+# 2) Optionally ship bundle to hub VPS and trigger ingestion
 
-SCOPE=""
-PRODUCER=""
-VERTICAL=""
-SOURCE_DIR="docs"
-OUTPUT_DIR="${REPO_ROOT}/tmp/docs_federation_out"
-OUTPUT_BUNDLE=""
-HUB_HOST=""
-HUB_USER=""
-HUB_PATH=""
-DRY_RUN=0
-SKIP_TRANSFER=0
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-usage() {
-  cat <<'EOF'
-Usage:
-  scripts/docs/publish_docs.sh --scope <core|vertical> --producer <id> [options]
+DOCS_SOURCE_REPO="${DOCS_SOURCE_REPO:-$(basename "$ROOT_DIR")}"
+DOCS_SOURCE_VPS="${DOCS_SOURCE_VPS:-$(hostname -f 2>/dev/null || hostname)}"
+DOCS_DEFAULT_SCOPE="${DOCS_DEFAULT_SCOPE:-vertical}"
+DOCS_DEFAULT_VERTICAL="${DOCS_DEFAULT_VERTICAL:-mercator}"
+DOCS_BASE_REF="${DOCS_BASE_REF:-origin/main}"
+DOCS_CHANGED_ONLY="${DOCS_CHANGED_ONLY:-true}"
+DOCS_INCLUDE_UNCOMMITTED="${DOCS_INCLUDE_UNCOMMITTED:-false}"
+DOCS_BUNDLE_OUT="${DOCS_BUNDLE_OUT:-/tmp/${DOCS_SOURCE_REPO}_docs_bundle_$(date +%Y%m%d_%H%M%S).tar.gz}"
 
-Options:
-  --scope <core|vertical>          Required.
-  --producer <producer-id>         Required.
-  --vertical <vertical-id>         Required when scope=vertical.
-  --source <dir>                   Source docs directory (default: docs).
-  --output-dir <dir>               Output directory for bundle.
-  --output-bundle <path>           Full output bundle path.
-  --hub-host <host>                Optional hub host for scp transfer.
-  --hub-user <user>                Optional hub SSH user.
-  --hub-path <remote-path>         Optional remote path for scp.
-  --skip-transfer                  Build bundle only.
-  --dry-run                        Print actions without side effects.
-  -h|--help                        Show help.
-EOF
-}
-
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --scope) SCOPE="${2:-}"; shift 2 ;;
-    --producer) PRODUCER="${2:-}"; shift 2 ;;
-    --vertical) VERTICAL="${2:-}"; shift 2 ;;
-    --source) SOURCE_DIR="${2:-}"; shift 2 ;;
-    --output-dir) OUTPUT_DIR="${2:-}"; shift 2 ;;
-    --output-bundle) OUTPUT_BUNDLE="${2:-}"; shift 2 ;;
-    --hub-host) HUB_HOST="${2:-}"; shift 2 ;;
-    --hub-user) HUB_USER="${2:-}"; shift 2 ;;
-    --hub-path) HUB_PATH="${2:-}"; shift 2 ;;
-    --skip-transfer) SKIP_TRANSFER=1; shift ;;
-    --dry-run) DRY_RUN=1; shift ;;
-    -h|--help) usage; exit 0 ;;
-    *) echo "Unknown argument: $1" >&2; usage; exit 1 ;;
-  esac
-done
-
-if [[ -z "${SCOPE}" || -z "${PRODUCER}" ]]; then
-  echo "--scope and --producer are required." >&2
-  usage
-  exit 1
-fi
-
-if [[ "${SCOPE}" == "vertical" && -z "${VERTICAL}" ]]; then
-  echo "--vertical is required when --scope=vertical." >&2
-  exit 1
-fi
-
-SOURCE_COMMIT="${DOCS_SOURCE_COMMIT:-$(git -C "${REPO_ROOT}" rev-parse --short HEAD 2>/dev/null || true)}"
-TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
-
-if [[ -z "${OUTPUT_BUNDLE}" ]]; then
-  mkdir -p "${OUTPUT_DIR}"
-  OUTPUT_BUNDLE="${OUTPUT_DIR}/${PRODUCER}_${SCOPE}_${TIMESTAMP}.tar.gz"
-fi
-
-bundle_cmd=(
-  python3 "${FEDERATE_SCRIPT}" bundle
-  --scope "${SCOPE}"
-  --producer "${PRODUCER}"
-  --source "${SOURCE_DIR}"
-  --output "${OUTPUT_BUNDLE}"
+ARGS=(
+  bundle
+  --repo-root "$ROOT_DIR"
+  --output "$DOCS_BUNDLE_OUT"
+  --base-ref "$DOCS_BASE_REF"
+  --default-scope "$DOCS_DEFAULT_SCOPE"
+  --default-vertical "$DOCS_DEFAULT_VERTICAL"
+  --source-repo "$DOCS_SOURCE_REPO"
+  --source-vps "$DOCS_SOURCE_VPS"
 )
 
-if [[ -n "${VERTICAL}" ]]; then
-  bundle_cmd+=(--vertical "${VERTICAL}")
+if [[ "$DOCS_CHANGED_ONLY" == "true" ]]; then
+  ARGS+=(--changed-only)
 fi
-if [[ -n "${SOURCE_COMMIT}" ]]; then
-  bundle_cmd+=(--source-commit "${SOURCE_COMMIT}")
-fi
-if [[ "${DRY_RUN}" -eq 1 ]]; then
-  bundle_cmd+=(--dry-run)
+if [[ "$DOCS_INCLUDE_UNCOMMITTED" == "true" ]]; then
+  ARGS+=(--include-uncommitted)
 fi
 
-echo "Building docs bundle..."
-"${bundle_cmd[@]}"
+python3 "$ROOT_DIR/scripts/docs/federate_docs.py" "${ARGS[@]}"
+echo "docs_bundle=$DOCS_BUNDLE_OUT"
 
-if [[ "${SKIP_TRANSFER}" -eq 1 ]]; then
-  echo "Transfer skipped (--skip-transfer)."
-  exit 0
+# Optional remote handoff (hub VPS)
+# Required env to enable:
+# - DOCS_HUB_SSH_TARGET: e.g. docs-sync@144.xxx.xxx.xxx
+# Optional:
+# - DOCS_HUB_DROP_DIR (default /opt/vitruvyan-core/incoming_docs)
+# - DOCS_HUB_INGEST_CMD (default /opt/vitruvyan-core/scripts/docs/ingest_incoming_bundle.sh)
+if [[ -n "${DOCS_HUB_SSH_TARGET:-}" ]]; then
+  DOCS_HUB_DROP_DIR="${DOCS_HUB_DROP_DIR:-/opt/vitruvyan-core/incoming_docs}"
+  DOCS_HUB_INGEST_CMD="${DOCS_HUB_INGEST_CMD:-/opt/vitruvyan-core/scripts/docs/ingest_incoming_bundle.sh}"
+  REMOTE_BUNDLE_PATH="$DOCS_HUB_DROP_DIR/$(basename "$DOCS_BUNDLE_OUT")"
+
+  echo "shipping_bundle_to=$DOCS_HUB_SSH_TARGET:$REMOTE_BUNDLE_PATH"
+  ssh "$DOCS_HUB_SSH_TARGET" "mkdir -p '$DOCS_HUB_DROP_DIR'"
+  scp "$DOCS_BUNDLE_OUT" "$DOCS_HUB_SSH_TARGET:$REMOTE_BUNDLE_PATH"
+  ssh "$DOCS_HUB_SSH_TARGET" "$DOCS_HUB_INGEST_CMD '$REMOTE_BUNDLE_PATH'"
 fi
-
-if [[ -n "${HUB_HOST}" && -n "${HUB_PATH}" ]]; then
-  target="${HUB_HOST}:${HUB_PATH}"
-  if [[ -n "${HUB_USER}" ]]; then
-    target="${HUB_USER}@${target}"
-  fi
-
-  if [[ "${DRY_RUN}" -eq 1 ]]; then
-    echo "Dry-run: would transfer ${OUTPUT_BUNDLE} -> ${target}"
-  else
-    echo "Transferring bundle via scp..."
-    scp "${OUTPUT_BUNDLE}" "${target}"
-  fi
-else
-  echo "No --hub-host/--hub-path provided, transfer step skipped."
-fi
-
-echo "Next step on hub:"
-echo "  scripts/docs/ingest_incoming_bundle.sh --bundle <path-on-hub>"

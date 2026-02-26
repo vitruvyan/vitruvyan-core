@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Federated documentation bundle tooling.
+"""
+Docs Federation tooling.
 
 Commands:
-  - bundle: create producer-side archive
-  - validate: verify bundle integrity + contract compliance
-  - ingest: copy bundle payload into hub routing paths
+- bundle: produce a tar.gz with markdown files + manifest metadata
+- ingest: route bundled docs into federated KB folders and refresh indexes
+- validate: check front matter contract for markdown files
 """
 
 from __future__ import annotations
@@ -15,415 +16,535 @@ import hashlib
 import io
 import json
 import os
-import re
-import shutil
+from pathlib import Path, PurePosixPath
 import subprocess
 import sys
 import tarfile
-import tempfile
-import time
-from pathlib import Path
-
-CONTRACT_VERSION = "DOCS_FEDERATION_CONTRACT_V1"
-PAYLOAD_DIR = "docs_payload"
-BUNDLE_SCHEMA_VERSION = 1
-DEFAULT_CORE_ROOT = Path("docs/knowledge_base/federated/core")
-DEFAULT_VERTICAL_ROOT = Path("docs/knowledge_base/federated/verticals")
-ALLOWED_SUFFIXES = {
-    ".md",
-    ".png",
-    ".jpg",
-    ".jpeg",
-    ".svg",
-    ".gif",
-    ".webp",
-    ".css",
-    ".js",
-    ".json",
-    ".yaml",
-    ".yml",
-    ".txt",
-}
+from typing import Any
 
 
-def _utc_now_iso() -> str:
-    return (
-        dt.datetime.now(dt.timezone.utc)
-        .replace(microsecond=0)
-        .isoformat()
-        .replace("+00:00", "Z")
-    )
+VALID_SCOPES = {"core", "vertical"}
+DEFAULT_SCAN_ROOTS = ("docs", "vitruvyan_core", "services", "infrastructure", "examples", "config")
 
 
-def _slugify(raw: str) -> str:
-    value = raw.strip().lower()
-    value = re.sub(r"[^a-z0-9._-]+", "-", value)
-    value = re.sub(r"-{2,}", "-", value).strip("-")
-    if not value:
-        raise ValueError(f"Invalid identifier: {raw!r}")
-    return value
+def now_iso() -> str:
+    return dt.datetime.now(dt.timezone.utc).isoformat()
 
 
-def _sha256_file(path: Path) -> str:
+def as_posix(path: Path) -> str:
+    return path.as_posix()
+
+
+def safe_rel_path(raw: str) -> PurePosixPath:
+    rel = PurePosixPath(raw)
+    if rel.is_absolute() or ".." in rel.parts:
+        raise ValueError(f"unsafe relative path: {raw}")
+    return rel
+
+
+def parse_front_matter(text: str) -> tuple[dict[str, str], bool, str]:
+    """
+    Parse minimal YAML-like front matter.
+    Supports only flat `key: value` lines.
+    """
+    if not text.startswith("---\n"):
+        return {}, False, text
+    end = text.find("\n---\n", 4)
+    if end == -1:
+        return {}, False, text
+
+    block = text[4:end]
+    body = text[end + len("\n---\n") :]
+    data: dict[str, str] = {}
+    for raw_line in block.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        data[key.strip().lower()] = value.strip().strip("'\"")
+    return data, True, body
+
+
+def extract_title(text_without_front_matter: str, fallback: str) -> str:
+    for raw_line in text_without_front_matter.splitlines():
+        line = raw_line.strip()
+        if line.startswith("# "):
+            return line[2:].strip()
+    return fallback
+
+
+def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+    with path.open("rb") as fh:
+        while True:
+            chunk = fh.read(8192)
+            if not chunk:
+                break
             digest.update(chunk)
     return digest.hexdigest()
 
 
-def _safe_rel_path(path: Path) -> bool:
-    if path.is_absolute():
-        return False
-    parts = path.parts
-    return all(part not in ("", ".", "..") for part in parts)
+def run_git(repo_root: Path, args: list[str]) -> str:
+    proc = subprocess.run(
+        ["git", "-C", str(repo_root), *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(proc.stderr.strip() or f"git command failed: {' '.join(args)}")
+    return proc.stdout
 
 
-def _collect_payload_files(source_dir: Path) -> list[Path]:
-    files: list[Path] = []
-    for item in source_dir.rglob("*"):
-        if not item.is_file():
+def discover_markdown_files(
+    repo_root: Path,
+    roots: tuple[str, ...],
+    changed_only: bool,
+    base_ref: str,
+    include_uncommitted: bool,
+) -> list[PurePosixPath]:
+    if changed_only:
+        rels: set[str] = set()
+        try:
+            out = run_git(repo_root, ["diff", "--name-only", "--diff-filter=ACMRTUXB", f"{base_ref}...HEAD"])
+            rels.update(line.strip() for line in out.splitlines() if line.strip())
+        except RuntimeError:
+            # Fallback when base ref is missing in shallow/isolated checkouts.
+            out = run_git(repo_root, ["diff", "--name-only", "--diff-filter=ACMRTUXB", "HEAD~1...HEAD"])
+            rels.update(line.strip() for line in out.splitlines() if line.strip())
+
+        if include_uncommitted:
+            for git_args in (["diff", "--name-only"], ["diff", "--name-only", "--cached"]):
+                out = run_git(repo_root, git_args)
+                rels.update(line.strip() for line in out.splitlines() if line.strip())
+
+        files: list[PurePosixPath] = []
+        for rel in sorted(rels):
+            if not rel.lower().endswith(".md"):
+                continue
+            rel_path = safe_rel_path(rel)
+            if (repo_root / rel_path).is_file():
+                files.append(rel_path)
+        return files
+
+    files: list[PurePosixPath] = []
+    for root in roots:
+        base = repo_root / root
+        if not base.exists():
             continue
-        rel = item.relative_to(source_dir)
-        if not _safe_rel_path(rel):
-            continue
-        if item.suffix.lower() not in ALLOWED_SUFFIXES:
-            continue
-        files.append(rel)
-    files.sort(key=lambda p: p.as_posix())
+        for candidate in sorted(base.rglob("*.md")):
+            if candidate.is_file():
+                files.append(safe_rel_path(as_posix(candidate.relative_to(repo_root))))
     return files
 
 
-def _render_hook(template: str, context: dict[str, str]) -> str:
-    class _SafeDict(dict):
-        def __missing__(self, key: str) -> str:
-            return "{" + key + "}"
+def normalize_entry(
+    rel_path: PurePosixPath,
+    abs_path: Path,
+    default_scope: str,
+    default_vertical: str,
+    source_repo: str,
+    source_vps: str,
+) -> dict[str, Any]:
+    text = abs_path.read_text(encoding="utf-8")
+    front_matter, has_front_matter, body = parse_front_matter(text)
 
-    return template.format_map(_SafeDict(context))
+    warnings: list[str] = []
+    scope = front_matter.get("scope", default_scope).strip().lower()
+    if scope not in VALID_SCOPES:
+        warnings.append(f"invalid scope '{scope}' -> fallback '{default_scope}'")
+        scope = default_scope
 
-
-def _validate_manifest(manifest: dict) -> None:
-    required_fields = {
-        "contract_version",
-        "bundle_schema_version",
-        "bundle_id",
-        "generated_at_utc",
-        "producer",
-        "scope",
-        "payload_dir",
-        "files",
-    }
-    missing = sorted(required_fields - set(manifest))
-    if missing:
-        raise ValueError(f"Manifest missing fields: {', '.join(missing)}")
-
-    if manifest["contract_version"] != CONTRACT_VERSION:
-        raise ValueError(
-            f"Unsupported contract_version={manifest['contract_version']!r}, expected {CONTRACT_VERSION}"
-        )
-    if manifest["bundle_schema_version"] != BUNDLE_SCHEMA_VERSION:
-        raise ValueError(
-            f"Unsupported bundle_schema_version={manifest['bundle_schema_version']!r}, "
-            f"expected {BUNDLE_SCHEMA_VERSION}"
-        )
-    if manifest["scope"] not in {"core", "vertical"}:
-        raise ValueError("Manifest scope must be 'core' or 'vertical'")
-    if manifest["scope"] == "vertical" and not manifest.get("vertical"):
-        raise ValueError("Manifest vertical is required when scope=vertical")
-    if manifest["payload_dir"] != PAYLOAD_DIR:
-        raise ValueError(f"Manifest payload_dir must be {PAYLOAD_DIR!r}")
-    if not isinstance(manifest.get("files"), list) or len(manifest["files"]) == 0:
-        raise ValueError("Manifest files must be a non-empty list")
-
-
-def _load_bundle(bundle_path: Path) -> tuple[dict, dict[str, tarfile.TarInfo]]:
-    if not bundle_path.exists():
-        raise FileNotFoundError(f"Bundle not found: {bundle_path}")
-
-    with tarfile.open(bundle_path, mode="r:gz") as tar:
-        members = {m.name: m for m in tar.getmembers()}
-        if "manifest.json" not in members:
-            raise ValueError("Bundle missing manifest.json")
-
-        manifest_file = tar.extractfile("manifest.json")
-        if manifest_file is None:
-            raise ValueError("Unable to read manifest.json from bundle")
-        manifest = json.load(manifest_file)
-        _validate_manifest(manifest)
-
-        payload_members = {
-            name: member
-            for name, member in members.items()
-            if name.startswith(PAYLOAD_DIR + "/") and member.isfile()
-        }
-        if not payload_members:
-            raise ValueError("Bundle has no files under docs_payload/")
-
-        for spec in manifest["files"]:
-            if not isinstance(spec, dict):
-                raise ValueError("Manifest files entry must be an object")
-            rel_str = spec.get("path")
-            if not isinstance(rel_str, str) or not rel_str:
-                raise ValueError("Manifest files[].path must be a non-empty string")
-            rel_path = Path(rel_str)
-            if not _safe_rel_path(rel_path):
-                raise ValueError(f"Unsafe path in manifest files: {rel_str!r}")
-            archive_path = f"{PAYLOAD_DIR}/{rel_path.as_posix()}"
-            if archive_path not in payload_members:
-                raise ValueError(f"Manifest file not found in bundle: {archive_path}")
-
-        return manifest, payload_members
-
-
-def cmd_bundle(args: argparse.Namespace) -> int:
-    source_dir = Path(args.source).resolve()
-    output = Path(args.output).resolve()
-    producer = _slugify(args.producer)
-    scope = args.scope
-    vertical = _slugify(args.vertical) if args.vertical else ""
-
+    vertical = front_matter.get("vertical", default_vertical if scope == "vertical" else "").strip().lower()
     if scope == "vertical" and not vertical:
-        raise ValueError("--vertical is required when --scope=vertical")
+        vertical = default_vertical
+        warnings.append(f"missing vertical -> fallback '{default_vertical}'")
     if scope == "core":
         vertical = ""
 
-    if not source_dir.exists() or not source_dir.is_dir():
-        raise FileNotFoundError(f"Source directory not found: {source_dir}")
+    title = extract_title(body, rel_path.stem.replace("_", " ").replace("-", " "))
+    kb_section = "core" if scope == "core" else f"verticals/{vertical}"
 
-    files = _collect_payload_files(source_dir)
-    if not files:
-        raise ValueError(f"No allowed files found in source directory: {source_dir}")
-
-    payload_specs = []
-    for rel in files:
-        src = source_dir / rel
-        payload_specs.append(
-            {
-                "path": rel.as_posix(),
-                "sha256": _sha256_file(src),
-                "size": src.stat().st_size,
-            }
-        )
-
-    bundle_id = args.bundle_id or f"{producer}-{dt.datetime.now(dt.timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"
-    source_commit = args.source_commit or os.environ.get("DOCS_SOURCE_COMMIT", "")
-    manifest = {
-        "contract_version": CONTRACT_VERSION,
-        "bundle_schema_version": BUNDLE_SCHEMA_VERSION,
-        "bundle_id": bundle_id,
-        "generated_at_utc": _utc_now_iso(),
-        "producer": producer,
+    return {
+        "path": rel_path.as_posix(),
+        "title": title,
         "scope": scope,
         "vertical": vertical,
-        "payload_dir": PAYLOAD_DIR,
-        "source_relative_path": str(source_dir),
-        "source_commit": source_commit,
-        "files": payload_specs,
+        "kb_section": kb_section,
+        "sha256": sha256_file(abs_path),
+        "size_bytes": abs_path.stat().st_size,
+        "has_front_matter": has_front_matter,
+        "warnings": warnings,
+        "source_repo": front_matter.get("source_repo", source_repo),
+        "source_vps": front_matter.get("source_vps", source_vps),
+        "source_commit": front_matter.get("source_commit", ""),
+        "updated_at": front_matter.get("updated_at", ""),
     }
 
-    if args.dry_run:
-        print(json.dumps({"mode": "bundle-dry-run", "manifest": manifest}, indent=2))
-        return 0
 
+def cmd_bundle(args: argparse.Namespace) -> int:
+    repo_root = Path(args.repo_root).resolve()
+    output = Path(args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
-    manifest_bytes = json.dumps(manifest, sort_keys=True, indent=2).encode("utf-8")
 
-    with tarfile.open(output, mode="w:gz") as tar:
-        info = tarfile.TarInfo(name="manifest.json")
-        info.size = len(manifest_bytes)
-        info.mtime = int(time.time())
-        tar.addfile(info, io.BytesIO(manifest_bytes))
-
-        for rel in files:
-            src = source_dir / rel
-            arcname = f"{PAYLOAD_DIR}/{rel.as_posix()}"
-            tar.add(src, arcname=arcname, recursive=False)
-
-    print(
-        json.dumps(
-            {
-                "status": "ok",
-                "command": "bundle",
-                "bundle": str(output),
-                "file_count": len(files),
-                "scope": scope,
-                "producer": producer,
-                "vertical": vertical or None,
-            },
-            indent=2,
-        )
+    files = discover_markdown_files(
+        repo_root=repo_root,
+        roots=tuple(args.roots),
+        changed_only=args.changed_only,
+        base_ref=args.base_ref,
+        include_uncommitted=args.include_uncommitted,
     )
+
+    source_repo = args.source_repo or repo_root.name
+    source_vps = args.source_vps or os.uname().nodename
+
+    entries: list[dict[str, Any]] = []
+    for rel in files:
+        entry = normalize_entry(
+            rel_path=rel,
+            abs_path=repo_root / rel,
+            default_scope=args.default_scope,
+            default_vertical=args.default_vertical,
+            source_repo=source_repo,
+            source_vps=source_vps,
+        )
+        entries.append(entry)
+
+    manifest = {
+        "schema_version": "1.0",
+        "generated_at": now_iso(),
+        "base_ref": args.base_ref,
+        "changed_only": bool(args.changed_only),
+        "source_repo": source_repo,
+        "source_vps": source_vps,
+        "default_scope": args.default_scope,
+        "default_vertical": args.default_vertical,
+        "files_count": len(entries),
+        "files": entries,
+    }
+
+    with tarfile.open(output, "w:gz") as tar:
+        for entry in entries:
+            rel = safe_rel_path(entry["path"])
+            tar.add(
+                str(repo_root / rel),
+                arcname=f"payload/{rel.as_posix()}",
+                recursive=False,
+            )
+
+        payload = json.dumps(manifest, indent=2, ensure_ascii=True).encode("utf-8")
+        info = tarfile.TarInfo("manifest.json")
+        info.size = len(payload)
+        info.mtime = int(dt.datetime.now().timestamp())
+        tar.addfile(info, io.BytesIO(payload))
+
+    print(f"bundle_created={output}")
+    print(f"files_count={len(entries)}")
+    return 0
+
+
+def extract_manifest(tar: tarfile.TarFile) -> dict[str, Any]:
+    try:
+        member = tar.getmember("manifest.json")
+    except KeyError as exc:
+        raise RuntimeError("bundle missing manifest.json") from exc
+    fh = tar.extractfile(member)
+    if fh is None:
+        raise RuntimeError("cannot read manifest.json from bundle")
+    return json.loads(fh.read().decode("utf-8"))
+
+
+def write_text(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+
+
+def list_markdown(root: Path) -> list[Path]:
+    if not root.exists():
+        return []
+    return sorted(
+        p for p in root.rglob("*.md") if p.is_file() and p.name.lower() != "readme.md"
+    )
+
+
+def build_root_readme(federated_root: Path) -> None:
+    content = [
+        "# Federated Documentation Hub",
+        "",
+        "Aggregated documentation published by multiple Vitruvyan VPS nodes.",
+        "",
+        f"- Last refresh: `{now_iso()}`",
+        "",
+        "## Sections",
+        "",
+        "- [Core Contributions](core/README.md)",
+        "- [Vertical Contributions](verticals/README.md)",
+        "",
+    ]
+    write_text(federated_root / "README.md", "\n".join(content))
+
+
+def build_core_readme(core_root: Path) -> None:
+    lines = [
+        "# Core Federated Contributions",
+        "",
+        "Core-scoped documentation pushed from vertical/core nodes.",
+        "",
+    ]
+    if not core_root.exists():
+        lines.append("_No core contributions yet._")
+        lines.append("")
+        write_text(core_root / "README.md", "\n".join(lines))
+        return
+
+    repo_dirs = sorted(p for p in core_root.iterdir() if p.is_dir())
+    if not repo_dirs:
+        lines.append("_No core contributions yet._")
+        lines.append("")
+        write_text(core_root / "README.md", "\n".join(lines))
+        return
+
+    for repo_dir in repo_dirs:
+        lines.append(f"## {repo_dir.name}")
+        lines.append("")
+        docs = list_markdown(repo_dir)
+        if not docs:
+            lines.append("- _No documents_")
+            lines.append("")
+            continue
+        for doc in docs:
+            rel = doc.relative_to(core_root).as_posix()
+            label = doc.stem.replace("_", " ")
+            lines.append(f"- [{label}]({rel})")
+        lines.append("")
+
+    write_text(core_root / "README.md", "\n".join(lines))
+
+
+def build_vertical_readmes(verticals_root: Path) -> None:
+    lines = [
+        "# Vertical Federated Contributions",
+        "",
+        "Vertical/domain documentation grouped by vertical name.",
+        "",
+    ]
+    if not verticals_root.exists():
+        lines.append("_No vertical contributions yet._")
+        lines.append("")
+        write_text(verticals_root / "README.md", "\n".join(lines))
+        return
+
+    vertical_dirs = sorted(p for p in verticals_root.iterdir() if p.is_dir())
+    if not vertical_dirs:
+        lines.append("_No vertical contributions yet._")
+        lines.append("")
+        write_text(verticals_root / "README.md", "\n".join(lines))
+        return
+
+    for vertical_dir in vertical_dirs:
+        vertical_readme = vertical_dir / "README.md"
+        lines.append(f"- [{vertical_dir.name}]({vertical_dir.name}/README.md)")
+
+        v_lines = [
+            f"# Vertical: {vertical_dir.name}",
+            "",
+            f"Last refresh: `{now_iso()}`",
+            "",
+        ]
+        repo_dirs = sorted(p for p in vertical_dir.iterdir() if p.is_dir())
+        if not repo_dirs:
+            v_lines.append("_No documents yet._")
+            v_lines.append("")
+            write_text(vertical_readme, "\n".join(v_lines))
+            continue
+        for repo_dir in repo_dirs:
+            v_lines.append(f"## {repo_dir.name}")
+            v_lines.append("")
+            docs = list_markdown(repo_dir)
+            if not docs:
+                v_lines.append("- _No documents_")
+                v_lines.append("")
+                continue
+            for doc in docs:
+                rel = doc.relative_to(vertical_dir).as_posix()
+                label = doc.stem.replace("_", " ")
+                v_lines.append(f"- [{label}]({rel})")
+            v_lines.append("")
+        write_text(vertical_readme, "\n".join(v_lines))
+
+    lines.append("")
+    write_text(verticals_root / "README.md", "\n".join(lines))
+
+
+def update_mkdocs_nav(mkdocs_config: Path) -> None:
+    block = [
+        "    # FEDERATED_DOCS_NAV_START",
+        "    - Federated Docs:",
+        "      - Overview: docs/knowledge_base/federated/README.md",
+        "      - Core Contributions: docs/knowledge_base/federated/core/README.md",
+        "      - Vertical Contributions: docs/knowledge_base/federated/verticals/README.md",
+        "    # FEDERATED_DOCS_NAV_END",
+    ]
+    lines = mkdocs_config.read_text(encoding="utf-8").splitlines()
+    start_idx = next((i for i, line in enumerate(lines) if line.strip() == "# FEDERATED_DOCS_NAV_START"), None)
+    end_idx = next((i for i, line in enumerate(lines) if line.strip() == "# FEDERATED_DOCS_NAV_END"), None)
+
+    if start_idx is not None and end_idx is not None and end_idx >= start_idx:
+        new_lines = lines[:start_idx] + block + lines[end_idx + 1 :]
+    else:
+        insert_idx = next((i for i, line in enumerate(lines) if line.startswith("    - Examples:")), None)
+        if insert_idx is None:
+            insert_idx = next((i for i, line in enumerate(lines) if line.startswith("  # - Planning:")), None)
+        if insert_idx is None:
+            insert_idx = len(lines)
+        new_lines = lines[:insert_idx] + block + [""] + lines[insert_idx:]
+
+    mkdocs_config.write_text("\n".join(new_lines).rstrip() + "\n", encoding="utf-8")
+
+
+def cmd_ingest(args: argparse.Namespace) -> int:
+    repo_root = Path(args.repo_root).resolve()
+    bundle_path = Path(args.bundle).resolve()
+    federated_root = (repo_root / args.federated_root).resolve()
+    mkdocs_config = (repo_root / args.mkdocs_config).resolve()
+
+    if not bundle_path.exists():
+        raise FileNotFoundError(f"bundle not found: {bundle_path}")
+
+    with tarfile.open(bundle_path, "r:gz") as tar:
+        manifest = extract_manifest(tar)
+        members = {
+            m.name[len("payload/") :]: m
+            for m in tar.getmembers()
+            if m.isfile() and m.name.startswith("payload/")
+        }
+
+        written = 0
+        for entry in manifest.get("files", []):
+            rel = safe_rel_path(entry["path"]).as_posix()
+            member = members.get(rel)
+            if member is None:
+                continue
+            fh = tar.extractfile(member)
+            if fh is None:
+                continue
+            data = fh.read()
+
+            scope = str(entry.get("scope", "vertical")).lower()
+            source_repo = str(entry.get("source_repo", manifest.get("source_repo", "unknown"))).strip() or "unknown"
+            vertical = str(entry.get("vertical", "")).strip().lower()
+            if scope == "core":
+                target = federated_root / "core" / source_repo / rel
+            else:
+                if not vertical:
+                    vertical = "unspecified"
+                target = federated_root / "verticals" / vertical / source_repo / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
+            written += 1
+
+    build_root_readme(federated_root)
+    build_core_readme(federated_root / "core")
+    build_vertical_readmes(federated_root / "verticals")
+
+    if args.update_mkdocs_nav and mkdocs_config.exists():
+        update_mkdocs_nav(mkdocs_config)
+
+    print(f"bundle_ingested={bundle_path}")
+    print(f"files_written={written}")
+    print(f"federated_root={federated_root}")
     return 0
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
-    bundle_path = Path(args.bundle).resolve()
-    manifest, payload_members = _load_bundle(bundle_path)
-
-    with tarfile.open(bundle_path, mode="r:gz") as tar:
-        for spec in manifest["files"]:
-            rel = Path(spec["path"])
-            archive_path = f"{PAYLOAD_DIR}/{rel.as_posix()}"
-            extracted = tar.extractfile(archive_path)
-            if extracted is None:
-                raise ValueError(f"Could not extract {archive_path}")
-            digest = hashlib.sha256(extracted.read()).hexdigest()
-            if digest != spec["sha256"]:
-                raise ValueError(f"SHA256 mismatch for {archive_path}")
-
-    print(
-        json.dumps(
-            {
-                "status": "ok",
-                "command": "validate",
-                "bundle": str(bundle_path),
-                "scope": manifest["scope"],
-                "producer": manifest["producer"],
-                "vertical": manifest.get("vertical") or None,
-                "file_count": len(payload_members),
-            },
-            indent=2,
-        )
-    )
-    return 0
-
-
-def _resolve_target_dir(repo_root: Path, manifest: dict, core_root: Path, vertical_root: Path) -> Path:
-    scope = manifest["scope"]
-    if scope == "core":
-        producer = _slugify(manifest["producer"])
-        return repo_root / core_root / producer
-
-    vertical = _slugify(manifest["vertical"])
-    return repo_root / vertical_root / vertical
-
-
-def cmd_ingest(args: argparse.Namespace) -> int:
-    bundle_path = Path(args.bundle).resolve()
     repo_root = Path(args.repo_root).resolve()
-    core_root = Path(args.core_root)
-    vertical_root = Path(args.vertical_root)
-
-    manifest, _payload_members = _load_bundle(bundle_path)
-    target_dir = _resolve_target_dir(repo_root, manifest, core_root=core_root, vertical_root=vertical_root)
-
-    context = {
-        "scope": manifest["scope"],
-        "vertical": manifest.get("vertical", ""),
-        "producer": manifest["producer"],
-        "target_dir": str(target_dir),
-        "bundle": str(bundle_path),
-    }
-
-    with tempfile.TemporaryDirectory(prefix="docs_federation_ingest_") as tmp:
-        tmp_dir = Path(tmp)
-        extracted_payload = tmp_dir / PAYLOAD_DIR
-        extracted_payload.mkdir(parents=True, exist_ok=True)
-
-        with tarfile.open(bundle_path, mode="r:gz") as tar:
-            for spec in manifest["files"]:
-                rel = Path(spec["path"])
-                if not _safe_rel_path(rel):
-                    raise ValueError(f"Unsafe payload path in manifest: {rel!s}")
-
-                arcname = f"{PAYLOAD_DIR}/{rel.as_posix()}"
-                extracted = tar.extractfile(arcname)
-                if extracted is None:
-                    raise ValueError(f"Could not extract {arcname} from bundle")
-
-                dst = extracted_payload / rel
-                dst.parent.mkdir(parents=True, exist_ok=True)
-                with dst.open("wb") as out:
-                    shutil.copyfileobj(extracted, out)
-
-        copied_files = 0
-        for src in extracted_payload.rglob("*"):
-            if not src.is_file():
-                continue
-            rel = src.relative_to(extracted_payload)
-            if not _safe_rel_path(rel):
-                raise ValueError(f"Unsafe extracted payload path: {rel!s}")
-            dst = target_dir / rel
-            if not args.dry_run:
-                dst.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(src, dst)
-            copied_files += 1
-
-    metadata = dict(manifest)
-    metadata["ingested_at_utc"] = _utc_now_iso()
-
-    if not args.dry_run:
-        target_dir.mkdir(parents=True, exist_ok=True)
-        metadata_file = target_dir / "_federation_manifest.json"
-        metadata_file.write_text(json.dumps(metadata, sort_keys=True, indent=2) + "\n", encoding="utf-8")
-
-    hook_template = os.environ.get("DOCS_KB_INGEST_CMD", "").strip()
-    hook_cmd = ""
-    if hook_template:
-        hook_cmd = _render_hook(hook_template, context)
-        if not args.dry_run:
-            subprocess.run(hook_cmd, shell=True, check=True, cwd=str(repo_root))
-
-    print(
-        json.dumps(
-            {
-                "status": "ok",
-                "command": "ingest",
-                "bundle": str(bundle_path),
-                "scope": manifest["scope"],
-                "producer": manifest["producer"],
-                "vertical": manifest.get("vertical") or None,
-                "target_dir": str(target_dir),
-                "copied_files": copied_files,
-                "dry_run": args.dry_run,
-                "kb_hook_executed": bool(hook_cmd) and not args.dry_run,
-                "kb_hook_command": hook_cmd or None,
-            },
-            indent=2,
-        )
+    files = discover_markdown_files(
+        repo_root=repo_root,
+        roots=tuple(args.roots),
+        changed_only=args.changed_only,
+        base_ref=args.base_ref,
+        include_uncommitted=args.include_uncommitted,
     )
+    source_repo = args.source_repo or repo_root.name
+    source_vps = args.source_vps or os.uname().nodename
+
+    issues = 0
+    checked = 0
+    for rel in files:
+        entry = normalize_entry(
+            rel_path=rel,
+            abs_path=repo_root / rel,
+            default_scope=args.default_scope,
+            default_vertical=args.default_vertical,
+            source_repo=source_repo,
+            source_vps=source_vps,
+        )
+        checked += 1
+        if not entry["has_front_matter"]:
+            issues += 1
+            print(f"[WARN] missing front matter: {entry['path']}")
+        if entry["scope"] == "vertical" and not entry["vertical"]:
+            issues += 1
+            print(f"[WARN] missing vertical field: {entry['path']}")
+        for warning in entry["warnings"]:
+            issues += 1
+            print(f"[WARN] {entry['path']}: {warning}")
+
+    print(f"checked_files={checked}")
+    print(f"issues={issues}")
+    if args.strict and issues > 0:
+        return 1
     return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Federated docs bundle tooling")
+    parser = argparse.ArgumentParser(description="Federated docs tooling")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    bundle = sub.add_parser("bundle", help="Build docs bundle")
-    bundle.add_argument("--scope", required=True, choices=("core", "vertical"))
-    bundle.add_argument("--producer", required=True)
-    bundle.add_argument("--vertical")
-    bundle.add_argument("--source", default="docs")
+    bundle = sub.add_parser("bundle", help="Create docs bundle tar.gz")
+    bundle.add_argument("--repo-root", default=".")
     bundle.add_argument("--output", required=True)
-    bundle.add_argument("--source-commit")
-    bundle.add_argument("--bundle-id")
-    bundle.add_argument("--dry-run", action="store_true")
+    bundle.add_argument("--roots", nargs="+", default=list(DEFAULT_SCAN_ROOTS))
+    bundle.add_argument("--changed-only", action="store_true", default=False)
+    bundle.add_argument("--base-ref", default="origin/main")
+    bundle.add_argument("--include-uncommitted", action="store_true", default=False)
+    bundle.add_argument("--default-scope", choices=sorted(VALID_SCOPES), default="vertical")
+    bundle.add_argument("--default-vertical", default="mercator")
+    bundle.add_argument("--source-repo", default="")
+    bundle.add_argument("--source-vps", default="")
     bundle.set_defaults(func=cmd_bundle)
 
-    validate = sub.add_parser("validate", help="Validate docs bundle")
-    validate.add_argument("--bundle", required=True)
-    validate.set_defaults(func=cmd_validate)
-
-    ingest = sub.add_parser("ingest", help="Ingest docs bundle into repo")
-    ingest.add_argument("--bundle", required=True)
+    ingest = sub.add_parser("ingest", help="Ingest docs bundle into federated KB")
     ingest.add_argument("--repo-root", default=".")
-    ingest.add_argument("--core-root", default=str(DEFAULT_CORE_ROOT))
-    ingest.add_argument("--vertical-root", default=str(DEFAULT_VERTICAL_ROOT))
-    ingest.add_argument("--dry-run", action="store_true")
+    ingest.add_argument("--bundle", required=True)
+    ingest.add_argument("--federated-root", default="docs/knowledge_base/federated")
+    ingest.add_argument("--mkdocs-config", default="infrastructure/docker/mkdocs/mkdocs.yml")
+    ingest.add_argument("--update-mkdocs-nav", action="store_true", default=False)
     ingest.set_defaults(func=cmd_ingest)
+
+    validate = sub.add_parser("validate", help="Validate docs front matter contract")
+    validate.add_argument("--repo-root", default=".")
+    validate.add_argument("--roots", nargs="+", default=list(DEFAULT_SCAN_ROOTS))
+    validate.add_argument("--changed-only", action="store_true", default=False)
+    validate.add_argument("--base-ref", default="origin/main")
+    validate.add_argument("--include-uncommitted", action="store_true", default=False)
+    validate.add_argument("--default-scope", choices=sorted(VALID_SCOPES), default="vertical")
+    validate.add_argument("--default-vertical", default="mercator")
+    validate.add_argument("--source-repo", default="")
+    validate.add_argument("--source-vps", default="")
+    validate.add_argument("--strict", action="store_true", default=False)
+    validate.set_defaults(func=cmd_validate)
 
     return parser
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
-    args = parser.parse_args()
-    try:
-        return args.func(args)
-    except Exception as exc:  # noqa: BLE001
-        print(f"ERROR: {exc}", file=sys.stderr)
-        return 1
+    args = parser.parse_args(argv)
+    return int(args.func(args))
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(main())

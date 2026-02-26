@@ -256,6 +256,43 @@ python scripts/utils/generate_test_data.py --entities 100 --signals 500
 
 ---
 
+## 📚 Docs Federation Scripts
+
+### scripts/docs/publish_docs.sh
+
+**Purpose**: Producer-side publication of Markdown docs toward the core hub VPS.
+
+**Usage**:
+```bash
+export DOCS_SOURCE_REPO=mercator
+export DOCS_SOURCE_VPS=161.xxx.xxx.xxx
+export DOCS_DEFAULT_VERTICAL=mercator
+export DOCS_HUB_SSH_TARGET=docs-sync@144.xxx.xxx.xxx
+./scripts/docs/publish_docs.sh
+```
+
+### scripts/docs/ingest_incoming_bundle.sh
+
+**Purpose**: Hub-side ingestion into `docs/knowledge_base/federated/` + optional MkDocs rebuild.
+
+**Usage**:
+```bash
+./scripts/docs/ingest_incoming_bundle.sh /opt/vitruvyan-core/incoming_docs/<bundle>.tar.gz
+```
+
+### scripts/docs/federate_docs.py
+
+**Purpose**: Contract-aware utility for `bundle`, `ingest`, `validate`.
+
+**Usage**:
+```bash
+python3 scripts/docs/federate_docs.py bundle --repo-root . --output /tmp/docs_bundle.tar.gz --changed-only
+python3 scripts/docs/federate_docs.py ingest --repo-root . --bundle /tmp/docs_bundle.tar.gz --update-mkdocs-nav
+python3 scripts/docs/federate_docs.py validate --repo-root . --roots docs --strict
+```
+
+---
+
 ## 🎯 Usage Patterns
 
 ### Running Scripts

@@ -1,66 +1,40 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-FEDERATE_SCRIPT="${SCRIPT_DIR}/federate_docs.py"
-
-BUNDLE_PATH=""
-DRY_RUN=0
-CORE_ROOT="docs/knowledge_base/federated/core"
-VERTICAL_ROOT="docs/knowledge_base/federated/verticals"
-
-usage() {
-  cat <<'EOF'
-Usage:
-  scripts/docs/ingest_incoming_bundle.sh --bundle <bundle.tar.gz> [options]
-
-Options:
-  --bundle <path>                  Required.
-  --repo-root <path>               Repository root (default: autodetected).
-  --core-root <path>               Core routing root.
-  --vertical-root <path>           Vertical routing root.
-  --dry-run                        Print actions without writing files.
-  -h|--help                        Show help.
-
-Environment:
-  DOCS_KB_INGEST_CMD               Optional hook executed after successful ingest.
-EOF
-}
-
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --bundle) BUNDLE_PATH="${2:-}"; shift 2 ;;
-    --repo-root) REPO_ROOT="${2:-}"; shift 2 ;;
-    --core-root) CORE_ROOT="${2:-}"; shift 2 ;;
-    --vertical-root) VERTICAL_ROOT="${2:-}"; shift 2 ;;
-    --dry-run) DRY_RUN=1; shift ;;
-    -h|--help) usage; exit 0 ;;
-    *) echo "Unknown argument: $1" >&2; usage; exit 1 ;;
-  esac
-done
-
-if [[ -z "${BUNDLE_PATH}" ]]; then
-  echo "--bundle is required." >&2
-  usage
+if [[ $# -lt 1 ]]; then
+  echo "Usage: $0 <bundle.tar.gz>"
   exit 1
 fi
 
-cmd=(
-  python3 "${FEDERATE_SCRIPT}" ingest
-  --bundle "${BUNDLE_PATH}"
-  --repo-root "${REPO_ROOT}"
-  --core-root "${CORE_ROOT}"
-  --vertical-root "${VERTICAL_ROOT}"
-)
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+BUNDLE_PATH="$1"
 
-if [[ "${DRY_RUN}" -eq 1 ]]; then
-  cmd+=(--dry-run)
+if [[ ! -f "$BUNDLE_PATH" ]]; then
+  echo "Bundle not found: $BUNDLE_PATH"
+  exit 1
 fi
 
-echo "Ingesting bundle..."
-"${cmd[@]}"
+python3 "$ROOT_DIR/scripts/docs/federate_docs.py" ingest \
+  --repo-root "$ROOT_DIR" \
+  --bundle "$BUNDLE_PATH" \
+  --update-mkdocs-nav
 
+# Optional MkDocs build
+# DOCS_BUILD_MKDOCS=true (default) triggers local build if mkdocs exists.
+DOCS_BUILD_MKDOCS="${DOCS_BUILD_MKDOCS:-true}"
+if [[ "$DOCS_BUILD_MKDOCS" == "true" ]]; then
+  if command -v mkdocs >/dev/null 2>&1; then
+    mkdocs build -f "$ROOT_DIR/infrastructure/docker/mkdocs/mkdocs.yml"
+  else
+    echo "mkdocs command not found, skipping build"
+  fi
+fi
+
+# Optional KB ingestion command (for vector indexing pipeline).
+# Example:
+# export DOCS_KB_INGEST_CMD="python3 /opt/vitruvyan-core/scripts/kb/ingest_docs.py"
 if [[ -n "${DOCS_KB_INGEST_CMD:-}" ]]; then
-  echo "DOCS_KB_INGEST_CMD was provided and handled by federate_docs.py."
+  bash -lc "$DOCS_KB_INGEST_CMD"
 fi
+
+echo "ingest_completed bundle=$BUNDLE_PATH"

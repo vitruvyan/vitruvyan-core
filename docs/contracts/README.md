@@ -14,3 +14,4 @@ This section defines the stable interfaces used to keep core modules domain-agno
 
 - Python package: `vitruvyan_core/contracts/__init__.py`
 - Vertical contract docs: `docs/contracts/verticals/README.md`
+- Platform contract docs: `docs/contracts/platform/README.md`

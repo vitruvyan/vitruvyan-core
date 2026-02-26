@@ -1,16 +1,11 @@
-# Federated Core Docs
+---
+scope: core
+source_repo: mercator
+source_vps: 161.xxx.xxx.xxx
+kb_section: core
+updated_at: 2026-02-26T00:00:00Z
+---
 
-This directory stores ingested docs with `scope=core`.
+# Core Federated Contributions
 
-Routing target:
-
-- `docs/knowledge_base/federated/core/<producer>/...`
-
-Examples:
-
-- `core/vitruvyan-core/`
-- `core/shared-platform/`
-
-Managed by:
-
-- `scripts/docs/federate_docs.py ingest`
+No core federated documents have been ingested yet.
