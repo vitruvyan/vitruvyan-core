@@ -1,50 +1,37 @@
 {
-  "version": "1.4.0",
+  "version": "1.6.0",
   "channel": "stable",
-  "release_date": "2026-02-23T23:00:00Z",
+  "release_date": "2026-02-26T15:00:00Z",
   "contracts_version": "1.0.0",
   "changes": {
     "features": [
-      "GraphResponseMin + SessionMin contract (channel-agnostic, COO-approved)",
-      "Early-exit node: greeting/farewell/thanks skip 14 nodes (<1s vs 3-8s)",
-      "asyncio.to_thread() + per-user lock in graph_adapter (multi-user concurrency)",
-      "_SESSION_STATE: thread-safe LRU cache with TTL eviction (max 1000 entries, 1h TTL)",
-      "Canonical Orthodoxy verdicts: blessed|purified|heretical|non_liquet|clarification_needed",
-      "Deterministic correlation_id for dedup/cache (hash of user+intent+entities+timebucket)"
+      "DSE service refactored to SACRED_ORDER_PATTERN (LIVELLO 1 + LIVELLO 2)",
+      "infrastructure/edge/dse/: pure domain layer — LHS/Cartesian/Sobol sampling, Pareto frontier, dottrinale ranking",
+      "services/api_edge_dse/: FastAPI service on port 8021",
+      "StreamBus consumer groups replace legacy redis.asyncio PubSub",
+      "DSEPersistenceAdapter (PostgresAgent) replaces raw psycopg2",
+      "26 unit tests (sampling + Pareto frontier)",
+      "SamplingStrategySelector with ML injection point"
     ],
-    "fixes": [
-      "graph_adapter: FastAPI event loop no longer blocked during graph execution",
-      "Legacy orthodoxy status values (locally_blessed, under_review) mapped to canonical enum"
+    "fixes": [],
+    "documentation": [
+      "infrastructure/edge/dse/docs/README.md — full architecture documentation",
+      "infrastructure/edge/dse/philosophy/charter.md — mandate and invariants",
+      "services/api_edge_dse/README.md — API reference and quick start"
     ],
-    "documentation": [],
-    "breaking_changes": [
-      "GraphResponseMin replaces GraphResponseSchema as primary API response (legacy keys preserved for backward-compat)"
-    ]
+    "breaking_changes": []
   },
   "commits": [
     {
-      "hash": "TBD",
-      "message": "feat(contracts): GraphResponseMin + SessionMin channel-agnostic contract"
-    },
-    {
-      "hash": "TBD",
-      "message": "feat(graph_flow): early-exit node for simple intents with governance"
-    },
-    {
-      "hash": "TBD",
-      "message": "feat(graph_adapter): asyncio.to_thread + per-user lock for concurrency"
-    },
-    {
-      "hash": "TBD",
-      "message": "feat(graph_runner): thread-safe LRU session cache with TTL eviction"
+      "hash": "7739afe",
+      "message": "feat(dse): refactor aegis DSE service → SACRED_ORDER_PATTERN LIVELLO 1+2"
     }
   ],
   "validation": [
-    "Syntax validation: ast.parse passed (6 files)",
-    "Contract tests: all 5 Orthodoxy statuses validated",
-    "Early-exit logic: 7 intent assertions passed",
-    "LRU cache: put/get/strip/miss all validated",
-    "Backward compatible: legacy json/human/audit_monitored keys preserved"
+    "LIVELLO 1 pure imports verified: python3 -c 'from infrastructure.edge.dse import *' OK",
+    "26 unit tests: sampling (14) + pareto (12)",
+    "main.py: 76 lines (< 100 target)",
+    "No PostgresAgent/QdrantAgent instantiation in LIVELLO 1 consumers"
   ],
   "upgrade_instructions": "vit upgrade --channel stable",
   "checksum": {
