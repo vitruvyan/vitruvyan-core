@@ -55,7 +55,7 @@ SHOULD (contract baseline):
 
 - `graph_plugin.py`
 - `governance_rules.py`
-- `slot_filler.py`
+- `slot_filler.py` (legacy; no longer part of active core LangGraph path)
 - `response_formatter.py`
 - integration tests
 

@@ -110,7 +110,7 @@ Source: `docs/contracts/verticals/VERTICAL_CONTRACT_V1.md`
 
 - `graph_plugin.py`
 - `governance_rules.py`
-- `slot_filler.py`
+- `slot_filler.py` (legacy in current core flow)
 - `response_formatter.py`
 - integration tests
 
@@ -135,7 +135,7 @@ vitruvyan_core/domains/<domain>/
   governance_rules.py              # SHOULD
   entity_resolver_config.py        # SHOULD (runtime hook)
   execution_config.py              # SHOULD (runtime hook)
-  slot_filler.py                   # SHOULD
+  slot_filler.py                   # LEGACY (not in active core flow)
   response_formatter.py            # SHOULD
   graph_plugin.py                  # SHOULD / optional by architecture status
   tests/
