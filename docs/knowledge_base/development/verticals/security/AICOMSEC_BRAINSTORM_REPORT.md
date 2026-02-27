@@ -1,7 +1,7 @@
 # AICOMSEC — Brainstorming & Architecture Report
 
-> **Last updated**: Feb 27, 2026 11:00 UTC
-> **Status**: Sprint 1 ✅ completato — P0 ✅ (3/3), P1 ✅ (7/7) — P2 in corso
+> **Last updated**: Feb 28, 2026 10:00 UTC
+> **Status**: Sprint 1 ✅ COMPLETATO — P0 ✅ (3/3), P1 ✅ (7/7), P2 ✅ (2/2)
 > **Autore**: Vitruvyan AI + Team AICOMSEC
 > **Branch**: `feature/aicomsec-domain`
 
@@ -570,7 +570,8 @@ spatial_graph.query(
 | `metadata_lineage_agent.py` (4 metodi core) | P1 | ✅ **Completato** Feb 27 | OpenMetadata ✅ running |
 | Lineage hooks in Babel Gardens consumer | P1 | ✅ **Completato** Feb 27 | `lineage_hooks.py` + `security_adapter.py` |
 | Lineage hooks in compose\_node / vault\_node | P1 | ✅ **Completato** Feb 27 | `compose_node.py` + `vault_node.py` |
-| Evidence Chain Constructor API endpoint | P2 | ⬜ | lineage hooks |
+| `SecuritySemanticPlugin` + `SecuritySignalMapper` — Pattern Weavers bridge | P2 | ✅ **Completato** Feb 28 | `domains/security/pattern_weavers/` — plugin + signal mapper + routes.py |
+| Evidence Chain Constructor API (`api_aicomsec`, port 3001) | P2 | ✅ **Completato** Feb 28 | `services/api_aicomsec/` — `POST /v1/evidence/chain` |
 
 ### Sprint 2 — BACKLOG
 
@@ -580,24 +581,20 @@ spatial_graph.query(
 | DSE integration (gap → Pareto plan) | §5 |
 | Regulatory Horizon Scanner | §7 P3 |
 | API M2M endpoints (risk-assessment, gap-analysis, report) | §4 Superficie 3 |
-| **Neural Engine — Security vertical** (ranking multi-sito, triage priorità) | §5 + DSE |
-
-> **Neural Engine — Nota architetturale (Feb 27, 2026)**
-> Non necessario per MVP (VPAR/VARE copre la valutazione entity-level).
-> Diventa rilevante in produzione con clienti multi-sito: 50-200 infrastrutture
-> critiche eterogenee (aeroporti, ospedali, data center) non si comparano con
-> score assoluti — servono z-score normalizzati cross-entity.
->
-> Integrazione prevista: `SecurityDataProvider` (`IDataProvider`) + `SecurityScoringStrategy`
-> (`IScoringStrategy`) agganciati al Neural Engine esistente (`api_neural_engine:8003`).
-> Collegamento naturale con DSE: il ranking Neural Engine alimenta la priorità
-> dei piani Pareto generati dal DSE (quale sito trattare per primo, con quale
-> budget). Pattern: `Neural Engine → top-k siti critici → DSE → piano d'azione`.
+> **Neural Engine — Decisione architetturale (Feb 28, 2026 — SPOSTATO a Post-v1)**
+> Analisi completa: VPAR/VARE produce score assoluti 0-100 su scala uniforme.
+> Ranking multi-sito MVP = `sorted(sites, key=lambda s: s.risk_score)` — nessuna
+> normalizzazione aggiuntiva richiesta.
+> Neural Engine z-score è giustificato SOLO con feature eterogenee senza scala
+> comune. Non è questo il caso: VPAR normalizza internamente.
+> → Rimandato a produzione con dataset reale (50-200 siti) dove la varianza
+> cross-entity diventa misurabile e il confronto relativo aggiunge valore.
 
 ### Post-v1 — FUTURE
 
 | Task | Funzionalità correlata |
 |------|----------------------|
+| **Neural Engine security vertical** (z-score cross-entity, ranking 50-200 siti) | §5 + DSE — `SecurityDataProvider` + `SecurityScoringStrategy` → `api_neural_engine:8003` |
 | Semantic Spatial Layer (CAD/BIM → grafo spaziale) | §7 P4 |
 | Adversarial Reasoning Engine | §7 P5 |
 | Federated Anonymous Intelligence | §7 P6 |
