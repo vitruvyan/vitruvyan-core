@@ -580,6 +580,19 @@ spatial_graph.query(
 | DSE integration (gap → Pareto plan) | §5 |
 | Regulatory Horizon Scanner | §7 P3 |
 | API M2M endpoints (risk-assessment, gap-analysis, report) | §4 Superficie 3 |
+| **Neural Engine — Security vertical** (ranking multi-sito, triage priorità) | §5 + DSE |
+
+> **Neural Engine — Nota architetturale (Feb 27, 2026)**
+> Non necessario per MVP (VPAR/VARE copre la valutazione entity-level).
+> Diventa rilevante in produzione con clienti multi-sito: 50-200 infrastrutture
+> critiche eterogenee (aeroporti, ospedali, data center) non si comparano con
+> score assoluti — servono z-score normalizzati cross-entity.
+>
+> Integrazione prevista: `SecurityDataProvider` (`IDataProvider`) + `SecurityScoringStrategy`
+> (`IScoringStrategy`) agganciati al Neural Engine esistente (`api_neural_engine:8003`).
+> Collegamento naturale con DSE: il ranking Neural Engine alimenta la priorità
+> dei piani Pareto generati dal DSE (quale sito trattare per primo, con quale
+> budget). Pattern: `Neural Engine → top-k siti critici → DSE → piano d'azione`.
 
 ### Post-v1 — FUTURE
 
