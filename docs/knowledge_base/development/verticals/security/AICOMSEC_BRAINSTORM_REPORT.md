@@ -1,7 +1,7 @@
 # AICOMSEC — Brainstorming & Architecture Report
 
-> **Last updated**: Feb 26, 2026 12:00 UTC
-> **Status**: Draft — in fase di brainstorming pre-Sprint 1
+> **Last updated**: Feb 27, 2026 11:00 UTC
+> **Status**: Sprint 1 ✅ completato — P0 ✅ (3/3), P1 ✅ (7/7) — P2 in corso
 > **Autore**: Vitruvyan AI + Team AICOMSEC
 > **Branch**: `feature/aicomsec-domain`
 
@@ -82,18 +82,52 @@ Cliente (GDrive / SharePoint / Upload)
 Oculus Prime (api_edge_oculus_prime, port 8050)
     │  Pre-epistemic intake: NO NER, NO embedding, NO semantica
     │  Agents: Document (PDF/DOCX), Image (OCR), CAD/BIM, Audio (Whisper)
+    │  Emits (dual_write mode):
+    │    canonical: oculus_prime.evidence.created  (v2)
+    │    alias:     intake.evidence.created        (v1 legacy)
     │
     ▼  Redis Stream: oculus_prime.evidence.created
     │
     ▼
+Codex Hunters (api_codex_hunters)
+    │  Consumes: oculus_prime.evidence.created
+    │  POST /discover (HTTP interno)
+    │  → Normalizza e classifica l'evidence
+    │  → Genera embedding testuale (auto-embed se assente)
+    │  → Persiste in PostgreSQL + Qdrant (codex)
+    │  Emits:  codex.entity.discovered  (entity trovata)
+    │          codex.entity.bound       (entity persisted)
+    │          codex.expedition.completed (acknowledgement)
+    │
+    ▼  Redis Stream: codex.entity.bound
+    │
+    ▼
 Babel Gardens AICOMSEC Consumer
+    │  Consumes: codex.entity.bound  (+ codex.discovery.mapped legacy)
     │  Filtra: domain_family=security
     │  Classifica: physical | cyber | normative | operational
     │  Sanitizza PII (gate pre-embedding)
+    │  → Emotion detection (/v1/emotion/detect)
+    │  → Sentiment analysis (/analyze)
     │  Embedding con fusione SecBERT (0.35) + LLM (0.50) + multilingual (0.15)
+    │  Emits:  babel.linguistic.completed  (risultati linguistici)
+    │          pattern.weave.request      (handoff a Pattern Weavers)
+    │
+    ├──upsert──►  Qdrant: aicomsec.{tenant_id}.chunks
+    │
+    ▼  Redis Stream: pattern.weave.request
     │
     ▼
-Qdrant: aicomsec.{tenant_id}.chunks
+Pattern Weavers (api_pattern_weavers)
+    │  Consumes: pattern.weave.request
+    │  → Semantic search su Qdrant (top-k similar)
+    │  → Taxonomy matching (ontological classification)
+    │  → Arricchisce chunk con categoria ontologica security
+    │  Emits:  pattern_weavers.weave.completed
+    │          pattern_weavers.context.extracted
+    │
+    ▼
+Qdrant: aicomsec.{tenant_id}.chunks  (chunks arricchiti con ontologia)
 ```
 
 ### Canale B — Flussi Normativi (Automatico)
@@ -116,15 +150,17 @@ Qdrant: aicomsec.normative.{framework}
     │  (collection separata — condivisa tra tenant, read-only per tenant)
 ```
 
-### 5 Stadi della Pipeline
+### 7 Stadi della Pipeline
 
-| Stadio | Input | Output | Ordine Sacred |
-|--------|-------|--------|---------------|
-| **Intake** | Raw file / API response | Evidence envelope | Perception (Oculus Prime) |
-| **Classification** | Evidence envelope | Tipo + metadata | Perception (Babel Gardens) |
-| **Chunking** | Testo classificato | Chunk con overlap | Perception (Babel Gardens) |
-| **Embedding** | Chunk | Vettore 768-dim | Memory Orders |
-| **Retrieval** | Query vettore | Top-k chunk rilev. | Memory Orders + VSGS |
+| Stadio | Input | Output | Stream evento | Ordine Sacred |
+|--------|-------|--------|--------------|---------------|
+| **Intake** | Raw file / API response | Evidence envelope | `oculus_prime.evidence.created` | Perception (Oculus Prime) |
+| **Discovery** | Evidence envelope | Entity normalizzata + classificata | `codex.entity.discovered` | Perception (Codex Hunters) |
+| **Bind** | Entity normalizzata | Entity persistita (PG + Qdrant codex) | `codex.entity.bound` | Perception (Codex Hunters) |
+| **Linguistic** | Entity bound | Emotion + sentiment | `babel.linguistic.completed` | Perception (Babel Gardens) |
+| **Chunking + Embedding** | Testo classificato | Chunk 768-dim upsert Qdrant | `pattern.weave.request` | Memory Orders |
+| **Ontological Classification** | Chunk + contesto linguistico | Categoria ontologica security | `pattern_weavers.weave.completed` | Reason (Pattern Weavers) |
+| **Retrieval** | Query vettore | Top-k chunk rilevanti | — | Memory Orders + VSGS |
 
 ---
 
@@ -427,20 +463,39 @@ spatial_graph.query(
 │                          │ oculus_prime.evidence.created                │
 │                          ▼                                              │
 │  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │         BABEL GARDENS — AICOMSEC Consumer                        │  │
-│  │   classify → sanitize PII → embed (SecBERT fusion) → upsert      │  │
+│  │         CODEX HUNTERS — Evidence Discovery & Bind                │  │
+│  │   consumes: oculus_prime.evidence.created                        │  │
+│  │   /discover → normalize → bind (Postgres + Qdrant codex)         │  │
+│  │   emits: codex.entity.discovered / codex.entity.bound            │  │
 │  └───────────────────────┬──────────────────────────────────────────┘  │
-│                          │                                              │
-│              ┌───────────▼──────────────┐                              │
-│              │  QDRANT KNOWLEDGE BASE   │                              │
-│              │  aicomsec.{tenant}.chunks│                              │
-│              │  aicomsec.normative.*    │                              │
-│              └───────────┬──────────────┘                              │
+│                          │ codex.entity.bound                           │
+│                          ▼                                              │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │         BABEL GARDENS — AICOMSEC Consumer                        │  │
+│  │   consumes: codex.entity.bound                                   │  │
+│  │   classify → sanitize PII → emotion/sentiment → embed (SecBERT)  │  │
+│  │   emits: babel.linguistic.completed / pattern.weave.request      │  │
+│  └──────────┬─────────────────────────┬────────────────────────────┘  │
+│             │ upsert                  │ pattern.weave.request           │
+│             ▼                         ▼                                 │
+│   ┌─────────────────┐     ┌──────────────────────────────────────┐    │
+│   │ QDRANT (chunks) │     │  PATTERN WEAVERS                     │    │
+│   │ aicomsec.{t}.   │     │  consumes: pattern.weave.request     │    │
+│   │ chunks (raw)    │◄────│  semantic search + taxonomy match    │    │
+│   └────────┬────────┘     │  emits: weave.completed / context    │    │
+│            │              └──────────────────────────────────────┘    │
+│            ▼ chunks arricchiti (ontologia security)                    │
+│              ┌───────────────────────────────┐                         │
+│              │  QDRANT KNOWLEDGE BASE        │                         │
+│              │  aicomsec.{tenant}.chunks     │                         │
+│              │  aicomsec.normative.*         │                         │
+│              └───────────┬───────────────────┘                         │
 │                          │                                              │
 │  ┌───────────────────────▼──────────────────────────────────────────┐  │
 │  │              LANGGRAPH SECURITY PIPELINE                         │  │
 │  │                                                                  │  │
 │  │  parse → intent_detection → VSGS → entity_resolver              │  │
+│  │     → weaver → babel_emotion → semantic_grounding               │  │
 │  │     → decide → [                                                 │  │
 │  │         document_query: RAG → VEE summary                       │  │
 │  │         risk_assessment: VARE SecurityRiskProvider               │  │
@@ -471,6 +526,9 @@ spatial_graph.query(
 | Componente | Tecnologia | Port |
 |-----------|-----------|------|
 | Intake | Oculus Prime (FastAPI) | 8050 |
+| Discovery & Bind | Codex Hunters (FastAPI) | 8040 |
+| Linguistic processing | Babel Gardens (FastAPI) | 8030 |
+| Ontological classification | Pattern Weavers (FastAPI) | 8060 |
 | LangGraph orchestration | api_graph (FastAPI) | 8010 |
 | VPAR engines | Pura Python (LIVELLO 1) | — |
 | Vector store | Qdrant | 6333 |
@@ -498,27 +556,39 @@ spatial_graph.query(
 | Fix: vit CLI 3 bug (repo, token, tag fetch) | ✅ | `core/platform/update_manager/engine/` |
 | Upgrade core v1.5.0 → v1.6.1 | ✅ | — |
 
-### Sprint 1 — PROSSIMO
+### Sprint 1 — IN CORSO
 
-| Task | Priorità | Dipendenze |
-|------|----------|------------|
-| Babel Gardens AICOMSEC consumer | P0 | Oculus Prime (ready) |
-| Qdrant collections init script | P0 | RAG Governance Contract |
-| `graph_plugin.py` security domain | P0 | `intent_config.py` ✅ |
-| VPAR `SecurityRiskProvider` | P1 | VARE engine (ready) |
-| VPAR `SecurityAggregationProvider` | P1 | VWRE engine (ready) |
-| VPAR `SecurityExplainabilityProvider` | P1 | VEE engine (ready) |
-| LangGraph security graph nodes | P1 | `graph_plugin.py` |
+| Task | Priorità | Status | Dipendenze |
+|------|----------|--------|------------|
+| Babel Gardens AICOMSEC consumer | P0 | ✅ **Completato** Feb 27 | Oculus Prime (ready) |
+| Qdrant collections init script | P0 | ✅ **Completato** Feb 27 | RAG Governance Contract |
+| `graph_plugin.py` security domain | P0 | ✅ **Completato** Feb 27 | `intent_config.py` ✅ |
+| VPAR `SecurityRiskProvider` | P1 | ✅ **Completato** Feb 27 | VARE engine (ready) |
+| VPAR `SecurityAggregationProvider` | P1 | ✅ **Completato** Feb 27 | VWRE engine (ready) |
+| VPAR `SecurityExplainabilityProvider` | P1 | ✅ **Completato** Feb 27 | VEE engine (ready) |
+| LangGraph security graph nodes | P1 | ✅ **Completato** Feb 27 | `graph_plugin.py` ✅ |
+| `metadata_lineage_agent.py` (4 metodi core) | P1 | ✅ **Completato** Feb 27 | OpenMetadata ✅ running |
+| Lineage hooks in Babel Gardens consumer | P1 | ✅ **Completato** Feb 27 | `lineage_hooks.py` + `security_adapter.py` |
+| Lineage hooks in compose\_node / vault\_node | P1 | ✅ **Completato** Feb 27 | `compose_node.py` + `vault_node.py` |
+| Evidence Chain Constructor API endpoint | P2 | ⬜ | lineage hooks |
 
 ### Sprint 2 — BACKLOG
 
 | Task | Funzionalità correlata |
 |------|----------------------|
-| Evidence Chain Constructor | §7 P1 |
 | Compliance Entropy Monitor | §7 P2 |
 | DSE integration (gap → Pareto plan) | §5 |
 | Regulatory Horizon Scanner | §7 P3 |
-| Semantic Spatial Layer | §7 P4 |
+| API M2M endpoints (risk-assessment, gap-analysis, report) | §4 Superficie 3 |
+
+### Post-v1 — FUTURE
+
+| Task | Funzionalità correlata |
+|------|----------------------|
+| Semantic Spatial Layer (CAD/BIM → grafo spaziale) | §7 P4 |
+| Adversarial Reasoning Engine | §7 P5 |
+| Federated Anonymous Intelligence | §7 P6 |
+| Incident Reconstruction Engine | §7 P7 |
 
 ---
 
@@ -526,12 +596,230 @@ spatial_graph.query(
 
 | # | Domanda | Impatto | Owner |
 |---|---------|---------|-------|
-| 1 | H2M vs M2M — quale modalità lanciare per prima al cliente? | Alto — condiziona UX e risorse Sprint 1 | Collega domain expert |
-| 2 | Quanti tenant nel progetto pilota? | Alto — naming collections, auth JWT scope | PM |
-| 3 | Il cliente vuole Evidence Chain Constructor nell'MVP o è post-MVP? | Alto — condiziona Sprint 1 | Collega domain expert |
-| 4 | Quale dottrina DSE di default per il cliente pilota? | Medio | Collega domain expert |
-| 5 | SecBERT: hosting locale o HuggingFace inference API? | Medio — latenza e costo | Tech lead |
-| 6 | CAD/BIM: il cliente pilota ha planimetrie in formato standard (DXF/IFC)? | Alto per Semantic Spatial Layer | Collega domain expert |
+| 1 | H2M vs M2M — quale modalità lanciare per prima al cliente? | Alto — condiziona UX e risorse Sprint 1 | ✅ **Ibrida, priorità H2M** — chat conversazionale come superficie primaria, API M2M in Sprint 2 |
+| 2 | Quanti tenant nel progetto pilota? | Alto — naming collections, auth JWT scope | ✅ **1 tenant MVP, architettura multi-tenant da subito** — naming `aicomsec.{tenant_id}.*` già parametrizzato, auth JWT con scope tenant-scoped, secondo tenant aggiungibile senza refactoring |
+| 3 | Il cliente vuole Evidence Chain Constructor nell'MVP o è post-MVP? | Alto — condiziona Sprint 1 | ✅ **MVP** — OpenMetadata già nello stack e installato, sviluppato in tandem con RAG nel Sprint 1 |
+| 4 | Quale dottrina DSE di default per il cliente pilota? | Medio | ✅ **`critical_infra`** — peso dominante su riduzione rischio residuo (0.60), deadline NIS2 secondaria (0.25), costo terziario (0.15) |
+| 5 | SecBERT: hosting locale o HuggingFace inference API? | Medio — latenza e costo | ✅ **Locale** — container dedicato nello stack aicomsec, zero dipendenze esterne, coerente con profilo critical_infra |
+| 6 | CAD/BIM: il cliente pilota ha planimetrie in formato standard (DXF/IFC)? | Alto per Semantic Spatial Layer | ✅ **Feature futura** — Semantic Spatial Layer escluso dall'MVP e dagli sprint correnti, backlog post-v1 |
+
+---
+
+## 11. OpenMetadata — Auditability Layer
+
+### Ha senso integrarlo?
+
+**Sì — per AICOMSEC è più critico che per qualsiasi altro vertical.**
+
+In finanza la tracciabilità è un nice-to-have. In sicurezza e compliance è un **requisito legale**: NIS2, ISO 27001 e GDPR impongono dimostrabilità — non basta *fare* le cose, bisogna *provare* di averle fatte, *quando*, *da quale sorgente* e *con quale catena di custodia*.
+
+OpenMetadata è già nel roadmap Vitruvyan (citato in `.github/vitruvyan_agents_and_tests.md`, `docker-compose.openmetadata.yml` pianificato ma non ancora creato). AICOMSEC è il vertical dove questa integrazione ha il ROI più alto.
+
+### Cos'è OpenMetadata (in breve)
+
+Piattaforma open-source di metadata management che fornisce:
+- **Data Catalog**: registro di tutti gli asset dati (file, tabelle, collezioni vettoriali)
+- **Data Lineage**: grafo che traccia il flusso dei dati dalla sorgente all'output
+- **Data Quality**: monitoraggio completezza e validità degli asset
+- **Governance**: tagging, ownership, policy per ogni asset
+
+### Separazione di responsabilità con i componenti Vitruvyan
+
+| Componente Vitruvyan | Responsabilità | OpenMetadata |
+|---------------------|----------------|-------------|
+| **Vault Keepers** | Archivia i *dati* (PostgreSQL, Qdrant) | Archivia i *metadati* su quei dati |
+| **Orthodoxy Wardens** | Valida la *correttezza* degli output | Traccia la *provenienza* degli input |
+| **Memory Orders** | Persistenza statement semantici | — |
+| **Evidence Chain Constructor** | Assembla il pacchetto di prove | **OpenMetadata È il backend** che rende possibile la costruzione |
+
+### Punti di Integrazione Specifici per AICOMSEC
+
+#### 1. Document Lineage (Oculus Prime → Qdrant)
+
+Ogni documento ingestito diventa un **Data Asset** registrato in OpenMetadata. La catena è costruita automaticamente:
+
+```
+[File PDF cliente: "NIS2_gap_analysis_2025.pdf", SHA-256: abc123]
+    ↓  Oculus Prime intake
+[Evidence Envelope: ev_001, domain=security, type=normative]
+    ↓  Babel Gardens chunking + embedding
+[Chunk: chunk_001, chunk_002, ..., chunk_n]
+    ↓  upsert
+[Qdrant: aicomsec.{tenant_id}.chunks, collection_version: 2026-02-26]
+```
+
+**Invariante**: ogni chunk in Qdrant ha un lineage path verso il file originale con hash. Proibito upsert senza `source_asset_id` registrato in OpenMetadata.
+
+#### 2. RAG Query Lineage (Query → Risposta → Sorgente)
+
+Quando il sistema genera una risposta RAG, OpenMetadata registra:
+
+```
+Query utente: "Quali controlli NIS2 mancano?"
+    → Chunks recuperati: [chunk_042, chunk_107, chunk_295]
+    → LLM Response: res_2026-02-26-001
+    → Delivered Answer (con citation_ids)
+
+Lineage edge: res_2026-02-26-001 → [chunk_042 → pdf_scan_infrastruttura.pdf]
+                                  → [chunk_107 → NIS2_checklist.docx]
+                                  → [chunk_295 → audit_2024_report.pdf]
+```
+
+Questo rende ogni risposta del sistema **completamente auditabile**: si può risalire da qualsiasi affermazione generata al documento sorgente originale con hash.
+
+#### 3. Normative Source Versioning
+
+Ogni versione di un documento normativo è un asset separato con temporal validity:
+
+```yaml
+asset_id: "eur-lex:NIS2:2022/2555/EU"
+asset_type: normative_directive
+valid_from: 2023-01-16
+valid_to: null   # ancora vigente
+superseded_by: null
+source_url: "https://eur-lex.europa.eu/..."
+ingestion_date: 2026-02-26
+sha256: "def456..."
+```
+
+Quando la normativa viene aggiornata, il campo `superseded_by` viene popolato — tutto il lineage delle risposte generate con la versione precedente rimane tracciabile e distinguibile.
+
+#### 4. Compliance Mapping via Tags
+
+OpenMetadata Tags system usato per collegare la catena: `norma → requisito → controllo → evidenza`:
+
+```
+Tag: nis2:art17:incidente_risposta
+    → associato a chunk_107 (policy incident response)
+    → associato a gap_001 (gap "assenza procedura notifica 24h")
+    → associato a mitigation_action_003 (azione correttiva)
+```
+
+Permette query del tipo: *"Mostrami tutte le evidenze che mitigano l'art. 17 di NIS2"* — risposta costruita traversando il grafo in OpenMetadata.
+
+#### 5. Qdrant Collections come Data Assets registrati
+
+Ogni collection `aicomsec.{tenant_id}.chunks` è registrata come Data Asset con schema dichiarato:
+
+```json
+{
+  "fqn": "qdrant.aicomsec.{tenant_id}.chunks",
+  "owner": "aicomsec-team",
+  "schema": {
+    "text": "string",
+    "source_asset_id": "string",
+    "chunk_index": "int",
+    "domain_type": "string (physical|cyber|normative|operational)",
+    "created_at": "datetime"
+  },
+  "governance_policy": "RAG_GOVERNANCE_CONTRACT_V1"
+}
+```
+
+#### 6. LLM Usage Audit
+
+`metadata_lineage_agent.py` (da costruire, citato nel roadmap Vitruvyan) intercetta ogni chiamata `LLMAgent.complete()` usata nel pipeline AICOMSEC e registra:
+
+```python
+# Pseudo-code: intercept in LangGraph node
+lineage_agent.log_llm_call(
+    input_chunks=[chunk_042, chunk_107],
+    model=llm.default_model,
+    prompt_hash=sha256(prompt),
+    response_id=response_uuid,
+    node="compose_node",
+    tenant_id=state["tenant_id"],
+)
+```
+
+Questo è il fondamento del **Evidence Chain Constructor** (§7 P1) — senza questo registro, la costruzione automatica del pacchetto di prove non è possibile.
+
+### Architettura di Integrazione
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    AICOMSEC PIPELINE                        │
+│                                                             │
+│  Oculus Prime → Babel Gardens → Qdrant → LangGraph          │
+│       │               │            │          │             │
+│       ▼               ▼            ▼          ▼             │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │           metadata_lineage_agent.py                 │    │
+│  │  (core/agents/metadata_lineage_agent.py)            │    │
+│  │                                                     │    │
+│  │  register_asset()  ─────────────────────────────┐   │    │
+│  │  log_lineage_edge()                             │   │    │
+│  │  tag_asset()                                    │   │    │
+│  │  log_llm_call()                                 │   │    │
+│  └─────────────────────────────────────────────────┼───┘    │
+│                                                    │        │
+└────────────────────────────────────────────────────┼────────┘
+                                                     │
+                                                     ▼
+                                          ┌──────────────────┐
+                                          │   OpenMetadata   │
+                                          │   (port 8585)    │
+                                          │                  │
+                                          │  Data Catalog    │
+                                          │  Lineage Graph   │
+                                          │  Quality Monitor │
+                                          └──────────────────┘
+                                                     │
+                                                     ▼
+                                   Evidence Chain Constructor query:
+                                   "Dammi le prove per art. 17 NIS2"
+                                   → traversa lineage graph
+                                   → ritorna: [doc, hash, date, norm]
+```
+
+### Caso d'uso Killer: NIS2 Audit Preparation
+
+**Scenario**: audit NIS2 tra 3 giorni, l'auditor vuole vedere le prove che l'art. 21 (misure di sicurezza) è implementato.
+
+**Senza OpenMetadata**: 2-3 settimane di raccolta manuale documenti, email, screenshot.
+
+**Con OpenMetadata + Evidence Chain Constructor**:
+```
+POST /v1/evidence/chain?norm=NIS2&article=21&tenant_id=client_xyz
+
+Response in < 2 minuti:
+{
+  "article": "NIS2 Art. 21 — Misure di gestione dei rischi",
+  "evidence_items": [
+    {
+      "control": "Politica di sicurezza delle informazioni",
+      "evidence_file": "policy_sicurezza_v3.pdf",
+      "sha256": "abc123",
+      "verified_date": "2026-01-15",
+      "ingestion_lineage": "oculus_prime:ev_042 → chunk_107 → ...",
+      "status": "COMPLIANT"
+    },
+    {
+      "control": "Procedura gestione incidenti",
+      "evidence_file": null,
+      "status": "MISSING",
+      "gap_id": "gap_019"
+    }
+  ],
+  "overall_status": "PARTIAL",
+  "audit_package_url": "/evidence/packages/NIS2_art21_client_xyz_20260226.pdf"
+}
+```
+
+### Stato Implementazione e Roadmap
+
+| Componente | Stato | Note |
+|-----------|-------|------|
+| OpenMetadata server | ✅ Running | `aicomsec_openmetadata` port 7585, healthy |
+| OpenMetadata MySQL | ✅ Running | `aicomsec_openmetadata_mysql`, bootstrap completato |
+| OpenMetadata OpenSearch | ✅ Running | `aicomsec_openmetadata_search` port 7587 |
+| `metadata_lineage_agent.py` | ❌ Da implementare | **Sprint 1** — 4 metodi core |
+| SDK Python (`metadata-ingestion`) | ❌ Non in requirements | Da aggiungere a `api_aicomsec/requirements.txt` |
+| Qdrant custom connector | ❌ Non esiste natively | Richiede custom ingestion script |
+| RAG lineage hooks in LangGraph | ❌ Da implementare | **Sprint 1** — `compose_node` + `vault_node` + Babel Gardens |
+| Evidence Chain Constructor API | ❌ Da implementare | **Sprint 1** — dopo lineage hooks |
+
+**Decisione Sprint 1**: Evidence Chain Constructor sviluppato in tandem con `metadata_lineage_agent.py` — OpenMetadata già installato e running, nessun blocco infrastrutturale.
 
 ---
 
@@ -549,3 +837,5 @@ spatial_graph.query(
 | SACRED_ORDER_PATTERN | `vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md` |
 | Appendix K — Babel Gardens | `.github/Vitruvyan_Appendix_K_Babel_Gardens.md` |
 | Appendix I — Pattern Weavers | `.github/Vitruvyan_Appendix_I_Pattern_Weavers.md` |
+| OpenMetadata roadmap ref | `.github/vitruvyan_agents_and_tests.md` (§7 AUDIT & COMPLIANCE) |
+| OpenMetadata site | `https://open-metadata.org` — SDK: `metadata-ingestion` |
