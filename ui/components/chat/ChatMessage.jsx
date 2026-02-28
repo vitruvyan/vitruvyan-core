@@ -59,7 +59,11 @@ export function ChatMessage({
         ) : uiPayload ? (
           <div>
             {/* Domain plugin: header component (e.g., AnalysisHeader) */}
-            {extensions?.message?.headerComponent}
+            {extensions?.message?.headerComponent && (
+              typeof extensions.message.headerComponent === 'function'
+                ? extensions.message.headerComponent({ message })
+                : extensions.message.headerComponent
+            )}
 
             {/* Response rendered via contract-conformant payload */}
             <VitruvyanResponseRenderer
@@ -68,7 +72,11 @@ export function ChatMessage({
             />
 
             {/* Domain plugin: footer component (e.g., AdvisorInsight) */}
-            {extensions?.message?.footerComponent}
+            {extensions?.message?.footerComponent && (
+              typeof extensions.message.footerComponent === 'function'
+                ? extensions.message.footerComponent({ message })
+                : extensions.message.footerComponent
+            )}
           </div>
         ) : finalState ? (
           <div>

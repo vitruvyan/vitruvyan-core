@@ -19,7 +19,7 @@ const DEFAULT_THINKING_STEPS = [
   { id: 7, icon: '⊞', label: 'Finalizing response', status: 'pending', duration: 800 }
 ]
 
-export function useChat({ apiEndpoint = '/api/graph/run', userId = null, thinkingSteps = null } = {}) {
+export function useChat({ apiEndpoint = '/api/graph/run', userId = null, thinkingSteps = null, adaptResponse = null } = {}) {
   const { messages, isTyping, setIsTyping, addUserMessage, addAIMessage, updateLastMessage } = useMessages()
 
   const [selectedEntities, setSelectedEntities] = useState([])
@@ -73,9 +73,13 @@ export function useChat({ apiEndpoint = '/api/graph/run', userId = null, thinkin
 
       const result = await response.json()
 
+      // Run domain adapter if provided (finalState → UIResponsePayload)
+      const uiPayload = adaptResponse ? adaptResponse(result) : null
+
       updateLastMessage({
         text: result.narrative || 'Analysis complete.',
         finalState: result,
+        uiPayload: uiPayload,
         isComplete: true,
         isStreaming: false,
         thinkingSteps: []
@@ -92,7 +96,7 @@ export function useChat({ apiEndpoint = '/api/graph/run', userId = null, thinkin
     } finally {
       setIsTyping(false)
     }
-  }, [apiEndpoint, userId, steps, addUserMessage, addAIMessage, updateLastMessage, setIsTyping])
+  }, [apiEndpoint, userId, steps, adaptResponse, addUserMessage, addAIMessage, updateLastMessage, setIsTyping])
 
   return {
     messages,

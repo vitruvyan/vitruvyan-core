@@ -20,6 +20,7 @@ import { ChatInput } from './ChatInput'
  * - apiEndpoint: backend graph endpoint URL
  * - userId: authenticated user ID (optional)
  * - extensions: domain plugin injections (see ChatContract.ts)
+ * - adaptResponse: domain adapter function (finalState → UIResponsePayload)
  * - onResponseComplete: callback when AI response is ready
  * - placeholder: input placeholder text
  * - assistantName: AI assistant display name (default: "Vitruvyan")
@@ -30,6 +31,7 @@ export default function Chat({
   apiEndpoint = '/api/graph/run',
   userId = null,
   extensions = {},
+  adaptResponse = null,
   onResponseComplete = null,
   placeholder = 'Ask a question...',
   assistantName = 'Vitruvyan',
@@ -42,7 +44,7 @@ export default function Chat({
     selectedEntities,
     sendMessage,
     setSelectedEntities,
-  } = useChat({ apiEndpoint, userId, thinkingSteps })
+  } = useChat({ apiEndpoint, userId, thinkingSteps, adaptResponse })
 
   // Auto-submit initial query on mount
   const hasSubmittedInitial = useRef(false)
