@@ -1,10 +1,11 @@
 # Contract Enforcement End-to-End — Implementation Roadmap
 
-> **Last updated**: Feb 28, 2026 17:15 UTC
+> **Last updated**: Feb 28, 2026 18:45 UTC
+> **Revision**: R2 — post peer review (ChatGPT audit). Tutti i finding critici incorporati.
 
 ## Executive Summary
 
-L'analisi del codebase Vitruvyan Core rivela che la catena di garanzia contrattuale copre circa il **60%** del flusso dati. I contratti Pydantic sono forti ai bordi (servizi Babel Gardens / Pattern Weavers, output GraphResponseMin) ma **l'intero pipeline LangGraph interno (19+ nodi) opera senza alcuna validazione runtime**. Questa roadmap descrive 8 fasi per raggiungere il 100% di enforcement.
+L'analisi del codebase Vitruvyan Core rivela che la catena di garanzia contrattuale copre circa il **60%** del flusso dati. I contratti Pydantic sono forti ai bordi (servizi Babel Gardens / Pattern Weavers, output GraphResponseMin) ma **l'intero pipeline LangGraph interno (19+ nodi) opera senza alcuna validazione runtime**. Questa roadmap descrive 8 fasi (espanse dopo peer review — 7 buchi identificati, registry allineato al codice reale, copertura estesa a nodi dominio e `build_minimal_graph()`) per raggiungere il 100% di enforcement.
 
 ---
 
@@ -70,7 +71,7 @@ RAG / Qdrant
 
 ---
 
-## I 5 Buchi Critici
+## I 7 Buchi Critici
 
 ### BUCO 1 — Pipeline LangGraph senza validazione (CRITICO)
 
@@ -103,6 +104,22 @@ RAG / Qdrant
 - **Dove**: `qdrant_agent.py:62` — `_check_collection_registered()` e `_check_payload_contract()` (linea 77)
 - **Causa**: `RAG_ENFORCE_REGISTRY` default = `"warn"`. Collezioni non dichiarate e payload senza `source` → warning nei log, dato che passa.
 - **Conseguenza**: violazioni contrattuali invisibili in produzione.
+- **Aggravante** (trovata in peer review): `_check_payload_contract()` fa SOLO `logger.warning()` anche quando `_RAG_ENFORCE == "strict"`. La modalità strict alza `ValueError` solo in `_check_collection_contract()` (collezioni), NON per payload mancante di `source`. Quindi anche con strict abilitato, payload invalidi passano.
+
+### BUCO 6 — `graph_adapter` fallback silenzioso a `"blessed"` (ALTO)
+
+- **Dove**: `services/api_graph/adapters/graph_adapter.py:205` — `_CANONICAL_MAP.get(raw_status, "blessed")`
+- **Causa**: se `orthodoxy_status` e `orthodoxy_verdict` sono entrambi assenti o vuoti nello state, `raw_status` è `""`. `_CANONICAL_MAP.get("", "blessed")` restituisce il default `"blessed"` — senza log, senza warning.
+- **Conseguenza**: qualsiasi path che non setta orthodoxy (es. codex_hunters, errori, future regressioni) viene automaticamente marcato come "blessed" nell'output API. Maschera problemi reali.
+- **Evidenza**: `_CANONICAL_MAP` a linea 197 non contiene `""` come chiave, quindi `.get("", "blessed")` usa sempre il default.
+
+### BUCO 7 — Nodi dominio e `build_minimal_graph()` non coperti (ALTO)
+
+- **Dove**: `graph_flow.py:323-355` (nodi dominio), `graph_flow.py:560-580` (`build_minimal_graph()`)
+- **Causa**: I nodi dominio vengono caricati dinamicamente a runtime da `domains.<GRAPH_DOMAIN>.graph_nodes.registry` via `_load_domain_graph_extension()`. Vengono aggiunti al grafo con `g.add_node()` ma senza alcun wrapping `@enforced`. Separatamente, `build_minimal_graph()` costruisce un grafo a 4 nodi (parse → intent → decide → compose → END) senza wrapping.
+- **Conseguenza**: due path runtime senza enforcement contrattuale:
+  1. Nodi domain-specific aggiunti via plugin non vengono validati
+  2. Il grafo minimale (usato quando `ENABLE_MINIMAL_GRAPH=true`) bypassa completamente il sistema di enforcement
 
 ---
 
@@ -193,28 +210,45 @@ pytest vitruvyan_core/core/orchestration/tests/test_contract_enforcement.py -v
 
 **Contenuto — dizionario `NODE_CONTRACTS`**:
 
-| Nodo | `requires` | `produces` |
-|------|-----------|-----------|
-| `parse` | `["input_text"]` | `["input_text", "language"]` |
-| `intent_detection` | `["input_text"]` | `["intent"]` |
-| `weaver` | `["input_text"]` | `["weaver_context"]` |
-| `entity_resolver` | `["input_text"]` | `["entity_ids"]` |
-| `babel_emotion` | `["input_text"]` | `["emotion_detected"]` |
-| `semantic_grounding` | `["input_text"]` | `["vsgs_status"]` |
-| `params_extraction` | `["input_text"]` | `[]` |
-| `decide` (route_node) | `["intent"]` | `["route"]` |
-| `exec` | `["route"]` | `["result"]` |
-| `qdrant` | `["input_text"]` | `["result"]` |
-| `llm_soft` (cached_llm) | `["input_text"]` | `["result"]` |
-| `llm_mcp` | `["input_text"]` | `["result"]` |
-| `output_normalizer` | `["result"]` | `["response"]` |
-| `orthodoxy` | `["response"]` | `["orthodoxy_status"]` |
-| `vault` | `["response"]` | `["vault_status"]` |
-| `compose` | `["response"]` | `["narrative"]` |
-| `can` | `["narrative"]` | `["final_response"]` |
-| `advisor` | `["narrative"]` | `[]` |
-| `codex_hunters` | `["input_text"]` | `["route"]` |
-| `early_exit` | `["intent"]` | `["orthodoxy_status", "narrative", "final_response"]` |
+> ⚠️ **R2**: Tabella completamente riscritta dopo audit del codice reale (peer review). Ogni campo è stato verificato contro il return statement effettivo del nodo.
+
+| Nodo | `requires` | `produces` | File sorgente verificato |
+|------|-----------|----------|-------------------------|
+| `parse` | `["input_text"]` | `["input_text", "domain_params", "route"]` | `parse_node.py:274-291` |
+| `intent_detection` | `["input_text"]` | `["intent", "language", "language_detected", "babel_status", "route"]` | `intent_detection_node.py` |
+| `weaver` | `["input_text"]` | `["weaver_context", "weave_result", "weave_confidence"]` | `pattern_weavers_node.py` |
+| `entity_resolver` | `["input_text"]` | `[]` | `entity_resolver_node.py` — delega a `EntityResolverRegistry`, output domain-dependent |
+| `babel_emotion` | `["input_text"]` | `["emotion_detected", "emotion_confidence"]` | `emotion_detector.py` |
+| `semantic_grounding` | `["input_text"]` | `["vsgs_status", "semantic_matches"]` | `semantic_grounding_node.py` — via `result.to_state_dict()` |
+| `params_extraction` | `["input_text"]` | `[]` | `params_extraction_node.py` — output opzionale: `horizon`, `top_k`, `route` |
+| `decide` (route_node) | `["intent"]` | `["route"]` | `route_node.py` |
+| `exec` | `["route"]` | `[]` | `exec_node.py` — delega a `ExecutionRegistry`, output domain-dependent |
+| `qdrant` | `["input_text"]` | `["result"]` | `qdrant_node.py` — `result` è dict con `route`, `summary`, `hits` |
+| `cached_llm` (llm_soft) | `["input_text"]` | `["llm_response"]` | `cached_llm_node.py` — produce `llm_response` + `cache_info`, NON `result` |
+| `llm_mcp` | `["input_text"]` | `["result"]` | `llm_mcp_node.py` |
+| `output_normalizer` | `[]` | `["result"]` | `output_normalizer_node.py:74` — normalizza `result` in-place, NON produce `response` |
+| `orthodoxy` | `["narrative"]` | `["orthodoxy_status", "orthodoxy_verdict", "orthodoxy_confidence", "orthodoxy_findings", "orthodoxy_timestamp"]` | `orthodoxy_node.py` |
+| `vault` | `[]` | `["vault_blessing", "route"]` | `vault_node.py` — `vault_blessing` è dict, route → `"compose"` |
+| `compose` | `[]` | `["narrative", "action"]` | `compose_node.py` — `action` è `"conversation"` o `"synthesis"` |
+| `can` | `["narrative"]` | `["narrative", "follow_ups", "route"]` | `can_node.py:98-101` — NON produce `final_response` |
+| `advisor` | `[]` | `[]` | `advisor_node.py` — opzionale: `advisor_recommendation` solo se `user_requests_action` |
+| `codex_hunters` | `["input_text"]` | `["route", "codex_success", "response"]` | `codex_hunters_node.py:397-433` |
+| `early_exit` | `["intent"]` | `["orthodoxy_status", "orthodoxy_verdict", "narrative"]` | `early_exit_node.py:85-93` |
+
+**Differenze rispetto alla versione R1** (pre-peer review):
+- `parse`: ~~`language`~~ → `domain_params`, `route` (parse non produce `language`, lo fa `intent_detection`)
+- `intent_detection`: ~~solo `intent`~~ → aggiunto `language`, `language_detected`, `babel_status`, `route`
+- `weaver`: ~~solo `weaver_context`~~ → aggiunto `weave_result`, `weave_confidence`
+- `entity_resolver`: ~~`entity_ids`~~ → `[]` (delega a registry, output variabile)
+- `cached_llm`: ~~`result`~~ → `llm_response` (campo effettivo diverso)
+- `output_normalizer`: ~~requires `result`, produces `response`~~ → requires `[]`, produces `result` (normalizza in-place)
+- `orthodoxy`: ~~requires `response`~~ → requires `narrative` + produce 5 campi, non 1
+- `vault`: ~~requires `response`, produces `vault_status`~~ → requires `[]`, produces `vault_blessing`, `route`
+- `compose`: ~~requires `response`~~ → requires `[]`, produce `narrative` + `action`
+- `can`: ~~`final_response`~~ → `narrative`, `follow_ups`, `route` (campo `final_response` non esiste)
+- `exec`: ~~`result`~~ → `[]` (delega a registry)
+- `codex_hunters`: aggiunto `codex_success`, `response`
+- `early_exit`: rimosso `final_response` (non esiste)
 
 **Dipendenze**: FASE 1 completata.
 
@@ -253,6 +287,31 @@ g.add_node("weaver", _wrap("weaver", weaver_node))
 
 **Impatto**: il wrapping è centralizzato in un solo punto. I nodi non sanno di essere wrappati.
 
+**⚠️ R2 — Copertura nodi dominio e `build_minimal_graph()`** (BUCO 7 fix):
+
+Il wrapping `_wrap()` DEVE coprire anche:
+
+1. **Nodi dominio** caricati dinamicamente (linee 323-355 di `graph_flow.py`):
+```python
+# Dopo il caricamento dei nodi dominio:
+for ext_name, ext_fn in _graph_nodes_ext.items():
+    if ext_name not in registered_nodes:
+        g.add_node(ext_name, _wrap(ext_name, ext_fn))  # ← wrapping!
+        registered_nodes.add(ext_name)
+```
+I nodi dominio NON avranno entry nel `NODE_CONTRACTS` registry (sono sconosciuti a compile-time). `_wrap()` restituirà la funzione invariata (`NODE_CONTRACTS.get(name)` → `None` → `return fn`). Per aggiungere contratti ai nodi dominio, il domain plugin deve esportare anche i contratti via `get_<domain>_node_contracts()` → `Dict[str, NodeContract]` che viene unito a `NODE_CONTRACTS` a runtime.
+
+2. **`build_minimal_graph()`** (linee 560-580):
+```python
+def build_minimal_graph():
+    g = StateGraph(GraphState)
+    g.add_node("parse", _wrap("parse", parse_node))       # ← wrapping!
+    g.add_node("intent", _wrap("intent_detection", intent_detection_node))
+    g.add_node("decide", _wrap("decide", route_node))
+    g.add_node("compose", _wrap("compose", compose_node))
+    ...
+```
+
 **Dipendenze**: FASE 1 + FASE 2 completate.
 
 **Verifica**:
@@ -269,6 +328,13 @@ CONTRACT_ENFORCE_MODE=warn python3 -c "
 from core.orchestration.langgraph.graph_runner import run_graph_once
 result = run_graph_once('hello', user_id='test_contracts')
 print(f'✅ Pipeline completa, route={result.get(\"route\")}')
+"
+
+# Verifica build_minimal_graph coperto
+CONTRACT_ENFORCE_MODE=warn ENABLE_MINIMAL_GRAPH=true python3 -c "
+from core.orchestration.langgraph.graph_flow import build_minimal_graph
+g = build_minimal_graph()
+print('✅ Minimal graph compiled with contract enforcement')
 "
 ```
 
@@ -330,9 +396,33 @@ except Exception as e:
 "
 ```
 
+### FASE 4b — Eliminare fallback silenzioso in `graph_adapter.py` (BUCO 6 fix)
+
+**Obiettivo**: il default `"blessed"` silenzioso in `_CANONICAL_MAP.get(raw_status, "blessed")` maschera bug. Qualsiasi status vuoto o sconosciuto deve essere visibile, non mascherato.
+
+**File da modificare**: `services/api_graph/adapters/graph_adapter.py` (~linea 205)
+
+**Cambiamento**:
+```python
+# Da (silenzioso):
+orthodoxy_status: OrthodoxyStatusType = _CANONICAL_MAP.get(raw_status, "blessed")
+
+# A (esplicito — log + default difensivo ma tracciabile):
+if raw_status not in _CANONICAL_MAP:
+    logger.warning(
+        f"[GRAPH_ADAPTER] orthodoxy_status '{raw_status}' non canonico — "
+        f"fallback a 'non_liquet'. Controllare il path del grafo."
+    )
+orthodoxy_status: OrthodoxyStatusType = _CANONICAL_MAP.get(raw_status, "non_liquet")
+```
+
+**Razionale**: il default difensivo cambia da `"blessed"` a `"non_liquet"` ("non determinato"). Un output non validato NON dovrebbe essere considerato "benedetto" — deve essere segnalato come incerto. Il warning nel log rende visibile il problema.
+
+**Dipendenze**: FASE 4a (costanti canoniche).
+
 ---
 
-### FASE 5 — Validazione payload lato emittente (0 file nel bus modificati)
+### FASE 5 — Validazione payload lato emittente (5-6 file servizio modificati, 0 file bus)
 
 **Obiettivo**: validazione dei payload emessi sul bus **PRIMA** della chiamata a `emit()`, mantenendo il bus 100% payload-blind.
 
@@ -352,11 +442,40 @@ result = ComprehensionResult.model_validate(payload)  # emittente valida
 bus.emit("babel.comprehension.completed", result.model_dump())  # bus riceve dato già validato
 ```
 
-**File da modificare**: i singoli `adapters/bus_adapter.py` dei servizi che emettono eventi (Pattern Weavers, Babel Gardens, Orthodoxy Wardens, Vault Keepers, Codex Hunters).
+**File da modificare** (5-6 servizi):
+1. `services/api_babel_gardens/adapters/bus_adapter.py` — attualmente `self.bus.emit(stream, payload)` senza validazione
+2. `services/api_pattern_weavers/adapters/bus_adapter.py` — `emit_weave_result()` e `publish_semantic_search_results()` senza contratto
+3. `services/api_orthodoxy_wardens/adapters/bus_adapter.py`
+4. `services/api_vault_keepers/adapters/bus_adapter.py`
+5. `services/api_codex_hunters/adapters/bus_adapter.py`
+6. `services/api_memory_orders/adapters/bus_adapter.py` (se presente)
 
 **File NON modificato**: `vitruvyan_core/core/synaptic_conclave/transport/streams.py` — il bus resta intatto e payload-blind.
 
 **Trade-off**: la validazione è opt-in per ogni emittente (stessa natura del decorator `@enforced` — l'enforcement è al confine del componente, non nel trasporto).
+
+**⚠️ R2 — Meccanismo di enforcement CI** (per compensare il trade-off opt-in):
+
+Per garantire che tutti gli emittenti validino, aggiungere un test architetturale CI:
+```python
+# tests/architectural/test_bus_emit_validation.py
+import ast, pathlib
+
+def test_all_bus_emit_calls_have_validation():
+    """Verifica che ogni bus.emit() sia preceduto da model_validate() nello stesso metodo."""
+    services_dir = pathlib.Path("services")
+    violations = []
+    for adapter in services_dir.rglob("bus_adapter.py"):
+        source = adapter.read_text()
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                # Cerca chiamate a .emit() senza .model_validate() nel metodo parent
+                ...
+    assert not violations, f"bus.emit() senza validazione: {violations}"
+```
+
+Questo test CI trasforma l'opt-in in un **gate bloccante**: i servizi non possono fare merge senza validare i payload.
 
 **Dipendenze**: nessuna (parallelizzabile).
 
@@ -397,19 +516,47 @@ python3 scripts/audit_rag_collections.py
 # Deve restituire 0 collezioni non dichiarate
 ```
 
-**Cambiamento**: il default resta `warn` (zero breaking changes). La modalità `strict` viene attivata esplicitamente:
+**Cambiamento in due parti**:
+
+**Parte A** — Il default resta `warn` (zero breaking changes). La modalità `strict` viene attivata esplicitamente:
 - **CI/staging**: `RAG_ENFORCE_REGISTRY=strict` nel docker-compose di staging
 - **Produzione**: si attiva manualmente SOLO dopo audit a zero violazioni
 
 ```python
 # Il codice NON cambia default — resta warn:
 self.enforce_mode = os.getenv("RAG_ENFORCE_REGISTRY", "warn")
-# ^
-# Il default warn è intenzionale per backward-compat.
-# Il valore strict viene settato via env var nei deploy di staging/CI.
 ```
 
-**Dipendenze**: audit preventivo con `audit_rag_collections.py` per verificare che tutte le collezioni in Qdrant siano dichiarate in `ALL_DECLARED_COLLECTIONS`. Solo dopo audit a zero violazioni si può abilitare strict.
+**Parte B** (⚠️ R2 — BUCO 5 aggravante) — Fix `_check_payload_contract()` per strict mode:
+
+> Attualmente `_check_payload_contract()` (`qdrant_agent.py:77`) fa **solo** `logger.warning()` anche quando `_RAG_ENFORCE == "strict"`. Il raise `ValueError` esiste solo in `_check_collection_contract()` per le collezioni non dichiarate, ma i payload senza `source` passano sempre silenziosamente.
+
+```python
+# Da (warn-only sempre):
+def _check_payload_contract(points, collection):
+    if _RAG_ENFORCE == "off":
+        return
+    for i, p in enumerate(points):
+        payload = p.get("payload", {})
+        if not payload.get("source"):
+            logger.warning(f"[RAG GUARD] Point {i} in '{collection}' missing payload.source")
+            break
+
+# A (strict-aware):
+def _check_payload_contract(points, collection):
+    if _RAG_ENFORCE == "off":
+        return
+    for i, p in enumerate(points):
+        payload = p.get("payload", {})
+        if not payload.get("source"):
+            msg = f"[RAG GUARD] Point {i} in '{collection}' missing payload.source"
+            if _RAG_ENFORCE == "strict":
+                raise ValueError(msg)
+            logger.warning(msg)
+            break
+```
+
+**Dipendenze**: audit preventivo con `audit_rag_collections.py` per verificare che tutte le collezioni in Qdrant siano dichiarate in `ALL_DECLARED_COLLECTIONS` E che tutti i payload abbiano `source`. Solo dopo audit a zero violazioni si può abilitare strict.
 
 **Verifica**:
 ```bash
@@ -417,10 +564,20 @@ self.enforce_mode = os.getenv("RAG_ENFORCE_REGISTRY", "warn")
 python3 scripts/audit_rag_collections.py
 # Deve restituire 0 collezioni non-dichiarate
 
-# Step 2: Test strict mode
+# Step 2: Test strict mode — collezioni
 RAG_ENFORCE_REGISTRY=strict python3 -c "
 from core.agents.qdrant_agent import QdrantAgent
 print('✅ QdrantAgent in strict mode')
+"
+
+# Step 3: Test strict mode — payload.source
+RAG_ENFORCE_REGISTRY=strict python3 -c "
+from core.agents.qdrant_agent import _check_payload_contract
+try:
+    _check_payload_contract([{'payload': {}}], 'test_collection')
+    print('❌ Doveva alzare ValueError')
+except ValueError:
+    print('✅ Strict mode blocca payload senza source')
 "
 ```
 
@@ -523,11 +680,16 @@ FASE 7 ──── indipendente (Pydantic boundary)
 | Ingestion (servizi Babel/Pattern Weavers) | ✅ Pydantic `extra="forbid"` | ✅ Invariato |
 | Boundary servizio → grafo | ❌ Raw dict, contratto perso | ✅ Re-validation Pydantic (FASE 7) |
 | Tra nodi pipeline (19+ transizioni) | ❌ Zero validazione | ✅ `@enforced` pre/post (FASE 1-3) |
+| Nodi dominio (plugin runtime) | ❌ Non coperti | ✅ Wrapping in build_graph + registry estendibile (FASE 3) |
+| `build_minimal_graph()` (4 nodi) | ❌ Non coperto | ✅ Stesso wrapping `_wrap()` (FASE 3) |
 | Path `codex_hunters → END` | ❌ Skip orthodoxy | ✅ Orthodoxy settata (FASE 4) |
 | Path `early_exit → END` | ✅ Già conforme | ✅ Invariato |
+| `graph_adapter` fallback | ❌ Silenzioso `"blessed"` per status mancanti | ✅ `"non_liquet"` + warning (FASE 4b) |
 | Output `GraphResponseMin` | ✅ Pydantic required fields | ✅ Invariato |
-| Event bus `StreamBus.emit()` | ❌ `Dict[str, Any]` senza schema | ⚠️ Opt-in schema (FASE 5) |
-| RAG `QdrantAgent.upsert()` | ⚠️ Warn-only di default | ✅ Strict mode (FASE 6) |
+| Event bus `StreamBus.emit()` | ❌ `Dict[str, Any]` senza schema | ⚠️ Validazione lato emittente + CI lint gate (FASE 5) |
+| RAG `QdrantAgent.upsert()` collezioni | ⚠️ Warn-only di default | ✅ Strict mode alzarà ValueError (FASE 6) |
+| RAG `QdrantAgent.upsert()` payload.source | ❌ Warn-only ANCHE in strict | ✅ Fix `_check_payload_contract()` strict (FASE 6) |
+| `graph_runner.py` CASE 3 fallback | ⚠️ Propaga state se presente, None se assente | ✅ Coperto indirettamente da FASE 4 (tutti i path settano orthodoxy) |
 
 ---
 
@@ -561,7 +723,7 @@ FASE 7 ──── indipendente (Pydantic boundary)
 ## Vincoli Non-Negoziabili
 
 1. **Zero breaking changes**: modalità `warn` di default. Nessun nodo esistente smette di funzionare.
-2. **Zero modifiche ai file dei nodi**: il wrapping avviene solo in `build_graph()`.
+2. **Zero modifiche ai file dei nodi PER IL WRAPPING ENFORCEMENT**: il decorator `@enforced` viene applicato esclusivamente in `build_graph()` e `build_minimal_graph()`. I file dei nodi non importano né conoscono il decorator. Le FASI 4 e 7 richiedono modifiche puntuali ai nodi per **bug fix strutturali** (campi orthodoxy mancanti in codex_hunters, re-validazione Pydantic ai boundary) — queste NON sono modifiche di enforcement wrapping.
 3. **LIVELLO 1 compliance**: `contract_enforcement.py` è pure Python — no I/O, no Redis, no Postgres, NO `prometheus_client`. Solo nomi metriche come stringhe costanti.
 4. **Bus payload-blind**: `StreamBus.emit()` NON viene modificato. La validazione avviene lato emittente.
 5. **Nessun god object**: no `ContractAgent`, no singleton globale. Il decorator è funzionale e stateless.
@@ -580,7 +742,7 @@ FASE 7 ──── indipendente (Pydantic boundary)
 | `vitruvyan_core/core/orchestration/graph_engine.py` | L35-45 (`NodeContract`) | required/produced fields — mai verificati |
 | `vitruvyan_core/core/orchestration/langgraph/graph_flow.py` | L200 (`GraphState`), L272-500 (`build_graph`) | Assemblaggio del grafo — punto di wrapping |
 | `vitruvyan_core/core/orchestration/langgraph/graph_runner.py` | L120 (`run_graph_once`) | Entry point — restituisce raw dict |
-| `services/api_graph/adapters/graph_adapter.py` | L183 (`_CANONICAL_MAP`), L235 (`GraphResponseMin`) | Ultimo checkpoint Pydantic |
+| `services/api_graph/adapters/graph_adapter.py` | L183 (`_CANONICAL_MAP`), L205 (fallback `"blessed"`), L235 (`GraphResponseMin`) | Ultimo checkpoint Pydantic + fallback silenzioso (BUCO 6) |
 | `vitruvyan_core/contracts/__init__.py` | L1-200 | Namespace canonico contratti |
 | `vitruvyan_core/contracts/graph_response.py` | L33, L93 | `OrthodoxyStatusType`, `GraphResponseMin` |
 | `vitruvyan_core/contracts/comprehension.py` | Pydantic `extra="forbid"` | Contratti Babel Gardens |
@@ -598,6 +760,8 @@ FASE 7 ──── indipendente (Pydantic boundary)
 ## Compliance Audit — Verifica Principi Architetturali
 
 Questa sezione documenta la verifica del roadmap contro tutti i principi architetturali di Vitruvyan Core.
+
+### Review R1 (self-audit Copilot)
 
 | Principio | Stato | Note |
 |-----------|-------|------|
@@ -617,7 +781,7 @@ Questa sezione documenta la verifica del roadmap contro tutti i principi archite
 | **No hardcoded strings** | ✅ Corretto dopo review | Costanti canoniche in `contracts/graph_response.py`. Import ovunque. |
 | **Bias-aware tests** | ✅ Conforme | FASE 8 test usa input diversificati, non fixtures ripetitive |
 
-### Violazioni trovate e corrette durante review
+#### Violazioni trovate e corrette (R1)
 
 | # | Violazione | Severità | Fix applicato |
 |---|-----------|----------|---------------|
@@ -626,3 +790,19 @@ Questa sezione documenta la verifica del roadmap contro tutti i principi archite
 | 3 | RAG default cambiato a `strict` = breaking change | Media | Default resta `warn`. `strict` attivato via env var dopo audit |
 | 4 | Stringhe `"blessed"` hardcoded nei nodi | Bassa | Costanti canoniche `ORTHODOXY_*` in `contracts/graph_response.py` |
 | 5 | `CONTRACT_ENFORCE_MODE` letto ad ogni invocazione = overhead | Bassa | Letto UNA VOLTA a import-time. `off` → funzione originale restituita |
+
+### Review R2 (peer review — ChatGPT audit, Feb 28 2026)
+
+Verdetto peer review: **NO-GO temporaneo** con 7 finding. Tutti incorporati:
+
+| # | Finding | Severità | Stato | Fix applicato in R2 |
+|---|---------|----------|-------|---------------------|
+| 1 | Contraddizione: vincolo dice "zero modifiche nodi" ma FASE 4+7 modificano nodi | CRITICO | ✅ Corretto | Vincolo 2 riformulato: "zero modifiche per il wrapping enforcement". FASI 4+7 sono bug fix strutturali dichiarati esplicitamente |
+| 2 | Registry FASE 2 non allineato al codice reale (13 errori su 20 nodi) | CRITICO | ✅ Corretto | Tabella riscritta completamente con file sorgente verificato per ogni nodo. Diff R1→R2 documentato |
+| 3 | Copertura incompleta: nodi dominio runtime + `build_minimal_graph()` non coperti | CRITICO | ✅ Corretto | FASE 3 espansa: wrapping domain nodes in loop, `build_minimal_graph()` wrappato, protocollo `get_<domain>_node_contracts()` per plugin |
+| 4 | Event bus opt-in non garantisce 100% | ALTO | ✅ Mitigato | FASE 5: aggiunto CI lint gate (`test_bus_emit_validation.py`) che trasforma opt-in in gate bloccante. File servizio elencati esplicitamente (5-6) |
+| 5 | RAG strict non copre `payload.source` (`_check_payload_contract` solo warning) | ALTO | ✅ Corretto | FASE 6 Parte B: `_check_payload_contract()` ora raise `ValueError` in strict mode. BUCO 5 aggravante documentato |
+| 6 | Codex path fragile + `graph_adapter` fallback silenzioso a `"blessed"` | ALTO | ✅ Corretto | BUCO 6 aggiunto. FASE 4b aggiunta: default cambia da `"blessed"` a `"non_liquet"` con warning log |
+| 7 | Stima effort FASE 5 incoerente ("1 file" vs "vari adapter") | MEDIO | ✅ Corretto | Effort FASE 5: 5-6 mod servizio + 1 test CI. Totale aggiornato a ~16 file, ~685 righe, ~6h |
+
+**Post-R2 status**: tutti i finding critici incorporati. Roadmap eseguibile.
