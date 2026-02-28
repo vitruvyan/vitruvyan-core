@@ -1,16 +1,16 @@
 name: Publish Docs to Vitruvyan KB
 
 # Triggered on every push to main that touches documentation files.
-# Sends a repository_dispatch event to vitruvyan/vitruvyan-kb, which
+# Sends a repository_dispatch event to dbaldoni/vitruvyan-kb, which
 # checks out this repo, bundles the changed docs, and ingests them.
 #
 # Required secrets:
-#   KB_DISPATCH_TOKEN — PAT with 'repo' scope on vitruvyan/vitruvyan-kb
+#   KB_DISPATCH_TOKEN — PAT with 'repo' scope on dbaldoni/vitruvyan-kb
 #
 # Optional repository variables (Settings → Variables → Actions):
 #   DOCS_SCOPE    — "core" or "vertical" (default: "vertical")
 #   DOCS_VERTICAL — vertical name used for routing (default: repo name)
-#   KB_REPO       — target KB repo (default: "vitruvyan/vitruvyan-kb")
+#   KB_REPO       — target KB repo (default: "dbaldoni/vitruvyan-kb")
 
 on:
   push:
@@ -90,7 +90,7 @@ jobs:
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.KB_DISPATCH_TOKEN }}
-          repository: ${{ vars.KB_REPO || 'vitruvyan/vitruvyan-kb' }}
+          repository: ${{ vars.KB_REPO || 'dbaldoni/vitruvyan-kb' }}
           event-type: docs-ingest
           client-payload: |
             {
