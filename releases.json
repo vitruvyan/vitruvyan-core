@@ -2,6 +2,7 @@
   "version": "1.7.0",
   "channel": "stable",
   "release_date": "2026-02-28T23:00:00Z",
+  "contracts_version": "1.0.0",
   "changes": {
     "features": [
       "Pipeline Contract Enforcement: @enforced decorator for LangGraph nodes (FASE 1)",
