@@ -184,6 +184,39 @@ services:
     networks:
       - core-net
 
+  edge_oculus_prime:
+    build:
+      context: ../..
+      dockerfile: services/api_edge_oculus_prime/Dockerfile
+    container_name: core_edge_oculus_prime
+    restart: unless-stopped
+    ports:
+      - "9050:8050"
+    environment:
+      - PYTHONPATH=/app:/app/vitruvyan_core
+      - HOST=0.0.0.0
+      - PORT=8050
+      - LOG_LEVEL=INFO
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOST=core_redis
+      - REDIS_PORT=6379
+      - OCULUS_PRIME_EVENT_MIGRATION_MODE=${OCULUS_PRIME_EVENT_MIGRATION_MODE:-dual_write}
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - core-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8050/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
   mcp:
     build:
       context: ../..
@@ -656,12 +689,6 @@ services:
       - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       - CONCLAVE_LISTENER_ENABLED=1
-    healthcheck:
-      test: ["CMD", "pgrep", "-f", "streams_listener.py"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
     volumes:
       - ./logs/conclave_listener:/app/logs
     depends_on:
@@ -681,22 +708,10 @@ services:
       - REDIS_HOST=core_redis
       - REDIS_PORT=6379
       - ORTHODOXY_LISTENER_ENABLED=1
-      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
-      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    healthcheck:
-      test: ["CMD", "pgrep", "-f", "streams_listener.py"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
     volumes:
       - ./logs/orthodoxy_listener:/app/logs
     depends_on:
       - redis
-      - postgres
       - orthodoxy_wardens
     networks:
       - core-net
@@ -968,6 +983,7 @@ services:
     volumes:
       - ../../docs:/app/docs:ro
       - ../../vitruvyan_core:/app/vitruvyan_core:ro
+      - ../../vitruvyan_edge:/app/vitruvyan_edge:ro
       - ../../services:/app/services:ro
       - ../../infrastructure:/app/infrastructure:ro
       - ../../tests:/app/tests:ro

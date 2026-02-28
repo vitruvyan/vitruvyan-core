@@ -25,6 +25,7 @@ from typing import Any
 
 VALID_SCOPES = {"core", "vertical"}
 DEFAULT_SCAN_ROOTS = ("docs", "vitruvyan_core", "services", "infrastructure", "examples", "config")
+DEFAULT_EXCLUDE_PATTERNS = ("_legacy/", "node_modules/", ".next/", "__pycache__/")
 
 
 def now_iso() -> str:
@@ -98,12 +99,17 @@ def run_git(repo_root: Path, args: list[str]) -> str:
     return proc.stdout
 
 
+def is_excluded(rel: str, exclude_patterns: tuple[str, ...]) -> bool:
+    return any(pat in rel for pat in exclude_patterns)
+
+
 def discover_markdown_files(
     repo_root: Path,
     roots: tuple[str, ...],
     changed_only: bool,
     base_ref: str,
     include_uncommitted: bool,
+    exclude_patterns: tuple[str, ...] = DEFAULT_EXCLUDE_PATTERNS,
 ) -> list[PurePosixPath]:
     if changed_only:
         rels: set[str] = set()
@@ -124,6 +130,8 @@ def discover_markdown_files(
         for rel in sorted(rels):
             if not rel.lower().endswith(".md"):
                 continue
+            if is_excluded(rel, exclude_patterns):
+                continue
             rel_path = safe_rel_path(rel)
             if (repo_root / rel_path).is_file():
                 files.append(rel_path)
@@ -136,7 +144,9 @@ def discover_markdown_files(
             continue
         for candidate in sorted(base.rglob("*.md")):
             if candidate.is_file():
-                files.append(safe_rel_path(as_posix(candidate.relative_to(repo_root))))
+                rel = as_posix(candidate.relative_to(repo_root))
+                if not is_excluded(rel, exclude_patterns):
+                    files.append(safe_rel_path(rel))
     return files
 
 
@@ -195,6 +205,7 @@ def cmd_bundle(args: argparse.Namespace) -> int:
         changed_only=args.changed_only,
         base_ref=args.base_ref,
         include_uncommitted=args.include_uncommitted,
+        exclude_patterns=tuple(args.exclude),
     )
 
     source_repo = args.source_repo or repo_root.name
@@ -466,6 +477,7 @@ def cmd_validate(args: argparse.Namespace) -> int:
         changed_only=args.changed_only,
         base_ref=args.base_ref,
         include_uncommitted=args.include_uncommitted,
+        exclude_patterns=tuple(args.exclude),
     )
     source_repo = args.source_repo or repo_root.name
     source_vps = args.source_vps or os.uname().nodename
@@ -511,9 +523,11 @@ def build_parser() -> argparse.ArgumentParser:
     bundle.add_argument("--base-ref", default="origin/main")
     bundle.add_argument("--include-uncommitted", action="store_true", default=False)
     bundle.add_argument("--default-scope", choices=sorted(VALID_SCOPES), default="vertical")
-    bundle.add_argument("--default-vertical", default="mercator")
+    bundle.add_argument("--default-vertical", default="")
     bundle.add_argument("--source-repo", default="")
     bundle.add_argument("--source-vps", default="")
+    bundle.add_argument("--exclude", nargs="*", default=list(DEFAULT_EXCLUDE_PATTERNS),
+                        help="Path patterns to exclude (default: _legacy/, node_modules/, .next/)")
     bundle.set_defaults(func=cmd_bundle)
 
     ingest = sub.add_parser("ingest", help="Ingest docs bundle into federated KB")
@@ -531,9 +545,11 @@ def build_parser() -> argparse.ArgumentParser:
     validate.add_argument("--base-ref", default="origin/main")
     validate.add_argument("--include-uncommitted", action="store_true", default=False)
     validate.add_argument("--default-scope", choices=sorted(VALID_SCOPES), default="vertical")
-    validate.add_argument("--default-vertical", default="mercator")
+    validate.add_argument("--default-vertical", default="")
     validate.add_argument("--source-repo", default="")
     validate.add_argument("--source-vps", default="")
+    validate.add_argument("--exclude", nargs="*", default=list(DEFAULT_EXCLUDE_PATTERNS),
+                          help="Path patterns to exclude")
     validate.add_argument("--strict", action="store_true", default=False)
     validate.set_defaults(func=cmd_validate)
 

@@ -18,7 +18,7 @@ COPY services/api_edge_oculus_prime/requirements.txt /tmp/requirements.txt
 RUN pip install --upgrade pip && pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY vitruvyan_core /app/vitruvyan_core
-COPY infrastructure/edge/oculus_prime /app/infrastructure/edge/oculus_prime
+COPY vitruvyan_edge /app/vitruvyan_edge
 COPY services/api_edge_oculus_prime /app/services/api_edge_oculus_prime
 
 ENV PYTHONPATH=/app:/app/vitruvyan_core

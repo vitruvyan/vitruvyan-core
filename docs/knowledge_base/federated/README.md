@@ -1,9 +1,9 @@
 ---
 scope: core
-source_repo: mercator
-source_vps: 161.xxx.xxx.xxx
+source_repo: vitruvyan-core
+source_vps: hub
 kb_section: core
-updated_at: 2026-02-26T00:00:00Z
+updated_at: 2026-02-28T00:00:00Z
 ---
 
 # Federated Documentation Hub

@@ -1,0 +1,104 @@
+name: Publish Docs to Vitruvyan KB
+
+# Triggered on every push to main that touches documentation files.
+# Sends a repository_dispatch event to vitruvyan/vitruvyan-kb, which
+# checks out this repo, bundles the changed docs, and ingests them.
+#
+# Required secrets:
+#   KB_DISPATCH_TOKEN — PAT with 'repo' scope on vitruvyan/vitruvyan-kb
+#
+# Optional repository variables (Settings → Variables → Actions):
+#   DOCS_SCOPE    — "core" or "vertical" (default: "vertical")
+#   DOCS_VERTICAL — vertical name used for routing (default: repo name)
+#   KB_REPO       — target KB repo (default: "vitruvyan/vitruvyan-kb")
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "docs/**"
+      - "vitruvyan_core/**/*.md"
+      - "services/**/*.md"
+      - "infrastructure/**/*.md"
+      - "examples/**/*.md"
+  workflow_dispatch:
+    inputs:
+      full_scan:
+        description: "Bundle ALL docs (not just changed)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch-to-kb:
+    name: Dispatch docs bundle to KB Hub
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build docs bundle
+        id: bundle
+        run: |
+          CHANGED_ONLY="true"
+          if [[ "${{ github.event.inputs.full_scan }}" == "true" ]]; then
+            CHANGED_ONLY="false"
+          fi
+
+          SCOPE="${{ vars.DOCS_SCOPE || 'vertical' }}"
+          VERTICAL="${{ vars.DOCS_VERTICAL || github.event.repository.name }}"
+          REPO_NAME="${{ github.event.repository.name }}"
+          BUNDLE_PATH="/tmp/${REPO_NAME}_docs_$(date +%Y%m%d_%H%M%S).tar.gz"
+
+          ARGS=(
+            bundle
+            --repo-root .
+            --output "$BUNDLE_PATH"
+            --source-repo "$REPO_NAME"
+            --default-scope "$SCOPE"
+            --default-vertical "$VERTICAL"
+            --base-ref "origin/main"
+          )
+          if [[ "$CHANGED_ONLY" == "true" ]]; then
+            ARGS+=(--changed-only)
+          fi
+
+          python3 scripts/docs/federate_docs.py "${ARGS[@]}"
+          echo "bundle_path=$BUNDLE_PATH" >> "$GITHUB_OUTPUT"
+          echo "scope=$SCOPE" >> "$GITHUB_OUTPUT"
+          echo "vertical=$VERTICAL" >> "$GITHUB_OUTPUT"
+
+      - name: Upload bundle as artifact
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-bundle-${{ github.sha }}
+          path: ${{ steps.bundle.outputs.bundle_path }}
+          retention-days: 1
+
+      - name: Dispatch ingest event to KB Hub
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.KB_DISPATCH_TOKEN }}
+          repository: ${{ vars.KB_REPO || 'vitruvyan/vitruvyan-kb' }}
+          event-type: docs-ingest
+          client-payload: |
+            {
+              "producer_repo": "${{ github.repository }}",
+              "producer_ref": "${{ github.sha }}",
+              "producer_name": "${{ github.event.repository.name }}",
+              "scope": "${{ steps.bundle.outputs.scope }}",
+              "vertical": "${{ steps.bundle.outputs.vertical }}",
+              "artifact_run_id": "${{ github.run_id }}",
+              "artifact_name": "docs-bundle-${{ github.sha }}"
+            }

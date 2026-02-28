@@ -53,14 +53,11 @@ jobs:
           EOF
 
           python scripts/docs/federate_docs.py bundle \
-            --scope vertical \
-            --producer mercator \
-            --vertical mercator \
-            --source /tmp/docs-federation-ci-source \
-            --output /tmp/docs-federation-ci-bundle.tar.gz
-
-          python scripts/docs/federate_docs.py validate \
-            --bundle /tmp/docs-federation-ci-bundle.tar.gz
+            --repo-root . \
+            --output /tmp/docs-federation-ci-bundle.tar.gz \
+            --source-repo "${GITHUB_REPOSITORY##*/}" \
+            --default-scope vertical \
+            --default-vertical "${GITHUB_REPOSITORY##*/}"
 
       - name: Dry-run ingest + KB hook check
         env:
@@ -68,8 +65,7 @@ jobs:
         run: |
           python scripts/docs/federate_docs.py ingest \
             --bundle /tmp/docs-federation-ci-bundle.tar.gz \
-            --repo-root . \
-            --dry-run
+            --repo-root .
 
       - name: Verify mkdocs federation nav markers
         run: |

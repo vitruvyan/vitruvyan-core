@@ -131,21 +131,15 @@ nav:
   - System Core:
     - Orchestration:
       - Overview: vitruvyan_core/core/orchestration/README.md
+      - Slot Filling Alignment: vitruvyan_core/core/orchestration/langgraph/docs/SLOT_FILLING_ARCHITECTURE_ALIGNMENT.md
       - API Graph (Service): services/api_graph/README.md
     - Cognitive Bus (Synaptic Conclave):
       - Overview: vitruvyan_core/core/synaptic_conclave/docs/README.md
       - Topology (Mermaid): infrastructure/docker/monitoring/grafana/SYNAPTIC_CONCLAVE_TOPOLOGY.md
     - Core Agents:
       - Index: docs/internal/platform/README.md
-      - LLM / AI Layer: docs/internal/platform/LLM_LAYER.md
-    - Cognitive Governance:
-      - Memory Orders: docs/internal/orders/MEMORY_ORDERS.md
-      - Semantic & Ontology: docs/architecture/SEMANTIC_ONTOLOGY_ARCHITECTURE.md
       - Dual Memory & RAG: docs/internal/platform/DUAL_MEMORY_RAG.md
-      - RAG Governance:
-        - Overview: docs/contracts/rag/README.md
-        - Contract V1: docs/contracts/rag/RAG_GOVERNANCE_CONTRACT_V1.md
-        - Operations: docs/contracts/rag/RAG_GOVERNANCE_OPERATIONS.md
+      - LLM / AI Layer: docs/internal/platform/LLM_LAYER.md
     - Sacred Orders:
       - Introduction: docs/foundational/SACRED_ORDERS_INTRO.md
       - Index: docs/internal/orders/README.md
@@ -162,7 +156,6 @@ nav:
   - Architecture:
     - Overview: docs/architecture/README.md
     - Dual Memory Layer: docs/architecture/DUAL_MEMORY_LAYER.md
-    - Semantic & Ontology: docs/architecture/SEMANTIC_ONTOLOGY_ARCHITECTURE.md
     - Sacred Orders Pattern: vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md
     - Technical Debt Audit: docs/architecture/TECHNICAL_DEBT_AUDIT.md
 
@@ -194,11 +187,16 @@ nav:
   - Infrastructure:
     - Overview: infrastructure/README_INFRASTRUCTURE.md
     - Docker Setup: infrastructure/docker/README.md
-    - Oculus Prime: infrastructure/edge/oculus_prime/README.md
-    - Oculus Prime Flow Graph: docs/knowledge_base/oculus_prime/intake_flow_graph.md
+    - Edge (Deprecated): infrastructure/edge/README.md
     - Monitoring: infrastructure/docker/monitoring/README.md
     - Synaptic Topology (Mermaid): infrastructure/docker/monitoring/grafana/SYNAPTIC_CONCLAVE_TOPOLOGY.md
     - KB Access Control: infrastructure/docker/mkdocs/ACCESS_CONTROL.md
+
+  - Edge Modules:
+    - Overview: vitruvyan_edge/README.md
+    - Oculus Prime: vitruvyan_edge/oculus_prime/README.md
+    - Oculus Prime Core: vitruvyan_edge/oculus_prime/core/README.md
+    - Oculus Prime Flow Graph: docs/knowledge_base/oculus_prime/intake_flow_graph.md
     
   - Development:
     - Testing: tests/README_TESTS.md
@@ -224,20 +222,9 @@ nav:
         - Manifest Template: docs/contracts/verticals/templates/vertical_manifest.yaml
       - Finance:
         - Codex Hunters Domain Pack: examples/verticals/finance/CODEX_HUNTERS_DOMAIN_PACK.md
-      - Security:
-        - AICOMSEC Brainstorm Report: docs/knowledge_base/development/verticals/security/AICOMSEC_BRAINSTORM_REPORT.md
     - Examples: examples/README_EXAMPLES.md
     - Configuration: config/README_CONFIG.md
     - Scripts: scripts/README_SCRIPTS.md
-
-  # DOCS_FEDERATION_NAV_START
-  - Federated KB:
-    - Overview: docs/knowledge_base/federated/README.md
-    - Operations: docs/knowledge_base/federated/Docs_Federation_Operations.md
-    - Core Producers: docs/knowledge_base/federated/core/README.md
-    - Vertical Producers: docs/knowledge_base/federated/verticals/README.md
-    - Contract V1: docs/contracts/platform/DOCS_FEDERATION_CONTRACT_V1.md
-  # DOCS_FEDERATION_NAV_END
     
   # - Planning:
   #   - Roadmap: docs/planning/_ALBERATURA_FRAMEWORK_CONSOLIDATA_FEB14_2026.md
@@ -249,10 +236,10 @@ extra:
     provider: mike  # Versioning provider (optional)
 
 extra_css:
-  - docs/stylesheets/material_v1.css?v=20260226a
+  - docs/stylesheets/material_v1.css?v=20260220q
 
 extra_javascript:
-  - docs/javascripts/vitruvyan.js?v=20260226a
+  - docs/javascripts/vitruvyan.js?v=20260219k
 
 # Copyright
 copyright: Copyright &copy; 2026 Vitruvyan Team
