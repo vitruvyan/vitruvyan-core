@@ -1,149 +1,91 @@
+// components/chat/Chat.jsx
+// Domain-Agnostic Chat Container — Vitruvyan Core
+// Last updated: Feb 28, 2026
+//
+// This component is INFRASTRUCTURE, not a domain feature.
+// It does NOT know about tickers, portfolios, trading, or any vertical.
+// Domain plugins inject behavior via extensions (ChatContract.ts).
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useKeycloak } from '@/contexts/KeycloakContext'
+import { useEffect, useRef } from 'react'
 import { useChat } from './hooks'
 import { ChatMessages } from './ChatMessages'
 import { ChatInput } from './ChatInput'
-import { usePortfolioCanvas } from '@/hooks/usePortfolioCanvas'
-import { useTradingOrder } from '@/hooks/useTradingOrder'
 
-export default function Chat({ 
-  initialQuestion = '', 
-  initialTickers = [],
-  isVisible = true,
-  isSidebar = false,
-  onAnalysisComplete = null 
+/**
+ * Chat — Domain-Agnostic Container
+ *
+ * Props:
+ * - initialQuery: auto-submit on mount (optional)
+ * - apiEndpoint: backend graph endpoint URL
+ * - userId: authenticated user ID (optional)
+ * - extensions: domain plugin injections (see ChatContract.ts)
+ * - onResponseComplete: callback when AI response is ready
+ * - placeholder: input placeholder text
+ * - assistantName: AI assistant display name (default: "Vitruvyan")
+ * - thinkingSteps: custom thinking step definitions (from domain plugin)
+ */
+export default function Chat({
+  initialQuery = '',
+  apiEndpoint = '/api/graph/run',
+  userId = null,
+  extensions = {},
+  onResponseComplete = null,
+  placeholder = 'Ask a question...',
+  assistantName = 'Vitruvyan',
+  thinkingSteps = null,
+  isVisible = true
 }) {
-  const { authenticated, userInfo } = useKeycloak()
-  const router = useRouter()
-  
-  // Trading order hook (Feb 4, 2026 - Refactored from component)
-  const { executeOrder: executeOrderBase } = useTradingOrder()
-  
   const {
     messages,
-    isTyping,
-    confirmedTickers,
+    isProcessing,
+    selectedEntities,
     sendMessage,
-    setConfirmedTickers,
-    thinkingSteps,
-    isStreaming
-  } = useChat()
-  
-  // ✅ REAL USER ID from Keycloak (Feb 4, 2026 - Fixed async loading)
-  // Wait for Keycloak to load, then use UUID (sub claim)
-  const [userId, setUserId] = useState(null)
-  
-  useEffect(() => {
-    if (authenticated && userInfo?.sub) {
-      setUserId(userInfo.sub)
-      console.log('[Chat] User authenticated:', { sub: userInfo.sub, username: userInfo.preferred_username })
-    } else if (!authenticated) {
-      // Anonymous users not allowed for portfolio
-      setUserId(null)
-      console.log('[Chat] User not authenticated - portfolio disabled')
-    }
-  }, [authenticated, userInfo])
-  
-  // Portfolio canvas state
-  const {
-    isOpen: isPortfolioOpen,
-    portfolioData,
-    loading: portfolioLoading,
-    error: portfolioError,
-    openCanvas,
-    closeCanvas,
-    updateCurrentTicker
-  } = usePortfolioCanvas(userId)
-  
-  // Track currently analyzed ticker for highlighting
-  const [currentAnalyzedTicker, setCurrentAnalyzedTicker] = useState(null)
-  
-  // Auto-submit initial question on mount
+    setSelectedEntities,
+  } = useChat({ apiEndpoint, userId, thinkingSteps })
+
+  // Auto-submit initial query on mount
   const hasSubmittedInitial = useRef(false)
-  
+
   useEffect(() => {
-    if (initialQuestion && !hasSubmittedInitial.current && isVisible) {
+    if (initialQuery && !hasSubmittedInitial.current && isVisible) {
       hasSubmittedInitial.current = true
-      // Set initial tickers if provided
-      if (initialTickers.length > 0) {
-        setConfirmedTickers(initialTickers)
-      }
-      // Submit the initial question
-      sendMessage(initialQuestion, initialTickers)
+      sendMessage(initialQuery, [])
     }
-  }, [initialQuestion, initialTickers, isVisible, sendMessage, setConfirmedTickers])
-  
-  // Notify parent when analysis completes
+  }, [initialQuery, isVisible, sendMessage])
+
+  // Notify parent when AI response is complete
   useEffect(() => {
-    if (onAnalysisComplete && messages.length > 0) {
+    if (onResponseComplete && messages.length > 0) {
       const lastMessage = messages[messages.length - 1]
-      if (lastMessage.sender === 'ai' && lastMessage.finalState) {
-        onAnalysisComplete(lastMessage.finalState)
+      if (lastMessage.sender === 'ai' && lastMessage.isComplete && lastMessage.finalState) {
+        onResponseComplete(lastMessage.finalState)
       }
     }
-  }, [messages, onAnalysisComplete])
-  
-  // Update current analyzed ticker for portfolio highlighting
-  useEffect(() => {
-    if (messages.length > 0) {
-      const lastMessage = messages[messages.length - 1]
-      if (lastMessage.sender === 'ai' && lastMessage.finalState?.tickers) {
-        const tickers = lastMessage.finalState.tickers
-        // Highlight first ticker if single analysis, or first ticker in comparison
-        setCurrentAnalyzedTicker(tickers[0] || null)
-        updateCurrentTicker(tickers[0] || null)
-      }
-    }
-  }, [messages, updateCurrentTicker])
-  
-  const handleSend = (text, tickers, options = {}) => {
-    sendMessage(text, tickers, options)
+  }, [messages, onResponseComplete])
+
+  const handleSend = (text, entities) => {
+    sendMessage(text, entities)
   }
-  
+
   const handleFollowUpClick = (question) => {
-    sendMessage(question, confirmedTickers)
+    sendMessage(question, selectedEntities)
   }
-  
-  const handleTickerClick = (ticker) => {
-    // Navigate to single ticker analysis
-    sendMessage(`Analyze ${ticker}`, [ticker])
-  }
-  
-  const handleTickerConfirm = (ticker) => {
-    if (!confirmedTickers.includes(ticker)) {
-      setConfirmedTickers([...confirmedTickers, ticker])
+
+  const handleEntityClick = (entity) => {
+    if (extensions.onEntityClick) {
+      extensions.onEntityClick(entity)
     }
   }
-  
-  const handleTickerRemove = (ticker) => {
-    setConfirmedTickers(confirmedTickers.filter(t => t !== ticker))
-  }
-  
-  const handlePortfolioTickerClick = (ticker) => {
-    // Close portfolio banner and analyze ticker
-    closeCanvas()
-    sendMessage(`Analyze ${ticker}`, [ticker])
-  }
-  
-  const handleViewPortfolio = () => {
-    // Navigate to full portfolio page (Feb 4, 2026)
-    router.push('/portfolio')
-  }
-  
-  // Wrapper for executeOrder that opens portfolio bubble on success
-  const executeOrder = async (orderData) => {
-    const result = await executeOrderBase(orderData)
-    
-    // Open portfolio bubble after successful order (Feb 4, 2026)
-    if (result?.success) {
-      console.log('[Chat] Order successful, opening portfolio bubble')
-      openCanvas()
+
+  const handleEntityAdd = (entity) => {
+    if (!selectedEntities.includes(entity)) {
+      setSelectedEntities([...selectedEntities, entity])
     }
-    
-    return result
+  }
+
+  const handleEntityRemove = (entity) => {
+    setSelectedEntities(selectedEntities.filter(e => e !== entity))
   }
 
   return (
@@ -151,32 +93,26 @@ export default function Chat({
       {/* Messages Area */}
       <div className="flex-1">
         <div className="max-w-7xl mx-auto">
-          <ChatMessages 
+          <ChatMessages
             messages={messages}
             onFollowUpClick={handleFollowUpClick}
-            onTickerClick={handleTickerClick}
-            onOpenPortfolio={openCanvas}
-            isPortfolioOpen={isPortfolioOpen}
-            portfolioData={portfolioData}
-            portfolioLoading={portfolioLoading}
-            portfolioError={portfolioError}
-            onClosePortfolio={closeCanvas}
-            onPortfolioTickerClick={handlePortfolioTickerClick}
-            currentAnalyzedTicker={currentAnalyzedTicker}
-            onOrderExecuted={executeOrder}
-            onViewPortfolio={handleViewPortfolio}
+            onEntityClick={handleEntityClick}
+            assistantName={assistantName}
+            extensions={extensions}
           />
         </div>
       </div>
-      
+
       {/* Input Area */}
       <div className="max-w-7xl mx-auto w-full">
         <ChatInput
           onSend={handleSend}
-          isTyping={isTyping}
-          confirmedTickers={confirmedTickers}
-          onTickerConfirm={handleTickerConfirm}
-          onTickerRemove={handleTickerRemove}
+          isProcessing={isProcessing}
+          selectedEntities={selectedEntities}
+          onEntityAdd={handleEntityAdd}
+          onEntityRemove={handleEntityRemove}
+          placeholder={placeholder}
+          extensions={extensions.input}
         />
       </div>
     </div>
