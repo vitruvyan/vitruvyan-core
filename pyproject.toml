@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vitruvyan-core"
-version = "1.8.0"
+version = "1.8.1"
 description = "Domain-agnostic epistemic operating system"
 readme = "README.md"
 requires-python = ">=3.10"

@@ -1,21 +1,23 @@
 {
-  "version": "1.8.0",
+  "version": "1.8.1",
   "channel": "stable",
-  "release_date": "2026-02-28T23:30:00Z",
+  "release_date": "2026-02-28T23:59:00Z",
   "contracts_version": "1.0.0",
   "changes": {
     "features": [
+      "vit release command: create GitHub Release + upload releases.json asset from current git tag",
       "BaseContract: abstract foundation for all data contracts (versioning, enforce(), registry, serialization)",
       "ContractRegistry: auto-registration via __init_subclass__ — no manual wiring",
       "IContractPlugin: base for ABC/Protocol plugin contracts (ISemanticPlugin, IComprehensionPlugin, etc.)",
       "IngestionContract: SourceDescriptor, IngestionQuality, NormalizedChunk, IngestionPayload v1.0.0",
       "IIngestionPlugin: domain extension point for Perception Sacred Order",
       "Ingestion helpers: compute_content_hash, build_source_id, build_chunk_id",
-      "Synaptic Conclave ingestion channels: perception.ingestion.{acquired,normalized,rejected,duplicate}",
-      "Pipeline Contract Enforcement: @enforced decorator for LangGraph nodes (from v1.7.0)",
-      "Node Contracts Registry: 20 nodes audited with verified requires/produces (from v1.7.0)"
+      "Synaptic Conclave ingestion channels: perception.ingestion.{acquired,normalized,rejected,duplicate}"
     ],
     "fixes": [
+      "ReleaseRegistry: two-pass fetch — GitHub Releases API (Pass 1) + Tags API with Contents API fallback (Pass 2)",
+      "vit upgrade now discovers ALL pushed git tags (git push --tags is sufficient, no GitHub Release required)",
+      "vitruvyan_core.__version__ = '1.8.1' — get_current_version() no longer falls back to git-describe",
       "OntologyPayload migrated to BaseContract (pattern_weavers.ontology@3.0.0)",
       "ComprehensionResult migrated to BaseContract (comprehension.result@1.0.0)",
       "GraphResponseMin migrated to BaseContract (graph_response.min@1.0.0)",
@@ -29,24 +31,20 @@
   },
   "commits": [
     {
-      "hash": "b64fd48",
-      "message": "feat(contracts): BaseContract + IngestionContract v1.0.0"
+      "hash": "88c6902",
+      "message": "fix(upgrade): reliable release discovery via Tags API + Contents API fallback"
     },
     {
-      "hash": "5c42cd8",
-      "message": "fix(release): add contracts_version to releases.json for vit upgrade compatibility"
-    },
-    {
-      "hash": "f9b759f",
-      "message": "chore(release): bump to v1.7.0 — Pipeline Contract Enforcement"
+      "hash": "053c412",
+      "message": "chore(release): bump to v1.8.0 — BaseContract + IngestionContract"
     }
   ],
   "validation": [
+    "327 tests pass (no regressions)",
     "BaseContract tests: 40/40 passed",
     "IngestionContract tests: 44/44 passed",
-    "Zero regressions on full test suite (807 pre-existing tests pass)",
-    "LIVELLO 1 compliance: no forbidden imports in contracts/",
-    "ContractRegistry auto-registers 7 contracts on import"
+    "vit release --dry-run: payload built correctly",
+    "get_current_version() returns 1.8.1 via __version__ (Strategy 1)"
   ],
   "upgrade_instructions": "vit upgrade --channel stable",
   "checksum": {
@@ -54,3 +52,4 @@
     "value": "TBD"
   }
 }
+
