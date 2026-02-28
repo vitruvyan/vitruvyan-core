@@ -243,15 +243,12 @@ class GraphState(BaseGraphState, total=False):
     advisor_recommendation: Optional[Dict[str, Any]]  # Actionable recommendation
     user_requests_action: Optional[bool]     # Trigger for advisor activation
 
-    # ── Finance Domain Fields (populated by domain graph_nodes) ──
-    numerical_panel: Optional[List[Dict[str, Any]]]   # NE/PG z-scores for compose/advisor
-    vee_explanations: Optional[Dict[str, Any]]        # VEE narratives (summary, technical, detailed...)
-    vare_risk: Optional[Dict[str, Any]]               # VARE risk assessment per ticker
-    vwre_attribution: Optional[Dict[str, Any]]        # VWRE factor attribution per ticker
-    conversation_type: Optional[str]                  # single_ticker, comparison, portfolio...
-    gauge: Optional[Dict[str, Any]]                   # Gauge visualization data
-    final_verdict: Optional[str]                       # Final verdict text
-    screening_meta: Optional[Dict[str, Any]]           # Screener metadata (total_evaluated, etc.)
+    # ── Domain Extensions (populated by domain graph_nodes via hook pattern) ──
+    # Domain-specific fields (numerical_panel, vee_explanations, vare_risk, etc.)
+    # are injected at runtime by domain graph_nodes. They are NOT declared here
+    # because GraphState is the OS-agnostic kernel. TypedDict(total=False) allows
+    # arbitrary keys at runtime. graph_runner propagates them via domain_extensions.
+    domain_extensions: Optional[Dict[str, Any]]        # Opaque domain payload (pass-through)
 
     # ── Compose Node Output Fields ──
     narrative: Optional[str]                           # Natural language synthesis from compose_node

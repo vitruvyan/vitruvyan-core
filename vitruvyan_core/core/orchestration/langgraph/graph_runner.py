@@ -13,6 +13,38 @@ from core.logging.audit import AuditLogger, get_audit_logger
 logger = logging.getLogger(__name__)
 # proactive_suggestions: ARCHIVED (was domain-specific finance feature)
 
+# Domain extension keys — loaded from domain plugin at boot.
+# These keys are NOT part of the core GraphState; they are collected into an
+# opaque 'domain_extensions' dict so the API response stays domain-agnostic.
+# Each domain declares its own keys via domains/<domain>/compose_formatter.py
+def _load_domain_extension_keys() -> set:
+    """Load domain extension keys from domain plugin (or empty set for generic)."""
+    domain = os.getenv("GRAPH_DOMAIN", os.getenv("INTENT_DOMAIN", "generic"))
+    if not domain or domain == "generic":
+        return set()
+    try:
+        import importlib
+        mod = importlib.import_module(f"domains.{domain}.compose_formatter")
+        keys = getattr(mod, "DOMAIN_EXTENSION_KEYS", set())
+        return set(keys)
+    except (ImportError, AttributeError):
+        return set()
+
+_DOMAIN_EXTENSION_KEYS = _load_domain_extension_keys()
+
+
+def _collect_domain_extensions(state: Dict[str, Any]) -> Dict[str, Any]:
+    """Collect domain-specific keys from state into an opaque extensions dict."""
+    if not _DOMAIN_EXTENSION_KEYS:
+        return None
+    ext = {}
+    for k in _DOMAIN_EXTENSION_KEYS:
+        v = state.get(k)
+        if v is not None:
+            ext[k] = v
+    return ext or None
+
+
 # Full UUID4 trace_id (not truncated — collision-safe at high volume)
 def generate_trace_id():
     return str(uuid.uuid4())
@@ -316,14 +348,8 @@ def run_graph_once(
         response["advisor_recommendation"] = final_state.get("advisor_recommendation")
         response["user_requests_action"] = final_state.get("user_requests_action")
         
-        # 📊 FIX (Feb 24, 2026): Add finance domain fields to API response
-        response["numerical_panel"] = final_state.get("numerical_panel")
-        response["vee_explanations"] = final_state.get("vee_explanations")
-        response["vare_risk"] = final_state.get("vare_risk")
-        response["vwre_attribution"] = final_state.get("vwre_attribution")
-        response["screening_meta"] = final_state.get("screening_meta")
-        response["gauge"] = final_state.get("gauge")
-        response["final_verdict"] = final_state.get("final_verdict")
+        # Domain extensions (opaque pass-through for domain graph_nodes)
+        response["domain_extensions"] = _collect_domain_extensions(final_state)
         response["narrative"] = final_state.get("narrative")
         response["ok"] = final_state.get("ok")
         
@@ -382,14 +408,8 @@ def run_graph_once(
             # 🎯 FIX (Dec 28, 2025): Add Advisor Node fields to API response
             "advisor_recommendation": final_state.get("advisor_recommendation"),
             "user_requests_action": final_state.get("user_requests_action"),
-            # 📊 FIX (Feb 24, 2026): Add finance domain fields to API response
-            "numerical_panel": final_state.get("numerical_panel"),
-            "vee_explanations": final_state.get("vee_explanations"),
-            "vare_risk": final_state.get("vare_risk"),
-            "vwre_attribution": final_state.get("vwre_attribution"),
-            "screening_meta": final_state.get("screening_meta"),
-            "gauge": final_state.get("gauge"),
-            "final_verdict": final_state.get("final_verdict"),
+            # Domain extensions (opaque pass-through for domain graph_nodes)
+            "domain_extensions": _collect_domain_extensions(final_state),
             "narrative": final_state.get("narrative"),
             "ok": final_state.get("ok"),
         }
@@ -451,14 +471,8 @@ def run_graph_once(
         # Advisor
         "advisor_recommendation": _s.get("advisor_recommendation"),
         "user_requests_action": _s.get("user_requests_action"),
-        # Finance domain
-        "numerical_panel": _s.get("numerical_panel"),
-        "vee_explanations": _s.get("vee_explanations"),
-        "vare_risk": _s.get("vare_risk"),
-        "vwre_attribution": _s.get("vwre_attribution"),
-        "screening_meta": _s.get("screening_meta"),
-        "gauge": _s.get("gauge"),
-        "final_verdict": _s.get("final_verdict"),
+        # Domain extensions (opaque pass-through for domain graph_nodes)
+        "domain_extensions": _collect_domain_extensions(_s),
         "narrative": _s.get("narrative"),
         "ok": _s.get("ok"),
     }

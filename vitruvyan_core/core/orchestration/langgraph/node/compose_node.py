@@ -32,6 +32,27 @@ from core.agents.llm_agent import get_llm_agent
 # NOTE: Configuration via environment variables only.
 # load_dotenv() is called in service entrypoints (main.py), not in core modules.
 
+# Domain compose formatter hook — loaded lazily from domains/<domain>/compose_formatter.py
+_COMPOSE_DOMAIN = os.getenv("GRAPH_DOMAIN", os.getenv("INTENT_DOMAIN", "generic"))
+_domain_formatter = None
+_domain_formatter_loaded = False
+
+
+def _get_domain_formatter():
+    """Lazy-load domain-specific compose formatter (returns callable or None)."""
+    global _domain_formatter, _domain_formatter_loaded
+    if _domain_formatter_loaded:
+        return _domain_formatter
+    _domain_formatter_loaded = True
+    if _COMPOSE_DOMAIN and _COMPOSE_DOMAIN != "generic":
+        try:
+            import importlib
+            mod = importlib.import_module(f"domains.{_COMPOSE_DOMAIN}.compose_formatter")
+            _domain_formatter = getattr(mod, "format_domain_context", None)
+        except (ImportError, AttributeError):
+            pass
+    return _domain_formatter
+
 
 def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -67,14 +88,6 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
     print(f"🎨 [compose_node] Intent: {intent}, Route: {route}, Language: {language}")
     print(f"🎨 [compose_node] Service results available: {list(service_result.keys()) if service_result else 'none'}")
     print(f"🎨 [compose_node] raw_output keys: {list(raw_output.keys()) if raw_output else 'empty'}")
-    
-    # Auto-detect conversation_type from entity count
-    entity_ids = state.get("entity_ids", [])
-    if not state.get("conversation_type") and entity_ids:
-        if len(entity_ids) == 1:
-            state["conversation_type"] = "single_ticker"
-        elif len(entity_ids) > 1:
-            state["conversation_type"] = "comparison"
     
     # Conversational mode (no service results)
     if not service_result and not raw_output and intent in ["greeting", "help", "clarify", "unknown"]:
@@ -217,22 +230,12 @@ def _synthesize_from_results(
             summary = raw_output.get("summary")
             if summary:
                 context_parts.append(f"Analysis summary: {summary}")
-            # Extract ranking data if available (finance domain)
-            ranking = raw_output.get("ranking", {})
-            stocks = ranking.get("stocks", []) if isinstance(ranking, dict) else []
-            if stocks:
-                for s in stocks[:5]:  # Limit to top 5
-                    tk = s.get("ticker", "?")
-                    parts = [f"{tk}:"]
-                    for metric in ("composite_score", "trend_z", "momentum_z", "vola_z"):
-                        v = s.get(metric)
-                        if v is not None:
-                            parts.append(f"{metric}={v}")
-                    if s.get("short_trend"):
-                        parts.append(f"trend={s['short_trend']}/{s.get('medium_trend','?')}/{s.get('long_trend','?')}")
-                    if s.get("rsi"):
-                        parts.append(f"RSI={s['rsi']}")
-                    context_parts.append(" ".join(parts))
+            # Domain-specific context formatting (loaded via hook pattern)
+            formatter = _get_domain_formatter()
+            if formatter:
+                domain_ctx = formatter(raw_output, state)
+                if domain_ctx:
+                    context_parts.extend(domain_ctx)
         
         context_str = "\n".join(context_parts) if context_parts else "No detailed results available"
         
