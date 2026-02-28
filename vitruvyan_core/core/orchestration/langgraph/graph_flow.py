@@ -188,6 +188,10 @@ from core.orchestration.langgraph.node.can_node import can_node
 # ⚡ Early-exit for simple intents (greeting, farewell, thanks) — Feb 23, 2026
 from core.orchestration.langgraph.node.early_exit_node import early_exit_node, is_early_exit
 
+# ── Contract Enforcement (FASE 3) ──
+from core.orchestration.contract_enforcement import enforced
+from core.orchestration.node_contracts_registry import NODE_CONTRACTS, merge_domain_contracts
+
 # Shared state — Domain-Agnostic OS Kernel
 # Inherits ~35 domain-agnostic fields from BaseGraphState (base_state.py).
 # Only graph-specific / domain-extension fields are declared below.
@@ -266,57 +270,75 @@ class GraphState(BaseGraphState, total=False):
 # Use: from core.orchestration.langgraph.graph_runner import run_graph_once
 
 
+# ── Contract enforcement wrapper ──
+# Map graph_flow node names to registry keys where they differ
+_NODE_ALIAS = {"llm_soft": "cached_llm", "intent": "intent_detection"}
+
+
+def _wrap(name, fn):
+    """Wrap a node function with @enforced using its registered contract."""
+    registry_key = _NODE_ALIAS.get(name, name)
+    spec = NODE_CONTRACTS.get(registry_key)
+    if spec and (spec.requires or spec.produces):
+        return enforced(
+            requires=spec.requires,
+            produces=spec.produces,
+            node_name=name,
+        )(fn)
+    return fn
+
+
 def build_graph():
     g = StateGraph(GraphState)
 
-    # Nodi
-    g.add_node("parse", parse_node)
+    # Nodi (wrapped with @enforced contract enforcement)
+    g.add_node("parse", _wrap("parse", parse_node))
     
     # 🧠 PHASE 2.1 - Consolidated Intent Detection (babel + intent_llm + intent_mapper)
-    g.add_node("intent_detection", intent_detection_node)
+    g.add_node("intent_detection", _wrap("intent_detection", intent_detection_node))
     
     # 🕸️ Pattern Weavers - Semantic enrichment after intent detection (Nov 2025)
-    g.add_node("weaver", weaver_node)
+    g.add_node("weaver", _wrap("weaver", weaver_node))
     
-    g.add_node("entity_resolver", entity_resolver_node)
+    g.add_node("entity_resolver", _wrap("entity_resolver", entity_resolver_node))
     
     # ⚙️ PHASE 2.3 - Consolidated Parameter Extraction (horizon_parser + topk_parser)
-    g.add_node("params_extraction", params_extraction_node)
+    g.add_node("params_extraction", _wrap("params_extraction", params_extraction_node))
     
-    g.add_node("decide", route_node)
+    g.add_node("decide", _wrap("decide", route_node))
     # 🎭 PHASE 2.1 - Babel Gardens Emotion Detection
-    g.add_node("babel_emotion", babel_emotion_node)
+    g.add_node("babel_emotion", _wrap("babel_emotion", babel_emotion_node))
     # 🧠 PR-A: VSGS Semantic Grounding (feature flag OFF by default)
-    g.add_node("semantic_grounding", semantic_grounding_node)
-    g.add_node("exec", exec_node)
+    g.add_node("semantic_grounding", _wrap("semantic_grounding", semantic_grounding_node))
+    g.add_node("exec", _wrap("exec", exec_node))
     
     # 🔍 quality_check: ARCHIVED (domain-specific validation)
-    g.add_node("qdrant", qdrant_node)
+    g.add_node("qdrant", _wrap("qdrant", qdrant_node))
     # 💡 UX Quick Win 2: Enhanced LLM with Emotional Intelligence (Oct 29, 2025)
-    g.add_node("llm_soft", cached_llm_node)
-    g.add_node("output_normalizer", output_normalizer_node)
-    g.add_node("compose", compose_node)
+    g.add_node("llm_soft", _wrap("llm_soft", cached_llm_node))
+    g.add_node("output_normalizer", _wrap("output_normalizer", output_normalizer_node))
+    g.add_node("compose", _wrap("compose", compose_node))
     
     # 💡 proactive_suggestions: ARCHIVED (domain-specific)
     
     # 🎯 Advisor Node - Decision-making layer (Dec 27, 2025)
-    g.add_node("advisor", advisor_node)
+    g.add_node("advisor", _wrap("advisor", advisor_node))
     
     # 🧠 CAN v2 - Conversational Advisor Node (Dec 27, 2025)
-    g.add_node("can", can_node)
+    g.add_node("can", _wrap("can", can_node))
     
     # 🏛️ Sacred Orders Integration  
-    g.add_node("orthodoxy", orthodoxy_node)
-    g.add_node("vault", vault_node)
+    g.add_node("orthodoxy", _wrap("orthodoxy", orthodoxy_node))
+    g.add_node("vault", _wrap("vault", vault_node))
     
     # 🗝️ Codex Hunters Integration
-    g.add_node("codex_hunters", codex_hunters_node)
+    g.add_node("codex_hunters", _wrap("codex_hunters", codex_hunters_node))
     
     # 🔌 MCP Integration - Phase 4 (OpenAI Function Calling gateway)
-    g.add_node("llm_mcp", llm_mcp_node)
+    g.add_node("llm_mcp", _wrap("llm_mcp", llm_mcp_node))
 
     # ⚡ Early-exit for simple intents (greeting, farewell, thanks)
-    g.add_node("early_exit", early_exit_node)
+    g.add_node("early_exit", _wrap("early_exit", early_exit_node))
 
     # 🔌 Optional domain graph_nodes extension (experimental)
     registered_nodes = {
@@ -353,7 +375,7 @@ def build_graph():
                 f"[graph_flow] graph_nodes extension node '{node_name}' is not callable. Ignoring."
             )
             continue
-        g.add_node(node_name, node_handler)
+        g.add_node(node_name, _wrap(node_name, node_handler))
         registered_nodes.add(node_name)
 
     g.set_entry_point("parse")
@@ -574,10 +596,10 @@ def build_minimal_graph():
     """Phase 1: Minimal LangGraph (4 nodes)."""
     g = StateGraph(GraphState)
 
-    g.add_node("parse", parse_node)
-    g.add_node("intent", intent_detection_node)
-    g.add_node("decide", route_node)
-    g.add_node("compose", compose_node)
+    g.add_node("parse", _wrap("parse", parse_node))
+    g.add_node("intent", _wrap("intent", intent_detection_node))
+    g.add_node("decide", _wrap("decide", route_node))
+    g.add_node("compose", _wrap("compose", compose_node))
 
     g.set_entry_point("parse")
 

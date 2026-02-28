@@ -39,6 +39,13 @@ OrthodoxyStatusType = Literal[
     "clarification_needed",
 ]
 
+# Importable string constants — use these instead of hardcoded strings
+ORTHODOXY_BLESSED: OrthodoxyStatusType = "blessed"
+ORTHODOXY_PURIFIED: OrthodoxyStatusType = "purified"
+ORTHODOXY_HERETICAL: OrthodoxyStatusType = "heretical"
+ORTHODOXY_NON_LIQUET: OrthodoxyStatusType = "non_liquet"
+ORTHODOXY_CLARIFICATION_NEEDED: OrthodoxyStatusType = "clarification_needed"
+
 
 # ---------------------------------------------------------------------------
 # SessionMin — per-turn session snapshot (channel-agnostic)

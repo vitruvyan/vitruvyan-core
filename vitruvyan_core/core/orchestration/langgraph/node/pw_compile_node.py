@@ -27,6 +27,7 @@ from typing import Any, Dict
 
 import httpx
 from config.api_config import get_weavers_url
+from contracts.pattern_weavers import OntologyPayload
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +93,16 @@ def pw_compile_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
             result = response.json()
             payload = result.get("payload", {})
+
+            # ── Pydantic re-validation at service→graph boundary ──
+            try:
+                validated = OntologyPayload.model_validate(payload)
+                payload = validated.model_dump()
+            except Exception as ve:
+                logger.warning(
+                    f"pw_compile_node: OntologyPayload validation failed: {ve}"
+                )
+                # Use raw dict as fallback — warn mode behavior
 
             # ── v3 primary field ──
             state["ontology_payload"] = payload

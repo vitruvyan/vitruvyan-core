@@ -202,7 +202,11 @@ class GraphOrchestrationAdapter:
             "under_review": "non_liquet",
             "absolution_granted": "blessed",
         }
-        orthodoxy_status: OrthodoxyStatusType = _CANONICAL_MAP.get(raw_status, "blessed")
+        orthodoxy_status: OrthodoxyStatusType = _CANONICAL_MAP.get(raw_status, "non_liquet")  # type: ignore[arg-type]
+        if raw_status and raw_status not in _CANONICAL_MAP:
+            logger.warning(
+                f"[graph_adapter] Unknown orthodoxy status '{raw_status}' — defaulting to 'non_liquet'"
+            )
 
         # ---- route ----
         route_taken = raw_result.get("route", "unknown") or "unknown"
