@@ -156,6 +156,7 @@ nav:
   - Architecture:
     - Overview: docs/architecture/README.md
     - Dual Memory Layer: docs/architecture/DUAL_MEMORY_LAYER.md
+    - Semantic & Ontology: docs/architecture/SEMANTIC_ONTOLOGY_ARCHITECTURE.md
     - Sacred Orders Pattern: vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md
     - Technical Debt Audit: docs/architecture/TECHNICAL_DEBT_AUDIT.md
 
@@ -187,16 +188,11 @@ nav:
   - Infrastructure:
     - Overview: infrastructure/README_INFRASTRUCTURE.md
     - Docker Setup: infrastructure/docker/README.md
-    - Edge (Deprecated): infrastructure/edge/README.md
+    - Oculus Prime: infrastructure/edge/oculus_prime/README.md
+    - Oculus Prime Flow Graph: docs/knowledge_base/oculus_prime/intake_flow_graph.md
     - Monitoring: infrastructure/docker/monitoring/README.md
     - Synaptic Topology (Mermaid): infrastructure/docker/monitoring/grafana/SYNAPTIC_CONCLAVE_TOPOLOGY.md
     - KB Access Control: infrastructure/docker/mkdocs/ACCESS_CONTROL.md
-
-  - Edge Modules:
-    - Overview: vitruvyan_edge/README.md
-    - Oculus Prime: vitruvyan_edge/oculus_prime/README.md
-    - Oculus Prime Core: vitruvyan_edge/oculus_prime/core/README.md
-    - Oculus Prime Flow Graph: docs/knowledge_base/oculus_prime/intake_flow_graph.md
     
   - Development:
     - Testing: tests/README_TESTS.md
@@ -205,6 +201,10 @@ nav:
       - Update System Contract V1: docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md
       - Package Manager Contract V1: docs/contracts/platform/PACKAGE_MANAGER_SYSTEM_CONTRACT_V1.md
       - Capabilities Summary: docs/knowledge_base/development/UPDATE_MANAGER_CAPABILITIES_SUMMARY.md
+    - RAG Governance:
+      - Overview: docs/contracts/rag/README.md
+      - Contract V1: docs/contracts/rag/RAG_GOVERNANCE_CONTRACT_V1.md
+      - Operations: docs/contracts/rag/RAG_GOVERNANCE_OPERATIONS.md
     - Templates: docs/foundational/TEMPLATE_SACRED_ORDER_COMPONENT.md
     - Verticals:
       - Implementation Guide (Overview): docs/knowledge_base/development/Vertical_Implementation_Guide.md
@@ -225,6 +225,15 @@ nav:
     - Examples: examples/README_EXAMPLES.md
     - Configuration: config/README_CONFIG.md
     - Scripts: scripts/README_SCRIPTS.md
+
+  # DOCS_FEDERATION_NAV_START
+  - Federated KB:
+    - Overview: docs/knowledge_base/federated/README.md
+    - Operations: docs/knowledge_base/federated/Docs_Federation_Operations.md
+    - Core Producers: docs/knowledge_base/federated/core/README.md
+    - Vertical Producers: docs/knowledge_base/federated/verticals/README.md
+    - Contract V1: docs/contracts/platform/DOCS_FEDERATION_CONTRACT_V1.md
+  # DOCS_FEDERATION_NAV_END
     
   # - Planning:
   #   - Roadmap: docs/planning/_ALBERATURA_FRAMEWORK_CONSOLIDATA_FEB14_2026.md
@@ -236,10 +245,10 @@ extra:
     provider: mike  # Versioning provider (optional)
 
 extra_css:
-  - docs/stylesheets/material_v1.css?v=20260220q
+  - docs/stylesheets/material_v1.css?v=20260226a
 
 extra_javascript:
-  - docs/javascripts/vitruvyan.js?v=20260219k
+  - docs/javascripts/vitruvyan.js?v=20260226a
 
 # Copyright
 copyright: Copyright &copy; 2026 Vitruvyan Team
