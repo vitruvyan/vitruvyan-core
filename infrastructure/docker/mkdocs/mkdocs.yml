@@ -196,6 +196,10 @@ nav:
     
   - Development:
     - Testing: tests/README_TESTS.md
+    - Core Contracts:
+      - Developer Guide: docs/knowledge_base/governance/contracts.md
+      - Pipeline Contract Enforcement: docs/contracts/platform/PIPELINE_CONTRACT_ENFORCEMENT.md
+      - Contracts Reference: docs/contracts/README.md
     - Update & Package Manager:
       - Update Manager System: docs/knowledge_base/development/Update_Manager_System.md
       - Update System Contract V1: docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md

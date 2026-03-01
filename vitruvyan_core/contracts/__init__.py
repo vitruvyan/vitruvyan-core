@@ -28,22 +28,6 @@ from .ingestion import (
     build_source_id,
     compute_content_hash,
 )
-from .base import BaseContract, ContractMeta, ContractRegistry, IContractPlugin
-from .ingestion import (
-    CHANNEL_INGESTION_ACQUIRED,
-    CHANNEL_INGESTION_DUPLICATE,
-    CHANNEL_INGESTION_NORMALIZED,
-    CHANNEL_INGESTION_REJECTED,
-    IngestionPayload,
-    IngestionQuality,
-    IIngestionPlugin,
-    NormalizedChunk,
-    SourceDescriptor,
-    SourceType,
-    build_chunk_id,
-    build_source_id,
-    compute_content_hash,
-)
 from .llm_provider import ILLMProvider
 from .orchestration import (
     BaseGraphState,
