@@ -78,6 +78,9 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
     route = state.get("route", "direct")
     user_input = state.get("input_text", "")
     language = state.get("language", "en")
+    # Validate language is a 2-letter ISO-639-1 code; fallback to env default or "en"
+    if not language or not isinstance(language, str) or len(language) != 2 or language == "au":
+        language = os.getenv("GRAPH_DEFAULT_LANGUAGE", "en")
     
     # Extract service results (opaque payloads)
     service_result = state.get("service_result", {})

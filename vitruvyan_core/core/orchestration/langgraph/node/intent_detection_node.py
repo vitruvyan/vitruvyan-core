@@ -288,10 +288,20 @@ def intent_detection_node(state: Dict[str, Any]) -> Dict[str, Any]:
         intent_override_counter.inc()
 
     # --- update state ---
+    # language_detected: always store Babel's raw detection for metadata
+    # language: only update if no valid language was set pre-pipeline
+    # (GRAPH_DEFAULT_LANGUAGE or client-provided language takes precedence over Babel)
+    _existing_lang = state.get("language")
+    _detected_lang = result["language_detected"]
+    _use_detected = (
+        not _existing_lang
+        or not isinstance(_existing_lang, str)
+        or len(_existing_lang) != 2
+    )
     state.update(
         {
-            "language_detected": result["language_detected"],
-            "language": result["language_detected"],
+            "language_detected": _detected_lang,
+            "language": _detected_lang if _use_detected else _existing_lang,
             "language_confidence": result.get("language_confidence", 0.0),
             "cultural_context": result.get("cultural_context", ""),
             "babel_status": result.get("babel_status", "unknown"),

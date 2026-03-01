@@ -82,6 +82,10 @@ def can_node(state: Dict[str, Any]) -> Dict[str, Any]:
     conversation_type = state.get("conversation_type", "chat")
     user_input = state.get("input_text", "")
     language = state.get("language", "en")
+    # Validate language is a 2-letter ISO-639-1 code; fallback to env default or "en"
+    if not language or not isinstance(language, str) or len(language) != 2 or language == "au":
+        language = os.getenv("GRAPH_DEFAULT_LANGUAGE", "en")
+        logger.warning(f"[can_node] Invalid language '{state.get('language')}', using fallback: {language}")
     
     # Extract pre-calculated emotion (from emotion_detector node)
     emotion = state.get("emotion_detected", "neutral")

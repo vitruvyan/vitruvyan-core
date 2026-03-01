@@ -183,14 +183,22 @@ def run_graph_once(
     state["trace_id"] = generate_trace_id()
     logger.debug("[graph_runner] Request trace_id: %s", state['trace_id'])
 
-    # 2) Detect and set language (fallback if babel_emotion_node hasn't run yet)
-    lang = _detect_language(input_text) if input_text else state.get("language")
-    if lang:
-        state["language"] = lang
+    # 2) Detect and set language
+    # Priority chain: client-provided > GRAPH_DEFAULT_LANGUAGE env > langdetect > prior session > "en"
+    # Note: GRAPH_DEFAULT_LANGUAGE overrides prior session language (which may be stale/wrong)
+    if not language:  # Client didn't explicitly provide language
+        default_lang = os.getenv("GRAPH_DEFAULT_LANGUAGE")
+        if default_lang:
+            state["language"] = default_lang
+            logger.debug("[graph_runner] Language from GRAPH_DEFAULT_LANGUAGE: %s", default_lang)
+        elif not state.get("language"):
+            lang = _detect_language(input_text) if input_text else "en"
+            state["language"] = lang or "en"
+            logger.debug("[graph_runner] Language from langdetect: %s", state["language"])
 
     # Merge slots (budget, entity_ids, horizon, language)
     state = merge_slots(state, state)
-    logger.debug("[run_graph_once] Initial merged state: %s", state)
+    logger.info("[graph_runner] Pre-pipeline language=%s", state.get("language"))
 
     # 3) Run the LangGraph with hard timeout protection
     _graph_timeout = int(os.getenv("GRAPH_EXEC_TIMEOUT_SECONDS", "120"))
@@ -221,6 +229,7 @@ def run_graph_once(
     final_state = result.state
 
     # ✅ Override language with Babel Gardens detection (more accurate than langdetect)
+    _resolved_lang = None
     if final_state.get("emotion_metadata") and final_state["emotion_metadata"].get("language"):
         babel_lang = final_state["emotion_metadata"]["language"].lower()
         # Use Babel Gardens language directly — supports 100+ languages (ISO-639-1)
@@ -238,8 +247,19 @@ def run_graph_once(
             "russian": "ru", "rus": "ru",
             "korean": "ko", "kor": "ko",
         }
-        final_state["language"] = _LANG_NAME_MAP.get(babel_lang, babel_lang)
-        logger.info(f"[graph_runner] Language from Babel Gardens: {babel_lang} → {final_state['language']}")
+        mapped = _LANG_NAME_MAP.get(babel_lang, babel_lang)
+        # "auto" or other non-ISO values are NOT valid languages
+        if mapped and len(mapped) == 2 and mapped != "au":
+            _resolved_lang = mapped
+
+    # Fallback chain: Babel → langdetect → env default → "en"
+    if not _resolved_lang:
+        _resolved_lang = _detect_language(input_text) if input_text else None
+    if not _resolved_lang or _resolved_lang == "auto":
+        _resolved_lang = os.getenv("GRAPH_DEFAULT_LANGUAGE", "en")
+
+    final_state["language"] = _resolved_lang
+    logger.info(f"[graph_runner] Language resolved: babel={final_state.get('emotion_metadata', {}).get('language', 'N/A')} → {_resolved_lang}")
 
     # Debug log (safe truncation)
     logger.debug("[graph_runner] Final state after invoke: %s",
