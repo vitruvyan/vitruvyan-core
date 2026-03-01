@@ -1,5 +1,9 @@
 # Contract Enforcement End-to-End — Implementation Roadmap
 
+> ⚠️ **ARCHIVED** — March 1, 2026. Implementation complete (Core v1.7.0 + v1.8.0).
+> Canonical reference: [`docs/architecture/contracts.md`](../architecture/contracts.md)
+> This file is retained as historical record of the design process.
+
 > **Last updated**: Feb 28, 2026 18:45 UTC
 > **Revision**: R2 — post peer review (ChatGPT audit). Tutti i finding critici incorporati.
 

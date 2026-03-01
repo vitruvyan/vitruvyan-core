@@ -155,6 +155,7 @@ nav:
  
   - Architecture:
     - Overview: docs/architecture/README.md
+    - Contracts: docs/architecture/contracts.md
     - Dual Memory Layer: docs/architecture/DUAL_MEMORY_LAYER.md
     - Semantic & Ontology: docs/architecture/SEMANTIC_ONTOLOGY_ARCHITECTURE.md
     - Sacred Orders Pattern: vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md
@@ -196,10 +197,6 @@ nav:
     
   - Development:
     - Testing: tests/README_TESTS.md
-    - Core Contracts:
-      - Developer Guide: docs/knowledge_base/governance/contracts.md
-      - Pipeline Contract Enforcement: docs/contracts/platform/PIPELINE_CONTRACT_ENFORCEMENT.md
-      - Contracts Reference: docs/contracts/README.md
     - Update & Package Manager:
       - Update Manager System: docs/knowledge_base/development/Update_Manager_System.md
       - Update System Contract V1: docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md
