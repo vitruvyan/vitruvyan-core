@@ -1,14 +1,16 @@
 """
-GDrive Ingest Routes — Edge Oculus Prime (AICOMSEC)
-====================================================
-Endpoints for ingesting files from Google Drive into the Oculus Prime
-evidence pipeline.
+GDrive Ingest & Repository Routes — Edge Oculus Prime (AICOMSEC)
+=================================================================
+Endpoints for:
+  - Ingesting files FROM Google Drive into the evidence pipeline
+  - Browsing/managing the GDrive document repository (archived originals)
 
 POST /oculus/v2/gdrive/ingest   — ingest a single file by Drive file_id
 POST /oculus/v2/gdrive/folder   — list + ingest all files in a Drive folder
-GET  /oculus/v2/gdrive/status   — check if GDrive adapter is configured
+GET  /oculus/v2/gdrive/status   — check if GDrive adapters are configured
+GET  /oculus/v2/gdrive/repo/browse — browse archived documents by tenant/project
 
-> **Last updated**: Feb 27, 2026 17:00 UTC
+> **Last updated**: Mar 2, 2026 19:00 UTC
 """
 
 from __future__ import annotations
@@ -149,19 +151,40 @@ def _do_ingest(
 
 @gdrive_router.get("/status")
 async def gdrive_status(request: Request):
-    """Check whether the GDrive adapter is configured and available."""
-    adapter = getattr(request.app.state, "gdrive_adapter", None)
-    if adapter is None:
+    """Check whether the GDrive adapters are configured and available."""
+    # Ingestion adapter (readonly)
+    ingestion = getattr(request.app.state, "gdrive_adapter", None)
+    # Repository adapter (readwrite)
+    repo = getattr(request.app.state, "gdrive_repo", None)
+
+    result = {
+        "ingestion": {"enabled": ingestion is not None},
+        "repository": {"enabled": repo is not None},
+    }
+
+    if ingestion is None:
         import os
         creds_file = os.environ.get("GDRIVE_CREDENTIALS_FILE", "").strip()
         if not creds_file:
-            reason = "GDRIVE_CREDENTIALS_FILE not set"
+            result["ingestion"]["reason"] = "GDRIVE_CREDENTIALS_FILE not set"
         elif not os.path.isfile(creds_file):
-            reason = f"credentials file not found: {creds_file}"
-        else:
-            reason = "adapter init failed (check logs)"
-        return {"enabled": False, "reason": reason, "credentials_path": creds_file or None}
-    return {"enabled": True, "scopes": GDriveAdapter.SCOPES}
+            result["ingestion"]["reason"] = f"credentials file not found: {creds_file}"
+    else:
+        result["ingestion"]["scopes"] = GDriveAdapter.SCOPES_READONLY
+
+    if repo is None:
+        import os
+        reason = "GDRIVE_REPO_CREDENTIALS_FILE not set (falls back to GDRIVE_CREDENTIALS_FILE)"
+        root_id = os.environ.get("GDRIVE_REPO_ROOT_FOLDER_ID", "").strip()
+        if not root_id:
+            reason += " | GDRIVE_REPO_ROOT_FOLDER_ID not set"
+        result["repository"]["reason"] = reason
+    else:
+        import os
+        result["repository"]["scopes"] = GDriveAdapter.SCOPES_READWRITE
+        result["repository"]["root_folder_id"] = os.environ.get("GDRIVE_REPO_ROOT_FOLDER_ID", "")
+
+    return result
 
 
 @gdrive_router.post("/ingest", response_model=GDriveIngestResult)
@@ -267,3 +290,100 @@ async def gdrive_ingest_folder(
         excluded=excluded,
         results=results,
     )
+
+
+# ── Repository endpoints ─────────────────────────────────────────────────────
+
+def _get_repo(request: Request):
+    """Get the GDrive repository adapter (readwrite)."""
+    repo = getattr(request.app.state, "gdrive_repo", None)
+    if repo is None:
+        raise HTTPException(
+            status_code=503,
+            detail="GDrive Repository not configured. Set GDRIVE_REPO_ROOT_FOLDER_ID.",
+        )
+    return repo
+
+
+@gdrive_router.get("/repo/browse")
+async def repo_browse(
+    request: Request,
+    tenant_id: str = None,
+    project_name: str = None,
+):
+    """
+    Browse the GDrive document repository.
+
+    - No params → list tenant folders (top level)
+    - tenant_id → list project folders for that tenant
+    - tenant_id + project_name → list files in that project
+    """
+    import os
+
+    repo = _get_repo(request)
+    root_id = os.environ.get("GDRIVE_REPO_ROOT_FOLDER_ID", "").strip()
+    if not root_id:
+        raise HTTPException(status_code=503, detail="GDRIVE_REPO_ROOT_FOLDER_ID not set")
+
+    try:
+        if not tenant_id:
+            # List tenant folders
+            folders = repo.list_folder(root_id, include_folders=True)
+            return {
+                "level": "tenants",
+                "root_folder_id": root_id,
+                "items": [
+                    {"name": f.name, "id": f.file_id, "type": "folder"}
+                    for f in folders
+                    if f.mime_type == "application/vnd.google-apps.folder"
+                ],
+            }
+
+        # Resolve tenant folder
+        tenant_folder_id = repo.find_folder(tenant_id, root_id)
+        if not tenant_folder_id:
+            return {"level": "projects", "tenant_id": tenant_id, "items": [], "note": "Tenant folder not found"}
+
+        if not project_name:
+            # List project folders
+            items = repo.list_folder(tenant_folder_id, include_folders=True)
+            return {
+                "level": "projects",
+                "tenant_id": tenant_id,
+                "items": [
+                    {
+                        "name": f.name,
+                        "id": f.file_id,
+                        "type": "folder" if f.mime_type == "application/vnd.google-apps.folder" else "file",
+                        "mime_type": f.mime_type,
+                        "size": f.size,
+                        "modified": f.modified_time,
+                    }
+                    for f in items
+                ],
+            }
+
+        # List files in project folder
+        project_folder_id = repo.find_folder(project_name, tenant_folder_id)
+        if not project_folder_id:
+            return {"level": "files", "tenant_id": tenant_id, "project": project_name, "items": [], "note": "Project folder not found"}
+
+        files = repo.list_folder(project_folder_id)
+        return {
+            "level": "files",
+            "tenant_id": tenant_id,
+            "project": project_name,
+            "items": [
+                {
+                    "name": f.name,
+                    "id": f.file_id,
+                    "mime_type": f.mime_type,
+                    "size": f.size,
+                    "modified": f.modified_time,
+                }
+                for f in files
+            ],
+        }
+    except Exception as exc:
+        logger.error("GDrive repo browse failed: %s", exc)
+        raise HTTPException(status_code=502, detail=f"GDrive error: {exc}")

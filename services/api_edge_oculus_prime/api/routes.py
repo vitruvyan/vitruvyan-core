@@ -38,11 +38,13 @@ async def health_check(request: Request):
 @router.post(f"{LEGACY_INTAKE_PREFIX}/document", deprecated=True)
 async def ingest_document(
     request: Request,
-    file: UploadFile = File(..., description="Document file (PDF, DOCX, MD, TXT, JSON, XML)"),
+    file: UploadFile = File(..., description="Document file (PDF, DOCX, XLSX, PPTX, MD, TXT, JSON, XML)"),
     sampling_policy_ref: str | None = Form(None),
     correlation_id: str | None = Form(None),
     chunking_strategy: str = Form("size"),
     chunk_size: int = Form(4000),
+    tenant_id: str | None = Form(None, description="Tenant ID for GDrive folder organization"),
+    project_name: str | None = Form(None, description="Project name for GDrive subfolder"),
 ):
     adapter = _get_adapter(request)
     try:
@@ -52,6 +54,8 @@ async def ingest_document(
             correlation_id=correlation_id,
             chunking_strategy=chunking_strategy,
             chunk_size=chunk_size,
+            tenant_id=tenant_id,
+            project_name=project_name,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))

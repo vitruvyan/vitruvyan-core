@@ -1,0 +1,240 @@
+flowchart TD
+    %% ========================================================================
+    %% Visual legend
+    %%   guard     → orange border  — enforcement / validation point
+    %%   mandatory → red border     — MANDATORY node (structurally unbypassable)
+    %%   database  → teal           — persistent storage
+    %%   stream    → amber          — Redis Streams channel
+    %%   branch    → blue           — route branch from decide
+    %%   source    → green          — external data source
+    %%   startend  → dark           — START / END markers
+    %% ========================================================================
+    classDef guard     fill:#FFF3E0,stroke:#E65100,stroke-width:2px,color:#BF360C
+    classDef mandatory fill:#FCE4EC,stroke:#C62828,stroke-width:3px,color:#B71C1C
+    classDef database  fill:#E0F2F1,stroke:#00695C,stroke-width:2px,color:#004D40
+    classDef stream    fill:#FFF8E1,stroke:#F9A825,stroke-width:1.5px,color:#7B5800
+    classDef branch    fill:#E3F2FD,stroke:#1565C0,stroke-width:1px,color:#0D47A1
+    classDef source    fill:#E8F5E9,stroke:#2E7D32,stroke-width:1px,color:#1B5E20
+    classDef startend  fill:#263238,stroke:#546E7A,stroke-width:2px,color:#ECEFF1
+
+    %% ========================================================================
+    %% TWO INDEPENDENT ENTRY POINTS
+    %% ========================================================================
+
+    START_DATA(["▶ START · Flow A\nExternal data arrives\n(documents, images, audio, APIs, geo)"])
+    START_USER(["▶ START · Flow B\nUser sends a request\nvia chat / API"])
+
+    class START_DATA,START_USER startend
+
+    %% ========================================================================
+    %% FLOW A — DATA INGESTION  (async / background — runs continuously)
+    %% External data → normalise → validate → bus → chunk → embed → index
+    %% ========================================================================
+
+    subgraph EDGE["🔭 EDGE — Oculus Prime  ·  infrastructure/edge/oculus_prime/"]
+        direction TB
+        SRC["9 source adapters  (FRED escluso — legacy finance)\n📄 Documenti normativi   🖼️ Immagini   🎙️ Audio\n🎥 Video stream (CCTV / sorveglianza)\n🏗️ CAD/BIM (planimetrie, IFC facility)\n🌐 API (GNews · Reddit — threat intel)   📍 Geo   🌿 Landscape"]
+
+        GUARDRAIL["🔒 ① IntakeGuardrails\nContract: ACCORDO-FONDATIVO-INTAKE-V1.1\n---------------------------------------\nRule 1 · text must be factual only\n          no evaluative / semantic language\nRule 2 · source_hash SHA-256 required\nRule 3 · no cross-boundary module imports\n---------------------------------------\n⛔ NoSemanticsViolation → data BLOCKED\n✅ pass → EventEmitter publishes to bus"]
+
+        SRC --> GUARDRAIL
+    end
+
+    class GUARDRAIL guard
+    class SRC source
+
+    STREAM_INTAKE["⚡ Bus stream\nintake.normalized"]:::stream
+
+    subgraph INGESTION["📚 INGESTION PIPELINE  ·  async / background"]
+        direction TB
+        CODEX["Codex Hunters  ·  services/api_codex_hunters\n------------------------------\nInspector: chunk semantici + NER + dedup\nRestorer: repair chunk incompleti\n           coerenza tra run successivi"]
+        EMBED["Embedding Service  ·  services/api_embedding\n------------------------------\ntext → dense vector\nRAGPayload validated before write"]
+        MEM_ORD["Memory Orders  ·  services/api_memory_orders\nmonitors KB coherence\nauto-reconcile on drift"]
+    end
+
+    QDRANT[("Qdrant\nVector Store\nRAG_GOVERNANCE_CONTRACT_V1\nonly declared collections")]:::database
+    PG_DB[("PostgreSQL\nconversations · events\ndse_runs")]:::database
+    OPENMD[("OpenMetadata\nLineage graph\nEntity catalog")]:::database
+
+    START_DATA --> SRC
+    GUARDRAIL  -->|"✅ compliant data only"| STREAM_INTAKE
+    STREAM_INTAKE -->|"consumer group + ACK"| CODEX
+    CODEX         -->|"chunks + entities"| EMBED
+    EMBED         -->|"upsert vector\nRAGPayload validated"| QDRANT
+    EMBED         -->|"notify"| MEM_ORD
+    MEM_ORD       -.->|"reconcile if drift"| QDRANT
+    CODEX         -->|"persist"| PG_DB
+    EMBED         -->|"persist metadata"| OPENMD
+
+    %% ========================================================================
+    %% STARTUP — SERVICE BOOT SEQUENCE (una volta sola, prima di qualsiasi richiesta)
+    %% Enforcement ③: contratti compile-time verificati quando api_graph si avvia
+    %% ========================================================================
+
+    subgraph STARTUP["🔧 AVVIO SERVIZIO  ·  api_graph boot  (una sola volta — prima di ricevere richieste)"]
+        direction TB
+        N_COMPILE["🔒 ③ Contratti compile-time\n----------------------------------\nGraphPlugin ABC\n  7 @abstractmethod obbligatori\n  → TypeError Python se mancante\n  → servizio NON parte\n----------------------------------\nBaseGraphState TypedDict\n  ~35 campi agnostici\n  mypy / pyright verificano a build time\n----------------------------------\nNodeContract per ogni nodo\n  required_fields + produced_fields\n  metadati dichiarativi delle dipendenze"]
+    end
+
+    class N_COMPILE guard
+    %% La compilazione del grafo è una precondizione strutturale:
+    %% il runtime non può invocare graph.invoke() se il plugin non è conforme
+    N_COMPILE -.->|"grafo compilato\nservizio pronto"| GUARD
+
+    %% ========================================================================
+    %% FLOW B — USER REQUEST  (synchronous — per request)
+    %% User → HTTP → validate → lock → thread → session → guard → pipeline
+    %% ========================================================================
+
+    subgraph UIPATH["👤 HTTP ENTRY  ·  services/api_graph  :7010"]
+        direction TB
+        UI["Next.js UI  :3000\nor direct API caller"]
+        AUTH["AuthMiddleware\nKeycloak JWT  (opt-in)"]
+        SCHEMA_IN["② GraphInputSchema — Pydantic\n------------------------------\nRequired: input_text · user_id\nOptional: validated_entities · language\n------------------------------\n⛔ HTTP 422 if invalid\n   pipeline never starts with bad data"]
+        LOCK["Per-user asyncio.Lock\nSerialises concurrent calls per user\n(different users run in parallel)"]
+        TO_THREAD["asyncio.to_thread()\nBlocking pipeline offloaded\nEvent loop stays free"]
+    end
+
+    class SCHEMA_IN guard
+
+    subgraph RUNNER["⚙️ GRAPH RUNNER  ·  graph_runner.py"]
+        direction TB
+        SESSION["Session Recovery\n1st: LRU cache  (TTL 1h · 1000 users)\n2nd: PostgreSQL fallback on miss\n→ restores previous intent + entities\n→ enables multi-turn conversation"]
+        STATE["State Init\ntrace_id = UUID4  (audit key)\nvalidated_entities: Golden Rule\n  caller list is never overridden\nlanguage: auto-detected"]
+        GUARD["🔒 ④ NodeExecutionGuard\nThreadPoolExecutor hard timeout\nGRAPH timeout = 120s\nNODE  timeout = 30s\n⛔ OS-thread kill + audit event on breach"]
+    end
+
+    class GUARD guard
+
+    START_USER --> UI
+    UI --> AUTH --> SCHEMA_IN --> LOCK --> TO_THREAD
+    TO_THREAD --> SESSION --> STATE --> GUARD
+
+    %% ========================================================================
+    %% CORE PIPELINE  ·  LangGraph fixed compiled topology  (graph_flow.py)
+    %%
+    %% Contract ③ is enforced ONCE at service startup:
+    %%   GraphPlugin ABC  →  TypeError if any of 7 @abstractmethod is missing
+    %%   BaseGraphState TypedDict  →  mypy / pyright type check at build
+    %% After startup the compiled graph is immutable — no runtime rewiring.
+    %% ========================================================================
+
+    subgraph LG["🧠 LANGGRAPH PIPELINE  ·  fixed compiled topology  (③ contracts enforced at startup)"]
+        direction TB
+
+        N_PARSE["[1] parse\nnormalise + clean input text"]
+        N_INTENT["[2] intent_detection\nLLM classifies intent\nusing domain registry\ncreate_aicomsec_registry()"]
+        N_WEAVER["[3] weaver  (Pattern Weavers)\nLLM extracts semantic context\nbuilds weaver_context for search"]
+        N_ENTITY["[4] entity_resolver\nmaps entities to canonical IDs"]
+        N_EMOTION["[5] babel_emotion  (Babel Gardens)\nlanguage · culture · emotion\ncalibrates response tone"]
+        N_VSGS["[6] semantic_grounding\nQdrant similarity search\nDECLARED collections only"]
+        N_PARAMS["[7] params_extraction\nhorizon · topk · filters"]
+        N_DECIDE["[8] decide\nroutes to one of 8 branches"]
+
+        subgraph BRANCHES["Branch execution  ·  ALL paths converge on output_normalizer — no branch can skip to END"]
+            direction LR
+            BR_EXEC["exec\ndirect tool call"]
+            BR_QDRANT["qdrant\nsemantic fallback"]
+            BR_LLM["llm_soft\nconversational LLM"]
+            BR_SLOT["slot_filler\nmulti-turn: asks\nfor missing params"]
+            BR_CODEX["codex_hunters\ntrigger re-indexing"]
+            BR_MCP["llm_mcp\nMCP tool calls"]
+            BR_DSE["dse_node\ndesign space\nexploration"]
+            BR_EARLY["early-exit\ngreetings / trivial"]
+        end
+
+        class BR_EXEC,BR_QDRANT,BR_LLM,BR_SLOT,BR_CODEX,BR_MCP,BR_DSE,BR_EARLY branch
+
+        N_OUT["output_normalizer\nunifies all branch outputs\ninto common schema"]
+        N_COMPOSE["compose\nnarrative synthesis"]
+
+        N_ORTHO["🔒 ⑤ Topology Lock · parte A: orthodoxy  —  MANDATORY\nOrthodoxy Wardens  (Sacred Order: TRUTH)\n-------------------------------------------------\nValidates output vs domain constraints\northodoxy_status  (5-value enum):\n  blessed · purified · heretical\n  non_liquet · clarification_needed\n-------------------------------------------------\nNessun arco nel grafo compilato bypassa questo nodo"]
+        N_VAULT["🔒 ⑤ Topology Lock · parte B: vault  —  MANDATORY\nVault Keepers  (Sacred Order: MEMORY)\n-------------------------------------------------\nArchives state + response securely\nvault_blessing required before END\nRaggiungibile SOLO dall'output di orthodoxy"]
+        N_CAN["can  (Cognitive Articulation Node)\nOpenAI Function Calling\nfinal narrative + follow_up questions"]
+        N_ADVISOR["advisor  (optional)\naction recommendations\nif user_requests_action = true"]
+
+        class N_ORTHO,N_VAULT mandatory
+
+        N_PARSE --> N_INTENT --> N_WEAVER --> N_ENTITY --> N_EMOTION --> N_VSGS --> N_PARAMS --> N_DECIDE
+        N_DECIDE --> BR_EXEC
+        N_DECIDE --> BR_QDRANT
+        N_DECIDE --> BR_LLM
+        N_DECIDE --> BR_SLOT
+        N_DECIDE --> BR_CODEX
+        N_DECIDE --> BR_MCP
+        N_DECIDE --> BR_DSE
+        N_DECIDE --> BR_EARLY
+        BR_EXEC --> N_OUT
+        BR_QDRANT --> N_OUT
+        BR_LLM --> N_OUT
+        BR_SLOT --> N_OUT
+        BR_CODEX --> N_OUT
+        BR_MCP --> N_OUT
+        BR_DSE --> N_OUT
+        BR_EARLY --> N_OUT
+        N_OUT --> N_COMPOSE --> N_ORTHO --> N_VAULT --> N_CAN --> N_ADVISOR --> LGEND(["END\ngraph topology\ncomplete"])
+    end
+
+    class LGEND startend
+
+    GUARD -->|"graph.invoke(state)\ntrace_id propagated"| N_PARSE
+
+    %% semantic grounding reads from Qdrant (populated by Flow A)
+    N_VSGS  -->|"similarity query\ndeclared collections only"| QDRANT
+    QDRANT  -.->|"matching chunks\nback into graph state"| N_VSGS
+
+    %% ========================================================================
+    %% DSE SIDE-SERVICE  (called synchronously from dse_node branch)
+    %% ========================================================================
+
+    subgraph DSE["🎯 DSE EDGE  ·  api_edge_dse  :8021"]
+        direction LR
+        DSE_PREP["prepare()\nDesignPoint + RunContext\n(frozen — immutable)"]
+        DSE_STRAT["SamplingStrategySelector\nautoseleziona la strategia\nin base alle dimensioni del problema\n----------------------\nLHS · Cartesian · Sobol\ninjection point per strategie ML custom"]
+        DSE_SAMPLE["consumers/sampling.py\nLHS · Cartesian · Sobol\npure domain · zero I/O\n26 unit test"]
+        DSE_PARETO["consumers/pareto.py\nPareto frontier\ndominance ranking"]
+        DSE_PERSIST["DSEPersistenceAdapter\ndse_runs + dse_rejections\ntabelle PostgreSQL"]
+        DSE_PREP --> DSE_STRAT --> DSE_SAMPLE --> DSE_PARETO --> DSE_PERSIST
+    end
+
+    STREAM_DSE["⚡ Bus stream\ndse.run.completed\n(consumatori downstream)"]:::stream
+
+    BR_DSE -->|"POST /dse/run_from_context\nsync HTTP"| DSE_PREP
+    DSE_PERSIST -->|"PostgreSQL"| PG_DB
+    DSE_PERSIST -->|"emit event"| STREAM_DSE
+
+    %% ========================================================================
+    %% AICOMSEC COMPLIANCE SERVICE  (standalone REST, also feeds from OPENMD)
+    %% ========================================================================
+
+    subgraph AICOMSEC["🛡️ AICOMSEC COMPLIANCE  ·  api_aicomsec  :7080"]
+        direction LR
+        EV_REQ["POST /v1/evidence/chain\nnorm · article · tenant_id"]
+        EV_FQN["Build FQN\naicomsec.<tenant>.normative.<slug>\nnorm + articolo → canonical identifier"]
+        EV_META["MetadataLineageAgent\ninterroga OpenMetadata\nupstream edges · downstream edges\n(doc sorgente, chunk, embeddings)\n📌 se non raggiungibile:\nlineage_available=false  (degraded-graceful)"]
+        EV_CHAIN["_build_evidence_chain()\nordina catena in passi logici:\nentità normativa → doc → chunk → embedding"]
+        EV_HASH["chain_hash SHA-256\nhash(norma+articolo+tenant_id+len(catena))\nintegrità deterministica"]
+        EV_RESP["EvidenceChainResponse\nchain_hash · lineage_graph\nevidence_chain steps"]
+        EV_REQ --> EV_FQN --> EV_META --> EV_CHAIN --> EV_HASH --> EV_RESP
+    end
+
+    OPENMD -->|"lineage graph"| EV_META
+
+    %% ========================================================================
+    %% OUTPUT  (contract-sealed response back to user)
+    %% ========================================================================
+
+    subgraph OUTPUT["📤 OUTPUT CONTRACT  ·  contracts/graph_response.py"]
+        direction TB
+        RESP["⑥ GraphResponseMin — Pydantic\n----------------------------------\nhuman           narrative for user\northodoxy_status 5-value canonical enum\ncorrelation_id  deterministic hash\nsession_min     trace_id · intent · emotion\nfollow_ups      suggested next questions\n----------------------------------\n⛔ serialisation fails if non-conformant\nlegacy values remapped to canonical 5"]
+        PERSIST_OUT["persist session\nLRU cache  +  PostgreSQL\nINSERT conversations"]
+    end
+
+    class RESP guard
+
+    LGEND        --> RESP
+    RESP         --> PERSIST_OUT
+    RESP         -->|"JSON response"| UI
+
+    END_USER(["✅ END · Flow B\nUser receives\ncontract-sealed response"]):::startend
+    PERSIST_OUT --> END_USER

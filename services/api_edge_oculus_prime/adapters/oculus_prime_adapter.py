@@ -8,7 +8,7 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import HTTPException, UploadFile
 
@@ -30,10 +30,11 @@ logger = logging.getLogger(__name__)
 class OculusPrimeAdapter:
     """Delegates API operations to core oculus prime agents and persistence adapters."""
 
-    def __init__(self, settings: OculusPrimeSettings, stream_bus: Any = None):
+    def __init__(self, settings: OculusPrimeSettings, stream_bus: Any = None, gdrive_repo=None):
         self.settings = settings
         self.stream_bus = stream_bus
         self.persistence = OculusPrimePersistence(settings=settings)
+        self.gdrive_repo = gdrive_repo  # GDriveAdapter in readwrite mode (optional)
 
     def ensure_uploads_dir(self) -> None:
         os.makedirs(self.settings.uploads_dir, exist_ok=True)
@@ -47,6 +48,57 @@ class OculusPrimeAdapter:
             shutil.copyfileobj(upload.file, buffer)
         return target_path
 
+    def _archive_to_gdrive(
+        self,
+        local_path: str,
+        tenant_id: Optional[str] = None,
+        project_name: Optional[str] = None,
+        original_filename: Optional[str] = None,
+    ) -> Optional[dict]:
+        """
+        Upload the original file to GDrive repository (if configured).
+        Folder structure: ROOT / {tenant_id} / {project_name} / filename
+        Returns {"file_id": ..., "web_link": ...} or None.
+        """
+        if not self.gdrive_repo:
+            return None
+
+        root_folder_id = os.environ.get("GDRIVE_REPO_ROOT_FOLDER_ID", "").strip()
+        if not root_folder_id:
+            logger.debug("GDrive repo: GDRIVE_REPO_ROOT_FOLDER_ID not set — skipping archive.")
+            return None
+
+        try:
+            # Build folder hierarchy: root / tenant / project
+            segments = []
+            if tenant_id:
+                segments.append(tenant_id)
+            if project_name:
+                segments.append(project_name)
+
+            if segments:
+                target_folder_id = self.gdrive_repo.resolve_path(root_folder_id, *segments)
+            else:
+                target_folder_id = root_folder_id
+
+            file_id = self.gdrive_repo.upload_file(
+                local_path=local_path,
+                folder_id=target_folder_id,
+                filename=original_filename,
+            )
+            web_link = self.gdrive_repo.get_web_link(file_id)
+            logger.info(
+                "Archived to GDrive: %s → %s/%s (file_id=%s)",
+                original_filename or os.path.basename(local_path),
+                tenant_id or "root",
+                project_name or "",
+                file_id,
+            )
+            return {"file_id": file_id, "web_link": web_link}
+        except Exception as exc:
+            logger.error("GDrive archive failed (non-blocking): %s", exc)
+            return None
+
     def health(self) -> dict[str, Any]:
         return self.persistence.health()
 
@@ -57,6 +109,8 @@ class OculusPrimeAdapter:
         correlation_id: str | None,
         chunking_strategy: str,
         chunk_size: int,
+        tenant_id: str | None = None,
+        project_name: str | None = None,
     ) -> dict[str, Any]:
         temp_path = None
         postgres = None
@@ -68,6 +122,14 @@ class OculusPrimeAdapter:
                     f"Unsupported document format: {file_ext}. Supported: {list(self.settings.document_formats)}"
                 )
 
+            # Archive original to GDrive repository (non-blocking)
+            gdrive_info = self._archive_to_gdrive(
+                local_path=temp_path,
+                tenant_id=tenant_id,
+                project_name=project_name,
+                original_filename=file.filename,
+            )
+
             postgres, emitter = build_runtime_dependencies(self.settings, self.stream_bus)
             agent = DocumentIntakeAgent(event_emitter=emitter, postgres_agent=postgres)
             evidence_ids = agent.ingest_document(
@@ -77,11 +139,14 @@ class OculusPrimeAdapter:
                 chunk_size=chunk_size,
                 correlation_id=correlation_id,
             )
-            return {
+            result = {
                 "status": "success",
                 "message": f"Document ingested. Created {len(evidence_ids)} evidence chunks.",
                 "evidence_ids": evidence_ids,
             }
+            if gdrive_info:
+                result["gdrive"] = gdrive_info
+            return result
         finally:
             if temp_path and os.path.exists(temp_path):
                 os.remove(temp_path)

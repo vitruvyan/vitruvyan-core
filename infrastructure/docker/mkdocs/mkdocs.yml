@@ -1,7 +1,7 @@
 # ============================================================================
 # MkDocs Configuration — Vitruvyan Core Knowledge Base
 # ============================================================================
-# Last Updated: February 20, 2026
+# Last Updated: March 1, 2026
 # Purpose: User & administrator documentation (domain-agnostic epistemic OS)
 # Deploy: docker compose up -d mkdocs → http://localhost:9800
 # Build:  mkdocs build → site/ (static HTML)
@@ -119,15 +119,6 @@ nav:
     - Epistemic Charter: docs/foundational/Vitruvyan_Epistemic_Charter.md
     - Pipeline Walkthrough: docs/foundational/VITRUVYAN_PIPELINE_WALKTHROUGH.md
 
-  - Installation:
-    - Overview: docs/installation/README.md
-    - Requirements: docs/installation/REQUIREMENTS.md
-    - Local Setup: docs/installation/LOCAL.md
-    - Docker Setup: docs/installation/DOCKER.md
-    - Production Deployment: docs/installation/PRODUCTION.md
-    - Environment Variables: docs/installation/ENV_VARS.md
-    - Health Checks: docs/installation/HEALTH_CHECKS.md
-
   - System Core:
     - Orchestration:
       - Overview: vitruvyan_core/core/orchestration/README.md
@@ -155,7 +146,7 @@ nav:
  
   - Architecture:
     - Overview: docs/architecture/README.md
-    - Contracts: docs/architecture/contracts.md
+    - "Pipeline E2E — Guida Completa": docs/architecture/PIPELINE_E2E.md
     - Dual Memory Layer: docs/architecture/DUAL_MEMORY_LAYER.md
     - Semantic & Ontology: docs/architecture/SEMANTIC_ONTOLOGY_ARCHITECTURE.md
     - Sacred Orders Pattern: vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md
@@ -186,8 +177,38 @@ nav:
     - Contracts: docs/knowledge_base/web_ui/contracts.md
     - Stack & Technology: docs/knowledge_base/web_ui/stack.md
     
+  - Verticali:
+    - Guida Generale:
+      - Implementation Guide: docs/knowledge_base/development/Vertical_Implementation_Guide.md
+      - Domain: docs/knowledge_base/development/verticals/Vertical_Domain.md
+      - Orchestration (LangGraph): docs/knowledge_base/development/verticals/Vertical_Orchestration_LangGraph.md
+      - Sacred Orders Integration: docs/knowledge_base/development/verticals/Vertical_Sacred_Orders.md
+      - Pattern Guide: docs/knowledge_base/development/verticals/Vertical_Patterns.md
+      - Technical Reference: docs/knowledge_base/development/verticals/Vertical_Technical_Reference.md
+      - Pattern Examples: examples/verticals/README.md
+    - Contratti:
+      - Overview: docs/contracts/verticals/README.md
+      - Vertical Contract V1: docs/contracts/verticals/VERTICAL_CONTRACT_V1.md
+      - Conformance Checklist: docs/contracts/verticals/VERTICAL_CONFORMANCE_CHECKLIST.md
+      - Pattern Notes: docs/contracts/verticals/pattern.md
+      - Manifest Template: docs/contracts/verticals/templates/vertical_manifest.yaml
+    - "AiComSec (Security)":
+      - Brainstorm Report: docs/knowledge_base/development/verticals/security/AICOMSEC_BRAINSTORM_REPORT.md
+      - Excel Ingestion Walkthrough: docs/knowledge_base/development/verticals/security/AICOMSEC_EXCEL_INGESTION_WALKTHROUGH.md
+      - "Pipeline E2E — Guida Completa": docs/architecture/PIPELINE_E2E.md
+    - Finance (Legacy):
+      - Codex Hunters Domain Pack: examples/verticals/finance/CODEX_HUNTERS_DOMAIN_PACK.md
+
   - Infrastructure:
     - Overview: infrastructure/README_INFRASTRUCTURE.md
+    - Installation:
+      - Overview: docs/installation/README.md
+      - Requirements: docs/installation/REQUIREMENTS.md
+      - Local Setup: docs/installation/LOCAL.md
+      - Docker Setup: docs/installation/DOCKER.md
+      - Production Deployment: docs/installation/PRODUCTION.md
+      - Environment Variables: docs/installation/ENV_VARS.md
+      - Health Checks: docs/installation/HEALTH_CHECKS.md
     - Docker Setup: infrastructure/docker/README.md
     - Oculus Prime: infrastructure/edge/oculus_prime/README.md
     - Oculus Prime Flow Graph: docs/knowledge_base/oculus_prime/intake_flow_graph.md
@@ -207,22 +228,6 @@ nav:
       - Contract V1: docs/contracts/rag/RAG_GOVERNANCE_CONTRACT_V1.md
       - Operations: docs/contracts/rag/RAG_GOVERNANCE_OPERATIONS.md
     - Templates: docs/foundational/TEMPLATE_SACRED_ORDER_COMPONENT.md
-    - Verticals:
-      - Implementation Guide (Overview): docs/knowledge_base/development/Vertical_Implementation_Guide.md
-      - Domain: docs/knowledge_base/development/verticals/Vertical_Domain.md
-      - Orchestration (LangGraph): docs/knowledge_base/development/verticals/Vertical_Orchestration_LangGraph.md
-      - Sacred Orders Integration: docs/knowledge_base/development/verticals/Vertical_Sacred_Orders.md
-      - Pattern Guide: docs/knowledge_base/development/verticals/Vertical_Patterns.md
-      - Technical Reference: docs/knowledge_base/development/verticals/Vertical_Technical_Reference.md
-      - Pattern Examples: examples/verticals/README.md
-      - Contracts:
-        - Overview: docs/contracts/verticals/README.md
-        - Vertical Contract V1: docs/contracts/verticals/VERTICAL_CONTRACT_V1.md
-        - Conformance Checklist: docs/contracts/verticals/VERTICAL_CONFORMANCE_CHECKLIST.md
-        - Pattern Notes: docs/contracts/verticals/pattern.md
-        - Manifest Template: docs/contracts/verticals/templates/vertical_manifest.yaml
-      - Finance:
-        - Codex Hunters Domain Pack: examples/verticals/finance/CODEX_HUNTERS_DOMAIN_PACK.md
     - Examples: examples/README_EXAMPLES.md
     - Configuration: config/README_CONFIG.md
     - Scripts: scripts/README_SCRIPTS.md

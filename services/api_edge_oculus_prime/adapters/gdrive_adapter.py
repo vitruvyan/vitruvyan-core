@@ -100,40 +100,58 @@ class GDriveFileMetadata:
 
 class GDriveAdapter:
     """
-    Downloads files from Google Drive and wraps them for ingestion via
-    OculusPrimeAdapter.
+    Downloads/uploads files from/to Google Drive.
 
-    Usage:
+    Usage (read):
         adapter = GDriveAdapter.from_env()
-        if adapter is None:
-            # GDrive not configured
-            return
         file_meta, upload = adapter.download_as_upload(file_id="abc123")
-        oculus.ingest_document(file=upload, ...)
+
+    Usage (write):
+        adapter = GDriveAdapter.from_env(mode="readwrite")
+        folder_id = adapter.find_or_create_folder("clienteA", parent_id="root_id")
+        file_id = adapter.upload_file("/tmp/report.pptx", folder_id)
     """
 
-    SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
+    SCOPES_READONLY = ["https://www.googleapis.com/auth/drive.readonly"]
+    SCOPES_READWRITE = [
+        "https://www.googleapis.com/auth/drive.readonly",
+        "https://www.googleapis.com/auth/drive.file",
+    ]
 
-    def __init__(self, credentials_json: str) -> None:
+    def __init__(self, credentials_json: str, mode: str = "readonly") -> None:
         self._credentials_json = credentials_json
+        self._mode = mode
         self._service = None
+        self._folder_cache: Dict[str, str] = {}  # "parent_id/name" → folder_id
 
     # ── Factory ──────────────────────────────────────────────
 
     @classmethod
-    def from_env(cls) -> Optional["GDriveAdapter"]:
-        """Return GDriveAdapter if GDRIVE_CREDENTIALS_FILE is configured, else None."""
-        credentials_file = os.environ.get("GDRIVE_CREDENTIALS_FILE", "").strip()
+    def from_env(cls, mode: str = "readonly", env_prefix: str = "GDRIVE") -> Optional["GDriveAdapter"]:
+        """
+        Return GDriveAdapter if credentials are configured, else None.
+
+        Args:
+            mode: "readonly" or "readwrite" (determines Google API scopes)
+            env_prefix: prefix for env vars. Default "GDRIVE" reads GDRIVE_CREDENTIALS_FILE.
+                        Use "GDRIVE_REPO" to read GDRIVE_REPO_CREDENTIALS_FILE.
+        """
+        env_key = f"{env_prefix}_CREDENTIALS_FILE"
+        credentials_file = os.environ.get(env_key, "").strip()
         if not credentials_file:
-            logger.info("GDriveAdapter: GDRIVE_CREDENTIALS_FILE not set — disabled.")
-            return None
+            # Fallback: try the default key if using a prefix
+            if env_prefix != "GDRIVE":
+                credentials_file = os.environ.get("GDRIVE_CREDENTIALS_FILE", "").strip()
+            if not credentials_file:
+                logger.info("GDriveAdapter: %s not set — disabled.", env_key)
+                return None
         if not os.path.isfile(credentials_file):
             logger.warning(
                 "GDriveAdapter: credentials file not found at %s — disabled.",
                 credentials_file,
             )
             return None
-        return cls(credentials_json=credentials_file)
+        return cls(credentials_json=credentials_file, mode=mode)
 
     # ── Google Drive service ──────────────────────────────────
 
@@ -144,12 +162,13 @@ class GDriveAdapter:
             from google.oauth2 import service_account
             from googleapiclient.discovery import build
 
+            scopes = self.SCOPES_READWRITE if self._mode == "readwrite" else self.SCOPES_READONLY
             creds = service_account.Credentials.from_service_account_file(
                 self._credentials_json,
-                scopes=self.SCOPES,
+                scopes=scopes,
             )
             self._service = build("drive", "v3", credentials=creds, cache_discovery=False)
-            logger.info("GDriveAdapter: authenticated with service account.")
+            logger.info("GDriveAdapter: authenticated (mode=%s).", self._mode)
             return self._service
         except ImportError:
             raise RuntimeError(
@@ -272,3 +291,114 @@ class GDriveAdapter:
     def resolve_ingest_method(self, mime_type: str) -> str:
         """Return the OculusPrimeAdapter method name for this MIME type."""
         return _MIME_TO_INGEST_METHOD.get(mime_type, "ingest_document")
+
+    # ── Write API (requires mode="readwrite") ─────────────────
+
+    def _require_write(self) -> None:
+        if self._mode != "readwrite":
+            raise RuntimeError(
+                "GDriveAdapter: write operation requires mode='readwrite'. "
+                "Initialize with GDriveAdapter.from_env(mode='readwrite')."
+            )
+
+    def find_folder(self, name: str, parent_id: str) -> Optional[str]:
+        """
+        Find a folder by name under a parent. Returns folder_id or None.
+        Results are cached for the lifetime of the adapter.
+        """
+        cache_key = f"{parent_id}/{name}"
+        if cache_key in self._folder_cache:
+            return self._folder_cache[cache_key]
+
+        service = self._get_service()
+        query = (
+            f"'{parent_id}' in parents "
+            f"and name = '{name}' "
+            f"and mimeType = 'application/vnd.google-apps.folder' "
+            f"and trashed = false"
+        )
+        results = service.files().list(q=query, fields="files(id,name)", pageSize=1).execute()
+        files = results.get("files", [])
+        if files:
+            folder_id = files[0]["id"]
+            self._folder_cache[cache_key] = folder_id
+            return folder_id
+        return None
+
+    def create_folder(self, name: str, parent_id: str) -> str:
+        """
+        Create a new folder under parent_id. Returns the new folder's ID.
+        """
+        self._require_write()
+        service = self._get_service()
+        metadata = {
+            "name": name,
+            "mimeType": "application/vnd.google-apps.folder",
+            "parents": [parent_id],
+        }
+        folder = service.files().create(body=metadata, fields="id").execute()
+        folder_id = folder["id"]
+        self._folder_cache[f"{parent_id}/{name}"] = folder_id
+        logger.info("GDriveAdapter: created folder '%s' (id=%s) under %s", name, folder_id, parent_id)
+        return folder_id
+
+    def find_or_create_folder(self, name: str, parent_id: str) -> str:
+        """Find existing folder or create it. Returns folder_id."""
+        existing = self.find_folder(name, parent_id)
+        if existing:
+            return existing
+        return self.create_folder(name, parent_id)
+
+    def resolve_path(self, root_folder_id: str, *segments: str) -> str:
+        """
+        Resolve a nested folder path, creating folders as needed.
+        Example: resolve_path(root, "aicom-clienteA", "assessment-roma")
+        """
+        current_id = root_folder_id
+        for segment in segments:
+            segment = segment.strip()
+            if not segment:
+                continue
+            current_id = self.find_or_create_folder(segment, current_id)
+        return current_id
+
+    def upload_file(
+        self,
+        local_path: str,
+        folder_id: str,
+        filename: Optional[str] = None,
+    ) -> str:
+        """
+        Upload a local file to a GDrive folder. Returns the Drive file ID.
+        """
+        self._require_write()
+        from googleapiclient.http import MediaFileUpload
+
+        service = self._get_service()
+        actual_filename = filename or os.path.basename(local_path)
+        mime_type = mimetypes.guess_type(local_path)[0] or "application/octet-stream"
+
+        metadata = {
+            "name": actual_filename,
+            "parents": [folder_id],
+        }
+        media = MediaFileUpload(local_path, mimetype=mime_type, resumable=True)
+        result = service.files().create(
+            body=metadata,
+            media_body=media,
+            fields="id,name,webViewLink",
+        ).execute()
+
+        file_id = result["id"]
+        web_link = result.get("webViewLink", "")
+        logger.info(
+            "GDriveAdapter: uploaded '%s' → folder %s (id=%s, link=%s)",
+            actual_filename, folder_id, file_id, web_link,
+        )
+        return file_id
+
+    def get_web_link(self, file_id: str) -> str:
+        """Get the web view link for a file."""
+        service = self._get_service()
+        result = service.files().get(fileId=file_id, fields="webViewLink").execute()
+        return result.get("webViewLink", f"https://drive.google.com/file/d/{file_id}/view")

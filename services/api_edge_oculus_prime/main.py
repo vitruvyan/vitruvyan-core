@@ -8,9 +8,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .adapters.gdrive_adapter import GDriveAdapter
 from .adapters.oculus_prime_adapter import OculusPrimeAdapter
 from .adapters.runtime import build_stream_bus
 from .api import router
+from .api.gdrive_routes import gdrive_router
 from .config import settings
 
 
@@ -23,11 +25,26 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    adapter = OculusPrimeAdapter(settings=settings, stream_bus=build_stream_bus(settings))
+    # GDrive repository adapter (readwrite) — for archiving uploaded originals
+    gdrive_repo = GDriveAdapter.from_env(mode="readwrite", env_prefix="GDRIVE_REPO")
+    if gdrive_repo:
+        logger.info("GDrive Repository: enabled (documents will be archived to GDrive)")
+
+    adapter = OculusPrimeAdapter(
+        settings=settings,
+        stream_bus=build_stream_bus(settings),
+        gdrive_repo=gdrive_repo,
+    )
     adapter.ensure_uploads_dir()
     # Keep legacy attribute for compatibility with older tests/integrations.
     app.state.oculus_prime_adapter = adapter
     app.state.intake_adapter = adapter
+    # GDrive ingestion adapter (readonly) — for downloading from GDrive
+    app.state.gdrive_adapter = GDriveAdapter.from_env(mode="readonly")
+    if app.state.gdrive_adapter:
+        logger.info("GDrive Ingestion: enabled (readonly, credentials configured)")
+    # Expose repo adapter for browse/status endpoints
+    app.state.gdrive_repo = gdrive_repo
     logger.info(
         "Vitruvyan OCULUS PRIME API starting (pg=%s:%s db=%s redis=%s:%s)",
         settings.postgres_host,
@@ -56,3 +73,4 @@ app.add_middleware(
 )
 
 app.include_router(router)
+app.include_router(gdrive_router)
