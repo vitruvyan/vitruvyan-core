@@ -1,5 +1,5 @@
 """
-GDrive Ingest & Repository Routes — Edge Oculus Prime (AICOMSEC)
+GDrive Ingest & Repository Routes — Edge Oculus Prime
 =================================================================
 Endpoints for:
   - Ingesting files FROM Google Drive into the evidence pipeline

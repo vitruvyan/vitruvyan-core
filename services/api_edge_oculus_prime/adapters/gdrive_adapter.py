@@ -1,5 +1,5 @@
 """
-GDrive Adapter — Edge Oculus Prime (AICOMSEC)
+GDrive Adapter — Edge Oculus Prime
 =============================================
 Downloads files from Google Drive and routes them through the Oculus Prime
 intake pipeline.
