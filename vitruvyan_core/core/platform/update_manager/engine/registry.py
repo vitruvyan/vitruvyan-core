@@ -67,7 +67,7 @@ class ReleaseRegistry:
         
         self.repo = repo
         self.api_url = f"{self.GITHUB_API_BASE}/repos/{repo}/releases"
-        self.github_token = os.getenv("GITHUB_TOKEN")
+        self.github_token = os.getenv("GITHUB_TOKEN") or self._autodetermine_token()
     
     def _autodetermine_repo(self) -> str:
         """
@@ -76,13 +76,36 @@ class ReleaseRegistry:
         Returns:
             Repository name (format: "owner/repo")
         """
-        # Try environment variable first
+        # 1. Environment variable (highest priority)
         repo = os.getenv("VITRUVYAN_REPO")
         if repo:
             logger.debug(f"Using repository from VITRUVYAN_REPO: {repo}")
             return repo
-        
-        # Try git remote
+
+        # 2. vertical_manifest.yaml — upstream.repo (downstream vertical config)
+        try:
+            import yaml
+            current = os.getcwd()
+            while current != "/":
+                manifest_path = os.path.join(current, "vertical_manifest.yaml")
+                if os.path.exists(manifest_path):
+                    with open(manifest_path, "r") as f:
+                        manifest = yaml.safe_load(f) or {}
+                    upstream_repo = manifest.get("upstream", {}).get("repo")
+                    if upstream_repo:
+                        logger.debug(f"Using repository from vertical_manifest.yaml upstream.repo: {upstream_repo}")
+                        return upstream_repo
+                    break
+                if os.path.exists(os.path.join(current, ".git")):
+                    break
+                parent = os.path.dirname(current)
+                if parent == current:
+                    break
+                current = parent
+        except Exception as e:
+            logger.debug(f"Could not read vertical manifest for upstream repo: {e}")
+
+        # 3. git remote origin — supports github.com HTTPS and SSH
         try:
             result = subprocess.run(
                 ["git", "remote", "get-url", "origin"],
@@ -100,6 +123,7 @@ class ReleaseRegistry:
                 parts = remote_url.replace(".git", "").split("/")
                 if len(parts) >= 2:
                     owner = parts[-2].split(":")[-1]  # Handle git@github.com:owner
+                    # git@github-alias:owner/repo.git  (SSH alias — strip host, parse owner/repo)
                     repo = parts[-1]
                     detected_repo = f"{owner}/{repo}"
                     logger.debug(f"Autodetermined repository from git remote: {detected_repo}")
@@ -107,11 +131,33 @@ class ReleaseRegistry:
         
         except (subprocess.CalledProcessError, FileNotFoundError, IndexError):
             pass
-        
-        # Fallback to default
+
+        # 4. Fallback to default
         default_repo = "vitruvyan/vitruvyan-core"
         logger.debug(f"Using default repository: {default_repo}")
         return default_repo
+
+    def _autodetermine_token(self) -> Optional[str]:
+        """
+        Autodetermine GitHub token from gh CLI if GITHUB_TOKEN env var is not set.
+
+        Uses `gh auth token` to retrieve the token from the GitHub CLI.
+        Returns None if gh CLI is not installed or not authenticated.
+        """
+        try:
+            result = subprocess.run(
+                ["gh", "auth", "token"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                token = result.stdout.strip()
+                logger.debug("Autodetermined GitHub token from gh CLI")
+                return token
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pass
+        return None
     
     def _create_request(self, url: str, accept_header: str = "application/vnd.github.v3+json") -> Request:
         """

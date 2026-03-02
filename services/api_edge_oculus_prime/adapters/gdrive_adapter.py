@@ -1,0 +1,274 @@
+"""
+GDrive Adapter — Edge Oculus Prime (AICOMSEC)
+=============================================
+Downloads files from Google Drive and routes them through the Oculus Prime
+intake pipeline.
+
+Authentication: service account JSON pointed to by GDRIVE_CREDENTIALS_FILE.
+If the env var is absent, the adapter is disabled (graceful degradation).
+
+LIVELLO 2 — I/O adapter, no domain logic.
+
+> **Last updated**: Feb 27, 2026 17:00 UTC
+"""
+
+from __future__ import annotations
+
+import io
+import logging
+import mimetypes
+import os
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
+
+# MIME → Oculus Prime ingest method name
+_MIME_TO_INGEST_METHOD: Dict[str, str] = {
+    # Documents
+    "application/pdf": "ingest_document",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "ingest_document",
+    "application/msword": "ingest_document",
+    "application/vnd.ms-excel": "ingest_document",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "ingest_document",
+    "text/plain": "ingest_document",
+    "text/csv": "ingest_document",
+    "application/json": "ingest_document",
+    "application/xml": "ingest_document",
+    "text/xml": "ingest_document",
+    "text/markdown": "ingest_document",
+    # Images
+    "image/jpeg": "ingest_image",
+    "image/png": "ingest_image",
+    "image/tiff": "ingest_image",
+    "image/gif": "ingest_image",
+    # Audio
+    "audio/mpeg": "ingest_audio",
+    "audio/wav": "ingest_audio",
+    "audio/ogg": "ingest_audio",
+    # Video
+    "video/mp4": "ingest_video",
+    "video/mpeg": "ingest_video",
+    "video/quicktime": "ingest_video",
+    # CAD / BIM
+    "application/dxf": "ingest_cad",
+    "application/octet-stream": "ingest_document",  # fallback
+    # Google Workspace exports
+    "application/vnd.google-apps.document": "ingest_document",
+    "application/vnd.google-apps.spreadsheet": "ingest_document",
+    "application/vnd.google-apps.presentation": "ingest_document",
+}
+
+_GDRIVE_EXPORT_FORMATS: Dict[str, str] = {
+    "application/vnd.google-apps.document": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.google-apps.spreadsheet": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.google-apps.presentation": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    # Fallback: export remaining Google Workspace types as PDF
+    "application/vnd.google-apps.form": "application/pdf",
+    "application/vnd.google-apps.drawing": "application/pdf",
+    "application/vnd.google-apps.script": "application/pdf",
+    "application/vnd.google-apps.site": "application/pdf",
+    "application/vnd.google-apps.jam": "application/pdf",
+}
+
+# Google Workspace types that cannot be exported at all (skip silently)
+_GDRIVE_SKIP_TYPES: set = {
+    "application/vnd.google-apps.folder",
+    "application/vnd.google-apps.shortcut",
+    "application/vnd.google-apps.map",
+}
+
+
+@dataclass
+class SyntheticUploadFile:
+    """Minimal UploadFile-compatible object for injecting bytes into Oculus Prime."""
+
+    filename: str
+    file: io.BytesIO
+    content_type: str = "application/octet-stream"
+
+
+@dataclass
+class GDriveFileMetadata:
+    file_id: str
+    name: str
+    mime_type: str
+    size: Optional[int] = None
+    modified_time: Optional[str] = None
+    parents: List[str] = field(default_factory=list)
+
+
+class GDriveAdapter:
+    """
+    Downloads files from Google Drive and wraps them for ingestion via
+    OculusPrimeAdapter.
+
+    Usage:
+        adapter = GDriveAdapter.from_env()
+        if adapter is None:
+            # GDrive not configured
+            return
+        file_meta, upload = adapter.download_as_upload(file_id="abc123")
+        oculus.ingest_document(file=upload, ...)
+    """
+
+    SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
+
+    def __init__(self, credentials_json: str) -> None:
+        self._credentials_json = credentials_json
+        self._service = None
+
+    # ── Factory ──────────────────────────────────────────────
+
+    @classmethod
+    def from_env(cls) -> Optional["GDriveAdapter"]:
+        """Return GDriveAdapter if GDRIVE_CREDENTIALS_FILE is configured, else None."""
+        credentials_file = os.environ.get("GDRIVE_CREDENTIALS_FILE", "").strip()
+        if not credentials_file:
+            logger.info("GDriveAdapter: GDRIVE_CREDENTIALS_FILE not set — disabled.")
+            return None
+        if not os.path.isfile(credentials_file):
+            logger.warning(
+                "GDriveAdapter: credentials file not found at %s — disabled.",
+                credentials_file,
+            )
+            return None
+        return cls(credentials_json=credentials_file)
+
+    # ── Google Drive service ──────────────────────────────────
+
+    def _get_service(self) -> Any:
+        if self._service is not None:
+            return self._service
+        try:
+            from google.oauth2 import service_account
+            from googleapiclient.discovery import build
+
+            creds = service_account.Credentials.from_service_account_file(
+                self._credentials_json,
+                scopes=self.SCOPES,
+            )
+            self._service = build("drive", "v3", credentials=creds, cache_discovery=False)
+            logger.info("GDriveAdapter: authenticated with service account.")
+            return self._service
+        except ImportError:
+            raise RuntimeError(
+                "google-api-python-client not installed. "
+                "Add 'google-api-python-client google-auth' to requirements."
+            )
+
+    # ── Public API ────────────────────────────────────────────
+
+    def get_file_metadata(self, file_id: str) -> GDriveFileMetadata:
+        """Return metadata for a single file."""
+        service = self._get_service()
+        meta = (
+            service.files()
+            .get(
+                fileId=file_id,
+                fields="id,name,mimeType,size,modifiedTime,parents",
+            )
+            .execute()
+        )
+        return GDriveFileMetadata(
+            file_id=meta["id"],
+            name=meta.get("name", file_id),
+            mime_type=meta.get("mimeType", "application/octet-stream"),
+            size=meta.get("size"),
+            modified_time=meta.get("modifiedTime"),
+            parents=meta.get("parents", []),
+        )
+
+    def list_folder(self, folder_id: str, page_size: int = 50, include_folders: bool = False) -> List["GDriveFileMetadata"]:
+        """List files directly inside a Drive folder. Subfolders are excluded by default."""
+        service = self._get_service()
+        query = f"'{folder_id}' in parents and trashed=false"
+        if not include_folders:
+            query += " and mimeType != 'application/vnd.google-apps.folder'"
+        results = (
+            service.files()
+            .list(
+                q=query,
+                pageSize=page_size,
+                fields="files(id,name,mimeType,size,modifiedTime,parents)",
+            )
+            .execute()
+        )
+        return [
+            GDriveFileMetadata(
+                file_id=f["id"],
+                name=f.get("name", f["id"]),
+                mime_type=f.get("mimeType", "application/octet-stream"),
+                size=f.get("size"),
+                modified_time=f.get("modifiedTime"),
+                parents=f.get("parents", []),
+            )
+            for f in results.get("files", [])
+        ]
+
+    def download_bytes(self, meta: GDriveFileMetadata) -> tuple[bytes, str]:
+        """
+        Download file content. Returns (bytes, effective_mime_type).
+        Google Workspace files are exported to Office/PDF format automatically.
+        Raises ValueError for non-downloadable types (folders, shortcuts).
+        """
+        from googleapiclient.http import MediaIoBaseDownload
+
+        if meta.mime_type in _GDRIVE_SKIP_TYPES:
+            raise ValueError(
+                f"File '{meta.name}' ({meta.mime_type}) cannot be downloaded — skip"
+            )
+
+        service = self._get_service()
+        buf = io.BytesIO()
+
+        export_mime = _GDRIVE_EXPORT_FORMATS.get(meta.mime_type)
+        if export_mime:
+            # Google Workspace → export as Office/PDF format
+            request = service.files().export_media(fileId=meta.file_id, mimeType=export_mime)
+            effective_mime = export_mime
+        elif meta.mime_type.startswith("application/vnd.google-apps."):
+            # Unknown Google Workspace type — PDF fallback
+            logger.warning(
+                "GDrive: unknown Workspace type %s for '%s' — exporting as PDF",
+                meta.mime_type, meta.name,
+            )
+            request = service.files().export_media(fileId=meta.file_id, mimeType="application/pdf")
+            effective_mime = "application/pdf"
+        else:
+            request = service.files().get_media(fileId=meta.file_id)
+            effective_mime = meta.mime_type
+
+        downloader = MediaIoBaseDownload(buf, request)
+        done = False
+        while not done:
+            _, done = downloader.next_chunk()
+
+        buf.seek(0)
+        return buf.read(), effective_mime
+
+    def download_as_upload(
+        self,
+        file_id: str,
+    ) -> tuple[GDriveFileMetadata, SyntheticUploadFile]:
+        """
+        Download a file by ID and wrap it as a SyntheticUploadFile ready for
+        OculusPrimeAdapter.ingest_*().
+        """
+        meta = self.get_file_metadata(file_id)
+        content, effective_mime = self.download_bytes(meta)
+
+        # Derive extension for the filename
+        ext = mimetypes.guess_extension(effective_mime) or ""
+        filename = meta.name if "." in meta.name else f"{meta.name}{ext}"
+
+        upload = SyntheticUploadFile(
+            filename=filename,
+            file=io.BytesIO(content),
+            content_type=effective_mime,
+        )
+        return meta, upload
+
+    def resolve_ingest_method(self, mime_type: str) -> str:
+        """Return the OculusPrimeAdapter method name for this MIME type."""
+        return _MIME_TO_INGEST_METHOD.get(mime_type, "ingest_document")

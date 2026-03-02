@@ -284,21 +284,75 @@ class UpgradeExecutor:
         
         Args:
             version: Git tag (e.g., "v1.2.0" or "1.2.0")
+
+        If the tag is not found locally, attempts to fetch it from the upstream
+        remote declared in vertical_manifest.yaml (upstream.remote_name).
+        This supports downstream verticals where upstream code lives in a
+        separate repository.
         """
         # Normalize version (add 'v' prefix if needed)
         tag = version if version.startswith("v") else f"v{version}"
         
+        # Check if tag already exists locally
+        tag_exists = subprocess.run(
+            ["git", "rev-parse", "--verify", f"refs/tags/{tag}"],
+            capture_output=True,
+            timeout=5,
+        ).returncode == 0
+
+        if not tag_exists:
+            # Fetch from upstream remote declared in vertical_manifest.yaml
+            remote_name = self._get_upstream_remote_name()
+            if remote_name:
+                logger.info(f"Tag {tag} not found locally — fetching from remote '{remote_name}'")
+                try:
+                    subprocess.run(
+                        ["git", "fetch", remote_name, "--tags"],
+                        check=True,
+                        capture_output=True,
+                        timeout=60,
+                    )
+                    logger.info(f"Fetched tags from '{remote_name}'")
+                except subprocess.CalledProcessError as e:
+                    logger.warning(f"Could not fetch from '{remote_name}': {e.stderr.decode()}")
+
         try:
             subprocess.run(
                 ["git", "checkout", tag],
                 check=True,
                 capture_output=True,
-                timeout=30
+                timeout=30,
             )
             logger.debug(f"Checked out tag: {tag}")
         
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Failed to checkout {tag}: {e.stderr.decode()}")
+
+    def _get_upstream_remote_name(self) -> Optional[str]:
+        """
+        Read upstream.remote_name from vertical_manifest.yaml.
+
+        Returns:
+            Remote name (e.g., "upstream") or None if manifest not found.
+        """
+        try:
+            import yaml
+            current = os.getcwd()
+            while current != "/":
+                manifest_path = os.path.join(current, "vertical_manifest.yaml")
+                if os.path.exists(manifest_path):
+                    with open(manifest_path, "r") as f:
+                        manifest = yaml.safe_load(f) or {}
+                    return manifest.get("upstream", {}).get("remote_name")
+                if os.path.exists(os.path.join(current, ".git")):
+                    break
+                parent = os.path.dirname(current)
+                if parent == current:
+                    break
+                current = parent
+        except Exception as e:
+            logger.debug(f"Could not read upstream remote_name from manifest: {e}")
+        return None
     
     def _get_last_snapshot_tag(self) -> Optional[str]:
         """

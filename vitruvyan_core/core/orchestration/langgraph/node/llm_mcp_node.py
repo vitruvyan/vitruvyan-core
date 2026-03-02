@@ -33,16 +33,39 @@ logger = logging.getLogger(__name__)
 _nest_applied = False
 
 def _ensure_nest_asyncio():
-    """Apply nest_asyncio patch once, handling uvloop gracefully"""
+    """Apply nest_asyncio patch once, handling uvloop gracefully.
+
+    IMPORTANT: nest_asyncio.apply() must NOT be called when uvloop is
+    the active event loop policy.  Even if it raises ValueError, the
+    call partially contaminates asyncio internals (_patch_asyncio runs
+    before _patch_loop), breaking subsequent asyncio.run() calls in
+    other nodes (e.g. intent_detection_node).
+    """
     global _nest_applied
     if not _nest_applied:
         try:
-            nest_asyncio.apply()
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                # No running event loop in this thread — skip.
+                logger.debug("[nest_asyncio] No event loop in thread — skipping patch")
+                _nest_applied = True
+                return
+
+            if type(loop).__module__.startswith("uvloop"):
+                logger.info(
+                    "[nest_asyncio] uvloop detected — skipping patch (incompatible). "
+                    "Async nesting handled via thread offload instead."
+                )
+                _nest_applied = True
+                return
+
+            nest_asyncio.apply(loop)
             _nest_applied = True
             logger.debug("✅ nest_asyncio applied successfully")
         except ValueError as e:
-            # uvloop doesn't support patching, use workaround
-            logger.warning(f"⚠️ nest_asyncio failed (uvloop?): {e}")
+            # Safety net: still mark as applied to avoid retry loops
+            logger.warning(f"⚠️ nest_asyncio failed: {e}")
             _nest_applied = True  # Don't retry
 
 # Environment configuration
@@ -187,11 +210,16 @@ def llm_mcp_node(state: Dict[str, Any]) -> Dict[str, Any]:
     _ensure_nest_asyncio()
     
     def _run_async_in_thread(coro):
-        """Run async coroutine in new thread with fresh event loop"""
+        """Run async coroutine in new thread with fresh event loop.
+
+        Uses SelectorEventLoop explicitly to avoid uvloop conflicts.
+        uvloop is the default policy under uvicorn, but cannot be
+        nested and causes issues with nest_asyncio.
+        """
         import concurrent.futures
         def _run():
-            # Create fresh event loop in this thread
-            loop = asyncio.new_event_loop()
+            # SelectorEventLoop avoids uvloop policy conflicts
+            loop = asyncio.SelectorEventLoop()
             asyncio.set_event_loop(loop)
             try:
                 return loop.run_until_complete(coro)
@@ -215,12 +243,19 @@ def llm_mcp_node(state: Dict[str, Any]) -> Dict[str, Any]:
         llm = get_llm_agent()
         
         # Construct system prompt with context (domain-agnostic)
+        tenant_id = state.get("tenant_id", "")
+        intent = state.get("intent", "unknown")
+        logger.info(f"🔑 LLM MCP context: tenant_id='{tenant_id}', intent='{intent}', entities={entity_ids}")
         system_prompt = f"""You are Vitruvyan AI, an epistemic reasoning assistant.
 User query language: {language}
+User's detected intent: {intent}
 Available entities: {', '.join(entity_ids) if entity_ids else 'None extracted yet'}
+Current tenant_id: {tenant_id if tenant_id else 'unknown'}
 
-Select the most appropriate tool to answer the user's question.
-If no tool matches, respond directly without tool calling.
+You MUST select and call the most appropriate tool to answer the user's question.
+When calling tools, only include tenant_id if the user explicitly mentions a specific tenant/client.
+If the user asks about data for a LOCATION without specifying a tenant, do NOT include tenant_id — let the tool search across all tenants.
+ALWAYS prefer calling a tool over answering directly — tools have access to live data that you don't.
 
 Note: Entity type and domain are deployment-configured (finance, documents, users, etc.)."""
         

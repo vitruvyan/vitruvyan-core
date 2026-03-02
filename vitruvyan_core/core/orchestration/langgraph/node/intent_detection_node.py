@@ -17,7 +17,6 @@ Rewritten: February 12, 2026 (from-zero rewrite)
 """
 
 import asyncio
-import concurrent.futures
 import json
 import logging
 import os
@@ -255,10 +254,16 @@ def intent_detection_node(state: Dict[str, Any]) -> Dict[str, Any]:
     logger.info(f"[INTENT_DETECTION] Processing: '{user_input[:80]}...'")
 
     # --- parallel Babel + LLM ---
+    # Use explicit SelectorEventLoop to avoid uvloop conflicts.
+    # nest_asyncio.apply() (called by llm_mcp_node) contaminates asyncio.run()
+    # causing "Can't patch loop of type <class 'uvloop.Loop'>" on subsequent calls.
+    # SelectorEventLoop bypasses the uvloop policy entirely.
     try:
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            future = pool.submit(lambda: asyncio.run(_parallel_processing(user_input)))
-            result = future.result(timeout=15.0)
+        loop = asyncio.SelectorEventLoop()
+        try:
+            result = loop.run_until_complete(_parallel_processing(user_input))
+        finally:
+            loop.close()
     except Exception as e:
         logger.error(f"[INTENT_DETECTION] Parallel processing failed: {e}")
         result = {

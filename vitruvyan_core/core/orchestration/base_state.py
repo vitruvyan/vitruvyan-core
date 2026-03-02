@@ -44,6 +44,7 @@ class BaseGraphState(TypedDict, total=False):
     error: Optional[str]                      # Error message if any
     response: Dict[str, Any]                  # Final response to user
     user_id: Optional[str]                    # User identifier
+    tenant_id: Optional[str]                  # Tenant identifier (multi-tenant operations)
     
     # =========================================================================
     # INTENT & CLARIFICATION — Understanding what user wants

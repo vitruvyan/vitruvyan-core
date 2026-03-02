@@ -37,6 +37,18 @@ except ImportError:
     DOCX_AVAILABLE = False
 
 try:
+    import openpyxl
+    OPENPYXL_AVAILABLE = True
+except ImportError:
+    OPENPYXL_AVAILABLE = False
+
+try:
+    from pptx import Presentation as PptxPresentation
+    PPTX_AVAILABLE = True
+except ImportError:
+    PPTX_AVAILABLE = False
+
+try:
     import markdown
     MARKDOWN_AVAILABLE = True
 except ImportError:
@@ -63,7 +75,7 @@ class DocumentIntakeAgent:
     - Call Codex directly
     """
     
-    SUPPORTED_FORMATS = ['.pdf', '.docx', '.md', '.txt', '.json', '.xml']
+    SUPPORTED_FORMATS = ['.pdf', '.docx', '.xlsx', '.pptx', '.md', '.txt', '.json', '.xml']
     AGENT_ID = "doc-intake-v1"
     AGENT_VERSION = "1.0.0"
     
@@ -84,6 +96,10 @@ class DocumentIntakeAgent:
             missing.append("pdfplumber")
         if not DOCX_AVAILABLE:
             missing.append("python-docx")
+        if not OPENPYXL_AVAILABLE:
+            missing.append("openpyxl")
+        if not PPTX_AVAILABLE:
+            missing.append("python-pptx")
         if not MARKDOWN_AVAILABLE:
             missing.append("markdown")
         
@@ -223,6 +239,10 @@ class DocumentIntakeAgent:
             return self._extract_pdf(source_path)
         elif suffix == '.docx':
             return self._extract_docx(source_path)
+        elif suffix == '.xlsx':
+            return self._extract_xlsx(source_path)
+        elif suffix == '.pptx':
+            return self._extract_pptx(source_path)
         elif suffix == '.md':
             return self._extract_markdown(source_path)
         elif suffix == '.txt':
@@ -256,6 +276,38 @@ class DocumentIntakeAgent:
         doc = DocxDocument(source_path)
         return "\n\n".join([para.text for para in doc.paragraphs if para.text.strip()])
     
+    def _extract_xlsx(self, source_path: Path) -> str:
+        """Extract text from XLSX — all sheets, all cell values (literal only)"""
+        if not OPENPYXL_AVAILABLE:
+            raise ValueError("openpyxl not installed. Cannot process XLSX.")
+        
+        wb = openpyxl.load_workbook(source_path, data_only=True, read_only=True)
+        parts = []
+        for sheet_name in wb.sheetnames:
+            ws = wb[sheet_name]
+            parts.append(f"[Sheet: {sheet_name}]")
+            for row in ws.iter_rows(values_only=True):
+                cells = [str(c) if c is not None else "" for c in row]
+                line = "\t".join(cells).rstrip()
+                if line:
+                    parts.append(line)
+        wb.close()
+        return "\n".join(parts)
+    
+    def _extract_pptx(self, source_path: Path) -> str:
+        """Extract text from PPTX — all slides, all text frames (literal only)"""
+        if not PPTX_AVAILABLE:
+            raise ValueError("python-pptx not installed. Cannot process PPTX.")
+        
+        prs = PptxPresentation(source_path)
+        parts = []
+        for slide_num, slide in enumerate(prs.slides, start=1):
+            parts.append(f"[Slide {slide_num}]")
+            for shape in slide.shapes:
+                if hasattr(shape, "text") and shape.text.strip():
+                    parts.append(shape.text.strip())
+        return "\n\n".join(parts)
+    
     def _extract_markdown(self, source_path: Path) -> str:
         """Extract text from Markdown (preserve structure)"""
         with open(source_path, 'r', encoding='utf-8') as f:
@@ -279,38 +331,146 @@ class DocumentIntakeAgent:
         with open(source_path, 'r', encoding='utf-8') as f:
             return f.read()
     
-    def _chunk_text(self, text: str, strategy: str, chunk_size: int) -> List[str]:
+    def _chunk_text(self, text: str, strategy: str, chunk_size: int, overlap: int = 200) -> List[str]:
         """
         Chunk text according to strategy
         
         Strategies:
         - 'none': No chunking (single chunk)
-        - 'size': Split by character count
+        - 'size': Sentence-aware split by character count with overlap
         - 'page': Not applicable for text (fallback to 'none')
+        
+        Args:
+            text: Full text to chunk
+            strategy: Chunking strategy
+            chunk_size: Target max characters per chunk
+            overlap: Character overlap between consecutive chunks (default 200)
         """
         if strategy == "none" or strategy == "page":
             return [text]
         elif strategy == "size":
             if not text:
                 return [""]
-            return [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
+            return self._sentence_aware_chunk(text, chunk_size, overlap)
         else:
             raise ValueError(f"Unknown chunking strategy: {strategy}")
+
+    @staticmethod
+    def _sentence_aware_chunk(text: str, chunk_size: int, overlap: int) -> List[str]:
+        """
+        Split text into chunks at sentence boundaries with overlap.
+        
+        Avoids cutting sentences in half. Falls back to character split
+        only for very long sentences that exceed chunk_size.
+        """
+        import re
+        # Split on sentence-ending punctuation followed by whitespace
+        sentence_pattern = re.compile(r'(?<=[.!?;\n])\s+')
+        sentences = sentence_pattern.split(text)
+        
+        if not sentences:
+            return [text] if text else [""]
+        
+        chunks: List[str] = []
+        current_chunk = ""
+        
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if not sentence:
+                continue
+            
+            # If adding this sentence exceeds chunk_size and we already have content
+            if current_chunk and len(current_chunk) + len(sentence) + 1 > chunk_size:
+                chunks.append(current_chunk.strip())
+                # Start next chunk with overlap from the end of current chunk
+                if overlap > 0 and len(current_chunk) > overlap:
+                    # Take last N chars, but try to start at a sentence boundary
+                    overlap_text = current_chunk[-overlap:]
+                    # Find first sentence start in overlap region
+                    boundary = re.search(r'(?<=[.!?;])\s+', overlap_text)
+                    if boundary:
+                        overlap_text = overlap_text[boundary.end():]
+                    current_chunk = overlap_text + " " + sentence
+                else:
+                    current_chunk = sentence
+            else:
+                current_chunk = (current_chunk + " " + sentence).strip() if current_chunk else sentence
+            
+            # Safety: if a single sentence exceeds chunk_size, force-split it
+            while len(current_chunk) > chunk_size * 1.5:
+                split_point = chunk_size
+                # Try to split at a space
+                space_pos = current_chunk.rfind(' ', 0, chunk_size)
+                if space_pos > chunk_size * 0.5:
+                    split_point = space_pos
+                chunks.append(current_chunk[:split_point].strip())
+                current_chunk = current_chunk[split_point:].strip()
+        
+        if current_chunk.strip():
+            chunks.append(current_chunk.strip())
+        
+        return chunks if chunks else [text]
     
     def _detect_language_simple(self, text: str) -> str:
         """
-        Simple language detection heuristic
+        Word-frequency language detection (no external dependencies).
         
-        Returns ISO 639-1 code (e.g., 'en', 'it', 'fr')
+        Detects: Italian, English, French, Spanish, German.
+        Uses high-frequency function-word signatures per language.
+        Returns ISO 639-1 code (e.g., 'en', 'it', 'fr', 'es', 'de').
         Fallback: 'unknown'
         """
-        # Placeholder: use simple heuristics or external library (langdetect)
-        # For now, assume English if ASCII-heavy, else unknown
-        if not text.strip():
+        if not text or not text.strip():
             return "unknown"
         
-        ascii_ratio = sum(1 for c in text if ord(c) < 128) / len(text)
-        return "en" if ascii_ratio > 0.7 else "unknown"
+        # Lowercase sample (first 5000 chars for speed)
+        sample = text[:5000].lower()
+        # Extract words (letters only, 2+ chars)
+        import re
+        words = re.findall(r'\b[a-zà-öø-ÿ]{2,}\b', sample)
+        if len(words) < 10:
+            return "unknown"
+        
+        word_set = set(words)
+        
+        # High-frequency function words per language (articles, prepositions, conjunctions)
+        lang_markers = {
+            "it": {"il", "lo", "la", "le", "gli", "del", "della", "delle", "dei",
+                   "nel", "nella", "che", "per", "con", "sono", "una", "uno",
+                   "questo", "questa", "anche", "essere", "può", "alla", "alle",
+                   "dalla", "delle", "tra", "fra", "come", "dove", "ogni",
+                   "quali", "ciascun", "nonché", "inoltre", "articolo", "comma",
+                   "previsto", "misure", "rischio", "sicurezza", "normativa"},
+            "en": {"the", "and", "for", "with", "that", "this", "from", "have",
+                   "has", "are", "was", "were", "been", "will", "would", "should",
+                   "which", "their", "they", "them", "than", "into", "each",
+                   "between", "through", "during", "before", "after", "shall"},
+            "fr": {"les", "des", "une", "dans", "pour", "par", "sur", "avec",
+                   "qui", "que", "sont", "aux", "cette", "ses", "ont", "été",
+                   "entre", "depuis", "leur", "mais", "aussi", "peut"},
+            "es": {"los", "las", "del", "una", "para", "por", "con", "que",
+                   "son", "como", "más", "esta", "entre", "sus", "pero",
+                   "desde", "cada", "han", "puede", "también", "sobre"},
+            "de": {"der", "die", "das", "den", "dem", "ein", "eine", "und",
+                   "für", "mit", "von", "auf", "ist", "sind", "wird", "des",
+                   "auch", "nach", "sich", "bei", "oder", "über", "als"}
+        }
+        
+        scores = {}
+        for lang, markers in lang_markers.items():
+            hits = word_set & markers
+            # Weight by how many marker-word occurrences appear in the text
+            count = sum(1 for w in words if w in markers)
+            scores[lang] = (len(hits), count)
+        
+        # Pick language with most distinct marker hits, break ties by occurrence count
+        best = max(scores.items(), key=lambda x: (x[1][0], x[1][1]))
+        
+        # Require at least 3 distinct marker words to be confident
+        if best[1][0] < 3:
+            return "unknown"
+        
+        return best[0]
     
     def _compute_file_hash(self, source_path: Path) -> str:
         """Compute SHA-256 hash of file"""
@@ -335,6 +495,8 @@ class DocumentIntakeAgent:
         mime_map = {
             '.pdf': 'application/pdf',
             '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
             '.md': 'text/markdown',
             '.txt': 'text/plain',
             '.json': 'application/json',
@@ -347,6 +509,8 @@ class DocumentIntakeAgent:
         method_map = {
             '.pdf': 'pdfplumber',
             '.docx': 'python-docx',
+            '.xlsx': 'openpyxl',
+            '.pptx': 'python-pptx',
             '.md': 'builtin',
             '.txt': 'builtin',
             '.json': 'builtin',

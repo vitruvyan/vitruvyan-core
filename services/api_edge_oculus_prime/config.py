@@ -94,7 +94,7 @@ def load_settings() -> OculusPrimeSettings:
         ),
         cad_formats=(".dxf", ".dwg", ".ifc", ".rvt", ".obj", ".fbx", ".3ds"),
         image_formats=(".png", ".jpg", ".jpeg", ".tif", ".tiff", ".geotiff"),
-        document_formats=(".pdf", ".docx", ".md", ".txt", ".json", ".xml"),
+        document_formats=(".pdf", ".docx", ".xlsx", ".pptx", ".md", ".txt", ".json", ".xml"),
         audio_formats=(".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg"),
         video_formats=(".mp4", ".avi", ".mov", ".mkv", ".webm"),
         geo_formats=(".kml", ".kmz", ".geojson", ".json", ".gpx", ".wkt", ".txt"),

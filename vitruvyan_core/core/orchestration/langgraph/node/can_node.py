@@ -31,6 +31,7 @@ import time
 import httpx
 from core.agents.llm_agent import get_llm_agent
 from core.agents.qdrant_agent import QdrantAgent
+from core.llm.prompts.registry import PromptRegistry
 
 # NOTE: Configuration via environment variables only.
 # load_dotenv() is called in service entrypoints (main.py), not in core modules.
@@ -38,12 +39,14 @@ from core.agents.qdrant_agent import QdrantAgent
 logger = logging.getLogger(__name__)
 
 # Environment configuration
+_ACTIVE_DOMAIN = os.getenv("INTENT_DOMAIN", "generic")
 CAN_ENABLED = int(os.getenv("CAN_ENABLED", "1"))
 CAN_VSGS_CONTEXT_LIMIT = int(os.getenv("CAN_VSGS_CONTEXT_LIMIT", "3"))
 CAN_STORE_CONVERSATIONS = int(os.getenv("CAN_STORE_CONVERSATIONS", "1"))
 
 # Embedding API endpoint (same used by qdrant_node)
-EMBEDDING_API = os.getenv("EMBEDDING_API_URL", "http://embedding:8010/v1/embeddings/batch")
+_EMBEDDING_BASE = os.getenv("EMBEDDING_API_URL", "http://embedding:8010")
+EMBEDDING_API = f"{_EMBEDDING_BASE.rstrip('/')}/v1/embeddings/batch"
 
 # Lazy-init Qdrant agent (only when storing conversations)
 _qdrant_agent: Optional[QdrantAgent] = None
@@ -213,6 +216,7 @@ def _store_conversation_exchange(
                 "intent": intent,
                 "emotion": state.get("emotion_detected", "neutral"),
                 "user_id": state.get("user_id", "anonymous"),
+                "tenant_id": state.get("tenant_id", ""),
                 "trace_id": state.get("trace_id", ""),
             },
         )
@@ -308,8 +312,25 @@ def _generate_conversational_narrative(
         if weaver_context.get("concepts"):
             context_summary.append(f"Concepts: {', '.join(weaver_context['concepts'][:3])}")
         
-        context_str = " ".join(context_summary) if context_summary else "No prior context"
+        context_str = "\n".join(context_summary) if context_summary else "No prior context"
         
+        # Include MCP tool results if available (domain-agnostic)
+        mcp_result = state.get("mcp_result")
+        mcp_tool = state.get("mcp_tool_used")
+        mcp_data_str = ""
+        if mcp_result and mcp_result.get("status") == "success":
+            import json as _json
+            tool_data = mcp_result.get("data", {})
+            try:
+                mcp_data_str = _json.dumps(tool_data, indent=2, default=str, ensure_ascii=False)
+                if len(mcp_data_str) > 3000:
+                    mcp_data_str = mcp_data_str[:3000] + "\n... (troncato)"
+                context_summary.append(
+                    f"Tool '{mcp_tool}' returned data (use this as the PRIMARY source for your answer):\n{mcp_data_str}"
+                )
+            except Exception:
+                context_summary.append(f"Tool '{mcp_tool}' executed successfully.")
+
         # Build emotion-aware system prompt
         emotion_hints = {
             "en": {
@@ -329,8 +350,16 @@ def _generate_conversational_narrative(
         lang_hints = emotion_hints.get(language, emotion_hints["en"])
         emotion_hint = lang_hints.get(emotion, lang_hints["neutral"])
         
+        # Build domain-aware system prompt via PromptRegistry
+        try:
+            domain_identity = PromptRegistry.get_identity(
+                _ACTIVE_DOMAIN, language, assistant_name="Vitruvyan",
+            )
+        except (ValueError, KeyError):
+            domain_identity = "You are a conversational AI assistant."
+        
         system_prompt = (
-            f"You are a conversational AI assistant. "
+            f"{domain_identity}\n\n"
             f"User language: {language}. User intent: {intent}. "
             f"{emotion_hint} "
             f"Respond in {language}."
@@ -339,8 +368,14 @@ def _generate_conversational_narrative(
         user_prompt = (
             f"User query: {user_input}\n"
             f"Context: {context_str}\n\n"
-            f"Generate a natural, helpful conversational response."
         )
+        if mcp_data_str:
+            user_prompt += (
+                "IMPORTANT: The tool data above contains the answer to the user's query. "
+                "Present the data clearly and conversationally. Do NOT say you don't have access to the data. "
+                "Format any scores, names, dates, and levels in a readable way.\n\n"
+            )
+        user_prompt += "Generate a natural, helpful conversational response."
         
         narrative = llm.complete(
             prompt=user_prompt,
@@ -388,7 +423,16 @@ def _generate_follow_ups(
         if vsgs_context:
             context_hint = f"Previous context intent: {vsgs_context[0]['intent']}"
         
+        # Inject domain identity so follow-ups stay on-domain
+        try:
+            domain_hint = PromptRegistry.get_identity(
+                _ACTIVE_DOMAIN, language, assistant_name="Vitruvyan",
+            )
+        except (ValueError, KeyError):
+            domain_hint = ""
+        
         prompt = (
+            f"{domain_hint}\n\n"
             f"Generate 2-3 natural follow-up questions for intent '{intent}'. "
             f"{context_hint}. Language: {language}. "
             f"Return only the questions, one per line."

@@ -68,6 +68,17 @@ if _ENTITY_DOMAIN and _ENTITY_DOMAIN != "generic":
     except (ImportError, AttributeError) as e:
         _log.debug(f"[graph_flow] No entity resolver for domain '{_ENTITY_DOMAIN}': {e}")
 
+# 🎨 Register domain prompts with PromptRegistry (domain plugin pattern)
+if _INTENT_DOMAIN and _INTENT_DOMAIN != "generic":
+    try:
+        _prompts_mod = _importlib.import_module(f"domains.{_INTENT_DOMAIN}.prompts")
+        _register_prompts_fn = getattr(_prompts_mod, f"register_{_INTENT_DOMAIN}_prompts", None)
+        if _register_prompts_fn:
+            _register_prompts_fn()
+            _log.info(f"[graph_flow] ✅ Registered prompt domain: {_INTENT_DOMAIN}")
+    except (ImportError, AttributeError) as e:
+        _log.debug(f"[graph_flow] No prompts registration for domain '{_INTENT_DOMAIN}': {e}")
+
 # 🔌 Optional graph_nodes domain extension (experimental hook)
 # Contract:
 # - module: domains.<domain>.graph_nodes.registry
@@ -253,6 +264,11 @@ class GraphState(BaseGraphState, total=False):
     # because GraphState is the OS-agnostic kernel. TypedDict(total=False) allows
     # arbitrary keys at runtime. graph_runner propagates them via domain_extensions.
     domain_extensions: Optional[Dict[str, Any]]        # Opaque domain payload (pass-through)
+
+    # ── MCP Tool Integration Fields ──
+    mcp_tool_used: Optional[str]                       # Name of MCP tool selected by LLM
+    mcp_result: Optional[Dict[str, Any]]               # MCP tool execution result (status, data, error)
+    mcp_orthodoxy: Optional[str]                       # Orthodoxy status from MCP tool result
 
     # ── Compose Node Output Fields ──
     narrative: Optional[str]                           # Natural language synthesis from compose_node

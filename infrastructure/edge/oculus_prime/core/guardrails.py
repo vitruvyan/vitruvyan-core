@@ -71,6 +71,13 @@ class IntakeGuardrails:
         """
         violations = []
         
+        # For document source types, semantic guardrail does not apply:
+        # extracted text is already literal by definition (no LLM generation involved).
+        # Guardrail is only meaningful for generated content (image captions, audio transcripts
+        # post-processed by LLM, etc.).
+        if source_type == "document":
+            return True, []
+        
         # Check each forbidden pattern
         for pattern in cls.FORBIDDEN_PATTERNS:
             matches = re.findall(pattern, normalized_text, re.IGNORECASE)

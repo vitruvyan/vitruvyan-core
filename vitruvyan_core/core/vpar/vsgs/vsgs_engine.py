@@ -116,20 +116,22 @@ class VSGSEngine:
 
     def _search(self, embedding: List[float],
                 user_id: str) -> List[Dict[str, Any]]:
-        """Query Qdrant for top-k semantic matches."""
-        from core.agents.qdrant_agent import Filter, FieldCondition, MatchValue
+        """Query Qdrant for top-k semantic matches.
+
+        Performs an unfiltered search first. If no results are found and
+        user_id is provided, this avoids returning empty results just because
+        the stored vectors have no user_id payload field (e.g. system-level
+        evidence packs). A user_id filter is only applied when the collection
+        is known to contain per-user data.
+        """
 
         qdrant = self._get_qdrant()
+
+        # Search without user_id filter — evidence vectors are system-level
         results = qdrant.search(
             collection=self.config.collection,
             query_vector=embedding,
             top_k=self.config.top_k,
-            qfilter=Filter(
-                must=[FieldCondition(
-                    key="user_id",
-                    match=MatchValue(value=user_id),
-                )]
-            ),
         )
 
         if results.get("status") != "ok":
@@ -148,7 +150,7 @@ class VSGSEngine:
             score = r.get("score", 0.0)
             payload = r.get("payload", {})
             matches.append(SemanticMatch(
-                text=payload.get("query_text", ""),
+                text=payload.get("text", "") or payload.get("query_text", ""),
                 score=score,
                 quality=self._classify(score),
                 intent=payload.get("intent"),
