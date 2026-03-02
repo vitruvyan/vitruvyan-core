@@ -317,7 +317,13 @@ class GDriveAdapter:
             f"and mimeType = 'application/vnd.google-apps.folder' "
             f"and trashed = false"
         )
-        results = service.files().list(q=query, fields="files(id,name)", pageSize=1).execute()
+        results = service.files().list(
+            q=query,
+            fields="files(id,name)",
+            pageSize=1,
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True,
+        ).execute()
         files = results.get("files", [])
         if files:
             folder_id = files[0]["id"]
@@ -336,7 +342,7 @@ class GDriveAdapter:
             "mimeType": "application/vnd.google-apps.folder",
             "parents": [parent_id],
         }
-        folder = service.files().create(body=metadata, fields="id").execute()
+        folder = service.files().create(body=metadata, fields="id", supportsAllDrives=True).execute()
         folder_id = folder["id"]
         self._folder_cache[f"{parent_id}/{name}"] = folder_id
         logger.info("GDriveAdapter: created folder '%s' (id=%s) under %s", name, folder_id, parent_id)
@@ -387,6 +393,7 @@ class GDriveAdapter:
             body=metadata,
             media_body=media,
             fields="id,name,webViewLink",
+            supportsAllDrives=True,
         ).execute()
 
         file_id = result["id"]
@@ -400,5 +407,5 @@ class GDriveAdapter:
     def get_web_link(self, file_id: str) -> str:
         """Get the web view link for a file."""
         service = self._get_service()
-        result = service.files().get(fileId=file_id, fields="webViewLink").execute()
+        result = service.files().get(fileId=file_id, fields="webViewLink", supportsAllDrives=True).execute()
         return result.get("webViewLink", f"https://drive.google.com/file/d/{file_id}/view")
