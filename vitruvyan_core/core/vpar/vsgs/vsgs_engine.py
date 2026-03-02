@@ -124,7 +124,6 @@ class VSGSEngine:
         evidence packs). A user_id filter is only applied when the collection
         is known to contain per-user data.
         """
-
         qdrant = self._get_qdrant()
 
         # Search without user_id filter — evidence vectors are system-level

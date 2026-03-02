@@ -185,6 +185,8 @@ class IntakeEventEmitter:
         language_detected: Optional[str],
         sampling_policy_ref: Optional[str],
         correlation_id: Optional[str],
+        tenant_id: Optional[str] = None,
+        project_name: Optional[str] = None,
     ) -> EvidenceCreatedEvent:
         return EvidenceCreatedEvent(
             event_id=event_id,
@@ -207,6 +209,8 @@ class IntakeEventEmitter:
                 "intake_agent_version": intake_agent_version,
                 "correlation_id": correlation_id,
                 "retry_count": 0,
+                "tenant_id": tenant_id,
+                "project_name": project_name,
             },
         )
 
@@ -224,6 +228,8 @@ class IntakeEventEmitter:
         language_detected: Optional[str] = None,
         sampling_policy_ref: Optional[str] = None,
         correlation_id: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+        project_name: Optional[str] = None,
     ) -> EvidenceCreatedEvent:
         source_type = self._normalize_source_type(source_type)
         event_id = f"EVT-{str(uuid.uuid4()).upper()}"
@@ -245,6 +251,8 @@ class IntakeEventEmitter:
             language_detected=language_detected,
             sampling_policy_ref=sampling_policy_ref,
             correlation_id=correlation_id,
+            tenant_id=tenant_id,
+            project_name=project_name,
         )
 
         if not self.stream_bus:
@@ -271,6 +279,8 @@ class IntakeEventEmitter:
                 language_detected=language_detected,
                 sampling_policy_ref=sampling_policy_ref,
                 correlation_id=correlation_id,
+                tenant_id=tenant_id,
+                project_name=project_name,
             )
 
             try:

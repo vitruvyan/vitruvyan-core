@@ -1,6 +1,10 @@
 """
 Vitruvyan INTAKE — FRED Intake Agent
 
+⚠️  FINANCE DOMAIN ONLY — vitruvyan_core/domains/finance/intake/
+    Non deve essere importato da infrastruttura condivisa (oculus_prime/core/agents/).
+    Attivabile esclusivamente tramite il plugin della verticale finance.
+
 Media Scope: Federal Reserve Economic Data (via FRED API)
 Constraints: NO semantic inference, NO relevance judgment
 

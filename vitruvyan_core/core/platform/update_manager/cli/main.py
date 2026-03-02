@@ -8,11 +8,8 @@ Usage:
     vit rollback
     vit channel stable
     vit status
-    vit release                 # create GitHub Release from current tag
-    vit release --dry-run       # preview without API calls
 
 Phase 2: upgrade, plan, rollback implemented
-Phase 3: release command added
 """
 
 import sys
@@ -25,7 +22,6 @@ from .commands.plan import register_plan_command
 from .commands.rollback import register_rollback_command
 from .commands.status import register_status_command
 from .commands.completion import register_completion_command
-from .commands.release import register_release_command
 
 # Configure logging
 logging.basicConfig(
@@ -50,14 +46,13 @@ def cli_main():
     
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
     
-    # Register commands (Phase 2+: update, upgrade, plan, rollback, status, release)
+    # Register commands (Phase 2+: update, upgrade, plan, rollback, status)
     register_update_command(subparsers)
     register_upgrade_command(subparsers)
     register_plan_command(subparsers)
     register_rollback_command(subparsers)
     register_status_command(subparsers)
     register_completion_command(subparsers)
-    register_release_command(subparsers)
     
     # Phase 3+ commands (stubs)
     # TODO: Implement channel

@@ -1,25 +1,9 @@
 """
 Release Registry (GitHub Releases API Client)
 
-Fetch strategy (two-pass, most resilient):
-  Pass 1 — GitHub Releases API (/repos/{repo}/releases): for repos where
-            formal Releases were created via GitHub UI or API. Assets are
-            preferred source for releases.json.
-  Pass 2 — GitHub Tags API (/repos/{repo}/tags): catches ALL pushed git
-            tags, including those never converted to GitHub Releases.
-            releases.json is fetched via Contents API at the tag ref.
-
-This means a plain `git tag vX.Y.Z && git push --tags` is enough for the
-release to be discovered by `vit upgrade` on any installation.
-
-Environment Variables:
-  GITHUB_TOKEN — Personal access token (required for private repos).
-                  Read-only scope (`repo` for private, `public_repo` for
-                  public repos) is sufficient.
-  VITRUVYAN_REPO — Override repo (format: "owner/repo").
+Phase 1 implementation.
 """
 
-import base64
 import json
 import logging
 import os
@@ -115,20 +99,20 @@ class ReleaseRegistry:
                 timeout=5,
             )
             remote_url = result.stdout.strip()
-            
+
             # Parse GitHub URL (supports both HTTPS and SSH)
             # https://github.com/owner/repo.git
             # git@github.com:owner/repo.git
+            # git@github-alias:owner/repo.git  (SSH alias — strip host, parse owner/repo)
             if "github.com" in remote_url:
                 parts = remote_url.replace(".git", "").split("/")
                 if len(parts) >= 2:
                     owner = parts[-2].split(":")[-1]  # Handle git@github.com:owner
-                    # git@github-alias:owner/repo.git  (SSH alias — strip host, parse owner/repo)
                     repo = parts[-1]
                     detected_repo = f"{owner}/{repo}"
                     logger.debug(f"Autodetermined repository from git remote: {detected_repo}")
                     return detected_repo
-        
+
         except (subprocess.CalledProcessError, FileNotFoundError, IndexError):
             pass
 
@@ -141,8 +125,10 @@ class ReleaseRegistry:
         """
         Autodetermine GitHub token from gh CLI if GITHUB_TOKEN env var is not set.
 
-        Uses `gh auth token` to retrieve the token from the GitHub CLI.
-        Returns None if gh CLI is not installed or not authenticated.
+        Implements the "auto-detects gh token" feature documented in README.
+
+        Returns:
+            Token string or None if gh CLI is not available/not authenticated.
         """
         try:
             result = subprocess.run(
@@ -151,14 +137,15 @@ class ReleaseRegistry:
                 text=True,
                 timeout=5,
             )
-            if result.returncode == 0 and result.stdout.strip():
+            if result.returncode == 0:
                 token = result.stdout.strip()
-                logger.debug("Autodetermined GitHub token from gh CLI")
-                return token
-        except (subprocess.CalledProcessError, FileNotFoundError):
+                if token:
+                    logger.debug("Using GitHub token from gh CLI")
+                    return token
+        except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
         return None
-    
+
     def _create_request(self, url: str, accept_header: str = "application/vnd.github.v3+json") -> Request:
         """
         Create HTTP request with authentication if token is available.
@@ -182,292 +169,143 @@ class ReleaseRegistry:
     def fetch_latest(self, channel="stable") -> Optional[Release]:
         """
         Fetch latest release for channel.
-
+        
         Args:
             channel: "stable" or "beta"
-
+        
         Returns:
-            Release object (highest SemVer for channel), or None.
-
+            Release object (highest SemVer for channel)
+        
         Raises:
-            NetworkError: GitHub API unreachable.
+            NetworkError: GitHub API unreachable
         """
         all_releases = self.fetch_all(channel=channel)
         if not all_releases:
             logger.warning(f"No {channel} releases found in {self.repo}")
             return None
-
+        
+        # Sort by SemVer (descending) and return first
         sorted_releases = sorted(
             all_releases,
             key=lambda r: self._parse_semver(r.version),
-            reverse=True,
+            reverse=True
         )
         return sorted_releases[0]
-
+    
     def fetch_all(self, channel: Optional[str] = None) -> List[Release]:
         """
         Fetch all releases (optionally filtered by channel).
-
-        Two-pass strategy:
-          Pass 1 — GitHub Releases API: formal releases with release assets.
-          Pass 2 — GitHub Tags API: plain git tags (git push --tags).
-                   releases.json is fetched via Contents API at the tag ref.
-
+        
         Args:
-            channel: "stable", "beta", or None (all channels).
-
+            channel: "stable", "beta", or None (all channels)
+        
         Returns:
-            List of Release objects (sorted by version descending).
-
+            List of Release objects (sorted by version descending)
+        
         Raises:
-            NetworkError: GitHub API unreachable.
+            NetworkError: GitHub API unreachable
         """
-        releases: List[Release] = []
-        seen_versions: set = set()
-
-        # ── Pass 1: GitHub Releases API ───────────────────────────────────
         try:
+            # Fetch GitHub Releases (paginated, max 100)
             request = self._create_request(
                 f"{self.api_url}?per_page=100",
-                accept_header="application/vnd.github.v3+json",
+                accept_header="application/vnd.github.v3+json"
             )
+            
             with urlopen(request, timeout=self.TIMEOUT_SECONDS) as response:
                 releases_data = json.loads(response.read().decode())
-
-            if not isinstance(releases_data, list):
-                logger.warning(
-                    "GitHub Releases API returned unexpected type: %s — "
-                    "token may be missing or repo not found",
-                    type(releases_data).__name__,
-                )
-                releases_data = []
-            else:
-                logger.info(
-                    "Pass 1: fetched %d GitHub Releases from %s",
-                    len(releases_data), self.repo,
-                )
-
-            for gh_release in releases_data:
-                tag_name = gh_release.get("tag_name", "")
-                if not tag_name:
-                    continue
-
-                metadata = self._metadata_from_release_asset(gh_release)
-                if not metadata:
-                    # No asset — will be retried in Pass 2 via Contents API
-                    continue
-
-                release = self._parse_release(metadata, tag_name, channel)
-                if release and release.version not in seen_versions:
-                    releases.append(release)
-                    seen_versions.add(release.version)
-
+            
+            logger.info(f"Fetched {len(releases_data)} releases from {self.repo}")
+            
         except (URLError, HTTPError) as e:
-            # Pass 1 failure is non-fatal — Pass 2 may succeed alone.
-            logger.warning("Pass 1 (Releases API) failed: %s — falling back to Tags API", e)
+            raise NetworkError(f"GitHub API error: {e}")
         except json.JSONDecodeError as e:
-            logger.warning("Pass 1: invalid JSON from Releases API: %s", e)
-
-        # ── Pass 2: GitHub Tags API ────────────────────────────────────────
-        try:
-            tags_url = f"{self.GITHUB_API_BASE}/repos/{self.repo}/tags?per_page=100"
-            request = self._create_request(tags_url)
-            with urlopen(request, timeout=self.TIMEOUT_SECONDS) as response:
-                tags_data = json.loads(response.read().decode())
-
-            if not isinstance(tags_data, list):
-                raise NetworkError(
-                    f"GitHub Tags API returned unexpected response "
-                    f"(repo={self.repo!r}, type={type(tags_data).__name__}). "
-                    "Check that GITHUB_TOKEN is set and has repo read access."
+            raise NetworkError(f"Invalid JSON response: {e}")
+        
+        # Parse each release (download releases.json asset)
+        releases = []
+        for gh_release in releases_data:
+            tag_name = gh_release.get("tag_name")
+            if not tag_name:
+                continue
+            
+            # Download releases.json asset
+            metadata = self._download_release_metadata(gh_release)
+            if not metadata:
+                logger.debug(f"Skipping {tag_name} (no releases.json asset)")
+                continue
+            
+            # Filter by channel
+            release_channel = metadata.get("channel", "stable")
+            if channel and release_channel != channel:
+                logger.debug(f"Skipping {tag_name} (channel={release_channel})")
+                continue
+            
+            # Parse Release object
+            try:
+                release = Release(
+                    version=metadata["version"],
+                    release_date=metadata["release_date"],
+                    channel=release_channel,
+                    contracts_version=metadata["contracts_version"],
+                    changes=metadata.get("changes", {}),
+                    migration_guide_url=metadata.get("migration_guide_url"),
+                    minimum_vertical_version=metadata.get("minimum_vertical_version", {}),
+                    checksum=metadata.get("checksum", {})
                 )
-
-            logger.info(
-                "Pass 2: fetched %d tags from %s", len(tags_data), self.repo
-            )
-
-            for tag in tags_data:
-                tag_name = tag.get("name", "")
-                if not tag_name:
-                    continue
-
-                # Extract clean version (strip leading "v")
-                version = tag_name.lstrip("v")
-                if version in seen_versions:
-                    # Already covered by Pass 1
-                    continue
-
-                # Fetch releases.json from repo contents at this tag ref
-                metadata = self._metadata_from_contents_api(tag_name)
-                if not metadata:
-                    logger.debug(
-                        "Skipping tag %s: no releases.json found at ref", tag_name
-                    )
-                    continue
-
-                release = self._parse_release(metadata, tag_name, channel)
-                if release and release.version not in seen_versions:
-                    releases.append(release)
-                    seen_versions.add(release.version)
-
-        except NetworkError:
-            raise
-        except (URLError, HTTPError) as e:
-            raise NetworkError(f"GitHub Tags API error: {e}") from e
-        except json.JSONDecodeError as e:
-            raise NetworkError(f"Invalid JSON from Tags API: {e}") from e
-
-        # Sort by SemVer descending
+                releases.append(release)
+                logger.debug(f"Parsed release: {release.version} ({release.channel})")
+            
+            except KeyError as e:
+                logger.warning(f"Invalid release metadata for {tag_name}: missing {e}")
+                continue
+        
+        # Sort by SemVer (descending)
         releases.sort(key=lambda r: self._parse_semver(r.version), reverse=True)
-        logger.info(
-            "fetch_all: %d releases found (channel=%s)", len(releases), channel or "all"
-        )
+        
         return releases
-
-    # ── Metadata sources ──────────────────────────────────────────────────
-
-    def _metadata_from_release_asset(self, gh_release: dict) -> Optional[dict]:
-        """
-        Download releases.json from a GitHub Release *asset*.
-
-        Args:
-            gh_release: GitHub Release API response dict.
-
-        Returns:
-            Parsed releases.json dict, or None if no asset found.
-        """
-        assets = gh_release.get("assets", [])
-        metadata_asset = next(
-            (a for a in assets if a.get("name") == "releases.json"), None
-        )
-        if not metadata_asset:
-            return None
-
-        asset_url = metadata_asset.get("url")  # API URL (not browser_download_url)
-        if not asset_url:
-            return None
-
-        try:
-            request = self._create_request(
-                asset_url, accept_header="application/octet-stream"
-            )
-            with urlopen(request, timeout=self.TIMEOUT_SECONDS) as response:
-                return json.loads(response.read().decode())
-        except (URLError, HTTPError, json.JSONDecodeError) as e:
-            logger.warning(
-                "Failed to download releases.json asset from release %s: %s",
-                gh_release.get("tag_name", "?"), e,
-            )
-            return None
-
-    def _metadata_from_contents_api(self, tag_ref: str) -> Optional[dict]:
-        """
-        Fetch releases.json directly from repo file tree at *tag_ref*.
-
-        Uses GitHub Contents API:
-          GET /repos/{owner}/{repo}/contents/releases.json?ref={tag_ref}
-
-        This works for any pushed git tag — no GitHub Release required.
-
-        Args:
-            tag_ref: Git tag name (e.g., "v1.8.0").
-
-        Returns:
-            Parsed releases.json dict, or None if not found / parse error.
-        """
-        url = (
-            f"{self.GITHUB_API_BASE}/repos/{self.repo}"
-            f"/contents/releases.json?ref={tag_ref}"
-        )
-        try:
-            request = self._create_request(url)
-            with urlopen(request, timeout=self.TIMEOUT_SECONDS) as response:
-                content_meta = json.loads(response.read().decode())
-
-            # GitHub Contents API returns file content base64-encoded
-            encoding = content_meta.get("encoding", "")
-            raw_content = content_meta.get("content", "")
-
-            if encoding == "base64":
-                decoded = base64.b64decode(raw_content).decode("utf-8")
-            else:
-                # Fallback: download_url
-                download_url = content_meta.get("download_url")
-                if not download_url:
-                    logger.warning(
-                        "Contents API: unexpected encoding %r for tag %s",
-                        encoding, tag_ref,
-                    )
-                    return None
-                req2 = self._create_request(download_url)
-                with urlopen(req2, timeout=self.TIMEOUT_SECONDS) as r2:
-                    decoded = r2.read().decode("utf-8")
-
-            return json.loads(decoded)
-
-        except HTTPError as e:
-            if e.code == 404:
-                # releases.json not present in this tag — silent skip
-                return None
-            logger.warning(
-                "Contents API HTTP %d for tag %s: %s", e.code, tag_ref, e
-            )
-            return None
-        except (URLError, json.JSONDecodeError, KeyError) as e:
-            logger.warning(
-                "Contents API error for tag %s: %s", tag_ref, e
-            )
-            return None
-
-    # ── Internal helpers ──────────────────────────────────────────────────
-
-    def _parse_release(
-        self,
-        metadata: dict,
-        tag_name: str,
-        channel_filter: Optional[str],
-    ) -> Optional[Release]:
-        """
-        Build a Release object from releases.json metadata.
-
-        Args:
-            metadata:       Parsed releases.json dict.
-            tag_name:       Source git tag name (for logging).
-            channel_filter: If set, skip releases that don't match.
-
-        Returns:
-            Release object, or None if filtered out / invalid.
-        """
-        release_channel = metadata.get("channel", "stable")
-        if channel_filter and release_channel != channel_filter:
-            logger.debug("Skipping %s (channel=%s)", tag_name, release_channel)
-            return None
-
-        try:
-            return Release(
-                version=metadata["version"],
-                release_date=metadata["release_date"],
-                channel=release_channel,
-                contracts_version=metadata.get("contracts_version", ""),
-                changes=metadata.get("changes", {}),
-                migration_guide_url=metadata.get("migration_guide_url"),
-                minimum_vertical_version=metadata.get("minimum_vertical_version", {}),
-                checksum=metadata.get("checksum", {}),
-            )
-        except KeyError as e:
-            logger.warning(
-                "Invalid releases.json for tag %s: missing field %s", tag_name, e
-            )
-            return None
-
+    
     def _download_release_metadata(self, gh_release: dict) -> Optional[dict]:
         """
-        Backward-compatible alias for _metadata_from_release_asset().
-
-        Kept for any external callers that used the old method name.
+        Download releases.json asset from GitHub Release.
+        
+        Args:
+            gh_release: GitHub Release API response (dict)
+        
+        Returns:
+            Parsed releases.json content (dict) or None if not found
         """
-        return self._metadata_from_release_asset(gh_release)
-
+        assets = gh_release.get("assets", [])
+        
+        # Find releases.json asset
+        metadata_asset = None
+        for asset in assets:
+            if asset.get("name") == "releases.json":
+                metadata_asset = asset
+                break
+        
+        if not metadata_asset:
+            return None
+        
+        # For private repos, use API endpoint instead of browser_download_url
+        asset_id = metadata_asset.get("id")
+        asset_url = metadata_asset.get("url")  # API URL, not browser URL
+        
+        if not asset_url:
+            return None
+        
+        try:
+            request = self._create_request(
+                asset_url,
+                accept_header="application/octet-stream"
+            )
+            with urlopen(request, timeout=self.TIMEOUT_SECONDS) as response:
+                content = response.read().decode()
+                return json.loads(content)
+        
+        except (URLError, HTTPError, json.JSONDecodeError) as e:
+            logger.warning(f"Failed to download asset {asset_id}: {e}")
+            return None
     
     def verify_checksum(self, release: Release) -> bool:
         """

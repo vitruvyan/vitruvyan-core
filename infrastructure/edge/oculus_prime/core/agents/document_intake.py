@@ -112,7 +112,9 @@ class DocumentIntakeAgent:
         chunking_strategy: str = "none",
         chunk_size: int = 4000,
         sampling_policy_ref: Optional[str] = None,
-        correlation_id: Optional[str] = None
+        correlation_id: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+        project_name: Optional[str] = None,
     ) -> List[str]:
         """
         Ingest document and create Evidence Pack(s)
@@ -220,7 +222,9 @@ class DocumentIntakeAgent:
                 byte_size=byte_size,
                 language_detected=language_detected,
                 sampling_policy_ref=sampling_policy_ref,
-                correlation_id=correlation_id
+                correlation_id=correlation_id,
+                tenant_id=tenant_id,
+                project_name=project_name,
             )
             
             evidence_ids.append(evidence_id)

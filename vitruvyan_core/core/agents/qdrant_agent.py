@@ -75,20 +75,17 @@ def _check_collection_registered(collection: str, operation: str) -> None:
 
 
 def _check_payload_contract(points: List[Dict[str, Any]], collection: str) -> None:
-    """Warn (or raise in strict mode) if any point payload is missing 'source'."""
+    """Warn if any point payload is missing the MUST-level 'source' field."""
     if _RAG_ENFORCE == "off":
         return
     for i, p in enumerate(points):
         payload = p.get("payload", {})
         if not payload.get("source"):
-            msg = (
+            logger.warning(
                 f"[RAG GUARD] Point {i} in '{collection}' missing payload.source "
                 f"(MUST per RAG Contract Section 5.2). "
                 f"Payload keys: {sorted(payload.keys()) if payload else '(empty)'}"
             )
-            if _RAG_ENFORCE == "strict":
-                raise ValueError(msg)
-            logger.warning(msg)
             break  # warn once per batch, not per point
 
 

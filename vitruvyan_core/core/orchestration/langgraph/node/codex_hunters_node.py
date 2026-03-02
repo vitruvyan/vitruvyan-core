@@ -25,7 +25,7 @@ Created: 2025-01-14
 import json
 import asyncio
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
 import httpx
 import os
@@ -93,7 +93,7 @@ class CodexHuntersNode(BaseNode):
             target_collections = state.get("codex_target_collections")
             priority = state.get("codex_priority", "medium")
             parameters = state.get("codex_parameters", {})
-            correlation_id = state.get("correlation_id", f"lg_{int(datetime.now(timezone.utc).timestamp())}")
+            correlation_id = state.get("correlation_id", f"lg_{int(datetime.utcnow().timestamp())}")
             
             # Validate expedition type
             valid_types = ["full_audit", "healing", "discovery"]
@@ -254,12 +254,12 @@ class CodexHuntersNode(BaseNode):
     async def _monitor_expedition(self, expedition_id: str) -> Dict[str, Any]:
         """Monitor expedition status until completion"""
         
-        start_time = datetime.now(timezone.utc)
+        start_time = datetime.utcnow()
         
         while True:
             try:
                 # Check if timeout exceeded
-                if (datetime.now(timezone.utc) - start_time).total_seconds() > self.max_wait_seconds:
+                if (datetime.utcnow() - start_time).total_seconds() > self.max_wait_seconds:
                     raise Exception(f"Expedition {expedition_id} timeout after {self.max_wait_seconds} seconds")
                 
                 # Get expedition status
@@ -302,7 +302,7 @@ class CodexHuntersNode(BaseNode):
                 payload={
                     "expedition_id": expedition_id,
                     "event_type": event_type,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.utcnow().isoformat(),
                     **data
                 }
             )
@@ -418,14 +418,7 @@ def codex_hunters_node(state: Dict[str, Any]) -> Dict[str, Any]:
                     "expedition_results": expedition_results
                 },
                 "conversation_type": "codex_expedition",
-                "route": "codex_complete",  # Signals success (routes to END)
-                # Orthodoxy fields (codex bypasses Sacred Flow → set here)
-                "orthodoxy_status": "blessed",
-                "orthodoxy_verdict": "blessed",
-                "orthodoxy_confidence": 0.99,
-                "orthodoxy_findings": 0,
-                "orthodoxy_timestamp": datetime.now(timezone.utc).isoformat(),
-                "vault_blessing": True,
+                "route": "codex_complete"  # Signals success (routes to END)
             }
         else:
             result = {
@@ -437,14 +430,7 @@ def codex_hunters_node(state: Dict[str, Any]) -> Dict[str, Any]:
                     "type": "codex_skipped"
                 },
                 "conversation_type": "codex_skipped",
-                "route": "codex_complete",
-                # Orthodoxy fields (codex bypasses Sacred Flow → set here)
-                "orthodoxy_status": "blessed",
-                "orthodoxy_verdict": "blessed",
-                "orthodoxy_confidence": 0.99,
-                "orthodoxy_findings": 0,
-                "orthodoxy_timestamp": datetime.now(timezone.utc).isoformat(),
-                "vault_blessing": True,
+                "route": "codex_complete"
             }
         
         return result
@@ -460,14 +446,7 @@ def codex_hunters_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 "narrative": f"🏰 Codex Hunters encountered an error: {str(e)}",
                 "type": "codex_error"
             },
-            "route": "error_handling",  # Routes to quality_check
-            # Orthodoxy fields (codex bypasses Sacred Flow → set here)
-            "orthodoxy_status": "non_liquet",
-            "orthodoxy_verdict": "non_liquet",
-            "orthodoxy_confidence": 0.0,
-            "orthodoxy_findings": 1,
-            "orthodoxy_timestamp": datetime.now(timezone.utc).isoformat(),
-            "vault_blessing": False,
+            "route": "error_handling"  # Routes to quality_check
         }
         return error_result
 

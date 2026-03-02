@@ -138,6 +138,8 @@ class OculusPrimeAdapter:
                 chunking_strategy=chunking_strategy,
                 chunk_size=chunk_size,
                 correlation_id=correlation_id,
+                tenant_id=tenant_id,
+                project_name=project_name,
             )
             result = {
                 "status": "success",

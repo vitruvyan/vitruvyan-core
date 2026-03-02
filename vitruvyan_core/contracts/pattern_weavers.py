@@ -17,13 +17,11 @@ Version: 3.0.0
 
 from __future__ import annotations
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
-
-from .base import BaseContract, IContractPlugin
 
 
 # ─────────────────────────────────────────────────────────────
@@ -65,7 +63,7 @@ class OntologyEntity(BaseModel):
 # OntologyPayload — The semantic compilation output
 # ─────────────────────────────────────────────────────────────
 
-class OntologyPayload(BaseContract):
+class OntologyPayload(BaseModel):
     """
     The semantic compilation contract.
 
@@ -75,11 +73,9 @@ class OntologyPayload(BaseContract):
     Invariant: ``extra="forbid"`` — unknown fields cause ValidationError.
     """
 
-    CONTRACT_NAME: ClassVar[str]    = "pattern_weavers.ontology"
-    CONTRACT_VERSION: ClassVar[str] = "3.0.0"
-    CONTRACT_OWNER: ClassVar[str]   = "pattern_weavers"
+    model_config = ConfigDict(extra="forbid")
 
-    schema_version: str = "3.0.0"  # kept for backward compatibility
+    schema_version: str = "1.0.0"
 
     # Gate
     gate: DomainGate = Field(default_factory=DomainGate)
@@ -127,7 +123,7 @@ class CompileResponse(BaseModel):
 # Plugin contract — domain plugins implement this
 # ─────────────────────────────────────────────────────────────
 
-class ISemanticPlugin(IContractPlugin):
+class ISemanticPlugin(ABC):
     """
     Domain plugin interface for Pattern Weavers semantic compilation.
 
@@ -137,10 +133,6 @@ class ISemanticPlugin(IContractPlugin):
     Plugins are registered at service startup and selected based on
     the ``domain`` field in CompileRequest.
     """
-
-    PLUGIN_CONTRACT_NAME: ClassVar[str]    = "semantic_plugin"
-    PLUGIN_CONTRACT_VERSION: ClassVar[str] = "3.0.0"
-    PLUGIN_CONTRACT_OWNER: ClassVar[str]   = "pattern_weavers"
 
     @abstractmethod
     def get_domain_name(self) -> str:

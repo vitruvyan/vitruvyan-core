@@ -12,22 +12,6 @@ Author: vitruvyan-core
 Date: February 8, 2026
 """
 
-from .base import BaseContract, ContractMeta, ContractRegistry, IContractPlugin
-from .ingestion import (
-    CHANNEL_INGESTION_ACQUIRED,
-    CHANNEL_INGESTION_DUPLICATE,
-    CHANNEL_INGESTION_NORMALIZED,
-    CHANNEL_INGESTION_REJECTED,
-    IngestionPayload,
-    IngestionQuality,
-    IIngestionPlugin,
-    NormalizedChunk,
-    SourceDescriptor,
-    SourceType,
-    build_chunk_id,
-    build_source_id,
-    compute_content_hash,
-)
 from .llm_provider import ILLMProvider
 from .orchestration import (
     BaseGraphState,
@@ -132,25 +116,6 @@ from .rag import (
 )
 
 __all__ = [
-    # Base contracts
-    "BaseContract",
-    "ContractMeta",
-    "ContractRegistry",
-    "IContractPlugin",
-    # Ingestion Contract
-    "CHANNEL_INGESTION_ACQUIRED",
-    "CHANNEL_INGESTION_DUPLICATE",
-    "CHANNEL_INGESTION_NORMALIZED",
-    "CHANNEL_INGESTION_REJECTED",
-    "SourceType",
-    "SourceDescriptor",
-    "IngestionQuality",
-    "NormalizedChunk",
-    "IngestionPayload",
-    "IIngestionPlugin",
-    "compute_content_hash",
-    "build_source_id",
-    "build_chunk_id",
     # LLM
     "ILLMProvider",
     # Graph Response Contract (channel-agnostic)
