@@ -159,16 +159,44 @@ class GDriveAdapter:
         if self._service is not None:
             return self._service
         try:
-            from google.oauth2 import service_account
+            import json as _json
             from googleapiclient.discovery import build
 
             scopes = self.SCOPES_READWRITE if self._mode == "readwrite" else self.SCOPES_READONLY
-            creds = service_account.Credentials.from_service_account_file(
-                self._credentials_json,
-                scopes=scopes,
-            )
+
+            # Auto-detect credential type
+            with open(self._credentials_json) as f:
+                cred_data = _json.load(f)
+            cred_type = cred_data.get("type", "service_account")
+
+            if cred_type == "authorized_user":
+                # OAuth2 user credentials (personal Google account)
+                # drive.file scope: read+write for files/folders created by this app
+                from google.oauth2.credentials import Credentials
+                from google.auth.transport.requests import Request
+
+                creds = Credentials(
+                    token=None,
+                    refresh_token=cred_data["refresh_token"],
+                    token_uri="https://oauth2.googleapis.com/token",
+                    client_id=cred_data["client_id"],
+                    client_secret=cred_data["client_secret"],
+                    scopes=["https://www.googleapis.com/auth/drive.file"],
+                )
+                # Refresh immediately to validate
+                creds.refresh(Request())
+                logger.info("GDriveAdapter: authenticated via OAuth2 user credentials (mode=%s).", self._mode)
+            else:
+                # Service account credentials
+                from google.oauth2 import service_account
+
+                creds = service_account.Credentials.from_service_account_file(
+                    self._credentials_json,
+                    scopes=scopes,
+                )
+                logger.info("GDriveAdapter: authenticated via service account (mode=%s).", self._mode)
+
             self._service = build("drive", "v3", credentials=creds, cache_discovery=False)
-            logger.info("GDriveAdapter: authenticated (mode=%s).", self._mode)
             return self._service
         except ImportError:
             raise RuntimeError(
