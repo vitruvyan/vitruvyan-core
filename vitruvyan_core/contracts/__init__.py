@@ -114,6 +114,15 @@ from .rag import (
     get_collection_declaration,
     is_declared_collection,
 )
+from .tenancy import (
+    CHANNEL_TENANT_CREATED,
+    CHANNEL_TENANT_DEACTIVATED,
+    CHANNEL_TENANT_SCOPE_DENIED,
+    TenancyMode,
+    TenantDescriptor,
+    ScopeVerdict,
+    ITenancyPlugin,
+)
 
 __all__ = [
     # LLM
@@ -196,4 +205,12 @@ __all__ = [
     "ALL_DECLARED_COLLECTIONS",
     "get_collection_declaration",
     "is_declared_collection",
+    # Tenancy Contract V1
+    "CHANNEL_TENANT_CREATED",
+    "CHANNEL_TENANT_DEACTIVATED",
+    "CHANNEL_TENANT_SCOPE_DENIED",
+    "TenancyMode",
+    "TenantDescriptor",
+    "ScopeVerdict",
+    "ITenancyPlugin",
 ]

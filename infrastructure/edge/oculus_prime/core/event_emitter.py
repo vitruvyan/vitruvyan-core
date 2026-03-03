@@ -188,6 +188,17 @@ class IntakeEventEmitter:
         tenant_id: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> EvidenceCreatedEvent:
+        payload = {
+            "source_type": source_type,
+            "source_uri": source_uri,
+            "evidence_pack_ref": evidence_pack_ref,
+            "source_hash": source_hash,
+            "byte_size": byte_size,
+            "language_detected": language_detected,
+            "sampling_policy_ref": sampling_policy_ref,
+        }
+        if tenant_id:
+            payload["tenant_id"] = tenant_id
         return EvidenceCreatedEvent(
             event_id=event_id,
             event_version=event_version,
@@ -195,15 +206,7 @@ class IntakeEventEmitter:
             evidence_id=evidence_id,
             chunk_id=chunk_id,
             idempotency_key=self.generate_idempotency_key(evidence_id, chunk_id, source_hash),
-            payload={
-                "source_type": source_type,
-                "source_uri": source_uri,
-                "evidence_pack_ref": evidence_pack_ref,
-                "source_hash": source_hash,
-                "byte_size": byte_size,
-                "language_detected": language_detected,
-                "sampling_policy_ref": sampling_policy_ref,
-            },
+            payload=payload,
             metadata={
                 "intake_agent_id": intake_agent_id,
                 "intake_agent_version": intake_agent_version,
@@ -341,6 +344,8 @@ class IntakeEventEmitter:
             language_detected=technical_metadata.get("language_detected"),
             sampling_policy_ref=evidence_pack.get("sampling_policy_ref"),
             correlation_id=technical_metadata.get("correlation_id"),
+            tenant_id=evidence_pack.get("tenant_id"),
+            project_name=evidence_pack.get("project_name"),
         )
 
     def _log_event_emission(self, event: EvidenceCreatedEvent) -> None:

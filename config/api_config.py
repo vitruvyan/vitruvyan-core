@@ -275,6 +275,22 @@ def get_dse_url(endpoint: str = "") -> str:
     return get_api_url_with_fallback(APIService.DSE, endpoint)
 
 
+# ─────────────────────────────────────────────────────────────
+# Tenancy Configuration (domain-agnostic)
+# ─────────────────────────────────────────────────────────────
+
+# Operational mode: "bootstrap" (audit-only) or "enforced" (hard 403)
+TENANCY_MODE: str = os.getenv("TENANCY_MODE", "bootstrap")
+
+# Internal/system tenant ID (shared corpora, normative, etc.)
+TENANCY_INTERNAL_TENANT_ID: str = os.getenv("TENANCY_INTERNAL_TENANT_ID", "999")
+
+# Superadmin roles that bypass tenant scope (comma-separated)
+TENANCY_SUPERADMIN_ROLES: list = os.getenv(
+    "TENANCY_SUPERADMIN_ROLES", "super_admin,realm-admin"
+).split(",")
+
+
 # Export all
 __all__ = [
     "APIService",
@@ -291,6 +307,10 @@ __all__ = [
     "get_codex_url",
     "get_docs_url",
     "get_dse_url",
+    # Tenancy
+    "TENANCY_MODE",
+    "TENANCY_INTERNAL_TENANT_ID",
+    "TENANCY_SUPERADMIN_ROLES",
 ]
 
 

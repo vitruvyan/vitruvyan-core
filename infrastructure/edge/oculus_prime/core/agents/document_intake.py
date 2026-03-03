@@ -125,6 +125,7 @@ class DocumentIntakeAgent:
             chunk_size: Max characters per chunk (if strategy='size')
             sampling_policy_ref: Reference to external Sampling Policy
             correlation_id: Distributed tracing ID
+            tenant_id: Tenant isolation key (propagated to evidence pack + events)
         
         Returns:
             List of evidence_ids created
@@ -197,6 +198,10 @@ class DocumentIntakeAgent:
                 "sampling_policy_ref": sampling_policy_ref,
                 "tags": []
             }
+            
+            # Tenant isolation: include tenant_id if provided
+            if tenant_id:
+                evidence_pack["tenant_id"] = tenant_id
             
             # ✅ HARDENING: Validate no semantic interpretation
             try:
@@ -534,14 +539,13 @@ class DocumentIntakeAgent:
         
         try:
             with self.postgres_agent.connection.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO evidence_packs (
-                        evidence_id, chunk_id, schema_version, created_utc,
-                        source_ref, normalized_text, technical_metadata,
-                        integrity, sampling_policy_ref, tags
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    RETURNING id
-                """, (
+                # Build column list dynamically — tenant_id is optional
+                columns = [
+                    "evidence_id", "chunk_id", "schema_version", "created_utc",
+                    "source_ref", "normalized_text", "technical_metadata",
+                    "integrity", "sampling_policy_ref", "tags",
+                ]
+                values = [
                     evidence_pack['evidence_id'],
                     evidence_pack['chunk_id'],
                     evidence_pack['schema_version'],
@@ -551,8 +555,18 @@ class DocumentIntakeAgent:
                     json.dumps(evidence_pack['technical_metadata']),
                     json.dumps(evidence_pack['integrity']),
                     evidence_pack.get('sampling_policy_ref'),
-                    json.dumps(evidence_pack.get('tags', []))
-                ))
+                    json.dumps(evidence_pack.get('tags', [])),
+                ]
+                if evidence_pack.get('tenant_id'):
+                    columns.append("tenant_id")
+                    values.append(evidence_pack['tenant_id'])
+                
+                placeholders = ", ".join(["%s"] * len(values))
+                col_names = ", ".join(columns)
+                cur.execute(
+                    f"INSERT INTO evidence_packs ({col_names}) VALUES ({placeholders}) RETURNING id",
+                    values,
+                )
                 row_id = cur.fetchone()[0]
             self.postgres_agent.connection.commit()
             return f"postgres://evidence_packs/{row_id}"
