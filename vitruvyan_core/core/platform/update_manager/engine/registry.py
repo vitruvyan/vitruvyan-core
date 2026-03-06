@@ -16,7 +16,11 @@ Environment Variables:
   GITHUB_TOKEN — Personal access token (required for private repos).
                   Read-only scope (`repo` for private, `public_repo` for
                   public repos) is sufficient.
+  GH_TOKEN     — Alternative token env var (fallback).
   VITRUVYAN_REPO — Override repo (format: "owner/repo").
+
+Token discovery fallback:
+  .env → gh auth token
 """
 
 import base64
@@ -24,6 +28,7 @@ import json
 import logging
 import os
 import subprocess
+from pathlib import Path
 from typing import List, Optional
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
@@ -48,11 +53,13 @@ class ReleaseRegistry:
     - verify_checksum(release) → bool
     
     Environment Variables:
-    - GITHUB_TOKEN: Personal access token for private repositories (optional)
+    - GITHUB_TOKEN / GH_TOKEN: Personal access token for private repositories
     """
     
     GITHUB_API_BASE = "https://api.github.com"
     TIMEOUT_SECONDS = 10
+    METADATA_FILENAMES = ("release_metadata.json", "releases.json")
+    DEFAULT_REPO = "vitruvyan/vitruvyan-core"
     
     def __init__(self, repo: Optional[str] = None):
         """
@@ -67,11 +74,11 @@ class ReleaseRegistry:
         
         self.repo = repo
         self.api_url = f"{self.GITHUB_API_BASE}/repos/{repo}/releases"
-        self.github_token = os.getenv("GITHUB_TOKEN")
+        self.github_token = self._autodetect_github_token()
     
     def _autodetermine_repo(self) -> str:
         """
-        Autodetermine repository from git remote or environment variable.
+        Autodetermine repository from env/vertical manifest/git remote.
         
         Returns:
             Repository name (format: "owner/repo")
@@ -81,6 +88,12 @@ class ReleaseRegistry:
         if repo:
             logger.debug(f"Using repository from VITRUVYAN_REPO: {repo}")
             return repo
+
+        # Try vertical_manifest.yaml (upstream.repo) for seamless vertical usage.
+        manifest_repo = self._repo_from_vertical_manifest()
+        if manifest_repo:
+            logger.debug("Using repository from vertical_manifest upstream.repo: %s", manifest_repo)
+            return manifest_repo
         
         # Try git remote
         try:
@@ -109,9 +122,196 @@ class ReleaseRegistry:
             pass
         
         # Fallback to default
-        default_repo = "vitruvyan/vitruvyan-core"
+        default_repo = self.DEFAULT_REPO
         logger.debug(f"Using default repository: {default_repo}")
         return default_repo
+
+    def _repo_from_vertical_manifest(self) -> Optional[str]:
+        """
+        Resolve upstream.repo from vertical_manifest.yaml found in cwd/parents.
+        """
+        try:
+            import yaml
+        except Exception:
+            return None
+
+        current = Path.cwd()
+        while True:
+            manifest_path = current / "vertical_manifest.yaml"
+            if manifest_path.exists():
+                try:
+                    with open(manifest_path, "r", encoding="utf-8") as f:
+                        manifest = yaml.safe_load(f) or {}
+                    repo = (manifest.get("upstream", {}) or {}).get("repo")
+                    if isinstance(repo, str) and "/" in repo:
+                        return repo.strip()
+                except Exception as e:
+                    logger.debug("Could not parse %s: %s", manifest_path, e)
+
+                # Found a manifest but no valid repo: don't keep scanning.
+                return None
+
+            if current.parent == current:
+                break
+            current = current.parent
+
+        return None
+
+    def _autodetect_github_token(self) -> Optional[str]:
+        """
+        Resolve GitHub token with zero-config-friendly precedence:
+          1) GitHub token env vars (generic + owner-scoped)
+          2) .env file (repo root or current/parent dirs)
+          3) gh CLI (`gh auth token`)
+        """
+        keys = self._candidate_token_keys()
+        for env_key in keys:
+            value = os.getenv(env_key)
+            if value:
+                logger.debug("Using GitHub token from %s", env_key)
+                return value
+
+        token_from_env_file = self._token_from_dotenv(keys)
+        if token_from_env_file:
+            logger.debug("Using GitHub token from .env file")
+            return token_from_env_file
+
+        token_from_gh = self._token_from_gh_cli()
+        if token_from_gh:
+            logger.debug("Using GitHub token from gh auth token")
+            return token_from_gh
+
+        return None
+
+    def _candidate_token_keys(self) -> List[str]:
+        """
+        Candidate env keys for GitHub token, including owner-scoped aliases.
+        """
+        keys = ["GITHUB_TOKEN", "GH_TOKEN"]
+        owner = (self.repo.split("/", 1)[0] if "/" in self.repo else "").strip()
+        if owner:
+            owner_key = owner.upper().replace("-", "_")
+            keys.extend(
+                [
+                    f"{owner_key}_GITHUB_TOKEN",
+                    f"{owner_key}_GH_TOKEN",
+                    f"{owner_key}_TOKEN",
+                ]
+            )
+        keys.extend(["VITRUVYAN_GITHUB_TOKEN", "VITRUVYAN_TOKEN"])
+
+        # Preserve order while removing duplicates.
+        deduped = []
+        seen = set()
+        for key in keys:
+            if key not in seen:
+                deduped.append(key)
+                seen.add(key)
+        return deduped
+
+    def _token_from_dotenv(self, allowed_keys: List[str]) -> Optional[str]:
+        """
+        Try loading GitHub token from .env without external dependencies.
+        """
+        candidates = []
+
+        # Walk up from cwd to filesystem root.
+        current = Path.cwd()
+        while True:
+            candidates.append(current / ".env")
+            if current.parent == current:
+                break
+            current = current.parent
+
+        # Prioritize repo-root .env when available.
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "--show-toplevel"],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=5,
+            )
+            candidates.insert(0, Path(result.stdout.strip()) / ".env")
+        except Exception:
+            pass
+
+        seen = set()
+        for path in candidates:
+            if path in seen:
+                continue
+            seen.add(path)
+            if not path.exists():
+                continue
+
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    for raw in f:
+                        line = raw.strip()
+                        if not line or line.startswith("#"):
+                            continue
+                        if line.startswith("export "):
+                            line = line[len("export "):].strip()
+                        if "=" not in line:
+                            continue
+
+                        key, value = line.split("=", 1)
+                        key = key.strip()
+                        value = value.strip().strip("'").strip('"')
+
+                        if key in allowed_keys and value:
+                            return value
+            except Exception as e:
+                logger.debug("Could not parse %s: %s", path, e)
+
+        return None
+
+    def _token_from_gh_cli(self) -> Optional[str]:
+        """
+        Try reading auth token from GitHub CLI (if installed/authenticated).
+        """
+        try:
+            result = subprocess.run(
+                ["gh", "auth", "token"],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=5,
+            )
+            token = result.stdout.strip()
+            return token or None
+        except Exception:
+            return None
+
+    def get_current_version(self) -> str:
+        """
+        Best-effort current Core version detection.
+        """
+        try:
+            from vitruvyan_core import __version__
+
+            return __version__
+        except Exception:
+            pass
+
+        try:
+            result = subprocess.run(
+                ["git", "describe", "--tags", "--abbrev=0"],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=5,
+            )
+            return result.stdout.strip().lstrip("v")
+        except Exception:
+            return "unknown"
+
+    def get_release_url(self, version: str) -> str:
+        """
+        Build GitHub release URL for a version using the active repository.
+        """
+        tag = version if version.startswith("v") else f"v{version}"
+        return f"https://github.com/{self.repo}/releases/tag/{tag}"
     
     def _create_request(self, url: str, accept_header: str = "application/vnd.github.v3+json") -> Request:
         """
@@ -267,6 +467,17 @@ class ReleaseRegistry:
         except NetworkError:
             raise
         except (URLError, HTTPError) as e:
+            if isinstance(e, HTTPError) and e.code == 404:
+                if not self.github_token:
+                    raise NetworkError(
+                        f"GitHub Tags API HTTP 404 for repo '{self.repo}'. "
+                        "Repository may be private. Configure GITHUB_TOKEN/GH_TOKEN "
+                        "or run 'gh auth login'."
+                    ) from e
+                raise NetworkError(
+                    f"GitHub Tags API HTTP 404 for repo '{self.repo}'. "
+                    "Check repo name/visibility and token permissions."
+                ) from e
             raise NetworkError(f"GitHub Tags API error: {e}") from e
         except json.JSONDecodeError as e:
             raise NetworkError(f"Invalid JSON from Tags API: {e}") from e
@@ -282,18 +493,20 @@ class ReleaseRegistry:
 
     def _metadata_from_release_asset(self, gh_release: dict) -> Optional[dict]:
         """
-        Download releases.json from a GitHub Release *asset*.
+        Download release metadata from a GitHub Release *asset*.
 
         Args:
             gh_release: GitHub Release API response dict.
 
         Returns:
-            Parsed releases.json dict, or None if no asset found.
+            Parsed metadata dict, or None if no supported asset found.
         """
         assets = gh_release.get("assets", [])
-        metadata_asset = next(
-            (a for a in assets if a.get("name") == "releases.json"), None
-        )
+        metadata_asset = None
+        for filename in self.METADATA_FILENAMES:
+            metadata_asset = next((a for a in assets if a.get("name") == filename), None)
+            if metadata_asset:
+                break
         if not metadata_asset:
             return None
 
@@ -309,17 +522,17 @@ class ReleaseRegistry:
                 return json.loads(response.read().decode())
         except (URLError, HTTPError, json.JSONDecodeError) as e:
             logger.warning(
-                "Failed to download releases.json asset from release %s: %s",
+                "Failed to download release metadata asset from release %s: %s",
                 gh_release.get("tag_name", "?"), e,
             )
             return None
 
     def _metadata_from_contents_api(self, tag_ref: str) -> Optional[dict]:
         """
-        Fetch releases.json directly from repo file tree at *tag_ref*.
+        Fetch release metadata directly from repo file tree at *tag_ref*.
 
         Uses GitHub Contents API:
-          GET /repos/{owner}/{repo}/contents/releases.json?ref={tag_ref}
+          GET /repos/{owner}/{repo}/contents/{metadata_file}?ref={tag_ref}
 
         This works for any pushed git tag — no GitHub Release required.
 
@@ -327,51 +540,56 @@ class ReleaseRegistry:
             tag_ref: Git tag name (e.g., "v1.8.0").
 
         Returns:
-            Parsed releases.json dict, or None if not found / parse error.
+            Parsed metadata dict, or None if not found / parse error.
         """
-        url = (
-            f"{self.GITHUB_API_BASE}/repos/{self.repo}"
-            f"/contents/releases.json?ref={tag_ref}"
-        )
-        try:
-            request = self._create_request(url)
-            with urlopen(request, timeout=self.TIMEOUT_SECONDS) as response:
-                content_meta = json.loads(response.read().decode())
+        for metadata_filename in self.METADATA_FILENAMES:
+            url = (
+                f"{self.GITHUB_API_BASE}/repos/{self.repo}"
+                f"/contents/{metadata_filename}?ref={tag_ref}"
+            )
+            try:
+                request = self._create_request(url)
+                with urlopen(request, timeout=self.TIMEOUT_SECONDS) as response:
+                    content_meta = json.loads(response.read().decode())
 
-            # GitHub Contents API returns file content base64-encoded
-            encoding = content_meta.get("encoding", "")
-            raw_content = content_meta.get("content", "")
+                # GitHub Contents API returns file content base64-encoded
+                encoding = content_meta.get("encoding", "")
+                raw_content = content_meta.get("content", "")
 
-            if encoding == "base64":
-                decoded = base64.b64decode(raw_content).decode("utf-8")
-            else:
-                # Fallback: download_url
-                download_url = content_meta.get("download_url")
-                if not download_url:
-                    logger.warning(
-                        "Contents API: unexpected encoding %r for tag %s",
-                        encoding, tag_ref,
-                    )
-                    return None
-                req2 = self._create_request(download_url)
-                with urlopen(req2, timeout=self.TIMEOUT_SECONDS) as r2:
-                    decoded = r2.read().decode("utf-8")
+                if encoding == "base64":
+                    decoded = base64.b64decode(raw_content).decode("utf-8")
+                else:
+                    # Fallback: download_url
+                    download_url = content_meta.get("download_url")
+                    if not download_url:
+                        logger.warning(
+                            "Contents API: unexpected encoding %r for tag %s (%s)",
+                            encoding, tag_ref, metadata_filename,
+                        )
+                        return None
+                    req2 = self._create_request(download_url)
+                    with urlopen(req2, timeout=self.TIMEOUT_SECONDS) as r2:
+                        decoded = r2.read().decode("utf-8")
 
-            return json.loads(decoded)
+                return json.loads(decoded)
 
-        except HTTPError as e:
-            if e.code == 404:
-                # releases.json not present in this tag — silent skip
+            except HTTPError as e:
+                if e.code == 404:
+                    # Try the next supported filename.
+                    continue
+                logger.warning(
+                    "Contents API HTTP %d for tag %s (%s): %s",
+                    e.code, tag_ref, metadata_filename, e,
+                )
                 return None
-            logger.warning(
-                "Contents API HTTP %d for tag %s: %s", e.code, tag_ref, e
-            )
-            return None
-        except (URLError, json.JSONDecodeError, KeyError) as e:
-            logger.warning(
-                "Contents API error for tag %s: %s", tag_ref, e
-            )
-            return None
+            except (URLError, json.JSONDecodeError, KeyError) as e:
+                logger.warning(
+                    "Contents API error for tag %s (%s): %s",
+                    tag_ref, metadata_filename, e
+                )
+                return None
+
+        return None
 
     # ── Internal helpers ──────────────────────────────────────────────────
 
@@ -398,21 +616,62 @@ class ReleaseRegistry:
             return None
 
         try:
+            changes = self._normalize_changes(metadata.get("changes", {}))
+            checksum = self._normalize_checksum(metadata.get("checksum", {}))
             return Release(
                 version=metadata["version"],
                 release_date=metadata["release_date"],
                 channel=release_channel,
                 contracts_version=metadata.get("contracts_version", ""),
-                changes=metadata.get("changes", {}),
+                changes=changes,
                 migration_guide_url=metadata.get("migration_guide_url"),
                 minimum_vertical_version=metadata.get("minimum_vertical_version", {}),
-                checksum=metadata.get("checksum", {}),
+                checksum=checksum,
             )
         except KeyError as e:
             logger.warning(
                 "Invalid releases.json for tag %s: missing field %s", tag_name, e
             )
             return None
+
+    def _normalize_changes(self, changes_raw) -> dict:
+        """
+        Normalize release changes to contract shape:
+          {"breaking": [], "features": [], "fixes": []}
+        """
+        if isinstance(changes_raw, dict):
+            return {
+                "breaking": list(changes_raw.get("breaking", []) or []),
+                "features": list(changes_raw.get("features", []) or []),
+                "fixes": list(changes_raw.get("fixes", []) or []),
+            }
+
+        if isinstance(changes_raw, list):
+            # Legacy shape: flat change list.
+            return {"breaking": [], "features": list(changes_raw), "fixes": []}
+
+        return {"breaking": [], "features": [], "fixes": []}
+
+    def _normalize_checksum(self, checksum_raw) -> dict:
+        """
+        Normalize checksum metadata to {type, value}.
+        """
+        if not isinstance(checksum_raw, dict):
+            return {}
+
+        checksum_type = checksum_raw.get("type")
+        checksum_value = checksum_raw.get("value")
+
+        if checksum_type and checksum_value:
+            return {"type": checksum_type, "value": checksum_value}
+
+        # Legacy shape: {"algorithm": "...", "value": "..."}
+        algorithm = checksum_raw.get("algorithm")
+        if algorithm and checksum_value:
+            mapped_type = "git_commit_sha" if algorithm == "git_commit_sha" else algorithm
+            return {"type": mapped_type, "value": checksum_value}
+
+        return {}
 
     def _download_release_metadata(self, gh_release: dict) -> Optional[dict]:
         """
@@ -433,8 +692,6 @@ class ReleaseRegistry:
         Returns:
             True if checksum matches, False otherwise
         
-        Raises:
-            ValueError: Unsupported checksum type
         """
         checksum_type = release.checksum.get("type")
         expected_sha = release.checksum.get("value")
@@ -444,7 +701,12 @@ class ReleaseRegistry:
             return False
         
         if checksum_type != "git_commit_sha":
-            raise ValueError(f"Unsupported checksum type: {checksum_type}")
+            logger.warning(
+                "Unsupported checksum type for %s: %s",
+                release.version,
+                checksum_type,
+            )
+            return False
         
         # Verify Git commit SHA
         tag = f"v{release.version}"
@@ -484,9 +746,9 @@ class ReleaseRegistry:
             version: SemVer string (e.g., "1.2.3" or "1.2.3-beta.1")
         
         Returns:
-            Tuple: (major, minor, patch, prerelease_tuple)
-            Example: "1.2.3-beta.1" → (1, 2, 3, ('beta', 1))
-                     "1.2.3" → (1, 2, 3, ())
+            Tuple: (major, minor, patch, stability_rank, prerelease_tuple)
+            Example: "1.2.3-beta.1" → (1, 2, 3, 0, ('beta', 1))
+                     "1.2.3" → (1, 2, 3, 1, ())
         """
         # Strip 'v' prefix if present
         version = version.lstrip("v")
@@ -505,7 +767,7 @@ class ReleaseRegistry:
             patch = int(parts[2]) if len(parts) > 2 else 0
         except ValueError:
             logger.warning(f"Invalid SemVer: {version}")
-            return (0, 0, 0, ())
+            return (0, 0, 0, 0, ())
         
         # Parse prerelease (beta.1, alpha.2, etc.)
         prerelease_tuple = ()
@@ -517,7 +779,6 @@ class ReleaseRegistry:
                 for p in prerelease_parts
             )
         
-        # Return comparable tuple
-        # Note: versions with prerelease sort LOWER than stable versions
-        # (1, 2, 3, ()) > (1, 2, 3, ('beta', 1))
-        return (major, minor, patch, prerelease_tuple)
+        # Stable releases sort above prereleases with same base version.
+        stability_rank = 0 if prerelease else 1
+        return (major, minor, patch, stability_rank, prerelease_tuple)

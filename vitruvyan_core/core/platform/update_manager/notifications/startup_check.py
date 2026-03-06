@@ -25,8 +25,47 @@ from .notifiers import (
     WebhookNotifier,
 )
 from ..engine.compatibility import CompatibilityChecker
-from ..engine.models import Release
 from ..engine.registry import ReleaseRegistry
+
+
+def _get_current_version() -> str:
+    """Best-effort current Core version detection."""
+    try:
+        from vitruvyan_core import __version__
+
+        return __version__
+    except Exception:
+        pass
+
+    try:
+        import subprocess
+
+        result = subprocess.run(
+            ["git", "describe", "--tags", "--abbrev=0"],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=5,
+        )
+        return result.stdout.strip().lstrip("v")
+    except Exception:
+        return "unknown"
+
+
+def _extract_breaking_changes(release_obj) -> list[str]:
+    """Normalize breaking changes from legacy/new release shapes."""
+    # Legacy mocks/tests may provide `breaking_changes` directly.
+    legacy = getattr(release_obj, "breaking_changes", None)
+    if isinstance(legacy, list):
+        return legacy
+    if isinstance(legacy, bool):
+        return ["Breaking changes present"] if legacy else []
+
+    changes = getattr(release_obj, "changes", {}) or {}
+    if isinstance(changes, dict):
+        breaking = changes.get("breaking", [])
+        return breaking if isinstance(breaking, list) else []
+    return []
 
 
 def should_check_updates(config: NotificationConfig) -> bool:
@@ -72,7 +111,8 @@ def startup_check(manifest_path: Optional[str] = None, force: bool = False) -> N
     # Perform update check
     try:
         registry = ReleaseRegistry()
-        current_version = registry.get_current_version()
+        current_version_getter = getattr(registry, "get_current_version", None)
+        current_version = current_version_getter() if callable(current_version_getter) else _get_current_version()
         
         try:
             latest_release = registry.fetch_latest(channel="stable")
@@ -112,14 +152,15 @@ def startup_check(manifest_path: Optional[str] = None, force: bool = False) -> N
             return
         
         # Build notification
+        breaking_changes = _extract_breaking_changes(latest_release)
         notification = UpdateNotification(
             title=f"Vitruvyan Core Update Available: v{latest_release.version}",
             message=f"New version v{latest_release.version} is available (current: v{current_version})",
             current_version=current_version,
             available_version=latest_release.version,
-            breaking_changes=latest_release.breaking_changes,
-            urgency="critical" if latest_release.breaking_changes else "normal",
-            changelog_url=f"https://github.com/dbaldoni/vitruvyan-core/releases/tag/v{latest_release.version}",
+            breaking_changes=breaking_changes,
+            urgency="critical" if breaking_changes else "normal",
+            changelog_url=registry.get_release_url(latest_release.version),
         )
         
         # Send notifications

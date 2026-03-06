@@ -75,20 +75,16 @@ def orthodoxy_node(state: Dict[str, Any]) -> Dict[str, Any]:
         
         logger.info(f"[ORTHODOXY][GRAPH] 📡 Audit request transmitted to Sacred Order")
         
-        # TODO: Implement async verdict retrieval via Postgres polling
-        # Current: Synchronous pub/sub pattern incompatible with Redis Streams
-        # Future: Poll verdicts table with correlation_id or use dedicated HTTP callback
-        # For now: Apply local blessing immediately (async processing by orthodoxy_listener)
-        verdict = None  # Async verdict retrieval via Postgres polling (future)
-        
-        if verdict:
-            # Sacred verdict received
-            logger.info(f"[ORTHODOXY][GRAPH] ✨ Divine verdict received: {verdict.get('verdict', 'unknown')}")
-            state = _apply_sacred_verdict(state, verdict, session_start)
-        else:
-            # Apply local blessing (audit continues async via orthodoxy_listener)
-            logger.info("[ORTHODOXY][GRAPH] 🕯️ Applying local blessing (async audit in progress)")
-            state = _apply_local_blessing(state, "async_processing")
+        # ARCHITECTURAL DECISION (A+ Pattern — Mar 06, 2026):
+        # Orthodoxy operates as async audit log, NOT a blocking gate.
+        # The graph applies a local blessing immediately and continues.
+        # The full tribunal pipeline (Confessor→Inquisitor→VerdictEngine→Penitent→Chronicler)
+        # runs asynchronously via orthodoxy_listener, saves verdict to PG, and emits
+        # orthodoxy.audit.completed for downstream consumers (Vault, Conclave).
+        # correlation_id is a trace identifier for observability, not a round-trip token.
+        # Rationale: governance side-effects don't change the user-facing response;
+        # blocking would add ~200ms latency without user-visible benefit at MVP stage.
+        state = _apply_local_blessing(state, "async_audit")
         
         # Log sacred completion
         execution_time = (time.time() - session_start) * 1000

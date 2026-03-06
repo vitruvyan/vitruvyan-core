@@ -26,7 +26,18 @@ Contract: docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md
 """
 
 from .engine import UpdateEngine
-from .cli import cli_main
 
 __version__ = "0.1.0"
 __all__ = ["UpdateEngine", "cli_main"]
+
+
+def cli_main():
+    """
+    Lazy CLI entrypoint import.
+
+    Keeps package-level imports safe for library/CI callers even if CLI-only
+    modules are temporarily unavailable.
+    """
+    from .cli.main import cli_main as _cli_main
+
+    return _cli_main()

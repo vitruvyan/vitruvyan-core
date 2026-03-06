@@ -21,8 +21,7 @@ Created: Dec 26, 2025 (Phase 4 - LangGraph Integration)
 import os
 import json
 import logging
-import asyncio  # 🔧 For event loop access in sync context (Phase 4)
-import nest_asyncio  # 🔧 Allow nested event loops (Phase 4 fix)
+import asyncio
 import concurrent.futures
 from typing import Dict, Any, List, Optional
 import httpx
@@ -34,45 +33,6 @@ logger = logging.getLogger(__name__)
 _MCP_EXECUTOR = concurrent.futures.ThreadPoolExecutor(
     max_workers=2, thread_name_prefix="mcp_async"
 )
-
-# nest_asyncio applied lazily to handle uvloop
-_nest_applied = False
-
-def _ensure_nest_asyncio():
-    """Apply nest_asyncio patch once, handling uvloop gracefully.
-
-    IMPORTANT: nest_asyncio.apply() must NOT be called when uvloop is
-    the active event loop policy.  Even if it raises ValueError, the
-    call partially contaminates asyncio internals (_patch_asyncio runs
-    before _patch_loop), breaking subsequent asyncio.run() calls in
-    other nodes (e.g. intent_detection_node).
-    """
-    global _nest_applied
-    if not _nest_applied:
-        try:
-            try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                # No running event loop in this thread — skip.
-                logger.debug("[nest_asyncio] No event loop in thread — skipping patch")
-                _nest_applied = True
-                return
-
-            if type(loop).__module__.startswith("uvloop"):
-                logger.info(
-                    "[nest_asyncio] uvloop detected — skipping patch (incompatible). "
-                    "Async nesting handled via thread offload instead."
-                )
-                _nest_applied = True
-                return
-
-            nest_asyncio.apply(loop)
-            _nest_applied = True
-            logger.debug("✅ nest_asyncio applied successfully")
-        except ValueError as e:
-            # Safety net: still mark as applied to avoid retry loops
-            logger.warning(f"⚠️ nest_asyncio failed: {e}")
-            _nest_applied = True  # Don't retry
 
 # Environment configuration
 USE_MCP = os.getenv("USE_MCP", "0") == "1"  # Master switch for MCP integration
@@ -212,26 +172,13 @@ def llm_mcp_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     logger.info(f"🧠 LLM MCP Node: input='{user_input[:50]}...', entity_ids={entity_ids}, language={language}")
     
-    # Step 1: Fetch available tools (handle nested event loop with threading)
-    _ensure_nest_asyncio()
-    
+    # Step 1: Fetch available tools via thread offload
+    # Graph nodes run in worker threads (via asyncio.to_thread in graph_adapter),
+    # so there is no running event loop. asyncio.run() works cleanly here.
+    # Thread offload via _MCP_EXECUTOR keeps MCP I/O isolated.
     def _run_async_in_thread(coro):
-        """Run async coroutine in new thread with fresh event loop.
-
-        Uses SelectorEventLoop explicitly to avoid uvloop conflicts.
-        uvloop is the default policy under uvicorn, but cannot be
-        nested and causes issues with nest_asyncio.
-        """
-        def _run():
-            # SelectorEventLoop avoids uvloop policy conflicts
-            loop = asyncio.SelectorEventLoop()
-            asyncio.set_event_loop(loop)
-            try:
-                return loop.run_until_complete(coro)
-            finally:
-                loop.close()
-        
-        future = _MCP_EXECUTOR.submit(_run)
+        """Run async coroutine in a thread with a fresh event loop."""
+        future = _MCP_EXECUTOR.submit(asyncio.run, coro)
         return future.result(timeout=90)
     
     mcp_tools = _run_async_in_thread(get_mcp_tools())

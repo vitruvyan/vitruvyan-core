@@ -11,6 +11,7 @@ from ...engine.registry import ReleaseRegistry, NetworkError
 from ...engine.compatibility import CompatibilityChecker
 from ...engine.planner import UpgradePlanner, PrerequisiteError
 from .update import get_current_version, find_vertical_manifest
+from ..channel_state import get_default_channel
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ def cmd_plan(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 = success, 1 = error)
     """
-    channel = args.channel
+    channel = args.channel or get_default_channel()
     target_version = args.target
     
     print(f"📋 Vitruvyan Core Upgrade Plan\n")
@@ -37,17 +38,22 @@ def cmd_plan(args: argparse.Namespace) -> int:
     # Step 2: Fetch target release
     try:
         registry = ReleaseRegistry()
-        all_releases = registry.fetch_all(channel=channel)
-        
-        target_release = next(
-            (r for r in all_releases if r.version == target_version),
-            None
-        )
-        
-        if not target_release:
-            print(f"\n❌ Version {target_version} not found in {channel} channel")
-            return 1
-        
+        if target_version:
+            all_releases = registry.fetch_all(channel=channel)
+            target_release = next(
+                (r for r in all_releases if r.version == target_version),
+                None
+            )
+            if not target_release:
+                print(f"\n❌ Version {target_version} not found in {channel} channel")
+                return 1
+        else:
+            target_release = registry.fetch_latest(channel=channel)
+            if not target_release:
+                print(f"\n❌ No {channel} releases available")
+                return 1
+            target_version = target_release.version
+
         print(f"Target version: {target_version}\n")
     
     except NetworkError as e:
@@ -195,15 +201,20 @@ def register_plan_command(subparsers):
     
     parser.add_argument(
         "--target",
-        required=True,
         help="Target version (e.g., 1.2.0)"
     )
     
     parser.add_argument(
         "--channel",
         choices=["stable", "beta"],
-        default="stable",
-        help="Release channel (default: stable)"
+        default=None,
+        help="Release channel (default: persisted channel or stable)"
+    )
+
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Reserved for machine-readable output (human output currently default)"
     )
     
     parser.set_defaults(func=cmd_plan)

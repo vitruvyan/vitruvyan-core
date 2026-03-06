@@ -61,6 +61,26 @@ graph_node_executions_total = Counter(
     ['node_name', 'status']
 )
 
+graph_node_duration_seconds = Histogram(
+    'graph_node_duration_seconds',
+    'Per-node execution duration in seconds',
+    ['node_name', 'status'],
+    buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0]
+)
+
+
+def _node_metrics_callback(node_name: str, duration: float, status: str):
+    """Callback for graph_flow per-node latency tracking."""
+    graph_node_executions_total.labels(node_name=node_name, status=status).inc()
+    graph_node_duration_seconds.labels(node_name=node_name, status=status).observe(duration)
+
+
+def install_node_metrics():
+    """Wire per-node Prometheus metrics into graph_flow (call once at startup)."""
+    from core.orchestration.langgraph.graph_flow import set_node_metrics_callback
+    set_node_metrics_callback(_node_metrics_callback)
+    logger.info("Per-node Prometheus metrics callback installed")
+
 
 # ============================================================================
 # PROMETHEUS MIDDLEWARE

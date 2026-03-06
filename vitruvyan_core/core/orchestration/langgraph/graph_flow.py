@@ -270,22 +270,54 @@ class GraphState(BaseGraphState, total=False):
 # Use: from core.orchestration.langgraph.graph_runner import run_graph_once
 
 
+# ── Per-node latency budget ──
+import time as _time
+from typing import Callable as _Callable
+
+# Optional metrics callback: (node_name: str, duration_seconds: float, status: str) → None
+# Set by LIVELLO 2 (service layer) to push per-node durations to Prometheus.
+_node_metrics_callback: _Callable = None
+
+
+def set_node_metrics_callback(cb):
+    """Set a callback for per-node execution metrics (LIVELLO 2 hook)."""
+    global _node_metrics_callback
+    _node_metrics_callback = cb
+
+
 # ── Contract enforcement wrapper ──
 # Map graph_flow node names to registry keys where they differ
 _NODE_ALIAS = {"llm_soft": "cached_llm", "intent": "intent_detection"}
 
 
 def _wrap(name, fn):
-    """Wrap a node function with @enforced using its registered contract."""
+    """Wrap a node function with contract enforcement and latency tracking."""
     registry_key = _NODE_ALIAS.get(name, name)
     spec = NODE_CONTRACTS.get(registry_key)
     if spec and (spec.requires or spec.produces):
-        return enforced(
+        fn = enforced(
             requires=spec.requires,
             produces=spec.produces,
             node_name=name,
         )(fn)
-    return fn
+
+    def _timed(state):
+        t0 = _time.monotonic()
+        try:
+            result = fn(state)
+            elapsed = _time.monotonic() - t0
+            if _node_metrics_callback:
+                _node_metrics_callback(name, elapsed, "ok")
+            return result
+        except Exception:
+            elapsed = _time.monotonic() - t0
+            if _node_metrics_callback:
+                _node_metrics_callback(name, elapsed, "error")
+            raise
+
+    _timed.__name__ = fn.__name__
+    _timed.__qualname__ = fn.__qualname__
+    return _timed
 
 
 def build_graph():

@@ -5,6 +5,7 @@ Phase 1 implementation.
 """
 
 import logging
+import os
 from typing import Optional
 
 from .models import CompatibilityResult
@@ -65,16 +66,17 @@ class CompatibilityChecker:
                 target_version=target_version
             )
         
-        # Check contracts major version (TODO: read from Core metadata)
-        # For now, assume Core contracts_version is "1.0.0"
-        core_contracts_version = "1.0.0"  # Hardcoded for Phase 1
+        # Check contracts major version (env-overridable for CI/ops).
+        core_contracts_version = os.getenv("CORE_CONTRACTS_VERSION", "1.0.0")
+        core_contracts_major = int(
+            os.getenv("CORE_CONTRACTS_MAJOR", str(self.parse_semver(core_contracts_version)[0]))
+        )
         if contracts_major is not None:
-            core_major = self.parse_semver(core_contracts_version)[0]
-            if core_major != contracts_major:
+            if core_contracts_major != contracts_major:
                 return CompatibilityResult(
                     compatible=False,
                     blocking_reason=(
-                        f"Contracts major mismatch: Core has {core_major}, "
+                        f"Contracts major mismatch: Core has {core_contracts_major}, "
                         f"vertical requires {contracts_major}"
                     ),
                     target_version=target_version
@@ -178,11 +180,11 @@ class CompatibilityChecker:
             version: SemVer string (e.g., "1.2.3" or "1.2.3-beta.1")
         
         Returns:
-            Tuple: (major, minor, patch, prerelease_tuple)
+            Tuple: (major, minor, patch, stability_rank, prerelease_tuple)
         
         Examples:
-            "1.2.3" → (1, 2, 3, ())
-            "1.2.0-beta.1" → (1, 2, 0, ('beta', 1))
+            "1.2.3" → (1, 2, 3, 1, ())
+            "1.2.0-beta.1" → (1, 2, 0, 0, ('beta', 1))
         """
         # Strip 'v' prefix if present
         version = version.lstrip("v")
@@ -201,7 +203,7 @@ class CompatibilityChecker:
             patch = int(parts[2]) if len(parts) > 2 else 0
         except ValueError:
             logger.warning(f"Invalid SemVer: {version}")
-            return (0, 0, 0, ())
+            return (0, 0, 0, 0, ())
         
         # Parse prerelease (beta.1, alpha.2, etc.)
         prerelease_tuple = ()
@@ -211,8 +213,10 @@ class CompatibilityChecker:
                 int(p) if p.isdigit() else p
                 for p in prerelease_parts
             )
-        
-        return (major, minor, patch, prerelease_tuple)
+
+        # Stable releases sort above prereleases with same base version.
+        stability_rank = 0 if prerelease else 1
+        return (major, minor, patch, stability_rank, prerelease_tuple)
     
     def check_contracts_major(
         self,
@@ -231,4 +235,3 @@ class CompatibilityChecker:
         """
         core_major = self.parse_semver(core_contracts)[0]
         return core_major == vertical_contracts
-        raise NotImplementedError("Phase 1 implementation")

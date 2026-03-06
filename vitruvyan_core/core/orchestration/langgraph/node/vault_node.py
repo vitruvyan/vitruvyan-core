@@ -127,8 +127,12 @@ def _assess_protection_requirements(state: Dict[str, Any], domain_keywords: Dict
 
 
 def _request_divine_protection(protection_type: str, state: Dict[str, Any]) -> Dict[str, Any]:
-    """Request divine protection from Vault Keepers Conclave (fire-and-forget)."""
-    
+    """Request divine protection from Vault Keepers Conclave (fire-and-forget).
+
+    A+ Pattern: Vault operates as async archival side-effect. The graph emits
+    an event and applies a local fallback immediately. correlation_id is a
+    trace identifier for observability, not a round-trip token.
+    """
     correlation_id = f"vault_protection_{int(time.time() * 1000)}"
     
     try:

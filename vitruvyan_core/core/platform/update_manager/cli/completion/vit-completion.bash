@@ -7,7 +7,7 @@ _vit_completion() {
     _init_completion || return
 
     # Commands
-    local commands="update upgrade plan rollback status channel install remove list search info help"
+    local commands="update upgrade plan rollback status channel completion release help"
     
     # Global flags
     local global_flags="--help --version --verbose --quiet"
@@ -19,11 +19,8 @@ _vit_completion() {
     local rollback_flags="--yes"
     local status_flags="--json"
     local channel_flags=""
-    local install_flags="--channel --version --yes --json"
-    local remove_flags="--purge --yes"
-    local list_flags="--all --type --json"
-    local search_flags="--type --json"
-    local info_flags="--json"
+    local completion_flags="install uninstall show --system --no-edit"
+    local release_flags="--dry-run"
     
     # Channel values
     local channels="stable beta"
@@ -88,42 +85,12 @@ _vit_completion() {
             COMPREPLY=( $(compgen -W "${channels} ${channel_flags}" -- "${cur}") )
             return 0
             ;;
-        install)
-            # Complete with package names (fetch from manifest directory)
-            local packages=""
-            if [ -d "vitruvyan_core/core/platform/update_manager/packages/manifests" ]; then
-                packages=$(find vitruvyan_core/core/platform/update_manager/packages/manifests -name "*.yaml" -exec basename {} .yaml \; 2>/dev/null | tr '\n' ' ')
-            fi
-            # Also add common aliases
-            packages="${packages} babel_gardens neural_engine pattern_weavers orthodoxy_wardens vault_keepers memory_orders"
-            COMPREPLY=( $(compgen -W "${packages} ${install_flags}" -- "${cur}") )
+        completion)
+            COMPREPLY=( $(compgen -W "${completion_flags}" -- "${cur}") )
             return 0
             ;;
-        remove)
-            # Complete with installed package names (from .vitruvyan/installed_packages.json)
-            local installed=""
-            if [ -f ".vitruvyan/installed_packages.json" ]; then
-                installed=$(python3 -c "import json; print(' '.join([p['name'] for p in json.load(open('.vitruvyan/installed_packages.json'))['packages']]))" 2>/dev/null)
-            fi
-            COMPREPLY=( $(compgen -W "${installed} ${remove_flags}" -- "${cur}") )
-            return 0
-            ;;
-        list)
-            COMPREPLY=( $(compgen -W "${list_flags}" -- "${cur}") )
-            return 0
-            ;;
-        search)
-            # No completion for search query, just flags
-            COMPREPLY=( $(compgen -W "${search_flags}" -- "${cur}") )
-            return 0
-            ;;
-        info)
-            # Complete with all known package names
-            local all_packages=""
-            if [ -d "vitruvyan_core/core/platform/update_manager/packages/manifests" ]; then
-                all_packages=$(find vitruvyan_core/core/platform/update_manager/packages/manifests -name "*.yaml" -exec basename {} .yaml \; 2>/dev/null | tr '\n' ' ')
-            fi
-            COMPREPLY=( $(compgen -W "${all_packages} ${info_flags}" -- "${cur}") )
+        release)
+            COMPREPLY=( $(compgen -W "${release_flags}" -- "${cur}") )
             return 0
             ;;
     esac
@@ -154,33 +121,11 @@ _vit_completion() {
         channel)
             COMPREPLY=( $(compgen -W "${channels}" -- "${cur}") )
             ;;
-        install)
-            local packages=""
-            if [ -d "vitruvyan_core/core/platform/update_manager/packages/manifests" ]; then
-                packages=$(find vitruvyan_core/core/platform/update_manager/packages/manifests -name "*.yaml" -exec basename {} .yaml \; 2>/dev/null | tr '\n' ' ')
-            fi
-            packages="${packages} babel_gardens neural_engine pattern_weavers"
-            COMPREPLY=( $(compgen -W "${packages} ${install_flags}" -- "${cur}") )
+        completion)
+            COMPREPLY=( $(compgen -W "${completion_flags}" -- "${cur}") )
             ;;
-        remove)
-            local installed=""
-            if [ -f ".vitruvyan/installed_packages.json" ]; then
-                installed=$(python3 -c "import json; print(' '.join([p['name'] for p in json.load(open('.vitruvyan/installed_packages.json'))['packages']]))" 2>/dev/null)
-            fi
-            COMPREPLY=( $(compgen -W "${installed} ${remove_flags}" -- "${cur}") )
-            ;;
-        list)
-            COMPREPLY=( $(compgen -W "${list_flags}" -- "${cur}") )
-            ;;
-        search)
-            COMPREPLY=( $(compgen -W "${search_flags}" -- "${cur}") )
-            ;;
-        info)
-            local all_packages=""
-            if [ -d "vitruvyan_core/core/platform/update_manager/packages/manifests" ]; then
-                all_packages=$(find vitruvyan_core/core/platform/update_manager/packages/manifests -name "*.yaml" -exec basename {} .yaml \; 2>/dev/null | tr '\n' ' ')
-            fi
-            COMPREPLY=( $(compgen -W "${all_packages} ${info_flags}" -- "${cur}") )
+        release)
+            COMPREPLY=( $(compgen -W "${release_flags}" -- "${cur}") )
             ;;
         *)
             COMPREPLY=()

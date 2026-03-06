@@ -26,6 +26,7 @@ from ...notifications.config import (
     load_notification_config,
 )
 from ..formatters import format_release_info
+from ..channel_state import get_default_channel
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +132,7 @@ def run(args: argparse.Namespace) -> int:
     # Try fetching latest release (network call)
     try:
         registry = ReleaseRegistry()
-        channel = args.channel if hasattr(args, "channel") else "stable"
+        channel = args.channel if hasattr(args, "channel") and args.channel else get_default_channel()
         latest_release = registry.fetch_latest(channel=channel)
         
         if latest_release is None:
@@ -145,7 +146,7 @@ def run(args: argparse.Namespace) -> int:
             status["latest_version"] = latest_release.version
             status["update_available"] = latest_version_normalized != current_version_normalized
             status["breaking_changes"] = len(latest_release.changes.get("breaking", [])) > 0
-            status["changelog_url"] = f"https://github.com/dbaldoni/vitruvyan-core/releases/tag/{latest_release.version}"
+            status["changelog_url"] = registry.get_release_url(latest_release.version)
             
             # Check compatibility if manifest present
             if manifest_path and status["update_available"]:
@@ -161,7 +162,7 @@ def run(args: argparse.Namespace) -> int:
                 )
                 status["compatible"] = result.compatible
                 if not result.compatible:
-                    status["compatibility_issues"] = result.issues
+                    status["compatibility_issues"] = [result.blocking_reason] if result.blocking_reason else ["unknown compatibility issue"]
     
     except NetworkError as e:
         logger.warning(f"Network error fetching latest release: {e}")
@@ -257,9 +258,9 @@ def register_status_command(subparsers) -> None:
     
     parser.add_argument(
         "--channel",
-        choices=["stable", "beta", "dev"],
-        default="stable",
-        help="Release channel to check (default: stable)",
+        choices=["stable", "beta"],
+        default=None,
+        help="Release channel to check (default: persisted channel or stable)",
     )
     
     parser.add_argument(

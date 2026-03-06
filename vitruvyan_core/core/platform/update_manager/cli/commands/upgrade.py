@@ -27,7 +27,8 @@ def cmd_upgrade(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 = success, 1 = error/rollback)
     """
-    channel = args.channel
+    # apt-like default: upgrade without flags always targets stable channel
+    channel = args.channel or "stable"
     target_version = args.target
     non_interactive = args.yes
     
@@ -208,7 +209,7 @@ def register_upgrade_command(subparsers):
     parser.add_argument(
         "--channel",
         choices=["stable", "beta"],
-        default="stable",
+        default=None,
         help="Release channel (default: stable)"
     )
     
@@ -221,6 +222,12 @@ def register_upgrade_command(subparsers):
         "--yes",
         action="store_true",
         help="Non-interactive mode (skip confirmation)"
+    )
+
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Reserved for machine-readable output (human output currently default)"
     )
     
     parser.set_defaults(func=cmd_upgrade)

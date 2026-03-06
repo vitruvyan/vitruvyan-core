@@ -193,12 +193,14 @@ class UpgradePlanner:
             # Vertical manifest found → run vertical smoke tests
             vertical_root = os.path.dirname(os.path.abspath(manifest_path))
             smoke_test_path = os.path.join(vertical_root, "smoke_tests/run.sh")
-            
+
+            # If a manifest exists, smoke tests are expected by contract.
+            # Execution layer performs strict existence/executable checks.
+            tests.append("vertical_smoke_tests")
             if os.path.exists(smoke_test_path) and os.access(smoke_test_path, os.X_OK):
-                tests.append("vertical_smoke_tests")
                 logger.debug(f"Smoke tests found: {smoke_test_path}")
             else:
-                logger.warning(f"No executable smoke tests found at {smoke_test_path}")
+                logger.warning(f"Smoke tests missing or non-executable at {smoke_test_path}")
         
         # Core smoke tests (future: add core-level validation)
         # tests.append("core_health_check")

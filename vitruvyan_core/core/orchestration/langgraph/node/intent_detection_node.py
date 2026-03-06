@@ -254,16 +254,11 @@ def intent_detection_node(state: Dict[str, Any]) -> Dict[str, Any]:
     logger.info(f"[INTENT_DETECTION] Processing: '{user_input[:80]}...'")
 
     # --- parallel Babel + LLM ---
-    # Use explicit SelectorEventLoop to avoid uvloop conflicts.
-    # nest_asyncio.apply() (called by llm_mcp_node) contaminates asyncio.run()
-    # causing "Can't patch loop of type <class 'uvloop.Loop'>" on subsequent calls.
-    # SelectorEventLoop bypasses the uvloop policy entirely.
+    # Graph nodes run in worker threads (via asyncio.to_thread in graph_adapter),
+    # so no event loop is running here. asyncio.run() works cleanly with
+    # --loop asyncio (no uvloop conflicts).
     try:
-        loop = asyncio.SelectorEventLoop()
-        try:
-            result = loop.run_until_complete(_parallel_processing(user_input))
-        finally:
-            loop.close()
+        result = asyncio.run(_parallel_processing(user_input))
     except Exception as e:
         logger.error(f"[INTENT_DETECTION] Parallel processing failed: {e}")
         result = {

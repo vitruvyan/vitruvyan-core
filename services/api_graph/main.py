@@ -15,7 +15,7 @@ from .config import settings
 from .api import router, set_adapters
 from .adapters.graph_adapter import GraphOrchestrationAdapter
 from .adapters.persistence import GraphPersistence
-from .monitoring.health import prometheus_middleware, metrics_endpoint
+from .monitoring.health import prometheus_middleware, metrics_endpoint, install_node_metrics
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Logging
@@ -39,6 +39,7 @@ async def lifespan(app: FastAPI):
     graph_adapter = GraphOrchestrationAdapter()
     persistence = GraphPersistence()
     set_adapters(graph_adapter, persistence)
+    install_node_metrics()
     logger.info("Adapters initialized")
     yield
     logger.info("Shutting down %s", settings.SERVICE_NAME)

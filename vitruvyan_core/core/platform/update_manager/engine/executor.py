@@ -228,7 +228,7 @@ class UpgradeExecutor:
         
         if not os.path.exists(smoke_test_script):
             logger.warning(f"Smoke tests not found: {smoke_test_script}")
-            return True  # Non-blocking
+            return False  # Blocking when manifest exists
         
         if not os.access(smoke_test_script, os.X_OK):
             logger.error(f"Smoke tests not executable: {smoke_test_script}")
@@ -240,7 +240,11 @@ class UpgradeExecutor:
             import yaml
             with open(manifest_path, 'r') as f:
                 manifest = yaml.safe_load(f)
-                timeout = manifest.get("smoke_tests_timeout", 180)
+                compatibility = manifest.get("compatibility", {}) if isinstance(manifest, dict) else {}
+                timeout = compatibility.get(
+                    "smoke_tests_timeout",
+                    manifest.get("smoke_tests_timeout", 180) if isinstance(manifest, dict) else 180,
+                )
         except Exception as e:
             logger.warning(f"Could not read smoke_tests_timeout: {e}")
         
@@ -294,27 +298,31 @@ class UpgradeExecutor:
         tag = version if version.startswith("v") else f"v{version}"
         
         # Check if tag already exists locally
-        tag_exists = subprocess.run(
-            ["git", "rev-parse", "--verify", f"refs/tags/{tag}"],
-            capture_output=True,
-            timeout=5,
-        ).returncode == 0
+        tag_exists = self._tag_exists_locally(tag)
 
         if not tag_exists:
-            # Fetch from upstream remote declared in vertical_manifest.yaml
-            remote_name = self._get_upstream_remote_name()
+            remote_name, upstream_repo = self._get_upstream_config()
+            fetched = False
+
             if remote_name:
-                logger.info(f"Tag {tag} not found locally — fetching from remote '{remote_name}'")
-                try:
-                    subprocess.run(
-                        ["git", "fetch", remote_name, "--tags"],
-                        check=True,
-                        capture_output=True,
-                        timeout=60,
-                    )
-                    logger.info(f"Fetched tags from '{remote_name}'")
-                except subprocess.CalledProcessError as e:
-                    logger.warning(f"Could not fetch from '{remote_name}': {e.stderr.decode()}")
+                logger.info(
+                    "Tag %s not found locally — trying manifest remote '%s'",
+                    tag, remote_name
+                )
+                fetched = self._fetch_tag_from_remote(tag, remote_name) or fetched
+
+            if not self._tag_exists_locally(tag) and upstream_repo:
+                logger.info(
+                    "Tag %s still missing — trying upstream repo '%s'",
+                    tag, upstream_repo
+                )
+                fetched = self._fetch_tag_from_repo(tag, upstream_repo) or fetched
+
+            if not self._tag_exists_locally(tag):
+                raise RuntimeError(
+                    f"Tag {tag} not found locally and could not be fetched "
+                    f"(remote={remote_name!r}, repo={upstream_repo!r}, fetched={fetched})"
+                )
 
         try:
             subprocess.run(
@@ -328,13 +336,74 @@ class UpgradeExecutor:
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Failed to checkout {tag}: {e.stderr.decode()}")
 
-    def _get_upstream_remote_name(self) -> Optional[str]:
+    def _tag_exists_locally(self, tag: str) -> bool:
+        """Return True when tag exists in local git refs."""
+        return subprocess.run(
+            ["git", "rev-parse", "--verify", f"refs/tags/{tag}"],
+            capture_output=True,
+            timeout=5,
+        ).returncode == 0
+
+    def _fetch_tag_from_remote(self, tag: str, remote_name: str) -> bool:
         """
-        Read upstream.remote_name from vertical_manifest.yaml.
+        Fetch one tag from an existing git remote name.
+        """
+        try:
+            subprocess.run(
+                ["git", "remote", "get-url", remote_name],
+                check=True,
+                capture_output=True,
+                timeout=5,
+            )
+        except subprocess.CalledProcessError:
+            logger.warning("Remote '%s' not configured", remote_name)
+            return False
+
+        try:
+            subprocess.run(
+                ["git", "fetch", remote_name, "tag", tag],
+                check=True,
+                capture_output=True,
+                timeout=60,
+            )
+            logger.info("Fetched tag %s from remote '%s'", tag, remote_name)
+            return True
+        except subprocess.CalledProcessError as e:
+            logger.warning("Could not fetch tag %s from '%s': %s", tag, remote_name, e.stderr.decode())
+            return False
+
+    def _fetch_tag_from_repo(self, tag: str, repo: str) -> bool:
+        """
+        Fetch one tag directly from GitHub repo URL (HTTPS first, then SSH).
+        """
+        sources = [
+            f"https://github.com/{repo}.git",
+            f"git@github.com:{repo}.git",
+        ]
+        for source in sources:
+            try:
+                subprocess.run(
+                    ["git", "fetch", source, "tag", tag],
+                    check=True,
+                    capture_output=True,
+                    timeout=60,
+                )
+                logger.info("Fetched tag %s from %s", tag, source)
+                return True
+            except subprocess.CalledProcessError as e:
+                logger.warning("Could not fetch tag %s from %s: %s", tag, source, e.stderr.decode())
+        return False
+
+    def _get_upstream_config(self) -> tuple[Optional[str], Optional[str]]:
+        """
+        Read upstream.remote_name and upstream.repo from vertical_manifest.yaml.
 
         Returns:
-            Remote name (e.g., "upstream") or None if manifest not found.
+            Tuple(remote_name, repo).
         """
+        remote_name: Optional[str] = None
+        repo: Optional[str] = os.getenv("VITRUVYAN_REPO")
+
         try:
             import yaml
             current = os.getcwd()
@@ -343,7 +412,12 @@ class UpgradeExecutor:
                 if os.path.exists(manifest_path):
                     with open(manifest_path, "r") as f:
                         manifest = yaml.safe_load(f) or {}
-                    return manifest.get("upstream", {}).get("remote_name")
+                    upstream = manifest.get("upstream", {}) or {}
+                    remote_name = upstream.get("remote_name")
+                    manifest_repo = upstream.get("repo")
+                    if isinstance(manifest_repo, str) and "/" in manifest_repo:
+                        repo = manifest_repo
+                    break
                 if os.path.exists(os.path.join(current, ".git")):
                     break
                 parent = os.path.dirname(current)
@@ -351,8 +425,19 @@ class UpgradeExecutor:
                     break
                 current = parent
         except Exception as e:
-            logger.debug(f"Could not read upstream remote_name from manifest: {e}")
-        return None
+            logger.debug(f"Could not read upstream config from manifest: {e}")
+
+        return remote_name, repo
+
+    def _get_upstream_remote_name(self) -> Optional[str]:
+        """
+        Read upstream.remote_name from vertical_manifest.yaml.
+
+        Returns:
+            Remote name (e.g., "upstream") or None if manifest not found.
+        """
+        remote_name, _ = self._get_upstream_config()
+        return remote_name
     
     def _get_last_snapshot_tag(self) -> Optional[str]:
         """

@@ -8,12 +8,39 @@ Reads configuration from:
 """
 
 import os
+import subprocess
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional
 
 import yaml
+
+
+def _state_dir() -> Path:
+    """Resolve writable state dir under repo root when possible."""
+    env_dir = os.getenv("VIT_STATE_DIR")
+    if env_dir:
+        return Path(env_dir)
+
+    home_dir = Path.home() / ".vitruvyan"
+    try:
+        home_dir.mkdir(parents=True, exist_ok=True)
+        return home_dir
+    except Exception:
+        pass
+
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=5,
+        )
+        return Path(result.stdout.strip()) / ".vitruvyan"
+    except Exception:
+        return Path(".vitruvyan")
 
 
 class NotificationChannel(Enum):
@@ -152,9 +179,12 @@ def get_last_check_time() -> Optional[float]:
     Returns:
         Unix timestamp or None if never checked
     """
-    state_file = Path.home() / ".vitruvyan" / "last_update_check"
-    if state_file.exists():
-        return float(state_file.read_text().strip())
+    state_file = _state_dir() / "last_update_check"
+    try:
+        if state_file.exists():
+            return float(state_file.read_text().strip())
+    except Exception:
+        return None
     return None
 
 
@@ -168,6 +198,6 @@ def set_last_check_time(timestamp: Optional[float] = None) -> None:
     import time
     
     timestamp = timestamp or time.time()
-    state_file = Path.home() / ".vitruvyan" / "last_update_check"
+    state_file = _state_dir() / "last_update_check"
     state_file.parent.mkdir(parents=True, exist_ok=True)
     state_file.write_text(str(timestamp))

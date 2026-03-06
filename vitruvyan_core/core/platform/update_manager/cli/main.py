@@ -26,12 +26,21 @@ from .commands.rollback import register_rollback_command
 from .commands.status import register_status_command
 from .commands.completion import register_completion_command
 from .commands.release import register_release_command
+from .channel_state import set_default_channel
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(levelname)s: %(message)s"
 )
+
+
+def cmd_channel(args: argparse.Namespace) -> int:
+    """Persist default channel selection for future runs."""
+    channel = args.channel
+    set_default_channel(channel)
+    print(f"✅ Default channel set to: {channel}")
+    return 0
 
 
 def cli_main():
@@ -59,15 +68,13 @@ def cli_main():
     register_completion_command(subparsers)
     register_release_command(subparsers)
     
-    # Phase 3+ commands (stubs)
-    # TODO: Implement channel
-    
-    # vit channel (stub)
+    # vit channel
     channel_parser = subparsers.add_parser(
         "channel",
         help="Switch update channel (stable|beta)"
     )
     channel_parser.add_argument("channel", choices=["stable", "beta"])
+    channel_parser.set_defaults(func=cmd_channel)
     
     args = parser.parse_args()
     

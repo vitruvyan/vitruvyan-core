@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 # Configuration (env-driven, no load_dotenv)
 # ---------------------------------------------------------------------------
 DEFAULT_TIMEOUT_SECONDS = int(os.getenv("NODE_EXEC_TIMEOUT_SECONDS", "30"))
-MAX_WORKERS = int(os.getenv("NODE_EXEC_MAX_WORKERS", "4"))
+MAX_WORKERS = int(os.getenv("NODE_EXEC_MAX_WORKERS", "8"))
 
 
 @dataclass(frozen=True)

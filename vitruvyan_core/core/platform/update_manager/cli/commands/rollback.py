@@ -42,10 +42,11 @@ def cmd_rollback(args: argparse.Namespace) -> int:
     print(f"Snapshot found: {snapshot_tag}")
     
     # Step 3: Confirmation
-    response = input(f"\nRevert to {snapshot_tag}? [y/N]: ").strip().lower()
-    if response != "y":
-        print("Rollback cancelled")
-        return 0
+    if not getattr(args, "yes", False):
+        response = input(f"\nRevert to {snapshot_tag}? [y/N]: ").strip().lower()
+        if response != "y":
+            print("Rollback cancelled")
+            return 0
     
     print()
     
@@ -83,6 +84,12 @@ def register_rollback_command(subparsers):
         "rollback",
         help="Revert to previous Core version",
         description="Restore last snapshot from upgrade history (reverts failed upgrades)"
+    )
+
+    parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="Non-interactive mode (skip confirmation)"
     )
     
     parser.set_defaults(func=cmd_rollback)

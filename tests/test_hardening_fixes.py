@@ -118,7 +118,7 @@ class TestNodeExecutionGuard:
 
         # Defaults should be set
         assert DEFAULT_TIMEOUT_SECONDS == int(os.getenv("NODE_EXEC_TIMEOUT_SECONDS", "30"))
-        assert MAX_WORKERS == int(os.getenv("NODE_EXEC_MAX_WORKERS", "4"))
+        assert MAX_WORKERS == int(os.getenv("NODE_EXEC_MAX_WORKERS", "8"))
 
     def test_singleton_pattern(self):
         """get_execution_guard returns same instance."""

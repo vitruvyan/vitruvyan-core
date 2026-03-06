@@ -9,7 +9,6 @@ This package provides CI gates to prevent breaking releases:
 
 from .contract_validator import ContractValidator, ValidationError, discover_verticals
 from .pytest_integration import compatibility_test
-from .release_blocker import ReleaseBlocker, BlockingReason
 
 __all__ = [
     "ContractValidator",
@@ -19,3 +18,12 @@ __all__ = [
     "ReleaseBlocker",
     "BlockingReason",
 ]
+
+
+def __getattr__(name):
+    """Lazy-load heavy modules to avoid runpy duplicate-import warnings."""
+    if name in {"ReleaseBlocker", "BlockingReason"}:
+        from .release_blocker import ReleaseBlocker, BlockingReason
+
+        return {"ReleaseBlocker": ReleaseBlocker, "BlockingReason": BlockingReason}[name]
+    raise AttributeError(name)

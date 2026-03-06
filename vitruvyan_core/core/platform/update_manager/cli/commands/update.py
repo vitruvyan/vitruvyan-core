@@ -5,13 +5,13 @@ Shows current version + latest available for selected channel.
 """
 
 import argparse
+import json
 import logging
 import os
-import sys
 
 from ...engine.registry import ReleaseRegistry, NetworkError
 from ...engine.compatibility import CompatibilityChecker
-from ..formatters import format_release_info, format_compatibility_result
+from ..channel_state import get_default_channel
 
 logger = logging.getLogger(__name__)
 
@@ -97,97 +97,128 @@ def cmd_update(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 = success, 1 = error)
     """
-    channel = args.channel
-    
-    print(f"🔍 Checking for Core updates (channel: {channel})...\n")
-    
-    # Get current version
+    channel = args.channel or get_default_channel()
+    json_mode = bool(getattr(args, "json", False))
+
+    def out(message: str = "") -> None:
+        if not json_mode:
+            print(message)
+
+    status = {
+        "status": "ok",
+        "channel": channel,
+        "current_version": None,
+        "latest_version": None,
+        "update_available": False,
+        "compatible": None,
+        "reason": None,
+        "changes": {},
+        "migration_guide_url": None,
+    }
+
+    out(f"🔍 Checking for Core updates (channel: {channel})...\n")
+
     current_version = get_current_version()
-    print(f"Current Core version: {current_version}")
-    
-    # Fetch latest release
+    status["current_version"] = current_version
+    out(f"Current Core version: {current_version}")
+
     try:
         registry = ReleaseRegistry()
         latest = registry.fetch_latest(channel=channel)
-        
+
         if not latest:
-            print(f"\n❌ No {channel} releases found on GitHub.")
-            print("   Repository may be private or network unavailable.")
+            status["status"] = "error"
+            status["reason"] = f"No {channel} releases found on GitHub"
+            if json_mode:
+                print(json.dumps(status, indent=2))
+            else:
+                out(f"\n❌ {status['reason']}.")
+                out("   Repository may be private or network unavailable.")
             return 1
-        
-        print(f"Latest {channel} version: {latest.version}")
-        print(f"Released: {latest.release_date}")
-        
+
+        status["latest_version"] = latest.version
+        status["changes"] = latest.changes or {}
+        status["migration_guide_url"] = latest.migration_guide_url
+        out(f"Latest {channel} version: {latest.version}")
+        out(f"Released: {latest.release_date}")
+
     except NetworkError as e:
-        print(f"\n❌ Network error: {e}")
-        print("   Check your internet connection and try again.")
-        return 1
-    
-    # Compare versions
+        status["status"] = "error"
+        status["reason"] = f"Network error: {e}"
+        if json_mode:
+            print(json.dumps(status, indent=2))
+        else:
+            out(f"\n❌ {status['reason']}")
+            out("   Check your internet connection and try again.")
+        return 2
+
     if current_version == "unknown":
-        print("\n⚠️  Current version unknown (cannot compare)")
+        out("\n⚠️  Current version unknown (cannot compare)")
     elif current_version == latest.version:
-        print(f"\n✅ You are on the latest {channel} version!")
+        out(f"\n✅ You are on the latest {channel} version!")
     else:
         current_tuple = CompatibilityChecker().parse_semver(current_version)
         latest_tuple = CompatibilityChecker().parse_semver(latest.version)
-        
+
         if latest_tuple > current_tuple:
-            print(f"\n🆕 New version available: {current_version} → {latest.version}")
+            status["update_available"] = True
+            out(f"\n🆕 New version available: {current_version} → {latest.version}")
         else:
-            print(f"\n⚠️  You are on a newer version than latest {channel}")
-    
-    # Check compatibility with vertical manifest (if found)
+            out(f"\n⚠️  You are on a newer version than latest {channel}")
+
     manifest = find_vertical_manifest()
     if manifest:
-        print(f"\n📋 Checking compatibility with vertical manifest...")
-        
+        out("\n📋 Checking compatibility with vertical manifest...")
+
         checker = CompatibilityChecker()
         result = checker.check(
             current_version=current_version,
             target_version=latest.version,
             manifest=manifest
         )
-        
+        status["compatible"] = result.compatible
+        if not result.compatible:
+            status["reason"] = result.blocking_reason
+
         if result.compatible:
-            print(f"✅ Compatible with vertical constraints")
             min_version = manifest.get("compatibility", {}).get("min_core_version", "any")
             max_version = manifest.get("compatibility", {}).get("max_core_version", "any")
-            print(f"   Vertical supports: {min_version} - {max_version}")
+            out("✅ Compatible with vertical constraints")
+            out(f"   Vertical supports: {min_version} - {max_version}")
         else:
-            print(f"❌ Incompatible: {result.blocking_reason}")
-            print(f"   Update vertical manifest to support {latest.version}")
-    
-    # Show changes
+            out(f"❌ Incompatible: {result.blocking_reason}")
+            out(f"   Update vertical manifest to support {latest.version}")
+
     if latest.changes:
-        print(f"\n📝 Changes in {latest.version}:")
-        
+        out(f"\n📝 Changes in {latest.version}:")
+
         breaking = latest.changes.get("breaking", [])
         if breaking:
-            print(f"   ⚠️  BREAKING:")
+            out("   ⚠️  BREAKING:")
             for change in breaking:
-                print(f"      - {change}")
-        
+                out(f"      - {change}")
+
         features = latest.changes.get("features", [])
         if features:
-            print(f"   ✨ Features:")
+            out("   ✨ Features:")
             for change in features:
-                print(f"      - {change}")
-        
+                out(f"      - {change}")
+
         fixes = latest.changes.get("fixes", [])
         if fixes:
-            print(f"   🐛 Fixes:")
+            out("   🐛 Fixes:")
             for change in fixes:
-                print(f"      - {change}")
-    
-    # Migration guide
+                out(f"      - {change}")
+
     if latest.migration_guide_url:
-        print(f"\n📖 Migration guide: {latest.migration_guide_url}")
-    
-    # Next steps
-    print(f"\n💡 To upgrade:")
-    print(f"   vit upgrade --channel {channel}")
-    
+        out(f"\n📖 Migration guide: {latest.migration_guide_url}")
+
+    if json_mode:
+        print(json.dumps(status, indent=2))
+    else:
+        out("\n💡 To upgrade:")
+        out(f"   vit upgrade --channel {channel}")
+
     return 0
 
 
@@ -207,8 +238,14 @@ def register_update_command(subparsers):
     parser.add_argument(
         "--channel",
         choices=["stable", "beta"],
-        default="stable",
-        help="Release channel (default: stable)"
+        default=None,
+        help="Release channel (default: persisted channel or stable)"
+    )
+
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output in JSON format"
     )
     
     parser.set_defaults(func=cmd_update)

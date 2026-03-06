@@ -250,19 +250,19 @@ A+ = Option A con **estensioni event-driven selettive** dove il valore è dimost
 
 | Fix | Dettaglio | Effort |
 |-----|----------|--------|
-| F1.1 | Creare `vitruvyan_core/core/synaptic_conclave/channels/channel_registry.py` — fonte di verità unica per tutti i canali, usata da producer E consumer | 1 giorno |
-| F1.2 | Documentare il correlation_id come "trace_id for observability" (non round-trip), rimuovere TODO "implement async verdict retrieval" da orthodoxy_node e vault_node, sostituire con commento architetturale chiaro | 0.5 giorni |
-| F1.3 | Definire `EventContract` (dataclass) per ogni canale: nome, schema payload, producer, consumer, SLA di processing | 1 giorno |
-| F1.4 | Aggiungere health check per channel alignment: test che verifica che ogni canale emesso da un nodo sia in almeno un SACRED_CHANNELS di un listener | 0.5 giorni |
+| F1.1 | Creare `vitruvyan_core/core/synaptic_conclave/channels/channel_registry.py` — fonte di verità unica per tutti i canali, usata da producer E consumer | 1 giorno | ✅ Done |
+| F1.2 | Documentare il correlation_id come "trace_id for observability" (non round-trip), rimuovere TODO "implement async verdict retrieval" da orthodoxy_node e vault_node, sostituire con commento architetturale chiaro | 0.5 giorni | ✅ Done |
+| F1.3 | Definire `EventContract` (dataclass) per ogni canale: nome, schema payload, producer, consumer, SLA di processing | 1 giorno | ✅ Done |
+| F1.4 | Aggiungere health check per channel alignment: test che verifica che ogni canale emesso da un nodo sia in almeno un SACRED_CHANNELS di un listener | 0.5 giorni | ✅ Done |
 
 ### Fase 2: Performance Tuning (3 giorni/uomo)
 
 | Fix | Dettaglio | Effort |
 |-----|----------|--------|
-| F2.1 | Risolvere uvloop/nest_asyncio chain: forzare `--loop asyncio` in uvicorn CMD (disabilita uvloop), eliminare nest_asyncio workaround | 1 giorno |
-| F2.2 | Convertire SelectorEventLoop in intent_detection_node a design pulito: thread-based executor condiviso (no loop creation per call) | 1 giorno |
-| F2.3 | Aumentare ExecutionGuard max_workers da 4 a 8 (misurare prima con benchmark) | 0.5 giorni |
-| F2.4 | Aggiungere latency budget per nodo: middleware che logga tempo per nodo, genera percentile metrics | 0.5 giorni |
+| F2.1 | Risolvere uvloop/nest_asyncio chain: forzare `--loop asyncio` in uvicorn CMD (disabilita uvloop), eliminare nest_asyncio workaround | 1 giorno | ✅ Done |
+| F2.2 | Convertire SelectorEventLoop in intent_detection_node a design pulito: thread-based executor condiviso (no loop creation per call) | 1 giorno | ✅ Done |
+| F2.3 | Aumentare ExecutionGuard max_workers da 4 a 8 (misurare prima con benchmark) | 0.5 giorni | ✅ Done |
+| F2.4 | Aggiungere latency budget per nodo: middleware che logga tempo per nodo, genera percentile metrics | 0.5 giorni | ✅ Done |
 
 ### Fase 3: Evoluzione Event-Driven Selettiva (opzionale, 3 giorni/uomo)
 
