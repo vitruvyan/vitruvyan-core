@@ -15,14 +15,12 @@ Author: Vitruvyan Development Team
 Created: 2025-10-18
 """
 
-import asyncio
 import logging
 import time
-from datetime import datetime, timedelta
-from typing import Dict, Any, Optional
+from datetime import datetime
+from typing import Dict, Any
 
-# Synaptic Conclave Integration
-from core.synaptic_conclave.redis_client import get_redis_bus
+from core.synaptic_conclave.transport.streams import get_stream_bus
 
 logger = logging.getLogger(__name__)
 
@@ -56,37 +54,24 @@ def orthodoxy_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "urgency": "divine_routine"
         }
         
-        # Emit audit request to Synaptic Conclave
-        redis_bus = get_redis_bus()
-        if not redis_bus.is_connected():
-            # Try to connect
-            if not redis_bus.connect():
-                logger.warning("[ORTHODOXY][GRAPH] ⚠️ Synaptic Conclave unavailable, applying local blessing")
-                return _apply_local_blessing(state, "conclave_offline")
-        
-        # Publish audit request event via shim.publish(channel, payload, emitter)
+        # Emit audit request to Orthodoxy Wardens via StreamBus
         correlation_id = f"graph_audit_{user_id}_{int(session_start)}"
         event_payload = {
             **audit_payload,
             "target": "orthodoxy_wardens",
-            "type": "system.audit.requested",
             "correlation_id": correlation_id,
         }
         
         try:
-            event_id = redis_bus.publish(
-                channel="system.audit.requested",
+            get_stream_bus().emit(
+                channel="orthodoxy.audit.requested",
                 payload=event_payload,
                 emitter="langgraph_orthodoxy_node",
+                correlation_id=correlation_id,
             )
-            success = bool(event_id)
         except Exception as pub_err:
-            logger.error(f"[ORTHODOXY][GRAPH] ❌ Publish error: {pub_err}")
-            success = False
-        
-        if not success:
-            logger.error("[ORTHODOXY][GRAPH] ❌ Failed to publish audit request")
-            return _apply_local_blessing(state, "publish_failed")
+            logger.error(f"[ORTHODOXY][GRAPH] ❌ Emit error: {pub_err}")
+            return _apply_local_blessing(state, "emit_failed")
         
         logger.info(f"[ORTHODOXY][GRAPH] 📡 Audit request transmitted to Sacred Order")
         
@@ -94,7 +79,7 @@ def orthodoxy_node(state: Dict[str, Any]) -> Dict[str, Any]:
         # Current: Synchronous pub/sub pattern incompatible with Redis Streams
         # Future: Poll verdicts table with correlation_id or use dedicated HTTP callback
         # For now: Apply local blessing immediately (async processing by orthodoxy_listener)
-        verdict = None  # Disabled: _await_divine_verdict_sync(redis_bus, correlation_id, timeout=10.0)
+        verdict = None  # Async verdict retrieval via Postgres polling (future)
         
         if verdict:
             # Sacred verdict received
@@ -115,47 +100,6 @@ def orthodoxy_node(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.error(f"[ORTHODOXY][GRAPH] 💀 Sacred audit failed: {e}")
         # Don't break the graph - apply emergency blessing
         return _apply_local_blessing(state, f"error_{str(e)[:50]}")
-
-
-def _await_divine_verdict_sync(redis_bus, correlation_id: str, timeout: float = 10.0) -> Optional[Dict[str, Any]]:
-    """
-    Await divine verdict from Orthodoxy Wardens via Synaptic Conclave
-    
-    Listens for orthodoxy.absolution.granted events with matching correlation_id
-    
-    Args:
-        redis_bus: Redis bus client
-        correlation_id: Event correlation ID to match
-        timeout: Maximum wait time in seconds
-        
-    Returns:
-        Divine verdict payload or None if timeout
-    """
-    
-    start_time = time.time()
-    verdict_received = None
-    
-    def verdict_handler(event: Any):
-        nonlocal verdict_received
-        # Check if this verdict matches our correlation ID
-        if (event.type == "orthodoxy.absolution.granted" and 
-            event.correlation_id == correlation_id):
-            verdict_received = event.payload
-            logger.debug(f"[ORTHODOXY][GRAPH] ✨ Verdict matched correlation: {correlation_id}")
-    
-    # Subscribe to absolution events
-    redis_bus.subscribe("orthodoxy.absolution.granted", verdict_handler)
-    
-    # CRITICAL: Start listening if not already active
-    if not redis_bus.is_listening:
-        redis_bus.start_listening()
-        logger.debug(f"[ORTHODOXY][GRAPH] 👂 Started Redis listening for verdict")
-    
-    # Wait for verdict with timeout - sync version
-    while verdict_received is None and (time.time() - start_time) < timeout:
-        time.sleep(0.1)  # Check every 100ms
-    
-    return verdict_received
 
 
 def _extract_state_summary(state: Dict[str, Any]) -> Dict[str, Any]:

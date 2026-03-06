@@ -32,7 +32,7 @@ import os
 
 # LangGraph imports
 from core.orchestration.langgraph.node.base_node import BaseNode
-from core.synaptic_conclave.redis_client import get_redis_bus
+from core.synaptic_conclave.transport.streams import get_stream_bus
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +61,8 @@ class CodexHuntersNode(BaseNode):
         # HTTP client for API calls
         self.client = httpx.AsyncClient(timeout=30.0)
         
-        # Redis for event publishing
-        self.redis_bus = get_redis_bus()
+        # StreamBus for event publishing
+        self._bus = get_stream_bus()
         
         logger.info(f"🗝️ CodexHunters Node initialized - API: {self.codex_api_base}")
     
@@ -292,26 +292,20 @@ class CodexHuntersNode(BaseNode):
     
     
     async def _publish_expedition_event(self, event_type: str, expedition_id: str, data: Dict[str, Any]) -> None:
-        """Publish expedition event to Cognitive Bus"""
+        """Publish expedition event to StreamBus."""
         try:
-            success = self.redis_bus.publish_codex_event(
-                domain="codex",
-                intent=f"expedition.{event_type}",
-                emitter="langgraph_codex_node",
-                target="audit_engine",  # Target audit engine for processing
+            self._bus.emit(
+                channel=f"codex.expedition.{event_type}",
                 payload={
                     "expedition_id": expedition_id,
                     "event_type": event_type,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                     **data
-                }
+                },
+                emitter="langgraph_codex_node",
+                correlation_id=expedition_id,
             )
-            
-            if success:
-                logger.info(f"📡 Published codex.expedition.{event_type} event for {expedition_id}")
-            else:
-                logger.warning(f"⚠️ Failed to publish event codex.expedition.{event_type}")
-                
+            logger.info(f"📡 Emitted codex.expedition.{event_type} for {expedition_id}")
         except Exception as e:
             logger.error(f"❌ Event publishing failed: {e}")
     

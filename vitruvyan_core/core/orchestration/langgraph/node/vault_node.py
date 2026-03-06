@@ -12,12 +12,11 @@ Created: October 18, 2025 - Sacred Orders Expansion
 """
 
 import time
-import asyncio
 import logging
 from typing import Dict, Any
 from datetime import datetime
 
-from core.synaptic_conclave.redis_client import get_redis_bus
+from core.synaptic_conclave.transport.streams import get_stream_bus
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -128,28 +127,15 @@ def _assess_protection_requirements(state: Dict[str, Any], domain_keywords: Dict
 
 
 def _request_divine_protection(protection_type: str, state: Dict[str, Any]) -> Dict[str, Any]:
-    """Request divine protection from Vault Keepers Conclave"""
+    """Request divine protection from Vault Keepers Conclave (fire-and-forget)."""
     
     correlation_id = f"vault_protection_{int(time.time() * 1000)}"
     
     try:
-        # Get Redis bus connection
-        redis_bus = get_redis_bus()
-        
-        # Ensure connection
-        if not redis_bus.is_connected():
-            redis_bus.connect()
-        
-        # Start listening for responses
-        if not redis_bus.is_listening:
-            redis_bus.start_listening()
-        
-        # Prepare protection request event and publish via shim.publish()
         event_channel = _map_protection_to_event(protection_type)
         event_payload = {
             'target': 'vault_keepers_conclave',
             'protection_type': protection_type,
-            'type': event_channel,
             'correlation_id': correlation_id,
             'state_context': {
                 'intent': state.get('intent'),
@@ -160,94 +146,30 @@ def _request_divine_protection(protection_type: str, state: Dict[str, Any]) -> D
             'priority': 'high' if protection_type == 'critical' else 'normal'
         }
         
-        try:
-            event_id = redis_bus.publish(
-                channel=event_channel,
-                payload=event_payload,
-                emitter='langgraph_vault_node',
-            )
-            publish_success = bool(event_id)
-        except Exception as pub_err:
-            logger.warning(f"[VAULT][GRAPH] ⚠️ Publish error: {pub_err}")
-            publish_success = False
+        get_stream_bus().emit(
+            channel=event_channel,
+            payload=event_payload,
+            emitter='langgraph_vault_node',
+            correlation_id=correlation_id,
+        )
+        logger.info(f"[VAULT][GRAPH] 📡 Protection request emitted: {event_channel}")
         
-        if not publish_success:
-            logger.warning(f"[VAULT][GRAPH] ⚠️ Failed to publish protection request")
-            return _create_fallback_protection()
-        
-        logger.info(f"[VAULT][GRAPH] 📡 Protection request published: {event_channel}")
-        
-        # TODO: Implement async protection retrieval via Postgres polling
-        # Current: Synchronous pub/sub pattern incompatible with Redis Streams
-        # Future: Poll vault_protection table with correlation_id or use HTTP callback
-        # For now: Apply local blessing immediately (async processing by vault_listener)
-        vault_response = None  # Disabled: _await_divine_protection(correlation_id, timeout=5.0)
-        
-        if vault_response:
-            return vault_response
-        else:
-            logger.info(f"[VAULT][GRAPH] 🏰 Applying standard blessing (async protection in progress)")
-            return _create_fallback_protection()
-            
     except Exception as e:
         logger.error(f"[VAULT][GRAPH] ❌ Error requesting divine protection: {e}")
-        return _create_fallback_protection()
+    
+    # Fire-and-forget: vault_listener handles async processing
+    return _create_fallback_protection()
 
 
 def _map_protection_to_event(protection_type: str) -> str:
-    """Map protection type to appropriate vault event"""
+    """Map protection type to canonical vault stream channel."""
     mapping = {
-        "integrity_check": "integrity.check.requested",
-        "critical": "backup.create.requested",
+        "integrity_check": "vault.integrity.requested",
+        "critical": "vault.archive.requested",
         "domain_guardian": "audit.vault.requested",
-        "standard": "integrity.check.requested"
+        "standard": "vault.integrity.requested",
     }
-    return mapping.get(protection_type, "integrity.check.requested")
-
-
-def _await_divine_protection(correlation_id: str, timeout: float = 5.0) -> Dict[str, Any]:
-    """Wait for divine protection response from Vault Keepers"""
-    
-    start_time = time.time()
-    received_response = {}
-    
-    def response_handler(event: Any):
-        """Handle vault protection response"""
-        nonlocal received_response
-        
-        if event.correlation_id == correlation_id:
-            logger.info(f"[VAULT][GRAPH] ✨ Divine protection received: {event.type}")
-            received_response = event.to_dict()
-    
-    try:
-        # Subscribe to vault response patterns
-        redis_bus = get_redis_bus()
-        vault_response_patterns = [
-            'vault.integrity.verified',
-            'vault.backup.created',
-            'vault.audit.completed',
-            'vault.protection.granted'
-        ]
-        
-        for pattern in vault_response_patterns:
-            redis_bus.subscribe(pattern, response_handler)
-        
-        # Wait for response with timeout
-        while time.time() - start_time < timeout:
-            if received_response:
-                protection_latency = (time.time() - start_time) * 1000
-                logger.info(f"[VAULT][GRAPH] 🏰 Divine protection received in {protection_latency:.1f}ms")
-                return received_response.get('payload', {})
-            
-            time.sleep(0.01)  # 10ms polling interval
-        
-        # Timeout reached
-        logger.warning(f"[VAULT][GRAPH] ⏰ Divine protection timeout after {timeout}s")
-        return None
-        
-    except Exception as e:
-        logger.error(f"[VAULT][GRAPH] ❌ Error awaiting divine protection: {e}")
-        return None
+    return mapping.get(protection_type, "vault.integrity.requested")
 
 
 def _apply_vault_blessing(state: Dict[str, Any], protection_result: Dict[str, Any]) -> Dict[str, Any]:

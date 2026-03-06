@@ -38,7 +38,7 @@ import pytz
 # Vitruvyan Sacred Orders imports
 from core.agents.postgres_agent import PostgresAgent
 from core.agents.qdrant_agent import QdrantAgent
-from core.synaptic_conclave.transport.redis_client import RedisBusClient
+from core.synaptic_conclave.transport.streams import get_stream_bus
 from core.vpar.vee.vee_engine import VEEEngine
 
 # Setup logger
@@ -585,7 +585,7 @@ class ShadowBrokerAgent:
         self.pg = PostgresAgent()
         self.qdrant = QdrantAgent()
         self.market_data = MarketDataProvider()
-        self.redis_bus = RedisBusClient()
+        self._bus = get_stream_bus()
         self.vee_engine = VEEEngine()  # Phase 3.2: VEE narrative generation
         
         # Sacred Orders integration
@@ -1606,8 +1606,13 @@ class ShadowBrokerAgent:
             }
         }
         
-        # Publish to Redis cognitive_bus:events (synchronous)
-        self.redis_bus.publish("cognitive_bus:events", event)
+        # Emit to Synaptic Conclave via StreamBus
+        self._bus.emit(
+            channel="finance.trade.executed",
+            payload=event,
+            emitter="shadow_broker_agent",
+            correlation_id=event_id,
+        )
         
         logger.info(f"📡 Published to Synaptic Conclave: {event_id}")
         
