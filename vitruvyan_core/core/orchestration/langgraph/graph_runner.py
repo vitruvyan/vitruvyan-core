@@ -124,7 +124,6 @@ def run_graph_once(
     return_full: bool = False,
     validated_entities: list = None,
     language: str = None,
-    tenant_id: str = None,
 ) -> Dict[str, Any]:
     """
     Execute the graph once for a given user input.
@@ -179,8 +178,6 @@ def run_graph_once(
         state["validated_entities"] = validated_entities
     if language:
         state["language"] = language
-    if tenant_id:
-        state["tenant_id"] = tenant_id
     
     # 🆕 2) Generate trace_id for VSGS audit trail (propagated through all nodes)
     state["trace_id"] = generate_trace_id()
@@ -375,10 +372,6 @@ def run_graph_once(
         response["domain_extensions"] = _collect_domain_extensions(final_state)
         response["narrative"] = final_state.get("narrative")
         response["ok"] = final_state.get("ok")
-        # MCP tool fields
-        response["mcp_tool_used"] = final_state.get("mcp_tool_used")
-        response["mcp_result"] = final_state.get("mcp_result")
-        response["mcp_orthodoxy"] = final_state.get("mcp_orthodoxy")
         
         return response
     
@@ -439,10 +432,6 @@ def run_graph_once(
             "domain_extensions": _collect_domain_extensions(final_state),
             "narrative": final_state.get("narrative"),
             "ok": final_state.get("ok"),
-            # MCP tool fields
-            "mcp_tool_used": final_state.get("mcp_tool_used"),
-            "mcp_result": final_state.get("mcp_result"),
-            "mcp_orthodoxy": final_state.get("mcp_orthodoxy"),
         }
         
         return result
@@ -506,10 +495,6 @@ def run_graph_once(
         "domain_extensions": _collect_domain_extensions(_s),
         "narrative": _s.get("narrative"),
         "ok": _s.get("ok"),
-        # MCP tool fields
-        "mcp_tool_used": _s.get("mcp_tool_used"),
-        "mcp_result": _s.get("mcp_result"),
-        "mcp_orthodoxy": _s.get("mcp_orthodoxy"),
     }
 
 

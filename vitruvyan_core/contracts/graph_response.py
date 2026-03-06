@@ -23,9 +23,11 @@ from __future__ import annotations
 
 import hashlib
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, ClassVar, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from .base import BaseContract
 
 # ---------------------------------------------------------------------------
 # Canonical Orthodoxy statuses (source of truth: Verdict._VALID_STATUSES)
@@ -39,18 +41,29 @@ OrthodoxyStatusType = Literal[
     "clarification_needed",
 ]
 
+# Importable string constants — use these instead of hardcoded strings
+ORTHODOXY_BLESSED: OrthodoxyStatusType = "blessed"
+ORTHODOXY_PURIFIED: OrthodoxyStatusType = "purified"
+ORTHODOXY_HERETICAL: OrthodoxyStatusType = "heretical"
+ORTHODOXY_NON_LIQUET: OrthodoxyStatusType = "non_liquet"
+ORTHODOXY_CLARIFICATION_NEEDED: OrthodoxyStatusType = "clarification_needed"
+
 
 # ---------------------------------------------------------------------------
 # SessionMin — per-turn session snapshot (channel-agnostic)
 # ---------------------------------------------------------------------------
 
-class SessionMin(BaseModel):
+class SessionMin(BaseContract):
     """
     Minimal session snapshot returned to every channel after each turn.
 
     Channels persist ``session_id`` + ``user_id`` locally; the rest is
     informational or used for render decisions (emotion, turn_count).
     """
+
+    CONTRACT_NAME: ClassVar[str]    = "session.min"
+    CONTRACT_VERSION: ClassVar[str] = "1.0.0"
+    CONTRACT_OWNER: ClassVar[str]   = "core"
 
     user_id: str = Field(..., description="Canonical user identifier")
     session_id: str = Field(
@@ -83,7 +96,7 @@ class SessionMin(BaseModel):
 # GraphResponseMin — the ONE response every adapter receives
 # ---------------------------------------------------------------------------
 
-class GraphResponseMin(BaseModel):
+class GraphResponseMin(BaseContract):
     """
     Minimum viable response from the Graph API.
 
@@ -92,6 +105,10 @@ class GraphResponseMin(BaseModel):
     - ``session_min`` is the only field a client should persist locally.
     - ``full_payload`` is optional (debug, logging, admin dashboard).
     """
+
+    CONTRACT_NAME: ClassVar[str]    = "graph_response.min"
+    CONTRACT_VERSION: ClassVar[str] = "1.0.0"
+    CONTRACT_OWNER: ClassVar[str]   = "core"
 
     human: str = Field(..., description="Human-readable narrative for the user")
     follow_ups: List[str] = Field(

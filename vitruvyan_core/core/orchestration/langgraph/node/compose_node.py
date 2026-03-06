@@ -87,31 +87,10 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
     babel_result = state.get("babel_result", {})
     pattern_result = state.get("pattern_result", {})
     raw_output = state.get("raw_output", {})
-    mcp_result = state.get("mcp_result")
-    mcp_tool = state.get("mcp_tool_used")
     
-    print(f"\ud83c\udfa8 [compose_node] Intent: {intent}, Route: {route}, Language: {language}")
-    print(f"\ud83c\udfa8 [compose_node] Service results available: {list(service_result.keys()) if service_result else 'none'}")
-    print(f"\ud83c\udfa8 [compose_node] raw_output keys: {list(raw_output.keys()) if raw_output else 'empty'}")
-    if mcp_tool:
-        print(f"\ud83c\udfa8 [compose_node] MCP tool: {mcp_tool}, status: {mcp_result.get('status') if mcp_result else 'N/A'}")
-    
-    # MCP tool mode: if MCP returned data, inject it as service_result for synthesis
-    if mcp_result and mcp_result.get("status") == "success" and not service_result:
-        import json as _json
-        tool_data = mcp_result.get("data", {})
-        try:
-            mcp_data_str = _json.dumps(tool_data, indent=2, default=str, ensure_ascii=False)
-            if len(mcp_data_str) > 4000:
-                mcp_data_str = mcp_data_str[:4000] + "\n... (troncato)"
-        except Exception:
-            mcp_data_str = str(tool_data)[:2000]
-        service_result = {
-            "status": "completed",
-            "tool": mcp_tool,
-            "data": mcp_data_str,
-        }
-        print(f"\ud83c\udfa8 [compose_node] MCP data injected into service_result for synthesis")
+    print(f"🎨 [compose_node] Intent: {intent}, Route: {route}, Language: {language}")
+    print(f"🎨 [compose_node] Service results available: {list(service_result.keys()) if service_result else 'none'}")
+    print(f"🎨 [compose_node] raw_output keys: {list(raw_output.keys()) if raw_output else 'empty'}")
     
     # Conversational mode (no service results)
     if not service_result and not raw_output and intent in ["greeting", "help", "clarify", "unknown"]:

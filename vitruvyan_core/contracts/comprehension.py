@@ -23,12 +23,13 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from .base import BaseContract, IContractPlugin
 from .pattern_weavers import OntologyPayload
 
 
@@ -88,7 +89,7 @@ class SemanticPayload(BaseModel):
 # ComprehensionResult — The unified output
 # ─────────────────────────────────────────────────────────────
 
-class ComprehensionResult(BaseModel):
+class ComprehensionResult(BaseContract):
     """
     Unified comprehension contract.
 
@@ -98,9 +99,12 @@ class ComprehensionResult(BaseModel):
 
     One LLM call produces both. Domain plugins shape the prompt.
     """
-    model_config = ConfigDict(extra="forbid")
 
-    schema_version: str = "1.0.0"
+    CONTRACT_NAME: ClassVar[str]    = "comprehension.result"
+    CONTRACT_VERSION: ClassVar[str] = "1.0.0"
+    CONTRACT_OWNER: ClassVar[str]   = "babel_gardens"
+
+    schema_version: str = "1.0.0"  # kept for backward compatibility
 
     # Ontology — reuse PW v3 contract verbatim
     ontology: OntologyPayload = Field(default_factory=OntologyPayload)
@@ -216,7 +220,7 @@ class FuseResponse(BaseModel):
 # Plugin contracts — domain plugins implement these
 # ─────────────────────────────────────────────────────────────
 
-class IComprehensionPlugin(ABC):
+class IComprehensionPlugin(IContractPlugin):
     """
     Domain plugin for the unified comprehension engine.
 
@@ -224,6 +228,10 @@ class IComprehensionPlugin(ABC):
     Each domain provides ONE plugin that shapes both ontology and
     semantic analysis in a single LLM prompt.
     """
+
+    PLUGIN_CONTRACT_NAME: ClassVar[str]    = "comprehension_plugin"
+    PLUGIN_CONTRACT_VERSION: ClassVar[str] = "1.0.0"
+    PLUGIN_CONTRACT_OWNER: ClassVar[str]   = "babel_gardens"
 
     @abstractmethod
     def get_domain_name(self) -> str:
@@ -280,7 +288,7 @@ class IComprehensionPlugin(ABC):
         return result
 
 
-class ISignalContributor(ABC):
+class ISignalContributor(IContractPlugin):
     """
     Domain signal contributor interface (Layer 2).
 
@@ -289,6 +297,10 @@ class ISignalContributor(ABC):
 
     Contributors live in DOMAIN code, never in core.
     """
+
+    PLUGIN_CONTRACT_NAME: ClassVar[str]    = "signal_contributor"
+    PLUGIN_CONTRACT_VERSION: ClassVar[str] = "1.0.0"
+    PLUGIN_CONTRACT_OWNER: ClassVar[str]   = "babel_gardens"
 
     @abstractmethod
     def get_contributor_name(self) -> str:

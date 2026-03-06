@@ -12,6 +12,22 @@ Author: vitruvyan-core
 Date: February 8, 2026
 """
 
+from .base import BaseContract, ContractMeta, ContractRegistry, IContractPlugin
+from .ingestion import (
+    CHANNEL_INGESTION_ACQUIRED,
+    CHANNEL_INGESTION_DUPLICATE,
+    CHANNEL_INGESTION_NORMALIZED,
+    CHANNEL_INGESTION_REJECTED,
+    IngestionPayload,
+    IngestionQuality,
+    IIngestionPlugin,
+    NormalizedChunk,
+    SourceDescriptor,
+    SourceType,
+    build_chunk_id,
+    build_source_id,
+    compute_content_hash,
+)
 from .llm_provider import ILLMProvider
 from .orchestration import (
     BaseGraphState,
@@ -114,17 +130,27 @@ from .rag import (
     get_collection_declaration,
     is_declared_collection,
 )
-from .tenancy import (
-    CHANNEL_TENANT_CREATED,
-    CHANNEL_TENANT_DEACTIVATED,
-    CHANNEL_TENANT_SCOPE_DENIED,
-    TenancyMode,
-    TenantDescriptor,
-    ScopeVerdict,
-    ITenancyPlugin,
-)
 
 __all__ = [
+    # Base contracts
+    "BaseContract",
+    "ContractMeta",
+    "ContractRegistry",
+    "IContractPlugin",
+    # Ingestion Contract
+    "CHANNEL_INGESTION_ACQUIRED",
+    "CHANNEL_INGESTION_DUPLICATE",
+    "CHANNEL_INGESTION_NORMALIZED",
+    "CHANNEL_INGESTION_REJECTED",
+    "SourceType",
+    "SourceDescriptor",
+    "IngestionQuality",
+    "NormalizedChunk",
+    "IngestionPayload",
+    "IIngestionPlugin",
+    "compute_content_hash",
+    "build_source_id",
+    "build_chunk_id",
     # LLM
     "ILLMProvider",
     # Graph Response Contract (channel-agnostic)
@@ -205,12 +231,4 @@ __all__ = [
     "ALL_DECLARED_COLLECTIONS",
     "get_collection_declaration",
     "is_declared_collection",
-    # Tenancy Contract V1
-    "CHANNEL_TENANT_CREATED",
-    "CHANNEL_TENANT_DEACTIVATED",
-    "CHANNEL_TENANT_SCOPE_DENIED",
-    "TenancyMode",
-    "TenantDescriptor",
-    "ScopeVerdict",
-    "ITenancyPlugin",
 ]
