@@ -412,6 +412,7 @@ def run_graph_once(
             "entity_ids": final_state.get("entity_ids"),
             "domain_params": final_state.get("domain_params", {}),
             "horizon": final_state.get("horizon"),  # DEPRECATED backward-compat
+            "user_id": final_state.get("user_id"),
             # ✅ FIX (Nov 4, 2025): Add VSGS fields to API response
             "vsgs_status": final_state.get("vsgs_status"),
             "vsgs_elapsed_ms": final_state.get("vsgs_elapsed_ms"),

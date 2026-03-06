@@ -430,7 +430,7 @@ def codex_hunters_node(state: Dict[str, Any]) -> Dict[str, Any]:
                     "narrative": "🏰 Codex Hunters: No maintenance action required.",
                     "type": "codex_skipped"
                 },
-                "conversation_type": "codex_skipped",
+                "conversation_type": "codex_complete",
                 "route": "codex_complete",
                 # Orthodoxy fields (codex bypasses Sacred Flow → set here)
                 "orthodoxy_status": "blessed",
