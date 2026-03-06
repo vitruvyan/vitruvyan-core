@@ -24,7 +24,7 @@ from core.synaptic_conclave.event_schema import (
     create_sentinel_emergency_event
 )
 # Import Synaptic Conclave integration
-from core.synaptic_conclave.redis_client import RedisBusClient
+from core.synaptic_conclave.transport.streams import get_stream_bus
 
 logger = logging.getLogger(__name__)
 

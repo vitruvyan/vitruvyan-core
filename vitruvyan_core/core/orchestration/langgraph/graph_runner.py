@@ -106,15 +106,19 @@ def _session_put(user_id: str, state: Dict[str, Any]) -> None:
 # Lazy graph compilation — deferred to first use instead of import-time
 _ENABLE_MINIMAL = os.getenv("ENABLE_MINIMAL_GRAPH", "false").lower() == "true"
 _GRAPH = None
+_GRAPH_LOCK = threading.Lock()
 
 
 def _get_graph():
     """Return the compiled graph, building it on first call (lazy init)."""
     global _GRAPH
-    if _GRAPH is None:
-        logger.info("Compiling LangGraph (minimal=%s)...", _ENABLE_MINIMAL)
-        _GRAPH = build_minimal_graph() if _ENABLE_MINIMAL else build_graph()
-        logger.info("LangGraph compiled successfully")
+    if _GRAPH is not None:
+        return _GRAPH
+    with _GRAPH_LOCK:
+        if _GRAPH is None:
+            logger.info("Compiling LangGraph (minimal=%s)...", _ENABLE_MINIMAL)
+            _GRAPH = build_minimal_graph() if _ENABLE_MINIMAL else build_graph()
+            logger.info("LangGraph compiled successfully")
     return _GRAPH
 
 

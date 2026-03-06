@@ -7,7 +7,7 @@ Orthodoxy Wardens Integration Test
 
 **Test Flow**:
 1. Send POST /run to graph API (triggers orthodoxy_node)
-2. orthodoxy_node emits "system.audit.requested" to Redis
+2. orthodoxy_node emits "orthodoxy.audit.requested" to Redis
 3. orthodoxy_listener consumes event
 4. orthodoxy_wardens processes confession, emits verdict
 5. orthodoxy_node receives "orthodoxy.absolution.granted"

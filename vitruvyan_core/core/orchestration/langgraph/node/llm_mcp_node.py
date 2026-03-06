@@ -23,11 +23,17 @@ import json
 import logging
 import asyncio  # 🔧 For event loop access in sync context (Phase 4)
 import nest_asyncio  # 🔧 Allow nested event loops (Phase 4 fix)
+import concurrent.futures
 from typing import Dict, Any, List, Optional
 import httpx
 from core.agents.llm_agent import get_llm_agent
 
 logger = logging.getLogger(__name__)
+
+# Shared ThreadPoolExecutor for MCP async→sync offload (avoid per-call allocation)
+_MCP_EXECUTOR = concurrent.futures.ThreadPoolExecutor(
+    max_workers=2, thread_name_prefix="mcp_async"
+)
 
 # nest_asyncio applied lazily to handle uvloop
 _nest_applied = False
@@ -216,7 +222,6 @@ def llm_mcp_node(state: Dict[str, Any]) -> Dict[str, Any]:
         uvloop is the default policy under uvicorn, but cannot be
         nested and causes issues with nest_asyncio.
         """
-        import concurrent.futures
         def _run():
             # SelectorEventLoop avoids uvloop policy conflicts
             loop = asyncio.SelectorEventLoop()
@@ -226,9 +231,8 @@ def llm_mcp_node(state: Dict[str, Any]) -> Dict[str, Any]:
             finally:
                 loop.close()
         
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future = executor.submit(_run)
-            return future.result(timeout=90)
+        future = _MCP_EXECUTOR.submit(_run)
+        return future.result(timeout=90)
     
     mcp_tools = _run_async_in_thread(get_mcp_tools())
     

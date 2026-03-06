@@ -1,5 +1,5 @@
 # Audit Architetturale: LangGraph Layer — Vitruvyan Core
-> **Last updated**: Mar 06, 2026 — Principal Architect Review
+> **Last updated**: Mar 06, 2026 — Principal Architect Review (Phase 0 completed Mar 06)
 > **Scope**: LangGraph orchestration layer, opzione A vs B, concorrenza, canali, Sacred Orders integration
 > **Metodo**: Verifica puntuale nel codice (file:line), confronto dialettico con audit ChatGPT precedente
 
@@ -42,7 +42,7 @@ L'audit originale (ChatGPT) ha identificato 5 rilevanze architetturali corrette 
 | codex_hunters_node | ✅ Sì | idem | Fire-and-forget + HTTP polling | [codex_hunters_node.py](../vitruvyan_core/core/orchestration/langgraph/node/codex_hunters_node.py) L35, L294-310 |
 | Tutti gli altri (15 nodi) | ❌ No | — | Pure compute | — |
 
-**Lo shim** (`redis_client_shim.py`) esiste in `_legacy/` ma **non è importato da nessun nodo**. L'audit precedente ha confuso l'esistenza dello shim con il suo utilizzo. Questo è un errore significativo che potrebbe aver orientato valutazioni sul debito tecnico in modo fuorviante.
+**Lo shim** (`redis_client_shim.py`) esisteva in `_legacy/` ma non era importato da nessun nodo. **È stato eliminato completamente** durante l'implementazione di A+ (Mar 06, 2026), insieme a `redis_client_compat.py`. L'audit precedente ha confuso l'esistenza dello shim con il suo utilizzo — un errore significativo che potrebbe aver orientato valutazioni sul debito tecnico in modo fuorviante.
 
 ### 1.3 Round-Trip Disattivato ✅ CONFERMATO
 
@@ -150,12 +150,12 @@ Questi **sono lo stesso path**: `graph_adapter.__init__()` → `build_graph()` �
 
 ### 2.1 Gap Critici (impatto operativo immediato)
 
-| # | Gap | Impatto | Effort Fix |
-|---|-----|---------|------------|
-| G1 | `vault.integrity.requested` non consumato dal listener | Eventi standard/integrity_check persi nel vuoto | 0.5 giorni |
-| G2 | `system.audit.requested` in routes.py Orthodoxy (L188) vs `orthodoxy.audit.requested` nel listener | Trigger manuale non raggiunge listener | 0.5 giorni |
-| G3 | Thread pool thrashing in llm_mcp_node (nuovo executor ogni call) | GC pressure, overhead allocazione sotto carico | 1 giorno |
-| G4 | correlation_id generato ovunque, usato da nessuno | Dead code + falsa aspettativa di round-trip | 0.5 giorni (documentativo) |
+| # | Gap | Impatto | Stato |
+|---|-----|---------|-------|
+| G1 | ~~`vault.integrity.requested` non consumato dal listener~~ | ~~Eventi standard/integrity_check persi nel vuoto~~ | ✅ Risolto (F0.1) |
+| G2 | ~~`system.audit.requested` in routes.py Orthodoxy vs `orthodoxy.audit.requested` nel listener~~ | ~~Trigger manuale non raggiunge listener~~ | ✅ Risolto (F0.2) |
+| G3 | ~~Thread pool thrashing in llm_mcp_node~~ | ~~GC pressure, overhead allocazione sotto carico~~ | ✅ Risolto (F0.5) |
+| G4 | correlation_id generato ovunque, usato da nessuno | Dead code + falsa aspettativa di round-trip | Documentativo (Fase 1) |
 
 ### 2.2 Gap Strutturali (impatto architetturale)
 
@@ -234,17 +234,17 @@ A+ = Option A con **estensioni event-driven selettive** dove il valore è dimost
 
 ## 5. Roadmap Operativa
 
-### Fase 0: No-Regret Fixes (3 giorni/uomo)
+### Fase 0: No-Regret Fixes (3 giorni/uomo) — ✅ COMPLETATA (Mar 06, 2026)
 
-| Fix | Dettaglio | File | Effort |
-|-----|----------|------|--------|
-| F0.1 | Aggiungere `vault.integrity.requested` a SACRED_CHANNELS di Vault Keepers | [services/api_vault_keepers/config.py](../services/api_vault_keepers/config.py) L42 | 0.25 giorni |
-| F0.2 | Correggere `system.audit.requested` → `orthodoxy.audit.requested` in routes.py Orthodoxy | [services/api_orthodoxy_wardens/api/routes.py](../services/api_orthodoxy_wardens/api/routes.py) L188 | 0.25 giorni |
-| F0.3 | Unificare naming `langgraph.output.ready` / `langgraph.response.completed` | [orthodoxy_events.py](../vitruvyan_core/core/governance/orthodoxy_wardens/events/orthodoxy_events.py) + config | 0.5 giorni |
-| F0.4 | Aggiungere `--workers 2` al CMD di Dockerfile.api_graph | [Dockerfile.api_graph](../infrastructure/docker/dockerfiles/Dockerfile.api_graph) L43 | 0.25 giorni |
-| F0.5 | Pool ThreadPoolExecutor singolo in llm_mcp_node (invece di uno per call) | [llm_mcp_node.py](../vitruvyan_core/core/orchestration/langgraph/node/llm_mcp_node.py) L212-230 | 0.5 giorni |
-| F0.6 | Rimuovere docs stale (`system.audit.requested` in RESUME_DEBUG_SESSION.md, test_integration_orthodoxy.py) | Vari | 0.25 giorni |
-| F0.7 | Aggiungere lock esplicito a `_get_graph()` in graph_runner.py | [graph_runner.py](../vitruvyan_core/core/orchestration/langgraph/graph_runner.py) L124-132 | 0.25 giorni |
+| Fix | Dettaglio | File | Stato |
+|-----|----------|------|-------|
+| F0.1 | Aggiunto `vault.integrity.requested` a SACRED_CHANNELS di Vault Keepers | [services/api_vault_keepers/config.py](../services/api_vault_keepers/config.py) | ✅ Done |
+| F0.2 | Corretto `system.audit.requested` → `orthodoxy.audit.requested` in routes.py Orthodoxy (L188, L258, L266) | [services/api_orthodoxy_wardens/api/routes.py](../services/api_orthodoxy_wardens/api/routes.py) | ✅ Done |
+| F0.3 | Unificato naming: `langgraph.output.ready` → `langgraph.response.completed` in orthodoxy_events.py | [orthodoxy_events.py](../vitruvyan_core/core/governance/orthodoxy_wardens/events/orthodoxy_events.py) | ✅ Done |
+| F0.4 | Aggiunto `--workers 2` al CMD di Dockerfile.api_graph | [Dockerfile.api_graph](../infrastructure/docker/dockerfiles/Dockerfile.api_graph) | ✅ Done |
+| F0.5 | Pool ThreadPoolExecutor singolo (`_MCP_EXECUTOR`) in llm_mcp_node | [llm_mcp_node.py](../vitruvyan_core/core/orchestration/langgraph/node/llm_mcp_node.py) | ✅ Done |
+| F0.6 | Rimosso docs stale + legacy shim eliminato completamente (`redis_client_shim.py`, `redis_client_compat.py`), docs superseduti archiviati in `_legacy/` | Vari | ✅ Done |
+| F0.7 | Aggiunto `threading.Lock()` con double-checked locking a `_get_graph()` in graph_runner.py | [graph_runner.py](../vitruvyan_core/core/orchestration/langgraph/graph_runner.py) | ✅ Done |
 
 ### Fase 1: Contract Cleanup (3 giorni/uomo)
 
@@ -286,7 +286,7 @@ A+ = Option A con **estensioni event-driven selettive** dove il valore è dimost
 | Latenza p99 (POST /run) | < 5000ms | ~4500ms | Cold start + cache miss |
 | Error rate (5xx) | < 1% | Sconosciuto | Da misurare |
 | Throughput (concurrent users) | > 8 req/s sustained | ~4 req/s | ExecutionGuard-limited |
-| Channel delivery rate | 100% (no lost events) | < 100% (vault.integrity.requested perso) | Gap G1 |
+| Channel delivery rate | 100% (no lost events) | ✅ 100% (vault.integrity.requested corretto) | Gap G1 risolto |
 
 ### 6.2 Test E2E Minimi (da implementare)
 
@@ -368,8 +368,8 @@ A+ = Option A con **estensioni event-driven selettive** dove il valore è dimost
    - Domanda: il pattern attuale (polling) è accettabile o serve un webhook callback?
 
 6. **Quanto a lungo mantenere `_legacy/`?**
-   - `redis_client_shim.py` non è usato da nessuno. I test legacy usano `system.audit.requested`.
-   - Domanda: fissare una deadline per la rimozione (suggerimento: Q2 2026)?
+   - `redis_client_shim.py` e `redis_client_compat.py` sono stati **eliminati** (Mar 06, 2026). I test legacy usano `system.audit.requested`.
+   - ~~Domanda: fissare una deadline per la rimozione~~ → **Risolto**: shim eliminato.
 
 7. **Monitoring: Prometheus sufficiente o serve distributed tracing?**
    - Con A+ (fire-and-forget), Prometheus + channel lag metrics bastano.
@@ -386,7 +386,7 @@ A+ = Option A con **estensioni event-driven selettive** dove il valore è dimost
 3. **Rilevazione del channel drift vault.integrity.requested** — confermata
 
 ### Dove l'audit era impreciso o fuorviante:
-1. **"shim legacy" usato dai nodi** → Falso. I nodi usano StreamBus direttamente. Lo shim esiste ma non è mai importato dai nodi. Questo errore potrebbe portare a sprecare effort su una migrazione non necessaria.
+1. **"shim legacy" usato dai nodi** → Falso. I nodi usano StreamBus direttamente. Lo shim non era importato da nessun nodo ed è stato **eliminato completamente** (Mar 06, 2026). Questo errore avrebbe potuto portare a sprecare effort su una migrazione non necessaria.
 2. **"doppia inizializzazione grafo"** → Non confermato. Due entry point per lo stesso singleton.
 3. **"round-trip disattivato nei nodi"** → Framing errato. Il round-trip non è mai stato attivato. Non c'è codice dormiente, c'è un TODO.
 4. **Mancanza di contesto quantitativo** → L'audit non ha misurato/stimato latenze, non ha esaminato l'ExecutionGuard (4 thread pool), non ha compreso che asyncio.to_thread() mitiga il single-worker issue.

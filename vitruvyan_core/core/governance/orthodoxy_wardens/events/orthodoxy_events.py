@@ -68,7 +68,7 @@ PUBLISH_CHANNELS = (
 CONSUME_CHANNELS = (
     "codex.discovery.mapped",           # New data discovered
     "engine.eval.completed",              # Evaluation results ready (was: neural_engine.screen.completed)
-    "langgraph.output.ready",           # LLM output awaiting validation
+    "langgraph.response.completed",     # LLM output awaiting validation
     "synaptic.conclave.broadcast",      # System-wide announcements
     "conclave.mcp.actions",             # MCP tool executions
 )

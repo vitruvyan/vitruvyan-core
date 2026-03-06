@@ -61,7 +61,7 @@ def inject_sacred_roles(confessor, penitent, chronicler, inquisitor, abbot):
 
 async def handle_audit_request(event: CognitiveEvent):
     """
-    Handle system.audit.requested events from Synaptic Conclave.
+    Handle orthodoxy.audit.requested events from Synaptic Conclave.
     
     **Workflow**:
     1. Inquisitor triggers investigation

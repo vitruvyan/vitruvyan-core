@@ -75,6 +75,7 @@ class Settings:
     # Sacred Channels (events this order listens to)
     SACRED_CHANNELS = [
         "vault.archive.requested",
+        "vault.integrity.requested",
         "vault.restore.requested",
         "vault.snapshot.requested",
         "audit.vault.requested",

@@ -22,15 +22,11 @@ from .transport.streams import StreamBus, StreamEvent
 from .utils.lexicon import get_lexicon
 
 # ============================================================================
-# DEPRECATED - Removed (Jan 24, 2026)
+# DEPRECATED — Legacy modules removed
 # ============================================================================
-# The following imports are NO LONGER AVAILABLE:
-# - redis_client (RedisBusClient, CognitiveEvent) → Use StreamBus
-# - heart (get_heart, publish_event) → Use StreamBus.emit()
-# - herald (get_herald) → Semantic routing moved to consumers
-# - scribe (get_scribe) → Event persistence via Redis Streams
-#
-# Use StreamBus for all event transport
+# redis_client_shim.py, redis_client_compat.py: DELETED (Mar 06, 2026)
+# heart, herald, scribe: removed (Jan 24, 2026)
+# Use StreamBus for all event transport.
 
 __all__ = [
     # Canonical bus (Redis Streams)

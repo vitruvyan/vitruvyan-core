@@ -1,36 +1,39 @@
 {
-  "version": "1.9.0",
+  "version": "1.10.0",
   "channel": "stable",
   "release_date": "2026-03-06",
   "contracts_version": "1.0.0",
   "changes": [
-    "refactor: purge RedisClientShim - all nodes migrated to canonical StreamBus",
-    "refactor: orthodoxy_node channel system.audit.requested -> orthodoxy.audit.requested",
-    "refactor: vault_node channels normalized to vault.integrity/archive.requested",
-    "refactor: codex_hunters_node _publish_expedition_event -> StreamBus.emit",
-    "refactor: shadow_broker_agent cognitive_bus:events -> finance.trade.executed",
-    "chore: archive transport/redis_client_shim.py and synaptic_conclave/redis_client_compat.py to _legacy/",
-    "fix: contracts/base.py, contracts/ingestion.py, contract_enforcement.py, node_contracts_registry.py (missing from cbed54d)",
-    "chore: remove 5 stale dead methods from api_pattern_weavers/adapters/bus_adapter.py",
-    "chore: remove 3 stale dead methods from api_babel_gardens/adapters/bus_adapter.py",
-    "bump: version 1.8.1 -> 1.9.0"
+    "refactor(graph): Option A+ Phase 0 — architectural audit + no-regret fixes",
+    "fix(channels): vault.integrity.requested added to Vault Keepers SACRED_CHANNELS (events were lost)",
+    "fix(channels): system.audit.requested → orthodoxy.audit.requested in routes.py (silent bug)",
+    "fix(channels): langgraph.output.ready → langgraph.response.completed naming unified",
+    "fix(concurrency): llm_mcp_node singleton ThreadPoolExecutor (was creating new pool per call)",
+    "fix(concurrency): graph_runner._get_graph() double-checked locking (race condition)",
+    "feat(docker): Dockerfile.api_graph --workers 2 (crash resilience)",
+    "chore: delete redis_client_shim.py + redis_client_compat.py (dead legacy code)",
+    "chore: archive 4 superseded langgraph docs to _legacy/",
+    "chore: move deployment logs to docs/changelog/",
+    "chore: delete duplicate docs/services/api_graph.md",
+    "chore: MkDocs nav cleanup — deduplicate 5 entries, add Graph Layer audit",
+    "docs: LANGGRAPH_ARCHITECTURAL_AUDIT_MAR2026.md — comprehensive A vs B vs A+ analysis",
+    "bump: version 1.9.0 → 1.10.0"
   ],
   "commits": [
     {
-      "hash": "88c6902",
-      "message": "fix(upgrade): reliable release discovery via Tags API + Contents API fallback"
+      "hash": "e4226d0",
+      "message": "fix(graph): user_id propagation + codex_skipped route in CAN node"
     },
     {
-      "hash": "053c412",
-      "message": "chore(release): bump to v1.8.0 \u2014 BaseContract + IngestionContract"
+      "hash": "ebf43af",
+      "message": "chore(core): remove stale adapter dead code + bump v1.9.0"
     }
   ],
   "validation": [
-    "327 tests pass (no regressions)",
-    "BaseContract tests: 40/40 passed",
-    "IngestionContract tests: 44/44 passed",
-    "vit release --dry-run: payload built correctly",
-    "get_current_version() returns 1.8.1 via __version__ (Strategy 1)"
+    "No broken imports (grep verified — shim references only in _legacy/)",
+    "MkDocs nav: 0 duplicate .md entries",
+    "Channel drift: all 3 gaps resolved (G1, G2, G3)",
+    "Phase 0 roadmap: 7/7 fixes completed"
   ],
   "upgrade_instructions": "vit upgrade --channel stable",
   "checksum": {

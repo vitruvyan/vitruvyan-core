@@ -123,7 +123,6 @@ nav:
     - Orchestration:
       - Overview: vitruvyan_core/core/orchestration/README.md
       - Slot Filling Alignment: vitruvyan_core/core/orchestration/langgraph/docs/SLOT_FILLING_ARCHITECTURE_ALIGNMENT.md
-      - API Graph (Service): services/api_graph/README.md
     - Cognitive Bus (Synaptic Conclave):
       - Overview: vitruvyan_core/core/synaptic_conclave/docs/README.md
       - Topology (Mermaid): infrastructure/docker/monitoring/grafana/SYNAPTIC_CONCLAVE_TOPOLOGY.md
@@ -142,11 +141,11 @@ nav:
       - Pattern Weavers: docs/internal/orders/PATTERN_WEAVERS.md
     - Compute (Neural Engine):
       - Overview: vitruvyan_core/core/neural_engine/README.md
-      - Neural Engine API: docs/internal/services/NEURAL_ENGINE_API.md
  
   - Architecture:
     - Overview: docs/architecture/README.md
     - "Pipeline E2E — Guida Completa": docs/architecture/PIPELINE_E2E.md
+    - Graph Layer (Audit A+): docs/architecture/LANGGRAPH_ARCHITECTURAL_AUDIT_MAR2026.md
     - Dual Memory Layer: docs/architecture/DUAL_MEMORY_LAYER.md
     - Semantic & Ontology: docs/architecture/SEMANTIC_ONTOLOGY_ARCHITECTURE.md
     - Sacred Orders Pattern: vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md
@@ -195,7 +194,6 @@ nav:
     - "AiComSec (Security)":
       - Brainstorm Report: docs/knowledge_base/development/verticals/security/AICOMSEC_BRAINSTORM_REPORT.md
       - Excel Ingestion Walkthrough: docs/knowledge_base/development/verticals/security/AICOMSEC_EXCEL_INGESTION_WALKTHROUGH.md
-      - "Pipeline E2E — Guida Completa": docs/architecture/PIPELINE_E2E.md
     - Finance (Legacy):
       - Codex Hunters Domain Pack: examples/verticals/finance/CODEX_HUNTERS_DOMAIN_PACK.md
 
@@ -213,7 +211,6 @@ nav:
     - Oculus Prime: infrastructure/edge/oculus_prime/README.md
     - Oculus Prime Flow Graph: docs/knowledge_base/oculus_prime/intake_flow_graph.md
     - Monitoring: infrastructure/docker/monitoring/README.md
-    - Synaptic Topology (Mermaid): infrastructure/docker/monitoring/grafana/SYNAPTIC_CONCLAVE_TOPOLOGY.md
     - KB Access Control: infrastructure/docker/mkdocs/ACCESS_CONTROL.md
     
   - Development:

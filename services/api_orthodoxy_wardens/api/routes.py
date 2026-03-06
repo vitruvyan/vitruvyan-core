@@ -185,7 +185,7 @@ async def trigger_synaptic_audit(request: Dict[str, Any]):
         redis_bus = StreamBus()
         
         event = CognitiveEvent(
-            event_type="system.audit.requested",
+            event_type="orthodoxy.audit.requested",
             emitter="orthodoxy_wardens_api",
             target="orthodoxy_wardens",
             payload=request,
@@ -255,7 +255,7 @@ async def test_confession_cycle():
             "timestamp": datetime.utcnow().isoformat()
         }
         
-        # This should trigger: system.audit.requested → orthodoxy events → orthodoxy.absolution.granted
+        # This should trigger: orthodoxy.audit.requested → orthodoxy events → orthodoxy.absolution.granted
         result = await trigger_synaptic_audit(test_payload)
         
         return {
@@ -263,7 +263,7 @@ async def test_confession_cycle():
             "message": "Sacred confession cycle test started - monitor logs for full event chain",
             "trigger_result": result,
             "expected_events": [
-                "system.audit.requested (published)",
+                "orthodoxy.audit.requested (published)",
                 "orthodoxy.confession.started (emitted by inquisitor)",
                 "orthodoxy.heresy.detected (potentially emitted by confessor)",
                 "orthodoxy.purification.executed (potentially emitted by penitent)",
