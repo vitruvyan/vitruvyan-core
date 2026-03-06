@@ -715,6 +715,11 @@ services:
       - orthodoxy_wardens
     networks:
       - core-net
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import os,redis; r=redis.Redis(host=os.getenv('REDIS_HOST','core_redis'), port=int(os.getenv('REDIS_PORT','6379'))); r.ping(); print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     command: ["python3", "/app/api_orthodoxy_wardens/streams_listener.py"]
 
   vault_listener:
