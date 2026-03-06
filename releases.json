@@ -1,34 +1,20 @@
 {
-  "version": "1.8.1",
+  "version": "1.9.0",
   "channel": "stable",
-  "release_date": "2026-02-28T23:59:00Z",
+  "release_date": "2026-03-06",
   "contracts_version": "1.0.0",
-  "changes": {
-    "features": [
-      "vit release command: create GitHub Release + upload releases.json asset from current git tag",
-      "BaseContract: abstract foundation for all data contracts (versioning, enforce(), registry, serialization)",
-      "ContractRegistry: auto-registration via __init_subclass__ — no manual wiring",
-      "IContractPlugin: base for ABC/Protocol plugin contracts (ISemanticPlugin, IComprehensionPlugin, etc.)",
-      "IngestionContract: SourceDescriptor, IngestionQuality, NormalizedChunk, IngestionPayload v1.0.0",
-      "IIngestionPlugin: domain extension point for Perception Sacred Order",
-      "Ingestion helpers: compute_content_hash, build_source_id, build_chunk_id",
-      "Synaptic Conclave ingestion channels: perception.ingestion.{acquired,normalized,rejected,duplicate}"
-    ],
-    "fixes": [
-      "ReleaseRegistry: two-pass fetch — GitHub Releases API (Pass 1) + Tags API with Contents API fallback (Pass 2)",
-      "vit upgrade now discovers ALL pushed git tags (git push --tags is sufficient, no GitHub Release required)",
-      "vitruvyan_core.__version__ = '1.8.1' — get_current_version() no longer falls back to git-describe",
-      "OntologyPayload migrated to BaseContract (pattern_weavers.ontology@3.0.0)",
-      "ComprehensionResult migrated to BaseContract (comprehension.result@1.0.0)",
-      "GraphResponseMin migrated to BaseContract (graph_response.min@1.0.0)",
-      "SessionMin migrated to BaseContract (session.min@1.0.0)"
-    ],
-    "documentation": [
-      "84 new unit tests: test_base_contract.py + test_ingestion_contract.py",
-      "All existing imports backward compatible — zero breaking changes"
-    ],
-    "breaking_changes": []
-  },
+  "changes": [
+    "refactor: purge RedisClientShim - all nodes migrated to canonical StreamBus",
+    "refactor: orthodoxy_node channel system.audit.requested -> orthodoxy.audit.requested",
+    "refactor: vault_node channels normalized to vault.integrity/archive.requested",
+    "refactor: codex_hunters_node _publish_expedition_event -> StreamBus.emit",
+    "refactor: shadow_broker_agent cognitive_bus:events -> finance.trade.executed",
+    "chore: archive transport/redis_client_shim.py and synaptic_conclave/redis_client_compat.py to _legacy/",
+    "fix: contracts/base.py, contracts/ingestion.py, contract_enforcement.py, node_contracts_registry.py (missing from cbed54d)",
+    "chore: remove 5 stale dead methods from api_pattern_weavers/adapters/bus_adapter.py",
+    "chore: remove 3 stale dead methods from api_babel_gardens/adapters/bus_adapter.py",
+    "bump: version 1.8.1 -> 1.9.0"
+  ],
   "commits": [
     {
       "hash": "88c6902",
@@ -36,7 +22,7 @@
     },
     {
       "hash": "053c412",
-      "message": "chore(release): bump to v1.8.0 — BaseContract + IngestionContract"
+      "message": "chore(release): bump to v1.8.0 \u2014 BaseContract + IngestionContract"
     }
   ],
   "validation": [
@@ -52,4 +38,3 @@
     "value": "TBD"
   }
 }
-

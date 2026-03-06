@@ -75,43 +75,6 @@ class BusAdapter:
             self._language_consumer = LanguageDetectorConsumer(config=get_domain_config())
         return self._language_consumer
     
-    def setup_consumer_group(self, stream: str, group: str) -> bool:
-        """Create consumer group for a stream."""
-        if not self.bus:
-            return False
-        
-        try:
-            self.bus.create_consumer_group(stream, group)
-            logger.info(f"✅ Consumer group '{group}' ready on '{stream}'")
-            return True
-        except Exception as e:
-            logger.warning(f"Consumer group setup: {e}")
-            return True  # Group may already exist
-    
-    def emit(self, stream: str, payload: Dict[str, Any]) -> bool:
-        """Emit event to stream."""
-        if not self.bus:
-            return False
-        
-        try:
-            self.bus.emit(stream, payload)
-            return True
-        except Exception as e:
-            logger.error(f"Failed to emit: {e}")
-            return False
-    
-    def acknowledge(self, stream: str, group: str, event_id: str) -> bool:
-        """Acknowledge event processing."""
-        if not self.bus:
-            return False
-        
-        try:
-            self.bus.acknowledge(stream, group, event_id)
-            return True
-        except Exception as e:
-            logger.error(f"Failed to acknowledge: {e}")
-            return False
-    
     def check_health(self) -> bool:
         """Check StreamBus connection health."""
         if not self.bus:
