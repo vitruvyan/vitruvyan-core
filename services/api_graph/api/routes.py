@@ -18,6 +18,7 @@ from ..models.schemas import (
     GraphResponseSchema,
     HealthResponseSchema,
     AuditHealthSchema,
+    FeedbackSignalSchema,
 )
 from ..adapters.graph_adapter import GraphOrchestrationAdapter
 from ..adapters.persistence import GraphPersistence
@@ -428,3 +429,58 @@ async def search_entities(
         }
 
     return persistence.search_entities(query=q, limit=10)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Feedback endpoint — Plasticity integration
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.post("/api/feedback")
+async def submit_feedback(signal: FeedbackSignalSchema):
+    """
+    Receive user feedback (thumbs up/down) on an AI response.
+
+    The signal is forwarded to OutcomeTracker for the Plasticity learning loop.
+    Maps: positive → outcome_value 1.0, negative → outcome_value 0.0.
+
+    This endpoint is fire-and-forget from the UI perspective — it always
+    returns 200. Failures are logged but never surfaced to the user.
+    """
+    try:
+        outcome_value = 1.0 if signal.feedback == "positive" else 0.0
+
+        # Emit to bus for async processing by Plasticity consumers
+        try:
+            from core.synaptic_conclave.transport.streams import get_stream_bus
+
+            get_stream_bus().emit(
+                channel="plasticity.feedback.received",
+                payload={
+                    "message_id": signal.message_id,
+                    "trace_id": signal.trace_id,
+                    "feedback": signal.feedback,
+                    "outcome_value": outcome_value,
+                    "comment": signal.comment,
+                    "timestamp": signal.timestamp,
+                    "source": "ui.chat.feedback",
+                },
+                emitter="api_graph.feedback",
+                correlation_id=signal.trace_id,
+            )
+        except Exception as bus_err:
+            logger.warning(f"Feedback bus emit failed (non-fatal): {bus_err}")
+
+        logger.info(
+            f"[FEEDBACK] {signal.feedback} for message={signal.message_id} "
+            f"trace={signal.trace_id}"
+        )
+
+        return {
+            "status": "accepted",
+            "message_id": signal.message_id,
+            "feedback": signal.feedback,
+        }
+
+    except Exception as e:
+        logger.error(f"[FEEDBACK] Error: {e}", exc_info=True)
+        return {"status": "accepted", "message_id": signal.message_id}

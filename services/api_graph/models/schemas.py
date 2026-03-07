@@ -28,6 +28,15 @@ class GraphResponseSchema(BaseModel):
     execution_timestamp: str = Field(..., description="ISO timestamp of execution")
 
 
+class FeedbackSignalSchema(BaseModel):
+    """User feedback on an AI response — drives Plasticity learning."""
+    message_id: str = Field(..., description="Chat message ID being rated")
+    trace_id: Optional[str] = Field(None, description="Backend trace_id for causal linking")
+    feedback: str = Field(..., pattern="^(positive|negative)$", description="positive or negative")
+    comment: Optional[str] = Field(None, max_length=500, description="Optional correction/comment")
+    timestamp: str = Field(..., description="ISO 8601 timestamp")
+
+
 class SemanticClusterSchema(BaseModel):
     """Semantic cluster schema."""
     id: int

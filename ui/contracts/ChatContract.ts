@@ -308,3 +308,48 @@ export function isValidChatMessage(msg: any): msg is ChatMessage {
 export function isCompleteAIMessage(msg: ChatMessage): boolean {
   return msg.sender === 'ai' && msg.isComplete && !msg.error && !!msg.finalState
 }
+
+// ═══════════════════════════════════════════════════════════════
+// MESSAGE FEEDBACK CONTRACT (Plasticity Integration)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Feedback signal sent by the user on an AI message.
+ * 
+ * This is the UI-side contract for Plasticity integration.
+ * When the user taps thumbs-up or thumbs-down, a FeedbackSignal
+ * is sent to the backend, which records it as an Outcome in
+ * OutcomeTracker for the learning loop.
+ * 
+ * Domain-agnostic: no knowledge of what the message contains.
+ */
+export type FeedbackValue = 'positive' | 'negative'
+
+export interface FeedbackSignal {
+  /** The message ID being rated */
+  message_id: string
+
+  /** trace_id from the backend finalState (links to CognitiveEvent chain) */
+  trace_id?: string
+
+  /** User's verdict */
+  feedback: FeedbackValue
+
+  /** Optional free-text correction/comment */
+  comment?: string
+
+  /** Timestamp (ISO 8601) */
+  timestamp: string
+}
+
+/**
+ * Feedback submission contract.
+ * Implemented by useFeedback hook, consumed by ChatMessage component.
+ */
+export interface FeedbackContract {
+  /** Submit feedback for a message */
+  submit(signal: FeedbackSignal): Promise<void>
+
+  /** Get current feedback state for a message (if already rated) */
+  getFeedback(messageId: string): FeedbackValue | null
+}
