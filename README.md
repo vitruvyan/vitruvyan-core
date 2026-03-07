@@ -1,4 +1,4 @@
-# 🏛️ Vitruvyan Core
+# 🏛️ Vitruvyan OS
 
 **Domain-Agnostic Agentic AI Framework**
 
