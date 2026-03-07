@@ -170,6 +170,22 @@ bus_health_score = _safe_gauge(
 )
 
 # ============================================================================
+# DEAD LETTER METRICS (F3.3)
+# ============================================================================
+
+dead_letter_total = _safe_counter(
+    'dead_letter_total',
+    'Events that exceeded max delivery attempts',
+    ['stream', 'consumer_group']
+)
+
+dead_letter_last_timestamp = _safe_gauge(
+    'dead_letter_last_timestamp',
+    'Unix timestamp of last dead letter event',
+    ['stream', 'consumer_group']
+)
+
+# ============================================================================
 # WORKING MEMORY METRICS (Plasticity System)
 # ============================================================================
 
@@ -313,6 +329,15 @@ def record_working_memory(consumer: str, size_bytes: int, operation: str = None)
             consumer=consumer,
             operation=operation
         ).inc()
+
+
+def record_dead_letter(stream: str, consumer_group: str):
+    """Record a dead letter event (exceeded max delivery attempts)."""
+    import time
+    dead_letter_total.labels(stream=stream, consumer_group=consumer_group).inc()
+    dead_letter_last_timestamp.labels(
+        stream=stream, consumer_group=consumer_group
+    ).set(time.time())
 
 
 # ============================================================================

@@ -264,14 +264,14 @@ A+ = Option A con **estensioni event-driven selettive** dove il valore è dimost
 | F2.3 | Aumentare ExecutionGuard max_workers da 4 a 8 (misurare prima con benchmark) | 0.5 giorni | ✅ Done |
 | F2.4 | Aggiungere latency budget per nodo: middleware che logga tempo per nodo, genera percentile metrics | 0.5 giorni | ✅ Done |
 
-### Fase 3: Evoluzione Event-Driven Selettiva (opzionale, 3 giorni/uomo)
+### Fase 3: Evoluzione Selettiva (opzionale, post-benchmark, 3 giorni/uomo)
 
-| Fix | Dettaglio | Effort |
-|-----|----------|--------|
-| F3.1 | Implementare `orthodoxy.audit.completed` emission nel listener Orthodoxy | 1 giorno |
-| F3.2 | Implementare `vault.archive.completed` emission nel listener Vault | 0.5 giorni |
-| F3.3 | Aggiungere observability dashboard: channel throughput, consumer lag, dead letters | 1 giorno |
-| F3.4 | Valutare se orthodoxy_node dovrebbe attendere il verdict (solo se latenza < 200ms aggiuntivi) | 0.5 giorni (spike) |
+| Fix | Dettaglio | Dipende da | Effort |
+|-----|----------|-----------|--------|
+| F3.1 | Codex Hunters: definire event contract formale (unico Sacred Order senza) | F1.3 | 0.5 giorni |
+| F3.2 | `CognitiveEvent.causation_id` → implementare query causale ("tutti gli eventi generati dal graph run X") | F1.1 | 1 giorno |
+| F3.3 | Aggiungere observability dashboard: channel throughput, consumer lag, dead letters | F2.4 | 1 giorno |
+| F3.4 | Spike: latenza Orthodoxy sincrono (< 200ms? → fattibile come gate) | F1.2 | 0.5 giorni |
 
 ---
 
@@ -413,6 +413,305 @@ A+ = Option A con **estensioni event-driven selettive** dove il valore è dimost
 **Effort totale Fase 0-2**: 9 giorni/uomo  
 **Effort Fase 3 (opzionale)**: 3 giorni/uomo  
 **Decision checkpoint**: dopo Fase 1, rivalutare se Fase 3 serve.
+
+---
+
+## 11. Plasticity: Il Sistema Nervoso Adattivo
+
+> **Last updated**: Mar 07, 2026
+
+### 11.1 Cos'è Plasticity
+
+Plasticity (Phase 6, Jan 24, 2026) è il subsystem di **apprendimento autonomo governato** del Conclave. Non è machine learning classico: è un sistema di **adattamento parametrico bounded** che modifica il comportamento dei consumer in base ai risultati osservati.
+
+**5 garanzie strutturali:**
+- **Bounded**: Ogni parametro ha `(min, max, step_size)` — impossibile driftare fuori range
+- **Auditable**: Ogni adjustment emesso come `CognitiveEvent` → PostgreSQL
+- **Reversible**: Record `Adjustment` immutabile → rollback esatto
+- **Governable**: Consumer CRITICAL possono richiedere approvazione prima dell'applicazione
+- **Disableable**: Safety valve per-parametro
+
+### 11.2 Architettura a 4 Layer (Stato Attuale)
+
+```
+┌─────────────────────────────────────────────────────┐
+│ Layer 4: PlasticityObserver                         │
+│  Anomaly detection (oscillation, drift, stagnation) │
+│  Health: HEALTHY / DEGRADED / CRITICAL / STALLED    │
+│  → PostgreSQL (observer_log, anomaly_detections)    │
+├─────────────────────────────────────────────────────┤
+│ Layer 3: PlasticityLearningLoop                     │
+│  Periodic analysis (default: 24h cycle)             │
+│  success_rate < 0.4 → relax parameter              │
+│  success_rate > 0.9 → tighten parameter             │
+│  0.4-0.9 → no adjustment (dead zone)               │
+├─────────────────────────────────────────────────────┤
+│ Layer 2: PlasticityManager                          │
+│  Governed adjustments (7-step pipeline)             │
+│  validate → bounds check → snap step → record →    │
+│  apply/escalate → emit event                        │
+├─────────────────────────────────────────────────────┤
+│ Layer 1: OutcomeTracker                             │
+│  Decision→Outcome linking (PostgreSQL backend)      │
+│  record_outcome() → get_success_rate(7-day window)  │
+│  4 indexes: decision_event_id, consumer, param, ts  │
+└─────────────────────────────────────────────────────┘
+```
+
+**Metriche Prometheus**: 14 metriche già definite (`plasticity_adjustment_total`, `plasticity_success_rate`, `plasticity_rollback_total`, `plasticity_learning_cycle_duration_seconds`, etc.)
+
+**Database**: 4 tabelle (`plasticity_outcomes`, `plasticity_adjustments`, `plasticity_anomalies`, `plasticity_anomaly_actions`) in `001_mercator_schema.sql`.
+
+**Integrazione BaseConsumer**: Ogni consumer può fare `enable_plasticity()` — il framework è opt-in.
+
+### 11.3 Reality Check — Cosa Funziona e Cosa No
+
+| Aspetto | Stato | Dettaglio |
+|---------|-------|-----------|
+| Manager (bounds, governance) | ✅ Completo | 506 righe, pure Python + I/O adapter |
+| OutcomeTracker (PostgreSQL) | ✅ Completo | 280 righe, async interface |
+| LearningLoop (adattamento) | ✅ Completo | 330 righe, ciclo giornaliero |
+| Observer (anomaly detection) | ✅ Completo | 450 righe, 6 tipi di anomalia |
+| Metriche Prometheus | ✅ Completo | 14 metriche, 8 helper functions |
+| Schema DB | ✅ Completo | 4 tabelle col bootstrap |
+| **Attivazione in servizi** | ❌ Nessuno | Nessun consumer ha chiamato `enable_plasticity()` |
+| **Dashboard Grafana** | ❌ Non esiste | Solo query template, nessun JSON |
+| **Canali bus dedicati** | ❌ Non registrati | CognitiveEvent emessi ma non in `channel_registry.py` |
+| **Connessione a Orthodoxy** | ❌ Non esiste | Verdetti non alimentano OutcomeTracker |
+| **Connessione a LangGraph** | ❌ Non esiste | Il grafo non sa che Plasticity esiste |
+
+**Sintesi**: Il framework è production-ready (2,325 righe testate). L'integrazione con il resto del sistema è a **zero**.
+
+### 11.4 Il Gap Architetturale: Perché il Sistema Non Impara
+
+Il sogno del "sistema nervoso digitale che auto-apprende" richiede un **ciclo chiuso**:
+
+```
+INPUT → REASONING → OUTPUT → GOVERNANCE → FEEDBACK → LEARNING → BETTER REASONING
+  ↑                                                                        │
+  └────────────────────────────────────────────────────────────────────────┘
+```
+
+Oggi il ciclo è **aperto in tre punti**:
+
+```
+INPUT → REASONING → OUTPUT → GOVERNANCE(fire&forget) → [vuoto] → [vuoto] → REASONING(invariato)
+                                   │
+                                   ↓
+                            PostgreSQL (audit log)
+                                   │
+                                   ↓
+                               [nessuno legge]
+```
+
+**Gap A — Orthodoxy non è un gate** (analizzato in sezione 8.1):
+Il verdetto arriva dopo che la risposta è già partita. L'utente riceve output `heretical` e `blessed` in modo identico. Il tribunale è un logger, non un giudice.
+
+**Gap B — Nessuno produce Outcome**:
+`OutcomeTracker.record_outcome()` non viene mai chiamato da nessun servizio. Il framework di apprendimento non ha dati su cui apprendere. Nessun consumer sa se le sue decisioni sono state buone o cattive.
+
+**Gap C — Il loop non si chiude**:
+Anche se Orthodoxy producesse verdetti reali e OutcomeTracker li registrasse, LearningLoop gira ma non ha consumer registrati (`consumers: List = []`). I parametri non cambiano. Il sistema è statico.
+
+### 11.5 Roadmap: Dal Logger al Sistema Nervoso (4 Fasi)
+
+Ogni fase è un incremento funzionale autocontenuto. Ogni fase produce valore indipendente dalla successiva.
+
+---
+
+#### FASE A — Orthodoxy Gate (chiude Gap A)
+
+**Obiettivo**: Orthodoxy diventa un gate reale nel grafo. Il verdetto determina cosa arriva all'utente.
+
+**Cosa cambia**:
+- `orthodoxy_node.py` importa direttamente `Confessor`, `Inquisitor`, `VerdictEngine` (LIVELLO 1, pure Python)
+- Chiamata sincrona in-process (~7-17ms, non HTTP/bus)
+- `_apply_sacred_verdict()` (dead code L142-189) viene attivata e raffinata
+- Il fire-and-forget su bus resta per audit async (complementare, non sostitutivo)
+
+**Tre livelli di gate** (progressivi):
+1. **Gate informativo** (prima implementazione): verdetto calcolato, scritto in state come metadata, risposta mai bloccata. Logging completo. Permette di osservare cosa il tribunale decide su traffico reale senza rischio.
+2. **Gate soft**: verdetti `heretical` → disclaimer aggiunto alla risposta ("⚠️ Questa risposta contiene elementi non verificati"). `non_liquet` → ammissione di incertezza esplicita.
+3. **Gate hard**: verdetti `heretical` → risposta sostituita con messaggio di rifiuto. `purified` → versione corretta (via Penitent `CorrectionRequest`).
+
+**Effort**: ~1 giorno (Gate informativo) + 1 giorno (soft) + 2 giorni (hard)
+
+**Rischio**: Le regole attuali sono 21 regex (linter-grade). Con Gate hard + regole superficiali, si rischiano falsi positivi su traffico legittimo. Per questo il Gate informativo viene **prima**: permette di calibrare le regole su traffico reale prima di dare al tribunale potere di blocco.
+
+---
+
+#### FASE B — Orthodoxy come Produttore di Outcome (chiude Gap B)
+
+**Obiettivo**: Ogni verdetto Orthodoxy diventa un `Outcome` per il sistema di apprendimento.
+
+**Cosa cambia**:
+- Il Gate (Fase A) produce un `Verdict` con `status`, `confidence`, `findings`
+- Un adapter nel nodo traduce il verdetto in `Outcome`:
+  - `blessed` (confidence > 0.8) → `outcome_value = 1.0` (la risposta era buona)
+  - `purified` → `outcome_value = 0.7` (buona ma con correzioni)
+  - `heretical` → `outcome_value = 0.0` (la risposta era sbagliata/pericolosa)
+  - `non_liquet` → `outcome_value = 0.5` (incertezza — segnale neutro)
+- `OutcomeTracker.record_outcome()` viene chiamato dopo ogni verdetto
+- Il `decision_event_id` è il `trace_id` della richiesta → collegamento causale
+
+**Il segnale di feedback**:
+```python
+# In orthodoxy_node.py, dopo il gate:
+outcome = Outcome(
+    decision_event_id=state["trace_id"],
+    outcome_type=f"orthodoxy.{verdict.status}",
+    outcome_value=VERDICT_TO_SCORE[verdict.status],
+    consumer_name="langgraph_pipeline",
+    parameter_name="response_quality",
+)
+await outcome_tracker.record_outcome(outcome)
+```
+
+**Perché questa fase è critica**: Senza Outcome, Plasticity è un motore senza benzina. Con Outcome da Orthodoxy, ogni singola richiesta produce un segnale di qualità. È il primo "neurone sensoriale" del sistema.
+
+**Effort**: ~1 giorno
+**Prerequisito**: Fase A (Gate informativo minimo)
+
+---
+
+#### FASE C — Attivazione Plasticity su Consumer Target (chiude Gap C)
+
+**Obiettivo**: Almeno un consumer reale usa Plasticity per adattare i propri parametri in base agli Outcome.
+
+**Consumer candidato**: `orthodoxy_node` stesso, come primo consumer plastico.
+
+**Parametri adattabili** (esempio):
+| Parametro | Default | Min | Max | Step | Effetto |
+|-----------|---------|-----|-----|------|---------|
+| `heretical_threshold` | 50.0 | 30.0 | 70.0 | 5.0 | Soglia score sotto cui → heretical |
+| `purified_threshold` | 80.0 | 60.0 | 95.0 | 5.0 | Soglia score sotto cui → purified |
+| `suspicious_pattern_severity` | "medium" | — | — | — | Severità dei pattern match |
+
+**Cosa cambia**:
+- Le soglie del `VerdictEngine` non sono più hardcoded — diventano `ParameterBounds`
+- `PlasticityManager.propose_adjustment()` viene chiamato dal LearningLoop
+- Se troppi output vengono marcati `heretical` su traffico legittimo (falsi positivi) → il loop rilassa la soglia automaticamente
+- Se troppi output passano `blessed` ma hanno problemi (falsi negativi rilevati da feedback utente) → il loop stringe la soglia
+
+**Il ciclo è chiuso**:
+```
+Richiesta → LangGraph → [output] → Orthodoxy Gate → Verdict
+     ↓                                                  │
+  [risposta]                                     OutcomeTracker
+                                                        │
+                                                  success_rate
+                                                        │
+                                                  LearningLoop (24h)
+                                                        │
+                                              PlasticityManager
+                                                        │
+                                              adjust thresholds
+                                                        │
+                                              VerdictEngine (next cycle)
+                                                        ↓
+                                              migliore calibrazione
+```
+
+**Effort**: ~2 giorni
+**Prerequisito**: Fase B (OutcomeTracker alimentato)
+
+---
+
+#### FASE D — Espansione e Feedback Utente (sistema nervoso completo)
+
+**Obiettivo**: Più consumer diventano plastici. Il feedback utente (thumbs up/down, correzioni) diventa un segnale di Outcome esplicito.
+
+**Espansioni previste**:
+1. **User feedback → Outcome**: endpoint `POST /feedback` che registra la valutazione dell'utente come `Outcome` con `outcome_type="user_feedback"`. Questo segnale è più autorevole del verdetto automatico di Orthodoxy.
+2. **Intent detection plastico**: Il nodo `intent_detection_node` adatta le sue soglie di confidence in base ai feedback (se l'intent viene spesso corretto dall'utente = confidence troppo alta = stringere).
+3. **Pattern Weavers plastico**: Le soglie di similarity/matching del Pattern Weavers si calibrano in base alla qualità degli output prodotti.
+4. **Canali bus dedicati**: Registrazione in `channel_registry.py` dei canali `plasticity.adjustment.proposed`, `plasticity.adjustment.applied`, `plasticity.anomaly.detected`.
+5. **Dashboard Grafana**: Pannelli per adjustment rate, success rate, learning cycle duration, parameter trajectories, anomaly alerts.
+
+**Il sistema nervoso completo**:
+```
+                        ┌──────────────────────┐
+                        │     USER FEEDBACK     │
+                        │   (thumbs, edits)     │
+                        └──────────┬───────────┘
+                                   │ explicit signal
+                                   ▼
+INPUT → LangGraph → OUTPUT → Orthodoxy Gate → Verdict
+                                   │               │
+                                   │          OutcomeTracker
+                                   │               │
+                              [response]      success rates
+                                              (7-day window)
+                                                   │
+                                            LearningLoop (24h)
+                                                   │
+                                         ┌─────────┼─────────┐
+                                         ▼         ▼         ▼
+                                    VerdictEngine  Intent   Pattern
+                                    thresholds    confidence  match
+                                         │         │         │
+                                    PlasticityObserver
+                                    (oscillation, drift,
+                                     stagnation detection)
+                                         │
+                                    Alerts if CRITICAL
+```
+
+**Effort**: ~5 giorni (incrementale, può essere distribuito)
+**Prerequisito**: Fase C funzionante su almeno 1 consumer
+
+---
+
+### 11.6 Tabella Decisionale: Dove Siamo e Dove Andiamo
+
+| Fase | Cosa ottieni | Effort | Prerequisiti | Rischio |
+|------|-------------|--------|--------------|---------|
+| **A** (Gate) | Orthodoxy giudica davvero | 2-4gg | Nessuno | Basso (Gate informativo = zero impatto utente) |
+| **B** (Outcome) | Ogni richiesta produce un segnale di qualità | 1gg | Fase A | Basso (solo scrittura DB) |
+| **C** (Plasticity attiva) | Il sistema calibra le proprie soglie | 2gg | Fase B | Medio (learning loop va osservato) |
+| **D** (Espansione) | Sistema nervoso completo multi-consumer | 5gg | Fase C | Medio-alto (multi-consumer = più surface area) |
+
+**Ritorno di valore per fase**:
+- Dopo **A**: il sistema ha un tribunale funzionante (il claim "epistemic governance" diventa reale)
+- Dopo **B**: il sistema osserva la qualità dei propri output (il claim "self-awareness" diventa reale)
+- Dopo **C**: il sistema migliora autonomamente (il claim "self-learning" diventa reale)
+- Dopo **D**: il sistema ha un sistema nervoso digitale completo (il claim "cognitive OS" diventa reale)
+
+### 11.7 Le 21 Regole Non Bastano — Il Problema del Contenuto
+
+Il framework Orthodoxy è eccellente. Il contenuto (le regole) è un linter.
+
+Le 21 regole attuali (`rule.py` DEFAULT_RULESET v1.0) coprono:
+- 9 security (hardcoded secrets, SQL injection, command injection)
+- 6 performance (infinite loops, file leaks)
+- 3 quality (TODO markers, bare except)
+- 3 hallucination (cifre irrealistiche, false certezze)
+
+**Cosa manca per governance epistemica reale**:
+1. **Coerenza logica**: la risposta si contraddice? (richiede LLM-as-judge)
+2. **Supporto evidenziale**: la risposta cita fonti? Sono plausibili? (richiede RAG cross-check)
+3. **Hallucination sofisticata**: fatti plausibili ma falsi (richiede LLM-as-judge + knowledge base)
+4. **Uncertainty detection**: la risposta esprime certezza dove dovrebbe esprimere dubbio? (richiede LLM-as-judge)
+5. **Compliance semantica**: non solo pattern regex, ma comprensione del significato (richiede LLM)
+
+**Soluzione naturale**: aggiungere un `LLMClassifier` accanto al `PatternClassifier`:
+```python
+class LLMClassifier:
+    """Semantic classification via LLM-as-judge. Fallback to PatternClassifier if LLM unavailable."""
+    
+    async def classify(self, text: str, ruleset: RuleSet) -> tuple[Finding, ...]:
+        prompt = build_judge_prompt(text, ruleset)       # structured prompt
+        verdict_json = await llm_agent.complete_json(prompt)  # LLM call
+        return parse_findings(verdict_json)              # → Finding objects
+```
+
+Il `PatternClassifier` diventa il fallback deterministico (sempre disponibile, ~1ms).
+Il `LLMClassifier` diventa il giudice primario (semantico, ~200-500ms, ma solo per Gate soft/hard).
+
+Questo rispetta il Golden Rule "LLM-first, never heuristics-first" con graceful degradation.
+
+**Effort**: ~3 giorni (prompt engineering + integration + testing)
+**Quando**: dopo Fase A (Gate informativo), prima di Fase B. Permette di calibrare le regole LLM su traffico reale osservandone i verdetti senza conseguenze.
 
 ---
 

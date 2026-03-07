@@ -246,13 +246,7 @@ _MEMORY_CHANNELS = {
 # =============================================================================
 
 _CODEX_CHANNELS = {
-    "codex.discovery.mapped": EventContract(
-        name="codex.discovery.mapped",
-        producer="codex_hunters",
-        consumers=("orthodoxy_wardens", "vault_keepers"),
-        description="New data source discovered and mapped",
-        direction="event",
-    ),
+    # --- Graph → Codex Hunters (expedition lifecycle) ---
     "codex.expedition.started": EventContract(
         name="codex.expedition.started",
         producer="langgraph_codex_node",
@@ -273,6 +267,73 @@ _CODEX_CHANNELS = {
         consumers=("conclave",),
         description="Expedition failed",
         direction="response",
+    ),
+    # --- Codex Hunters outbound (discovery) ---
+    "codex.discovery.mapped": EventContract(
+        name="codex.discovery.mapped",
+        producer="codex_hunters",
+        consumers=("orthodoxy_wardens", "vault_keepers"),
+        description="New data source discovered and mapped",
+        direction="event",
+    ),
+    # --- Codex Hunters request channels (consumed by listener, dispatched to API) ---
+    "codex.data.refresh.requested": EventContract(
+        name="codex.data.refresh.requested",
+        producer="api",
+        consumers=("codex_hunters",),
+        description="Request data refresh expedition",
+        direction="request",
+    ),
+    "codex.technical.momentum.requested": EventContract(
+        name="codex.technical.momentum.requested",
+        producer="api",
+        consumers=("codex_hunters",),
+        description="Request momentum backfill expedition",
+        direction="request",
+    ),
+    "codex.technical.trend.requested": EventContract(
+        name="codex.technical.trend.requested",
+        producer="api",
+        consumers=("codex_hunters",),
+        description="Request trend backfill expedition",
+        direction="request",
+    ),
+    "codex.technical.volatility.requested": EventContract(
+        name="codex.technical.volatility.requested",
+        producer="api",
+        consumers=("codex_hunters",),
+        description="Request volatility backfill expedition",
+        direction="request",
+    ),
+    "codex.schema.validation.requested": EventContract(
+        name="codex.schema.validation.requested",
+        producer="api",
+        consumers=("codex_hunters",),
+        description="Request schema validation expedition",
+        direction="request",
+    ),
+    "codex.fundamentals.refresh.requested": EventContract(
+        name="codex.fundamentals.refresh.requested",
+        producer="api",
+        consumers=("codex_hunters",),
+        description="Request fundamentals refresh expedition",
+        direction="request",
+    ),
+    # --- Oculus Prime → Codex Hunters (evidence ingestion) ---
+    "oculus_prime.evidence.created": EventContract(
+        name="oculus_prime.evidence.created",
+        producer="oculus_prime",
+        consumers=("codex_hunters",),
+        description="Evidence pack created by Oculus Prime (canonical v2 channel)",
+        direction="event",
+    ),
+    "intake.evidence.created": EventContract(
+        name="intake.evidence.created",
+        producer="oculus_prime",
+        consumers=("codex_hunters",),
+        description="Evidence pack created (legacy v1 alias, migration-dependent)",
+        direction="event",
+        status="deprecated",
     ),
 }
 

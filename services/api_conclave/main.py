@@ -23,9 +23,10 @@ from core.middleware.auth import AuthMiddleware
 
 sys.path.append("/app")
 
-from api_conclave.api.routes import router, set_bus_adapter
+from api_conclave.api.routes import router, set_bus_adapter, set_persistence
 from api_conclave.config import settings
 from api_conclave.adapters.bus_adapter import ConclaveBusAdapter
+from api_conclave.adapters.persistence import PersistenceAdapter
 
 logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL))
 logger = logging.getLogger("Conclave")
@@ -36,6 +37,8 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing Synaptic Conclave (observatory mode)")
     bus_adapter = ConclaveBusAdapter()
     set_bus_adapter(bus_adapter)
+    persistence = PersistenceAdapter()
+    set_persistence(persistence)
 
     # Emit awakening event
     if bus_adapter.is_connected:

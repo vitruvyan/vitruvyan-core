@@ -19,6 +19,13 @@ import httpx
 
 from core.synaptic_conclave.events.event_envelope import TransportEvent
 from core.synaptic_conclave.transport.streams import StreamBus
+from core.governance.codex_hunters.events.codex_events import (
+    CODEX_REQUEST_CHANNELS as _CODEX_CHANNELS,
+    CHANNEL_TO_EXPEDITION_TYPE,
+    OCULUS_EVIDENCE_CREATED,
+    OCULUS_EVIDENCE_CREATED_LEGACY,
+    EXPEDITION_COMPLETED,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,17 +33,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger("CodexHuntersStreamsListener")
 
-CODEX_REQUEST_CHANNELS = [
-    "codex.data.refresh.requested",
-    "codex.technical.momentum.requested",
-    "codex.technical.trend.requested",
-    "codex.technical.volatility.requested",
-    "codex.schema.validation.requested",
-    "codex.fundamentals.refresh.requested",
-]
+CODEX_REQUEST_CHANNELS = list(_CODEX_CHANNELS)
 
-OCULUS_CANONICAL_CHANNEL = "oculus_prime.evidence.created"
-OCULUS_LEGACY_ALIAS_CHANNEL = "intake.evidence.created"
+OCULUS_CANONICAL_CHANNEL = OCULUS_EVIDENCE_CREATED
+OCULUS_LEGACY_ALIAS_CHANNEL = OCULUS_EVIDENCE_CREATED_LEGACY
 
 
 def _is_true(value: str) -> bool:
@@ -52,15 +52,7 @@ def _channel_from_stream(stream: str) -> str:
 
 
 def _expedition_type_for_channel(channel: str) -> str:
-    mapping = {
-        "codex.data.refresh.requested": "data_refresh",
-        "codex.technical.momentum.requested": "momentum_backfill",
-        "codex.technical.trend.requested": "trend_backfill",
-        "codex.technical.volatility.requested": "volatility_backfill",
-        "codex.schema.validation.requested": "schema_validation",
-        "codex.fundamentals.refresh.requested": "fundamentals_refresh",
-    }
-    return mapping.get(channel, "unknown")
+    return CHANNEL_TO_EXPEDITION_TYPE.get(channel, "unknown")
 
 
 def _resolve_oculus_channels() -> List[str]:

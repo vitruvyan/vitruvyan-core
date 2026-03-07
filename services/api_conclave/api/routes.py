@@ -403,3 +403,105 @@ async def health_check_detailed():
 async def metrics():
     """Prometheus metrics endpoint."""
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
+# ═════════════════════════════════════════════════════════════
+# CAUSAL QUERIES (F3.2)
+# ═════════════════════════════════════════════════════════════
+
+_persistence = None
+
+
+def set_persistence(adapter):
+    """Called by main.py startup to inject PersistenceAdapter."""
+    global _persistence
+    _persistence = adapter
+
+
+def _get_persistence():
+    if _persistence is None:
+        raise HTTPException(status_code=503, detail="Persistence not initialized")
+    return _persistence
+
+
+@router.get("/causal/trace/{trace_id}", tags=["causal"])
+async def causal_trace(trace_id: str):
+    """
+    Return all events in a causal tree by trace_id.
+
+    Response includes flat list of events and a reconstructed tree structure.
+    """
+    from core.synaptic_conclave.events.causal_query import (
+        build_causal_tree,
+        get_roots,
+    )
+
+    persistence = _get_persistence()
+    rows = persistence.fetch_trace(trace_id)
+    if not rows:
+        raise HTTPException(status_code=404, detail=f"No events for trace {trace_id}")
+
+    tree = build_causal_tree(rows)
+    roots = get_roots(tree)
+
+    def _serialize_node(node):
+        return {
+            "event_id": node.event_id,
+            "event_type": node.event_type,
+            "source": node.source,
+            "channel": node.channel,
+            "causation_id": node.causation_id,
+            "created_at": node.created_at,
+            "children": [_serialize_node(c) for c in node.children],
+        }
+
+    return {
+        "trace_id": trace_id,
+        "event_count": len(rows),
+        "roots": [_serialize_node(r) for r in roots],
+        "events": rows,
+    }
+
+
+@router.get("/causal/chain/{event_id}", tags=["causal"])
+async def causal_chain_endpoint(event_id: str):
+    """
+    Return the ancestor chain from root to event_id.
+    """
+    from core.synaptic_conclave.events.causal_query import (
+        build_causal_tree,
+        causal_chain,
+    )
+
+    persistence = _get_persistence()
+    # Need the trace_id first — look up the event
+    children_rows = persistence.fetch_children(event_id)
+    # Also try fetching by the event itself
+    # We need a single-event lookup — use a direct query
+    all_rows = persistence.pg.fetch(
+        "SELECT trace_id FROM causal_event_log WHERE event_id = %s",
+        (event_id,),
+    )
+    if not all_rows:
+        raise HTTPException(status_code=404, detail=f"Event {event_id} not found")
+
+    trace_id = all_rows[0]["trace_id"]
+    rows = persistence.fetch_trace(trace_id)
+    tree = build_causal_tree(rows)
+    chain = causal_chain(tree, event_id)
+
+    return {
+        "event_id": event_id,
+        "trace_id": trace_id,
+        "chain_length": len(chain),
+        "chain": [
+            {
+                "event_id": n.event_id,
+                "event_type": n.event_type,
+                "source": n.source,
+                "channel": n.channel,
+                "created_at": n.created_at,
+            }
+            for n in chain
+        ],
+    }

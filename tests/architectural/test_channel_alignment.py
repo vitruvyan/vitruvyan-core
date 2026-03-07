@@ -61,6 +61,15 @@ SERVICE_SACRED_CHANNELS = {
         "memory.sync.requested",
         "memory.write.completed",
     ],
+    "codex_hunters": [
+        "codex.data.refresh.requested",
+        "codex.technical.momentum.requested",
+        "codex.technical.trend.requested",
+        "codex.technical.volatility.requested",
+        "codex.schema.validation.requested",
+        "codex.fundamentals.refresh.requested",
+        "oculus_prime.evidence.created",
+    ],
 }
 
 
@@ -157,3 +166,9 @@ class TestServiceListenerAlignment:
         assert "orthodoxy.audit.requested" in orthodoxy_channels
         assert "langgraph.response.completed" in orthodoxy_channels
         assert "memory.write.completed" in orthodoxy_channels
+
+    def test_codex_consumer_query(self):
+        codex_channels = get_channels_for_consumer("codex_hunters")
+        assert "codex.data.refresh.requested" in codex_channels
+        assert "codex.technical.momentum.requested" in codex_channels
+        assert "oculus_prime.evidence.created" in codex_channels

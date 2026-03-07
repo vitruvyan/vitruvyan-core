@@ -17,6 +17,7 @@ from api_orthodoxy_wardens.models.schemas import (
     ConfessionRequest,
     OrthodoxyStatusResponse
 )
+from pydantic import BaseModel
 
 # Import workflow orchestration
 from api_orthodoxy_wardens.adapters.workflows import (
@@ -479,3 +480,49 @@ async def detect_sacred_harmony_conflicts():
     except Exception as e:
         logger.error(f"💀 Sacred harmony detection failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# =============================================================================
+# SYNCHRONOUS VERDICT ENDPOINT (F3.4)
+# =============================================================================
+
+class SyncVerdictRequest(BaseModel):
+    """Lightweight request for synchronous verdict."""
+    trigger_type: str = "api_call"
+    text: Optional[str] = ""
+    code: Optional[str] = ""
+    scope: Optional[str] = "general"
+
+
+@router.post("/verdict/sync")
+async def sync_verdict(request: SyncVerdictRequest):
+    """
+    Synchronous verdict — quick validation pipeline.
+
+    Uses handle_quick_validation() (Confessor → Inquisitor → Verdict only).
+    No correction plan, no chronicle, no bus emission.
+    Designed for latency-sensitive callers needing an immediate answer.
+
+    Returns verdict dict with timing metadata.
+    """
+    import time
+
+    adapter = getattr(main_module, "bus_adapter", None)
+    if adapter is None:
+        raise HTTPException(status_code=503, detail="OrthodoxyBusAdapter not initialized")
+
+    event = {
+        "trigger_type": request.trigger_type,
+        "text": request.text or "",
+        "code": request.code or "",
+        "scope": request.scope or "general",
+        "source": "sync_verdict_api",
+    }
+
+    t0 = time.perf_counter()
+    result = adapter.handle_quick_validation(event)
+    elapsed_ms = (time.perf_counter() - t0) * 1000
+
+    result["latency_ms"] = round(elapsed_ms, 2)
+    result["pipeline"] = "quick_validation"
+    return result
