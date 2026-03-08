@@ -22,13 +22,7 @@ from typing import Any, Optional, Tuple
 from .base import SacredRole
 from ..domain.confession import Confession
 from ..domain.finding import Finding
-from ..governance import (
-    PatternClassifier,
-    ASTClassifier,
-    RuleSet,
-    DEFAULT_RULESET,
-    classify_text,
-)
+from ..governance import ASTClassifier, RuleSet, DEFAULT_RULESET
 from ..governance.llm_classifier import LLMClassifier
 
 

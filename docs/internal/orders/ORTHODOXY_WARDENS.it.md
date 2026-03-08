@@ -61,9 +61,10 @@ Come in `vitruvyan_core/core/governance/orthodoxy_wardens/consumers/README.md`:
 - Funzioni:
   - applica regole e classificatori per produrre `Finding`
   - combina:
-    - `PatternClassifier` (testo)
+    - `LLMClassifier` (testo — primario, analisi semantica LLM-first)
     - `ASTClassifier` (codice; opzionale, warning su `SyntaxError`)
   - produce `InquisitorResult` (immutabile)
+  - Nota: `PatternClassifier` (regex) è DEPRECATO — sostituito da `LLMClassifier`
 
 **Dettagli implementativi**:
 

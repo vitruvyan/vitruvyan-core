@@ -70,14 +70,14 @@ def main():
         source="api_source",
         normalized_data={
             "symbol": "ENTITY_A",
-            "name": "Apple Inc.",
+            "name": "Acme Corp.",
             "sector": "Technology",
             "price": 150.25,
-            "market_cap": 2500000000000,
-            "pe_ratio": 28.5,
-            "dividend_yield": 0.82,
+            "revenue": 2500000000,
+            "growth_rate": 28.5,
+            "efficiency_score": 0.82,
             "country": "USA",
-            "exchange": "NASDAQ"
+            "exchange": "PRIMARY"
         },
         quality_score=0.95,
         validation_errors=[],

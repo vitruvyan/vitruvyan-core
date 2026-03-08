@@ -64,9 +64,10 @@ As documented in `vitruvyan_core/core/governance/orthodoxy_wardens/consumers/REA
 - Purpose:
   - applies governance rules to produce `Finding` objects
   - combines:
-    - **PatternClassifier** for text
+    - **LLMClassifier** for text (primary, LLM-first semantic analysis)
     - **ASTClassifier** for code (optional; emits a warning finding on `SyntaxError`)
   - produces `InquisitorResult` (frozen)
+  - Note: PatternClassifier (regex) is DEPRECATED — LLMClassifier replaced it
 
 **How it works (important details)**:
 

@@ -281,11 +281,11 @@ class CognitiveBridgeModule(GemmaServiceBase):
         
         # Detect topics
         topic_keywords = {
-            "trading": ["trading", "buy", "sell", "position"],
-            "analysis": ["analysis", "chart", "technical", "fundamental"],
-            "market": ["market", "entity", "index", "sector"],
-            "risk": ["risk", "volatility", "hedge"],
-            "news": ["news", "earnings", "announcement"]
+            "operations": ["action", "execute", "process", "task"],
+            "analysis": ["analysis", "pattern", "trend", "research"],
+            "monitoring": ["monitor", "entity", "status", "sector"],
+            "risk": ["risk", "anomaly", "mitigation"],
+            "updates": ["news", "update", "announcement"]
         }
         
         for topic, keywords in topic_keywords.items():
@@ -349,8 +349,8 @@ class CognitiveBridgeModule(GemmaServiceBase):
                 # Route based on user preferences
                 if complexity_level == "expert" and content_analysis["intent"] == "sentiment":
                     target = "sentiment_fusion"
-                elif top_interests and "trading" in top_interests:
-                    target = "embedding_engine"  # Trading-focused embeddings
+                elif top_interests and "operations" in top_interests:
+                    target = "embedding_engine"  # Operations-focused embeddings
                 else:
                     target = content_analysis.get("suggested_module", "embedding_engine")
                 

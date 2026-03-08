@@ -165,24 +165,24 @@ class TestComprehensionResult:
             ontology=OntologyPayload(
                 gate=DomainGate(
                     verdict=GateVerdict.IN_DOMAIN,
-                    domain="finance",
+                    domain="generic",
                     confidence=0.95,
                 ),
                 entities=[
-                    OntologyEntity(raw="AAPL", canonical="Apple Inc.", entity_type="ticker"),
+                    OntologyEntity(raw="ENTITY_A", canonical="Acme Corp.", entity_type="entity"),
                 ],
                 intent_hint="analysis",
-                topics=["equity"],
-                raw_query="analyze AAPL",
+                topics=["research"],
+                raw_query="analyze ENTITY_A",
             ),
             semantics=SemanticPayload(
                 sentiment=SentimentPayload(label="neutral", score=0.0),
                 emotion=EmotionPayload(primary="curious"),
             ),
-            raw_query="analyze AAPL",
+            raw_query="analyze ENTITY_A",
             language="en",
         )
-        assert cr.ontology.gate.domain == "finance"
+        assert cr.ontology.gate.domain == "generic"
         assert len(cr.ontology.entities) == 1
         assert cr.semantics.emotion.primary == "curious"
 
