@@ -49,15 +49,15 @@ class ProfileProcessorModule(GemmaServiceBase):
         self.topic_extraction_cache = {}
         self.personalization_models = {}
         
-        # Topic categories for financial domain
+        # Topic categories for content classification
         self.topic_categories = {
-            "trading": ["trading", "buy", "sell", "position", "strategy"],
-            "analysis": ["analysis", "chart", "technical", "fundamental", "research"],
-            "market": ["market", "index", "entity", "sector", "performance"],
-            "risk": ["risk", "volatility", "hedge", "diversification", "collection"],
-            "news": ["news", "earnings", "announcement", "report", "update"],
-            "crypto": ["crypto", "bitcoin", "blockchain", "defi", "token"],
-            "macro": ["economy", "inflation", "rates", "policy", "gdp"]
+            "operations": ["action", "execute", "process", "task", "strategy"],
+            "analysis": ["analysis", "pattern", "trend", "research", "insight"],
+            "monitoring": ["monitor", "status", "entity", "sector", "performance"],
+            "risk": ["risk", "anomaly", "mitigation", "assessment", "compliance"],
+            "updates": ["news", "update", "announcement", "report", "change"],
+            "discovery": ["discover", "explore", "search", "map", "identify"],
+            "context": ["context", "environment", "state", "policy", "configuration"]
         }
     
     async def _initialize_service(self):

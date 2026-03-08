@@ -10,6 +10,7 @@
 import { Circle } from 'lucide-react'
 import { VitruvyanResponseRenderer } from '../response/VitruvyanResponseRenderer'
 import { ThinkingSteps } from './ThinkingSteps'
+import { MessageFeedback } from './MessageFeedback'
 
 const MESSAGE_STYLES = {
   user: 'bg-gray-100 border border-gray-200 text-gray-900',
@@ -23,7 +24,9 @@ export function ChatMessage({
   onFollowUpClick,
   onEntityClick,
   assistantName = 'Vitruvyan',
-  extensions = {}
+  extensions = {},
+  currentFeedback = null,
+  onFeedback,
 }) {
   const { sender, text, uiPayload, finalState, isComplete, error, isStreaming, thinkingSteps } = message
 
@@ -87,6 +90,15 @@ export function ChatMessage({
           <ThinkingSteps steps={thinkingSteps || []} isStreaming={isStreaming} />
         ) : (
           <p className="text-sm">{text}</p>
+        )}
+
+        {/* Feedback (thumbs up/down) — only for completed AI messages */}
+        {onFeedback && (
+          <MessageFeedback
+            message={message}
+            currentFeedback={currentFeedback}
+            onFeedback={onFeedback}
+          />
         )}
       </div>
     </div>

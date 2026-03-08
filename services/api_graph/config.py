@@ -53,5 +53,9 @@ class Settings:
     # Phase 1: Minimal LangGraph wrapper (4 nodes)
     ENABLE_MINIMAL_GRAPH: bool = os.getenv("ENABLE_MINIMAL_GRAPH", "false").lower() == "true"
 
+    # Plasticity: enable/disable the learning loop
+    PLASTICITY_ENABLED: bool = os.getenv("PLASTICITY_ENABLED", "true").lower() == "true"
+    PLASTICITY_INTERVAL_HOURS: int = int(os.getenv("PLASTICITY_INTERVAL_HOURS", "24"))
+
 
 settings = Settings()

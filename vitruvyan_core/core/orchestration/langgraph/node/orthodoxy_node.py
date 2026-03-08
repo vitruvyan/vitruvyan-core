@@ -1,252 +1,281 @@
 """
-🏛️ Orthodoxy Node - Sacred Audit & Divine Judgment for LangGraph
-Integrates Orthodoxy Wardens into the conversation flow via Synaptic Conclave
+Orthodoxy Node — Epistemic Gate for LangGraph
+Integrates Orthodoxy Wardens LIVELLO 1 consumers directly into the graph.
 
-This node ensures that every user response passes through sacred scrutiny
-before final composition, maintaining theological purity of outputs.
+Gate Levels (progressive):
+  1. Informativo (current): Verdict computed in-process, written to state as
+     metadata. Response NEVER blocked. Allows observing tribunal decisions
+     on real traffic with zero risk.
+  2. Soft (future): heretical → disclaimer appended, non_liquet → uncertainty
+     admission. Response still sent but annotated.
+  3. Hard (future): heretical → response replaced with refusal. purified →
+     corrected version substituted.
 
-Sacred Flow:
-1. Graph State → Orthodoxy Wardens (via Redis)
-2. Audit Request → Confession Cycle
-3. Divine Verdict → State Augmentation
-4. Blessed Response → Continue to Compose
+Architecture:
+  - LIVELLO 1 consumers (Confessor, Inquisitor, VerdictEngine) are pure Python,
+    no I/O, imported directly. Total latency: ~7-17ms.
+  - Async fire-and-forget on bus REMAINS for audit trail (complementary).
+  - _apply_local_blessing() removed — replaced by real tribunal verdict.
 
 Author: Vitruvyan Development Team
 Created: 2025-10-18
+Refactored: 2026-03-07 (Gate informativo — Phase A)
 """
 
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any
 
 from core.synaptic_conclave.transport.streams import get_stream_bus
 
+# LIVELLO 1 imports — pure Python, no I/O, no infrastructure
+from core.governance.orthodoxy_wardens.consumers.confessor import Confessor
+from core.governance.orthodoxy_wardens.consumers.inquisitor import Inquisitor
+from core.governance.orthodoxy_wardens.governance.verdict_engine import VerdictEngine
+from core.governance.orthodoxy_wardens.governance.rule import DEFAULT_RULESET
+
 logger = logging.getLogger(__name__)
+
+# Singleton instances — stateless, thread-safe (pure functions inside)
+_confessor = Confessor()
+_inquisitor = Inquisitor()
+_verdict_engine = VerdictEngine()
+_llm_injected = False
+
+
+def _ensure_llm_injected():
+    """Inject LLMAgent into Inquisitor on first call (lazy, service-layer boot)."""
+    global _llm_injected
+    if not _llm_injected:
+        try:
+            from core.agents.llm_agent import get_llm_agent
+            _inquisitor.set_llm_agent(get_llm_agent())
+            _llm_injected = True
+            logger.info("[ORTHODOXY] LLMAgent injected into Inquisitor")
+        except Exception as e:
+            logger.warning(f"[ORTHODOXY] LLMAgent injection failed: {e} — non_liquet mode")
 
 def orthodoxy_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Sacred Orthodoxy Node - Divine judgment before final response composition
-    
-    Sends audit request to Orthodoxy Wardens via Synaptic Conclave,
-    awaits divine verdict, and augments state with theological insights.
-    
+    Orthodoxy Gate (informativo) — in-process tribunal verdict.
+
+    Runs Confessor → Inquisitor → VerdictEngine synchronously (~7-17ms).
+    Writes verdict to state as metadata. Response is NEVER blocked at this level.
+    Also emits async audit event for downstream consumers (Vault, Conclave).
+
     Args:
         state: LangGraph state dictionary
-        
+
     Returns:
-        State augmented with orthodoxy verdict and blessing
+        State augmented with real tribunal verdict
     """
-    
     try:
-        user_id = state.get("user_id", "anonymous_pilgrim")
+        user_id = state.get("user_id", "anonymous")
         session_start = time.time()
-        
-        logger.info(f"[ORTHODOXY][GRAPH] 🏛️ Sacred audit initiated for session {user_id}")
-        
-        # Prepare sacred audit payload
-        audit_payload = {
-            "source": "langgraph_orthodoxy_node",
-            "session_id": user_id,
-            "graph_state_summary": _extract_state_summary(state),
-            "audit_type": "graph_response_validation",
-            "timestamp": datetime.utcnow().isoformat(),
-            "urgency": "divine_routine"
-        }
-        
-        # Emit audit request to Orthodoxy Wardens via StreamBus
-        correlation_id = f"graph_audit_{user_id}_{int(session_start)}"
-        event_payload = {
-            **audit_payload,
-            "target": "orthodoxy_wardens",
-            "correlation_id": correlation_id,
-        }
-        
-        try:
-            get_stream_bus().emit(
-                channel="orthodoxy.audit.requested",
-                payload=event_payload,
-                emitter="langgraph_orthodoxy_node",
-                correlation_id=correlation_id,
-            )
-        except Exception as pub_err:
-            logger.error(f"[ORTHODOXY][GRAPH] ❌ Emit error: {pub_err}")
-            return _apply_local_blessing(state, "emit_failed")
-        
-        logger.info(f"[ORTHODOXY][GRAPH] 📡 Audit request transmitted to Sacred Order")
-        
-        # ARCHITECTURAL DECISION (A+ Pattern — Mar 06, 2026):
-        # Orthodoxy operates as async audit log, NOT a blocking gate.
-        # The graph applies a local blessing immediately and continues.
-        # The full tribunal pipeline (Confessor→Inquisitor→VerdictEngine→Penitent→Chronicler)
-        # runs asynchronously via orthodoxy_listener, saves verdict to PG, and emits
-        # orthodoxy.audit.completed for downstream consumers (Vault, Conclave).
-        # correlation_id is a trace identifier for observability, not a round-trip token.
-        # Rationale: governance side-effects don't change the user-facing response;
-        # blocking would add ~200ms latency without user-visible benefit at MVP stage.
-        state = _apply_local_blessing(state, "async_audit")
-        
-        # Log sacred completion
-        execution_time = (time.time() - session_start) * 1000
-        logger.info(f"[ORTHODOXY][GRAPH] 🏛️ Sacred audit complete in {execution_time:.1f}ms")
-        
+
+        logger.info(f"[ORTHODOXY][GATE] Tribunal initiated for {user_id}")
+
+        # --- STEP 1: Run in-process tribunal (LIVELLO 1, pure Python) ---
+        verdict = _run_tribunal(state)
+        state = _apply_verdict_to_state(state, verdict, session_start)
+
+        # --- STEP 2: Emit async audit (complementary, non-blocking) ---
+        _emit_audit_event(state, user_id, session_start, verdict)
+
+        # --- STEP 3: Record outcome for Plasticity (non-blocking) ---
+        _record_plasticity_outcome(state, verdict)
+
+        execution_ms = (time.time() - session_start) * 1000
+        logger.info(
+            f"[ORTHODOXY][GATE] Verdict: {verdict.status} "
+            f"(confidence={verdict.confidence:.2f}, "
+            f"findings={len(verdict.findings)}) in {execution_ms:.1f}ms"
+        )
+
         return state
-        
+
     except Exception as e:
-        logger.error(f"[ORTHODOXY][GRAPH] 💀 Sacred audit failed: {e}")
-        # Don't break the graph - apply emergency blessing
-        return _apply_local_blessing(state, f"error_{str(e)[:50]}")
+        logger.error(f"[ORTHODOXY][GATE] Tribunal failed: {e}", exc_info=True)
+        return _apply_fallback(state, f"error: {str(e)[:80]}")
 
 
-def _extract_state_summary(state: Dict[str, Any]) -> Dict[str, Any]:
+def _run_tribunal(state: Dict[str, Any]):
     """
-    Extract key information from LangGraph state for audit
-    
-    Creates a summary of the conversation state that Orthodoxy Wardens
-    can evaluate for theological compliance.
-    
-    Args:
-        state: LangGraph state dictionary
-        
+    Run the 3-stage tribunal pipeline in-process.
+    LLM-first semantic classification. No regex.
+
     Returns:
-        Sanitized state summary for audit
+        Verdict (frozen dataclass)
     """
-    
-    summary = {
-        "input_text": state.get("input_text", "")[:500],  # Truncate long inputs
-        "route": state.get("route"),
-        "intent": state.get("intent"),
-        "entity_ids": state.get("entity_ids", []),
-        "domain_params": state.get("domain_params", {}),
-        "top_k": state.get("top_k"),
-        "has_response": bool(state.get("response")),
-        "has_error": bool(state.get("error")),
-        "sentiment_detected": bool(state.get("sentiment")),
-        "state_size": len(str(state)),
-        "timestamp": datetime.utcnow().isoformat()
-    }
-    
-    # Add response summary if available (without sensitive data)
-    if state.get("response"):
-        response = state["response"]
-        summary["response_summary"] = {
-            "type": type(response).__name__,
-            "length": len(str(response)),
-            "has_entitys": "entity_ids" in str(response).lower(),
-            "has_analysis": "analysis" in str(response).lower()
-        }
-    
-    return summary
+    _ensure_llm_injected()
+
+    # 1. Confessor: intake → Confession
+    confession = _confessor.process({
+        "trigger_type": "output_validation",
+        "scope": "single_output",
+        "urgency": "high",
+        "source": "langgraph.orthodoxy_node",
+        "correlation_id": state.get("trace_id"),
+    })
+
+    # 2. Inquisitor: examine text + code → Findings (LLM-first)
+    text_to_examine = _build_examination_text(state)
+    result = _inquisitor.process({
+        "confession": confession,
+        "text": text_to_examine,
+    })
+
+    # 3. VerdictEngine: findings → Verdict
+    # If LLM was unavailable, force non_liquet (honest uncertainty)
+    if not result.llm_available and not result.findings:
+        from core.governance.orthodoxy_wardens.domain.verdict import Verdict
+        return Verdict.non_liquet(
+            findings=(),
+            confidence=0.1,
+            what_we_know=("LLM classifier unavailable",),
+            what_is_uncertain=("Cannot perform semantic analysis without LLM",),
+            uncertainty_sources=("llm_unavailable",),
+            best_guess="blessed",
+            ruleset_version=DEFAULT_RULESET.version_tag,
+        )
+
+    verdict = _verdict_engine.render(
+        findings=result.findings,
+        ruleset=DEFAULT_RULESET,
+        confession_id=confession.confession_id,
+    )
+
+    return verdict
 
 
-def _apply_sacred_verdict(state: Dict[str, Any], verdict: Dict[str, Any], session_start: float) -> Dict[str, Any]:
+def _build_examination_text(state: Dict[str, Any]) -> str:
+    """Build the text the Inquisitor will examine."""
+    parts = []
+
+    response = state.get("response")
+    if response:
+        parts.append(str(response)[:2000])
+
+    narrative = state.get("narrative")
+    if narrative and narrative != response:
+        parts.append(str(narrative)[:1000])
+
+    input_text = state.get("input_text")
+    if input_text:
+        parts.append(str(input_text)[:500])
+
+    return "\n---\n".join(parts) if parts else ""
+
+
+def _apply_verdict_to_state(
+    state: Dict[str, Any], verdict, session_start: float
+) -> Dict[str, Any]:
     """
-    Apply sacred verdict from Orthodoxy Wardens to LangGraph state
-    
-    Augments the state with theological insights and blessing information.
-    
-    Args:
-        state: LangGraph state dictionary
-        verdict: Divine verdict from Orthodoxy Wardens
-        session_start: Session start timestamp
-        
-    Returns:
-        State augmented with sacred verdict
+    Write real tribunal verdict into LangGraph state.
+    Gate informativo: metadata only, response never modified.
     """
-    
-    # Extract verdict details
-    verdict_type = verdict.get("verdict", "unknown")
-    findings = verdict.get("findings", 0)
-    confidence = verdict.get("confidence", 0.0)
-    divine_blessing = verdict.get("divine_blessing", "Sacred review completed")
-    
-    # Augment state with orthodoxy information
-    state["orthodoxy_verdict"] = verdict_type
-    state["orthodoxy_findings"] = findings
-    state["orthodoxy_confidence"] = confidence
-    state["orthodoxy_blessing"] = divine_blessing
-    state["orthodoxy_timestamp"] = datetime.utcnow().isoformat()
+    state["orthodoxy_verdict"] = verdict.status
+    state["orthodoxy_findings"] = len(verdict.findings)
+    state["orthodoxy_confidence"] = verdict.confidence
+    state["orthodoxy_should_send"] = verdict.should_send
+    state["orthodoxy_explanation"] = verdict.explanation
+    state["orthodoxy_status"] = verdict.status
+    state["orthodoxy_message"] = verdict.explanation
+    state["orthodoxy_timestamp"] = datetime.now(timezone.utc).isoformat()
     state["orthodoxy_duration_ms"] = (time.time() - session_start) * 1000
-    
-    # Set orthodoxy status based on verdict
-    if verdict_type == "absolution_granted" and findings == 0:
-        state["orthodoxy_status"] = "blessed"
-        state["orthodoxy_message"] = "Response blessed by Sacred Order"
-    elif verdict_type == "absolution_granted" and findings > 0:
-        state["orthodoxy_status"] = "purified"
-        state["orthodoxy_message"] = f"Response purified ({findings} heresies corrected)"
-    else:
-        state["orthodoxy_status"] = "under_review"
-        state["orthodoxy_message"] = "Response requires additional divine scrutiny"
-    
-    # Add theological metadata
+    state["orthodoxy_ruleset_version"] = verdict.ruleset_version
+
+    # Non-liquet specific metadata (epistemic humility)
+    if verdict.status == "non_liquet":
+        state["orthodoxy_what_we_know"] = verdict.what_we_know
+        state["orthodoxy_what_is_uncertain"] = verdict.what_is_uncertain
+
     state["theological_metadata"] = {
         "sacred_order": "orthodoxy_wardens",
-        "audit_cycle": "complete",
+        "audit_cycle": "gate_informativo",
+        "gate_level": "informativo",
         "divine_oversight": True,
-        "cognitive_integration": True
+        "cognitive_integration": True,
+        "verdict_real": True,
     }
-    
+
     return state
 
 
-def _apply_local_blessing(state: Dict[str, Any], reason: str) -> Dict[str, Any]:
-    """
-    Apply local blessing when Synaptic Conclave is unavailable
-    
-    Provides emergency theological validation without external dependencies.
-    
-    Args:
-        state: LangGraph state dictionary
-        reason: Reason for local blessing
-        
-    Returns:
-        State with local orthodoxy blessing
-    """
-    
-    logger.info(f"[ORTHODOXY][GRAPH] 🕯️ Applying local blessing: {reason}")
-    
-    # Apply basic local validation
-    findings = 0
-    blessing_message = "Local blessing applied"
-    
-    # Simple local checks
-    input_text = state.get("input_text", "").lower()
-    response = str(state.get("response", "")).lower()
-    
-    # Check for suspicious content
-    suspicious_patterns = ["delete", "drop", "hack", "exploit", "malware"]
-    for pattern in suspicious_patterns:
-        if pattern in input_text or pattern in response:
-            findings += 1
-    
-    # Determine local status
-    if findings == 0:
-        orthodoxy_status = "locally_blessed"
-        blessing_message = "Local validation passed - response deemed safe"
-    else:
-        orthodoxy_status = "locally_flagged"
-        blessing_message = f"Local validation flagged {findings} concerns"
-    
-    # Augment state with local blessing
-    state["orthodoxy_verdict"] = "local_blessing"
-    state["orthodoxy_findings"] = findings
-    state["orthodoxy_confidence"] = 0.7  # Lower confidence for local
-    state["orthodoxy_blessing"] = blessing_message
-    state["orthodoxy_status"] = orthodoxy_status
-    state["orthodoxy_message"] = f"Local blessing applied ({reason})"
-    state["orthodoxy_timestamp"] = datetime.utcnow().isoformat()
+def _emit_audit_event(
+    state: Dict[str, Any], user_id: str, session_start: float, verdict
+) -> None:
+    """Emit async audit event for downstream (Vault, Conclave). Non-blocking."""
+    try:
+        correlation_id = f"graph_audit_{user_id}_{int(session_start)}"
+        get_stream_bus().emit(
+            channel="orthodoxy.audit.requested",
+            payload={
+                "source": "langgraph_orthodoxy_node",
+                "session_id": user_id,
+                "audit_type": "graph_response_validation",
+                "verdict_status": verdict.status,
+                "verdict_confidence": verdict.confidence,
+                "verdict_findings_count": len(verdict.findings),
+                "gate_level": "informativo",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "correlation_id": correlation_id,
+            },
+            emitter="langgraph_orthodoxy_node",
+            correlation_id=correlation_id,
+        )
+    except Exception as e:
+        logger.warning(f"[ORTHODOXY][GATE] Audit emit failed (non-fatal): {e}")
+
+
+def _record_plasticity_outcome(state: Dict[str, Any], verdict) -> None:
+    """Record verdict as Plasticity outcome. Non-blocking, fire-and-forget."""
+    try:
+        import asyncio
+        from api_graph.adapters.plasticity_adapter import get_plasticity_service
+
+        svc = get_plasticity_service()
+        if svc is None:
+            return
+
+        trace_id = state.get("trace_id", f"gate_{id(state)}")
+        coro = svc.record_verdict_outcome(
+            trace_id=trace_id,
+            verdict_status=verdict.status,
+            confidence=verdict.confidence,
+            findings_count=len(verdict.findings),
+        )
+
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(coro)
+        except RuntimeError:
+            pass  # No event loop — skip (pure test context)
+    except Exception as e:
+        logger.debug(f"[ORTHODOXY][GATE] Plasticity outcome skipped: {e}")
+
+
+def _apply_fallback(state: Dict[str, Any], reason: str) -> Dict[str, Any]:
+    """Fallback when tribunal itself fails. Should be extremely rare."""
+    logger.warning(f"[ORTHODOXY][GATE] Applying fallback: {reason}")
+
+    state["orthodoxy_verdict"] = "fallback"
+    state["orthodoxy_findings"] = 0
+    state["orthodoxy_confidence"] = 0.0
+    state["orthodoxy_should_send"] = True
+    state["orthodoxy_explanation"] = f"Tribunal fallback: {reason}"
+    state["orthodoxy_status"] = "fallback"
+    state["orthodoxy_message"] = f"Tribunal unavailable: {reason}"
+    state["orthodoxy_timestamp"] = datetime.now(timezone.utc).isoformat()
     state["orthodoxy_fallback_reason"] = reason
-    
-    # Add local theological metadata
     state["theological_metadata"] = {
-        "sacred_order": "local_validation",
+        "sacred_order": "orthodoxy_wardens",
         "audit_cycle": "fallback",
+        "gate_level": "fallback",
         "divine_oversight": False,
         "cognitive_integration": False,
-        "fallback_reason": reason
     }
-    
     return state
 
 

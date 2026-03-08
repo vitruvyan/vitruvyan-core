@@ -58,10 +58,10 @@ def main():
         "source": "primary",
         "raw_data": {
             "symbol": "ENTITY_A",
-            "name": "Apple Inc.",
+            "name": "Acme Corp.",
             "sector": "Technology",
             "price": 150.25,
-            "market_cap": 2500000000000
+            "revenue": 2500000000
         },
         "metadata": {
             "request_id": "req_12345",

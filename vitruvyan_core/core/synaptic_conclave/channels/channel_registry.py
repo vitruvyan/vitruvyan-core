@@ -471,6 +471,27 @@ _CONCLAVE_CHANNELS = {
     ),
 }
 
+# =============================================================================
+# PLASTICITY — Learning & Feedback
+# =============================================================================
+
+_PLASTICITY_CHANNELS = {
+    "plasticity.feedback.received": EventContract(
+        name="plasticity.feedback.received",
+        producer="api_graph",
+        consumers=("plasticity",),
+        description="User feedback signal (thumbs up/down) for outcome tracking",
+        direction="event",
+    ),
+    "plasticity.outcome.recorded": EventContract(
+        name="plasticity.outcome.recorded",
+        producer="plasticity",
+        consumers=("orthodoxy_wardens",),
+        description="Outcome recorded by OutcomeTracker, ready for learning cycle",
+        direction="event",
+    ),
+}
+
 
 # =============================================================================
 # UNIFIED REGISTRY
@@ -486,6 +507,7 @@ CHANNEL_REGISTRY: Dict[str, EventContract] = {
     **_ORCHESTRATION_CHANNELS,
     **_INTEGRATION_CHANNELS,
     **_CONCLAVE_CHANNELS,
+    **_PLASTICITY_CHANNELS,
 }
 
 # Frozen set of all valid channel names for fast O(1) validation

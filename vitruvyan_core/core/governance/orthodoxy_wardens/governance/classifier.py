@@ -1,17 +1,13 @@
 """
-Orthodoxy Wardens — Pattern Classifier
+Orthodoxy Wardens — Classifiers
 
-The Classifier is the workhorse of the governance engine.
-It takes TEXT and a RULESET, matches patterns, and produces FINDINGS.
-It decides NOTHING — it merely OBSERVES. The VerdictEngine decides.
+Contains:
+  - ASTClassifier: Structural analysis of Python code via AST (ACTIVE)
+  - PatternClassifier: Regex-based text classification (DEPRECATED Mar 8, 2026)
 
-Pure function: (text, ruleset) → tuple[Finding, ...]
-No I/O. No network. No database. No side effects.
-
-Extracted from:
-  - code_analyzer.py: _check_compliance, _check_security, _check_performance,
-                       _check_code_quality, _check_ast_structure
-  - inquisitor_agent.py: _validate_with_patterns
+The PatternClassifier is DEPRECATED. Use LLMClassifier (llm_classifier.py) for
+all text classification. PatternClassifier is retained only for reference and
+backward compatibility — it is no longer wired in the active pipeline.
 
 Sacred Order: Truth & Governance
 Layer: Foundational (governance)
@@ -27,22 +23,20 @@ from ..domain.finding import Finding
 
 
 # =============================================================================
-# PatternClassifier — Regex-based classification
+# PatternClassifier — DEPRECATED (Mar 8, 2026)
+# Replaced by LLMClassifier (llm_classifier.py) — LLM-first, no regex.
+# Retained for backward compatibility. Do NOT use in new code.
 # =============================================================================
 
 class PatternClassifier:
     """
-    Classifies text against a RuleSet, producing Findings.
+    DEPRECATED — Use LLMClassifier instead.
 
-    This is the ONLY class that compiles and matches regex patterns.
-    It is stateless — the same (text, ruleset) always produces the same Findings.
+    Regex-based text classification. Replaced by LLM-first semantic analysis
+    (llm_classifier.py) as of Mar 8, 2026. This class is retained for backward
+    compatibility and reference only. The Inquisitor no longer uses it.
 
-    Usage:
-        from ..governance.rule import DEFAULT_RULESET
-
-        classifier = PatternClassifier()
-        findings = classifier.classify("override safety check immediately", DEFAULT_RULESET)
-        # → tuple of Finding objects for each matched rule
+    See: governance/llm_classifier.py (LLMClassifier)
     """
 
     def classify(self, text: str, ruleset) -> tuple:
@@ -286,19 +280,12 @@ class ASTClassifier:
 
 
 # =============================================================================
-# Convenience function — classify text with default ruleset
+# DEPRECATED convenience function — uses PatternClassifier (regex)
 # =============================================================================
 
 def classify_text(text: str, ruleset=None) -> tuple:
     """
-    One-shot convenience function.
-
-    Args:
-        text: Content to analyze
-        ruleset: Optional RuleSet (uses DEFAULT_RULESET if None)
-
-    Returns:
-        Tuple of Finding objects
+    DEPRECATED — Uses PatternClassifier (regex). Prefer LLMClassifier.
     """
     from .rule import DEFAULT_RULESET
 

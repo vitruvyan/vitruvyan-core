@@ -2,7 +2,7 @@
 
 > Decision engine core — rules, classifiers, verdict rendering, workflow declarations.
 
-## Status: ✅ FASE 2 COMPLETE
+## Status: ✅ COMPLETE (Mar 8, 2026 — LLM-first migration)
 
 This directory contains the **pure governance logic** — the brain of the tribunal.
 
@@ -11,7 +11,8 @@ This directory contains the **pure governance logic** — the brain of the tribu
 | File | Lines | Description |
 |------|-------|-------------|
 | `rule.py` | ~270 | `Rule` + `RuleSet` — frozen, versioned compliance rules (35 default) |
-| `classifier.py` | ~240 | `PatternClassifier` (regex) + `ASTClassifier` (Python AST) |
+| `llm_classifier.py` | ~200 | `LLMClassifier` — LLM-first semantic analysis (**PRIMARY**) |
+| `classifier.py` | ~240 | `ASTClassifier` (Python AST) + `PatternClassifier` (regex, **DEPRECATED**) |
 | `verdict_engine.py` | ~250 | `VerdictEngine` — Findings → Verdict + LogDecision |
 | `workflow.py` | ~210 | Declarative workflow definitions (frozen data, NOT LangGraph) |
 
@@ -19,11 +20,12 @@ This directory contains the **pure governance logic** — the brain of the tribu
 
 ```python
 from vitruvyan_core.core.governance.orthodoxy_wardens.governance import (
-    DEFAULT_RULESET, classify_text, VerdictEngine,
+    DEFAULT_RULESET, LLMClassifier, VerdictEngine,
 )
 
-# 1. Classify text against rules
-findings = classify_text("buy now AAPL guaranteed returns")
+# 1. Classify text with LLM (semantic analysis)
+llm = LLMClassifier()
+findings, llm_available = llm.classify("guaranteed returns, act now!")
 
 # 2. Render verdict
 engine = VerdictEngine()
@@ -41,12 +43,13 @@ print(log_decision.severity)    # "critical"
 
 ### Architectural Constraints
 
+- **LLM-first**: LLMClassifier is the primary engine; PatternClassifier is DEPRECATED
 - **Pure functions**: No I/O, no network, no database, no side effects
 - **Rules are DATA**: Loaded from config, frozen after creation, versioned with SHA-256
 - **Classifier observes**: `(text, ruleset) → tuple[Finding, ...]` — no decisions
 - **VerdictEngine judges**: `(findings, ruleset) → Verdict` — no execution
 - **Workflows declare**: Frozen pipeline shape — service layer (LIVELLO 2) executes
-- **Finance rules in config**: MiFID/FINRA regex → YAML config, NOT hardcoded in core
+- **Domain rules in config**: Compliance regex → YAML config, NOT hardcoded in core
 
 ### Default RuleSet (v1.0)
 

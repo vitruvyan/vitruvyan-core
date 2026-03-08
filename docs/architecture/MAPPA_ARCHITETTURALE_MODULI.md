@@ -403,7 +403,7 @@
 | Agente | Ruolo | LLM? |
 |--------|-------|------|
 | `Confessor` | **Ufficiale d'ingresso** — riceve eventi/richieste raw, li valida, produce una `Confession` strutturata. NON giudica | No |
-| `Inquisitor` | **Esaminatore** — prende `Confession` + testo/codice, applica `PatternClassifier` + `ASTClassifier`, produce tuple `Finding`. Raccoglie evidenze, NON giudica | No |
+| `Inquisitor` | **Esaminatore** — prende `Confession` + testo/codice, applica `LLMClassifier` (primario) + `ASTClassifier`, produce tuple `Finding`. Raccoglie evidenze, NON giudica. PatternClassifier DEPRECATO | Sì (via LLMClassifier) |
 | `Penitent` | **Consigliere correzione** — riceve un `Verdict` eretico/purificato, decide quali correzioni richiedere. Produce `CorrectionPlan` frozen. NON esegue | No |
 | `Chronicler` | **Stratega logging** — riceve un `Verdict`, decide come loggarlo e archiviarlo (destinazione, retention, priorità). Produce `ChronicleDecision` | No |
 

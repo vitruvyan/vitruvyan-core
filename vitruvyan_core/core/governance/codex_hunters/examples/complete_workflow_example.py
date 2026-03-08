@@ -136,11 +136,11 @@ def main():
             "entity": discovered_entity,
             "validation_rules": {
                 "required_fields": ["symbol", "name", "price", "sector"],
-                "numeric_fields": ["price", "market_cap", "pe_ratio", "dividend_yield"],
+                "numeric_fields": ["price", "revenue", "growth_rate", "efficiency_score"],
                 "price_range": {"min": 0, "max": 10000},
                 "text_fields": ["name", "description"],
                 "enum_fields": {"sector": ["Technology", "Healthcare", "Finance", "Energy"]},
-                "name_format": "company_name"
+                "name_format": "entity_name"
             }
         }
 

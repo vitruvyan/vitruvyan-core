@@ -9,6 +9,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useChat } from './hooks'
+import { useFeedback } from './hooks/useFeedback'
 import { ChatMessages } from './ChatMessages'
 import { ChatInput } from './ChatInput'
 
@@ -45,6 +46,8 @@ export default function Chat({
     sendMessage,
     setSelectedEntities,
   } = useChat({ apiEndpoint, userId, thinkingSteps, adaptResponse })
+
+  const { submitFeedback, getFeedback } = useFeedback(apiEndpoint)
 
   // Auto-submit initial query on mount
   const hasSubmittedInitial = useRef(false)
@@ -101,6 +104,8 @@ export default function Chat({
             onEntityClick={handleEntityClick}
             assistantName={assistantName}
             extensions={extensions}
+            getFeedback={getFeedback}
+            onFeedback={submitFeedback}
           />
         </div>
       </div>

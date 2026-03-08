@@ -38,8 +38,8 @@ MEMORY_EVENTS = [
             "event_type": "coherence.analysis",
             "entity_id": lambda: f"entity_{random.randint(1000, 9999)}",
             "context": lambda: random.choice([
-                "market_analysis", "portfolio_review", "risk_assessment",
-                "trend_detection", "sentiment_analysis", "news_digest"
+                "pattern_analysis", "collection_review", "risk_assessment",
+                "trend_detection", "signal_analysis", "update_digest"
             ]),
             "vector_count": lambda: random.randint(10, 500),
         }

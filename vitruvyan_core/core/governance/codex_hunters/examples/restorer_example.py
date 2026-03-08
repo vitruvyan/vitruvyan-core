@@ -54,12 +54,12 @@ def main():
         source="api_source",
         raw_data={
             "symbol": "ENTITY_A",
-            "name": "Apple Inc.",
+            "name": "Acme Corp.",
             "sector": "Technology",
             "price": 150.25,
-            "market_cap": 2500000000000,
-            "pe_ratio": 28.5,
-            "dividend_yield": 0.82
+            "revenue": 2500000000,
+            "growth_rate": 28.5,
+            "efficiency_score": 0.82
         },
         metadata={
             "request_id": "req_12345",
@@ -75,9 +75,9 @@ def main():
         "entity": discovered_entity,
         "validation_rules": {
             "required_fields": ["symbol", "name", "price"],
-            "numeric_fields": ["price", "market_cap", "pe_ratio"],
+            "numeric_fields": ["price", "revenue", "growth_rate"],
             "price_range": {"min": 0, "max": 10000},
-            "name_format": "company_name"
+            "name_format": "entity_name"
         }
     }
 

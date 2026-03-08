@@ -18,9 +18,11 @@ from ..models.schemas import (
     GraphResponseSchema,
     HealthResponseSchema,
     AuditHealthSchema,
+    FeedbackSignalSchema,
 )
 from ..adapters.graph_adapter import GraphOrchestrationAdapter
 from ..adapters.persistence import GraphPersistence
+from ..adapters.plasticity_adapter import get_plasticity_service
 from ..monitoring.health import metrics_endpoint
 
 logger = logging.getLogger(__name__)
@@ -428,3 +430,127 @@ async def search_entities(
         }
 
     return persistence.search_entities(query=q, limit=10)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Feedback endpoint — Plasticity integration
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.post("/api/feedback")
+async def submit_feedback(signal: FeedbackSignalSchema):
+    """
+    Receive user feedback (thumbs up/down) on an AI response.
+
+    The signal is forwarded to OutcomeTracker for the Plasticity learning loop.
+    Maps: positive → outcome_value 1.0, negative → outcome_value 0.0.
+
+    This endpoint is fire-and-forget from the UI perspective — it always
+    returns 200. Failures are logged but never surfaced to the user.
+    """
+    try:
+        outcome_value = 1.0 if signal.feedback == "positive" else 0.0
+
+        # Record outcome directly via PlasticityService (if available)
+        svc = get_plasticity_service()
+        if svc:
+            try:
+                await svc.record_feedback_outcome(
+                    message_id=signal.message_id,
+                    trace_id=signal.trace_id,
+                    feedback=signal.feedback,
+                    outcome_value=outcome_value,
+                    comment=signal.comment,
+                )
+            except Exception as plas_err:
+                logger.warning(f"Plasticity outcome failed (non-fatal): {plas_err}")
+
+        # Emit to bus for async processing by other Plasticity consumers
+        try:
+            from core.synaptic_conclave.transport.streams import get_stream_bus
+
+            get_stream_bus().emit(
+                channel="plasticity.feedback.received",
+                payload={
+                    "message_id": signal.message_id,
+                    "trace_id": signal.trace_id,
+                    "feedback": signal.feedback,
+                    "outcome_value": outcome_value,
+                    "comment": signal.comment,
+                    "timestamp": signal.timestamp,
+                    "source": "ui.chat.feedback",
+                },
+                emitter="api_graph.feedback",
+                correlation_id=signal.trace_id,
+            )
+        except Exception as bus_err:
+            logger.warning(f"Feedback bus emit failed (non-fatal): {bus_err}")
+
+        logger.info(
+            f"[FEEDBACK] {signal.feedback} for message={signal.message_id} "
+            f"trace={signal.trace_id}"
+        )
+
+        return {
+            "status": "accepted",
+            "message_id": signal.message_id,
+            "feedback": signal.feedback,
+        }
+
+    except Exception as e:
+        logger.error(f"[FEEDBACK] Error: {e}", exc_info=True)
+        return {"status": "accepted", "message_id": signal.message_id}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Plasticity endpoints — Learning system observability
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/api/plasticity/stats")
+async def plasticity_stats():
+    """Return PlasticityManager statistics and current thresholds."""
+    svc = get_plasticity_service()
+    if not svc:
+        return {"status": "unavailable", "reason": "Plasticity not initialized"}
+    return svc.get_statistics()
+
+
+@router.get("/api/plasticity/health")
+async def plasticity_health():
+    """Run Observer analysis and return learning health report."""
+    svc = get_plasticity_service()
+    if not svc:
+        return {"status": "unavailable", "reason": "Plasticity not initialized"}
+    return await svc.get_health()
+
+
+@router.post("/api/plasticity/cycle")
+async def plasticity_run_cycle():
+    """Manually trigger one learning cycle (admin/testing)."""
+    svc = get_plasticity_service()
+    if not svc:
+        return {"status": "unavailable", "reason": "Plasticity not initialized"}
+    result = await svc.run_learning_cycle()
+    return {"status": "completed", "result": result}
+
+
+@router.get("/api/plasticity/success-rate")
+async def plasticity_success_rate(parameter: str = "heretical_threshold"):
+    """Get current success rate for a parameter."""
+    svc = get_plasticity_service()
+    if not svc:
+        return {"status": "unavailable", "reason": "Plasticity not initialized"}
+    rate = await svc.get_success_rate(parameter)
+    return {"parameter": parameter, "success_rate": rate}
+
+
+@router.post("/api/plasticity/shadow")
+async def plasticity_shadow_evaluate(
+    parameter: str = "heretical_threshold",
+    delta: float = 2.5,
+):
+    """Shadow-evaluate a proposed parameter adjustment without applying it."""
+    svc = get_plasticity_service()
+    if not svc:
+        return {"status": "unavailable", "reason": "Plasticity not initialized"}
+    result = await svc.shadow_evaluate(parameter, delta)
+    return result

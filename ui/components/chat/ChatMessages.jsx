@@ -14,7 +14,9 @@ export function ChatMessages({
   onFollowUpClick,
   onEntityClick,
   assistantName = 'Vitruvyan',
-  extensions = {}
+  extensions = {},
+  getFeedback,
+  onFeedback,
 }) {
   const containerRef = useRef(null)
 
@@ -41,6 +43,8 @@ export function ChatMessages({
           onEntityClick={onEntityClick}
           assistantName={assistantName}
           extensions={extensions}
+          currentFeedback={getFeedback ? getFeedback(msg.id) : null}
+          onFeedback={onFeedback}
         />
       ))}
     </div>
