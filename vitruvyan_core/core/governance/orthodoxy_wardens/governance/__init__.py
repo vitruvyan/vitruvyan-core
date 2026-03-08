@@ -23,6 +23,7 @@ Usage:
 
 from .rule import Rule, RuleSet, DEFAULT_RULESET, DEFAULT_RULES
 from .classifier import PatternClassifier, ASTClassifier, classify_text
+from .llm_classifier import LLMClassifier
 from .verdict_engine import VerdictEngine, ScoringWeights, DEFAULT_WEIGHTS
 from .workflow import (
     Workflow,
@@ -41,6 +42,7 @@ __all__ = [
     # Classification
     "PatternClassifier",
     "ASTClassifier",
+    "LLMClassifier",
     "classify_text",
     # Verdict
     "VerdictEngine",

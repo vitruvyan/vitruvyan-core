@@ -47,7 +47,13 @@ async def lifespan(app: FastAPI):
     if settings.PLASTICITY_ENABLED:
         try:
             from core.orchestration.langgraph.node.orthodoxy_node import _verdict_engine
-            plasticity_svc = init_plasticity_service(_verdict_engine)
+            codex_inspector = None
+            try:
+                from core.governance.codex_hunters.consumers.inspector import InspectorConsumer
+                codex_inspector = InspectorConsumer()
+            except Exception:
+                logger.info("Codex Hunters InspectorConsumer not available for plasticity")
+            plasticity_svc = init_plasticity_service(_verdict_engine, codex_inspector)
             await plasticity_svc.start()
             logger.info("Plasticity LearningLoop + Observer started")
         except Exception as e:

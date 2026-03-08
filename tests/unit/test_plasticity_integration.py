@@ -290,6 +290,14 @@ class TestOrthodoxyNodePlasticityIntegration:
     def test_node_runs_without_plasticity(self, mock_bus):
         """orthodoxy_node must work even when PlasticityService is not initialized."""
         mock_bus.return_value = MagicMock()
+
+        # Inject mock LLM so Inquisitor doesn't fall into non_liquet
+        from core.orchestration.langgraph.node import orthodoxy_node as _mod
+        mock_llm = MagicMock()
+        mock_llm.complete_json.return_value = {"findings": []}
+        _mod._inquisitor.set_llm_agent(mock_llm)
+        _mod._llm_injected = True
+
         from core.orchestration.langgraph.node.orthodoxy_node import orthodoxy_node
 
         state = {"response": "Clean output", "user_id": "test"}

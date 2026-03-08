@@ -171,8 +171,8 @@ FULL_AUDIT_WORKFLOW = Workflow(
             name="classify",
             role="classifier",
             description=(
-                "Run PatternClassifier (regex) + ASTClassifier (if code) "
-                "against active RuleSet. Produces tuple[Finding, ...]"
+                "Run LLMClassifier (semantic) + ASTClassifier (if code). "
+                "Produces tuple[Finding, ...]"
             ),
             next_step="judge",
         ),
@@ -249,7 +249,7 @@ QUICK_VALIDATION_WORKFLOW = Workflow(
         WorkflowStep(
             name="classify",
             role="classifier",
-            description="Run PatternClassifier against compliance + hallucination rules",
+            description="Run LLMClassifier against compliance + hallucination rules",
             next_step="judge",
         ),
         WorkflowStep(

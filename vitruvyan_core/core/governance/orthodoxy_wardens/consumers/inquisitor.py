@@ -3,7 +3,7 @@ Orthodoxy Wardens — Inquisitor (Sacred Role)
 
 The Inquisitor is the EXAMINER of the tribunal.
 It takes a Confession and the text/code to examine, applies the governance
-engine (PatternClassifier + ASTClassifier), and produces Findings.
+engine (LLMClassifier + ASTClassifier), and produces Findings.
 
 The Inquisitor does NOT render a verdict — it gathers evidence.
 
@@ -29,6 +29,7 @@ from ..governance import (
     DEFAULT_RULESET,
     classify_text,
 )
+from ..governance.llm_classifier import LLMClassifier
 
 
 class InquisitorResult:
@@ -44,6 +45,7 @@ class InquisitorResult:
         "_rules_applied",
         "_text_examined",
         "_code_examined",
+        "_llm_available",
     )
 
     def __init__(
@@ -53,12 +55,14 @@ class InquisitorResult:
         rules_applied: int,
         text_examined: bool,
         code_examined: bool,
+        llm_available: bool = True,
     ):
         object.__setattr__(self, "_confession_id", confession_id)
         object.__setattr__(self, "_findings", findings)
         object.__setattr__(self, "_rules_applied", rules_applied)
         object.__setattr__(self, "_text_examined", text_examined)
         object.__setattr__(self, "_code_examined", code_examined)
+        object.__setattr__(self, "_llm_available", llm_available)
 
     def __setattr__(self, name, value):
         raise AttributeError("InquisitorResult is frozen")
@@ -82,6 +86,10 @@ class InquisitorResult:
     @property
     def code_examined(self) -> bool:
         return self._code_examined
+
+    @property
+    def llm_available(self) -> bool:
+        return self._llm_available
 
     @property
     def has_violations(self) -> bool:
@@ -121,7 +129,7 @@ class Inquisitor(SacredRole):
     Examiner — applies governance rules to produce Findings.
 
     The Inquisitor receives a Confession plus the content to examine,
-    and applies PatternClassifier (for text) and ASTClassifier (for code)
+    and applies LLMClassifier (for text) and ASTClassifier (for code)
     to produce a tuple of Findings.
 
     Configuration:
@@ -145,7 +153,7 @@ class Inquisitor(SacredRole):
     ):
         self._ruleset = ruleset or DEFAULT_RULESET
         self._examine_code = examine_code
-        self._text_classifier = PatternClassifier()
+        self._llm_classifier = LLMClassifier()
         self._ast_classifier = ASTClassifier() if examine_code else None
 
     @property
@@ -213,31 +221,35 @@ class Inquisitor(SacredRole):
             code=code,
         )
 
+    def set_llm_agent(self, llm_agent) -> None:
+        """Inject LLMAgent at service-layer boot."""
+        self._llm_classifier.set_llm_agent(llm_agent)
+
     def _examine(
         self,
         confession_id: str,
         text: str,
         code: Optional[str],
     ) -> InquisitorResult:
-        """Core examination logic — pure, deterministic."""
+        """Core examination logic — LLM-first, no regex."""
         all_findings = []
         text_examined = False
         code_examined = False
+        llm_available = True
 
-        # --- Text examination (PatternClassifier) ---
+        # --- Text examination (LLMClassifier — primary, semantic) ---
         if text and text.strip():
-            text_findings = self._text_classifier.classify(text, self._ruleset)
-            all_findings.extend(text_findings)
+            llm_findings, llm_available = self._llm_classifier.classify(text)
+            all_findings.extend(llm_findings)
             text_examined = True
 
-        # --- Code examination (ASTClassifier) ---
+        # --- Code examination (ASTClassifier — structural, deterministic) ---
         if code and code.strip() and self._ast_classifier is not None:
             try:
                 code_findings = self._ast_classifier.classify(code)
                 all_findings.extend(code_findings)
                 code_examined = True
             except SyntaxError:
-                # Unparseable code is a finding itself
                 all_findings.append(
                     Finding(
                         finding_id=f"ast_{uuid.uuid4().hex[:8]}",
@@ -257,4 +269,5 @@ class Inquisitor(SacredRole):
             rules_applied=self._ruleset.active_count,
             text_examined=text_examined,
             code_examined=code_examined,
+            llm_available=llm_available,
         )

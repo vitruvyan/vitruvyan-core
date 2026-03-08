@@ -91,8 +91,19 @@ class TestBuildExaminationText:
 class TestRunTribunal:
     """Tests that the tribunal pipeline produces real Verdict objects."""
 
-    def _run(self, state):
+    def _inject_mock_llm(self):
+        """Inject a mock LLM into the Inquisitor singleton."""
+        from core.orchestration.langgraph.node import orthodoxy_node as _mod
+        mock_llm = MagicMock()
+        mock_llm.complete_json.return_value = {"findings": []}
+        _mod._inquisitor.set_llm_agent(mock_llm)
+        _mod._llm_injected = True
+        return mock_llm
+
+    def _run(self, state, mock_llm=None):
         from core.orchestration.langgraph.node.orthodoxy_node import _run_tribunal
+        if mock_llm is None:
+            self._inject_mock_llm()
         return _run_tribunal(state)
 
     def test_clean_text_returns_blessed(self):
@@ -107,12 +118,28 @@ class TestRunTribunal:
         assert verdict.ruleset_version is not None
 
     def test_security_violation_returns_heretical_or_purified(self):
-        # Inject text that triggers security regex (quoted secrets patterns)
+        mock_llm = self._inject_mock_llm()
+        mock_llm.complete_json.return_value = {
+            "findings": [
+                {
+                    "severity": "critical",
+                    "category": "security",
+                    "message": "Hardcoded password exposed",
+                    "evidence": 'password = "admin123"',
+                },
+                {
+                    "severity": "high",
+                    "category": "security",
+                    "message": "API key exposed in output",
+                    "evidence": 'api_key = "sk-live-abc123"',
+                },
+            ]
+        }
         state = {
             "response": 'password = "admin123" and api_key = "sk-live-abc123"',
             "trace_id": "test-trace-002",
         }
-        verdict = self._run(state)
+        verdict = self._run(state, mock_llm)
         # Should trigger security findings
         assert len(verdict.findings) > 0
         assert verdict.status in ("heretical", "purified")
@@ -265,9 +292,18 @@ class TestApplyFallback:
 class TestOrthodoxyNodeEndToEnd:
     """End-to-end test of the orthodoxy_node function."""
 
+    def _inject_mock_llm(self):
+        """Inject a mock LLM into the Inquisitor singleton (clean findings)."""
+        from core.orchestration.langgraph.node import orthodoxy_node as _mod
+        mock_llm = MagicMock()
+        mock_llm.complete_json.return_value = {"findings": []}
+        _mod._inquisitor.set_llm_agent(mock_llm)
+        _mod._llm_injected = True
+
     @patch("core.orchestration.langgraph.node.orthodoxy_node.get_stream_bus")
     def test_clean_input_blessed(self, mock_bus):
         mock_bus.return_value = MagicMock()
+        self._inject_mock_llm()
         from core.orchestration.langgraph.node.orthodoxy_node import orthodoxy_node
 
         state = {
@@ -285,6 +321,7 @@ class TestOrthodoxyNodeEndToEnd:
     def test_bus_emit_called(self, mock_bus):
         bus_instance = MagicMock()
         mock_bus.return_value = bus_instance
+        self._inject_mock_llm()
         from core.orchestration.langgraph.node.orthodoxy_node import orthodoxy_node
 
         state = {
@@ -304,6 +341,7 @@ class TestOrthodoxyNodeEndToEnd:
         bus_instance = MagicMock()
         bus_instance.emit.side_effect = ConnectionError("Redis down")
         mock_bus.return_value = bus_instance
+        self._inject_mock_llm()
         from core.orchestration.langgraph.node.orthodoxy_node import orthodoxy_node
 
         state = {

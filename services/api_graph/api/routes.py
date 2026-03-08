@@ -541,3 +541,16 @@ async def plasticity_success_rate(parameter: str = "heretical_threshold"):
         return {"status": "unavailable", "reason": "Plasticity not initialized"}
     rate = await svc.get_success_rate(parameter)
     return {"parameter": parameter, "success_rate": rate}
+
+
+@router.post("/api/plasticity/shadow")
+async def plasticity_shadow_evaluate(
+    parameter: str = "heretical_threshold",
+    delta: float = 2.5,
+):
+    """Shadow-evaluate a proposed parameter adjustment without applying it."""
+    svc = get_plasticity_service()
+    if not svc:
+        return {"status": "unavailable", "reason": "Plasticity not initialized"}
+    result = await svc.shadow_evaluate(parameter, delta)
+    return result

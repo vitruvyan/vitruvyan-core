@@ -41,6 +41,20 @@ logger = logging.getLogger(__name__)
 _confessor = Confessor()
 _inquisitor = Inquisitor()
 _verdict_engine = VerdictEngine()
+_llm_injected = False
+
+
+def _ensure_llm_injected():
+    """Inject LLMAgent into Inquisitor on first call (lazy, service-layer boot)."""
+    global _llm_injected
+    if not _llm_injected:
+        try:
+            from core.agents.llm_agent import get_llm_agent
+            _inquisitor.set_llm_agent(get_llm_agent())
+            _llm_injected = True
+            logger.info("[ORTHODOXY] LLMAgent injected into Inquisitor")
+        except Exception as e:
+            logger.warning(f"[ORTHODOXY] LLMAgent injection failed: {e} — non_liquet mode")
 
 def orthodoxy_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -89,11 +103,13 @@ def orthodoxy_node(state: Dict[str, Any]) -> Dict[str, Any]:
 def _run_tribunal(state: Dict[str, Any]):
     """
     Run the 3-stage tribunal pipeline in-process.
-    Pure Python, no I/O, ~7-17ms total.
+    LLM-first semantic classification. No regex.
 
     Returns:
         Verdict (frozen dataclass)
     """
+    _ensure_llm_injected()
+
     # 1. Confessor: intake → Confession
     confession = _confessor.process({
         "trigger_type": "output_validation",
@@ -103,7 +119,7 @@ def _run_tribunal(state: Dict[str, Any]):
         "correlation_id": state.get("trace_id"),
     })
 
-    # 2. Inquisitor: examine text + code → Findings
+    # 2. Inquisitor: examine text + code → Findings (LLM-first)
     text_to_examine = _build_examination_text(state)
     result = _inquisitor.process({
         "confession": confession,
@@ -111,6 +127,19 @@ def _run_tribunal(state: Dict[str, Any]):
     })
 
     # 3. VerdictEngine: findings → Verdict
+    # If LLM was unavailable, force non_liquet (honest uncertainty)
+    if not result.llm_available and not result.findings:
+        from core.governance.orthodoxy_wardens.domain.verdict import Verdict
+        return Verdict.non_liquet(
+            findings=(),
+            confidence=0.1,
+            what_we_know=("LLM classifier unavailable",),
+            what_is_uncertain=("Cannot perform semantic analysis without LLM",),
+            uncertainty_sources=("llm_unavailable",),
+            best_guess="blessed",
+            ruleset_version=DEFAULT_RULESET.version_tag,
+        )
+
     verdict = _verdict_engine.render(
         findings=result.findings,
         ruleset=DEFAULT_RULESET,
