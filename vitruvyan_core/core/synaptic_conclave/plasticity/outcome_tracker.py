@@ -19,7 +19,7 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 
 from core.agents.postgres_agent import PostgresAgent
-from vitruvyan_core.core.synaptic_conclave.plasticity import metrics as plasticity_metrics
+from core.synaptic_conclave.plasticity import metrics as plasticity_metrics
 
 logger = logging.getLogger(__name__)
 

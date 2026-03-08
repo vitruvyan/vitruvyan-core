@@ -16,7 +16,7 @@ import logging
 import time
 from typing import List, Any, Dict
 
-from vitruvyan_core.core.synaptic_conclave.plasticity import metrics as plasticity_metrics
+from . import metrics as plasticity_metrics
 
 logger = logging.getLogger(__name__)
 

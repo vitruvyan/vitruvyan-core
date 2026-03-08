@@ -24,10 +24,10 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional, Set, Tuple, Any
 
-from vitruvyan_core.core.synaptic_conclave.events.event_envelope import CognitiveEvent
-from vitruvyan_core.core.synaptic_conclave.consumers.base_consumer import ProcessResult
-from vitruvyan_core.core.synaptic_conclave.plasticity.outcome_tracker import OutcomeTracker
-from vitruvyan_core.core.synaptic_conclave.plasticity import metrics as plasticity_metrics
+from core.synaptic_conclave.events.event_envelope import CognitiveEvent
+from core.synaptic_conclave.consumers.base_consumer import ProcessResult
+from .outcome_tracker import OutcomeTracker
+from . import metrics as plasticity_metrics
 
 logger = logging.getLogger(__name__)
 

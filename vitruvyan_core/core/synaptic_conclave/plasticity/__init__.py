@@ -21,19 +21,19 @@ Version: 1.0.0
 Date: January 24, 2026
 """
 
-from vitruvyan_core.core.synaptic_conclave.plasticity.outcome_tracker import (
+from .outcome_tracker import (
     Outcome,
     OutcomeTracker
 )
-from vitruvyan_core.core.synaptic_conclave.plasticity.manager import (
+from .manager import (
     ParameterBounds,
     Adjustment,
     PlasticityManager
 )
-from vitruvyan_core.core.synaptic_conclave.plasticity.learning_loop import (
+from .learning_loop import (
     PlasticityLearningLoop
 )
-from vitruvyan_core.core.synaptic_conclave.plasticity.observer import (
+from .observer import (
     PlasticityObserver,
     AnomalyType,
     LearningHealth,
@@ -42,7 +42,7 @@ from vitruvyan_core.core.synaptic_conclave.plasticity.observer import (
 )
 
 # Metrics module (for optional Prometheus integration)
-from vitruvyan_core.core.synaptic_conclave.plasticity import metrics
+from . import metrics
 
 __all__ = [
     "Outcome",
