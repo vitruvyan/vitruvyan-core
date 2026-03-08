@@ -146,6 +146,8 @@ nav:
     - Overview: docs/architecture/README.md
     - "Pipeline E2E — Guida Completa": docs/architecture/PIPELINE_E2E.md
     - Graph Layer (Audit A+): docs/architecture/LANGGRAPH_ARCHITECTURAL_AUDIT_MAR2026.md
+    - Module Architecture Map: docs/architecture/MAPPA_ARCHITETTURALE_MODULI.md
+    - Module Status Map: docs/foundational/MODULE_STATUS_MAP.md
     - Dual Memory Layer: docs/architecture/DUAL_MEMORY_LAYER.md
     - Semantic & Ontology: docs/architecture/SEMANTIC_ONTOLOGY_ARCHITECTURE.md
     - Sacred Orders Pattern: vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md
