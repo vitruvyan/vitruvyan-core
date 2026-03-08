@@ -1,8 +1,8 @@
 # Mappa Architetturale dei Moduli — Vitruvyan Core
 
-> **Data**: 13 Febbraio 2026  
+> **Data**: 13 Febbraio 2026 (aggiornato Mar 08, 2026 — v1.13.0)  
 > **Autore**: Generato automaticamente da analisi codebase  
-> **Codebase**: ~71.800 righe Python attive, 0 file legacy
+> **Codebase**: ~75.000 righe Python attive, 0 file legacy
 
 ---
 
@@ -708,7 +708,17 @@ Utente → api_graph → GraphRunner → [parse → intent → weaver → entity
 - PostgreSQL ← tutti i servizi (persistenza, audit, query)
 - Qdrant ← Pattern Weavers, VSGS, qdrant_node (ricerca vettoriale)
 - Redis ← StreamBus (eventi), LLMCache (risposte), MnemosyneCache (vettori)
-- OpenAI ← LLMAgent (6 nodi usa prompt, confessor_agent)
+- OpenAI ← LLMAgent (6 nodi usa prompt, confessor_agent, LLMClassifier)
+
+**v1.13.0 — api_graph endpoint aggiunti:**
+
+| Endpoint | Metodo | Descrizione |
+|----------|--------|-------------|
+| `/run` | POST | Pipeline LangGraph principale (esistente) |
+| `/plasticity/feedback` | POST | Registra feedback utente come Outcome |
+| `/plasticity/outcomes` | GET | Query success rate PlasticityConsumer |
+| `/plasticity/health` | GET | Stato LearningLoop + consumer attivi |
+| `/shadow/evaluate` | POST | Shadow Mode: confronto LLMClassifier vs PatternClassifier |
 
 ---
 
@@ -725,3 +735,4 @@ Utente → api_graph → GraphRunner → [parse → intent → weaver → entity
 | `llm_mcp_node.py` | Function calling con tool MCP |
 | `PromptRegistry` | Template prompt per identità e scenari (5 scenari built-in) |
 | `confessor_agent.py` | Analisi compliance output (Orthodoxy Wardens) |
+| `llm_classifier.py` | Classificazione semantica LLM-as-judge (Orthodoxy Wardens — v1.13.0 PRIMARIO) |

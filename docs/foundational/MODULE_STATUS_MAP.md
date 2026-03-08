@@ -1,6 +1,6 @@
 # Vitruvyan Core — Module Status Map
 
-> **Last updated**: February 15, 2026 (post-FASE 1 domain-agnostic remediation)  
+> **Last updated**: March 08, 2026 — v1.13.0 (Orthodoxy Gate + Plasticity + LLMClassifier)  
 > **Purpose**: Single-source-of-truth inventory for developers onboarding to Vitruvyan  
 > **Scope**: Module-level status (active/stub/legacy), domain-specificity, test coverage
 
@@ -40,7 +40,7 @@
 | `cached_llm_node.py` | ACTIVE | No | - | LLM completion via LLMAgent | Mnemosyne caching |
 | `llm_mcp_node.py` | ACTIVE | No | `USE_MCP` | OpenAI Function Calling + MCP tools | Optional route |
 | `output_normalizer_node.py` | ACTIVE | No | - | Normalizes execution output | Sacred Flow entry |
-| `orthodoxy_node.py` | ACTIVE | No | - | Validation + audit | Sacred Flow (Truth) |
+| `orthodoxy_node.py` | ACTIVE | No | - | Gate informativo (LLMClassifier) + verdict → OutcomeTracker | Sacred Flow (Truth) — v1.13.0: non-blocking gate |
 | `vault_node.py` | ACTIVE | No | - | Archival persistence | Sacred Flow (Memory) |
 | `can_node.py` | ACTIVE | No | - | Contextual Answer Normalizer | LLM-based synthesis |
 | `advisor_node.py` | STUB | Yes | - | Returns "Domain plugin required" | Portfolio stub (finance) |
@@ -72,7 +72,7 @@
 |--------------|-----------------|-------------------|-------------|---------------|
 | **Memory Orders** | ACTIVE | `api_memory_orders` | 100% | 93 |
 | **Vault Keepers** | ACTIVE | `api_vault_keepers` | 100% | 59 |
-| **Orthodoxy Wardens** | ACTIVE | `api_orthodoxy_wardens` | 95% | 87 |
+| **Orthodoxy Wardens** | ACTIVE | `api_orthodoxy_wardens` | 98% | 87 |
 | **Babel Gardens** | ACTIVE | `api_babel_gardens` | 100% | 87 |
 | **Codex Hunters** | ACTIVE | `api_codex_hunters` | 100% | 75 |
 | **Pattern Weavers** | ACTIVE | `api_pattern_weavers` | 100% | 62 |
@@ -119,7 +119,8 @@
 | `transport/streams.py` (StreamBus) | ACTIVE | Redis Streams transport (641L) |
 | `events/event_envelope.py` | ACTIVE | TransportEvent, CognitiveEvent, EventAdapter |
 | `transport/redis_client.py` | LEGACY | Herald compatibility shim (pre-streams) |
-| Prometheus metrics | ACTIVE | 18 metrics (plasticity, entropy, coherence, etc.) |
+| Prometheus metrics | ACTIVE | 18+ metrics (plasticity 14, entropy, coherence, etc.) |
+| Channel Registry | ACTIVE | `FeedbackSignalSchema` + plasticity channels registered (v1.13.0) |
 
 **Key Invariants**:
 - Bus is **payload-blind** (no semantic routing)
@@ -135,7 +136,7 @@
 
 | Service | Purpose | Container Name | Status | Listener |
 |---------|---------|---------------|--------|----------|
-| `api_graph` | LangGraph HTTP gateway (/run) | `core_graph` | ACTIVE | No |
+| `api_graph` | LangGraph HTTP gateway (/run, /plasticity/*, /shadow/evaluate) | `core_graph` | ACTIVE | No |
 | `api_memory_orders` | RAG, coherence analysis | `core_memory_orders` | ACTIVE | Yes (`core_memory_orders_listener`) |
 | `api_vault_keepers` | Archival persistence | `core_vault_keepers` | ACTIVE | Yes (`core_vault_keepers_listener`) |
 | `api_orthodoxy_wardens` | Validation, audit | `core_orthodoxy_wardens` | ACTIVE | Yes (`core_orthodoxy_wardens_listener`) |
@@ -148,7 +149,15 @@
 | `api_mcp` | MCP tools gateway | `core_mcp` | ACTIVE | No |
 | `redis_streams_exporter` | Prometheus exporter | `core_redis_streams_exporter` | UNHEALTHY | No |
 
-**Container Health**: 32/32 UP, 31/32 healthy (redis_streams_exporter unhealthy pre-existing issue)
+**Container Health**: 30/31 UP, 30/31 healthy (`core_conclave_listener` unhealthy — pre-existing issue)
+
+**v1.13.0 additions**:
+- `api_graph`: +4 REST endpoints (`/plasticity/feedback`, `/plasticity/outcomes`, `/plasticity/health`, `/shadow/evaluate`)
+- `api_graph`: `plasticity_adapter.py` (581 righe) — PlasticityConsumerBase, CodexPlasticityConsumer, OutcomeTracker
+- `ui`: `MessageFeedback.jsx` + `useFeedback.js` — user feedback UI
+- `orchestration/langgraph/node/orthodoxy_node.py`: Gate informativo (429 righe)
+- `governance/llm_classifier.py`: LLMClassifier primario (178 righe) — PatternClassifier DEPRECATED
+- `monitoring/dashboards/json/plasticity_learning.json`: Dashboard Grafana Plasticity (258 righe)
 
 ---
 
@@ -285,6 +294,6 @@ docker logs --tail=50 core_graph
 
 ---
 
-**Last updated**: February 14, 2026  
+**Last updated**: March 08, 2026  
 **Maintainer**: Vitruvyan Core Team  
 **Next update trigger**: Sacred Order conformance change, new node addition, or major refactoring

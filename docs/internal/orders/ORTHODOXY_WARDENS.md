@@ -1,6 +1,6 @@
 # Orthodoxy Wardens
 
-> **Last Updated**: February 14, 2026
+> **Last Updated**: March 08, 2026 — v1.13.0 (Gate informativo + Shadow Mode)
 
 <p class="kb-subtitle">Epistemic tribunal: findings, verdicts, corrections plans (advisory), and audit directives.</p>
 
@@ -196,3 +196,50 @@ For end-to-end vertical implementation steps, use:
 - `docs/knowledge_base/development/Vertical_Implementation_Guide.md`
 - `docs/knowledge_base/development/verticals/Vertical_Sacred_Orders.md`
 - `docs/knowledge_base/development/verticals/Vertical_Technical_Reference.md`
+
+---
+
+## v1.13.0: Orthodoxy Gate + Shadow Mode
+
+> Added Mar 08, 2026
+
+### Gate Informativo (non-blocking)
+
+`orthodoxy_node.py` (429 righe) implementa un **Gate informativo** nel pipeline LangGraph:
+
+- Il verdetto è calcolato per ogni richiesta
+- Il verdetto è scritto nello state come metadata (`state["orthodoxy_verdict"]`)
+- La risposta **non viene mai bloccata** (Gate non-blocking)
+- Ogni verdetto alimenta `OutcomeTracker.record_outcome()` → Plasticity self-learning loop
+- Bus event (fire-and-forget) per audit async (complementare)
+
+**Tre livelli Gate** (progressivi — solo livello 1 attivo in v1.13.0):
+1. ✅ **Gate informativo** (v1.13.0): verdetto calcolato + logged, risposta mai bloccata
+2. ⏳ **Gate soft** (futuro): `heretical` → disclaimer aggiunto alla risposta
+3. ⏳ **Gate hard** (futuro): `heretical` → risposta sostituita con rifiuto
+
+### Shadow Mode + ShadowEvaluator
+
+- File: `services/api_graph/adapters/plasticity_adapter.py` (ShadowEvaluator class)
+- Endpoint: `POST /shadow/evaluate`
+- Scopo: confronto parallelo `LLMClassifier` vs `PatternClassifier` su input reale
+- Uso: validazione della migrazione prima di abilitare Gate soft/hard
+- Risultato: `{llm_findings, pattern_findings, agreement_score, discrepancies}`
+
+### Plasticity Integration
+
+Ogni verdetto Gate alimenta il ciclo di auto-apprendimento:
+
+```python
+# In orthodoxy_node.py, dopo ogni Gate verdict:
+outcome = Outcome(
+    decision_event_id=state["trace_id"],
+    outcome_type=f"orthodoxy.{verdict.status}",
+    outcome_value=VERDICT_TO_SCORE[verdict.status],  # blessed=1.0, heretical=0.0
+    consumer_name="langgraph_pipeline",
+    parameter_name="response_quality",
+)
+await outcome_tracker.record_outcome(outcome)
+```
+
+I punteggi fluiscono in `LearningLoop` (24h cycle) che adatta le soglie del `VerdictEngine` via `PlasticityManager`.

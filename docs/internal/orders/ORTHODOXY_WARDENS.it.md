@@ -141,3 +141,32 @@ Questi file vivono nella stessa cartella ma **non sono LIVELLO 1-puri** (usano L
 - Cosa fa:
   - esegue azioni correttive (es. restart container, cleanup disco, rewrite testo compliance)
   - include concetti di rollback e safety check operativi
+
+---
+
+## v1.13.0: Orthodoxy Gate + Shadow Mode
+
+> Aggiunto Mar 08, 2026
+
+### Gate Informativo (non-bloccante)
+
+`orthodoxy_node.py` (429 righe) implementa un **Gate informativo** nel pipeline LangGraph:
+
+- Il verdetto viene calcolato per ogni richiesta
+- Il verdetto è scritto nello state come metadata (`state["orthodoxy_verdict"]`)
+- La risposta **non viene mai bloccata** (Gate non-bloccante)
+- Ogni verdetto alimenta `OutcomeTracker.record_outcome()` → loop Plasticity
+- Evento bus (fire-and-forget) per audit async (complementare)
+
+**Tre livelli Gate** (progressivi — solo livello 1 attivo in v1.13.0):
+1. ✅ **Gate informativo** (v1.13.0): verdetto calcolato + loggato, risposta mai bloccata
+2. ⏳ **Gate soft** (futuro): `heretical` → disclaimer aggiunto alla risposta
+3. ⏳ **Gate hard** (futuro): `heretical` → risposta sostituita con rifiuto
+
+### Shadow Mode + ShadowEvaluator
+
+- File: `services/api_graph/adapters/plasticity_adapter.py` (classe ShadowEvaluator)
+- Endpoint: `POST /shadow/evaluate`
+- Scopo: confronto parallelo `LLMClassifier` vs `PatternClassifier` su input reale
+- Utilizzo: validazione della migrazione prima di abilitare Gate soft/hard
+- Risultato: `{llm_findings, pattern_findings, agreement_score, discrepancies}`
