@@ -1,0 +1,258 @@
+{
+  "annotations": { "list": [] },
+  "description": "Vitruvyan Plasticity System — Learning Loop, Outcomes, Observer Health",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "title": "Learning Health Score",
+      "type": "gauge",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "avg(vitruvyan_plasticity_success_rate{consumer=\"orthodoxy_gate\"})",
+          "legendFormat": "Health Score"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 0.4 },
+              { "color": "green", "value": 0.7 }
+            ]
+          },
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit"
+        }
+      }
+    },
+    {
+      "title": "Learning Cycles Completed",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "expr": "vitruvyan_plasticity_learning_cycles_total",
+          "legendFormat": "Cycles"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Current Thresholds",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "vitruvyan_plasticity_adjustment_delta{consumer=\"orthodoxy_gate\", parameter=\"heretical_threshold\"}",
+          "legendFormat": "Heretical Δ"
+        },
+        {
+          "expr": "vitruvyan_plasticity_adjustment_delta{consumer=\"orthodoxy_gate\", parameter=\"purified_threshold\"}",
+          "legendFormat": "Purified Δ"
+        }
+      ]
+    },
+    {
+      "title": "Adjustments Applied vs Rejected",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        {
+          "expr": "rate(vitruvyan_plasticity_adjustment_total{consumer=\"orthodoxy_gate\"}[1h])",
+          "legendFormat": "Applied ({{parameter}})"
+        },
+        {
+          "expr": "rate(vitruvyan_plasticity_adjustment_rejected_total{consumer=\"orthodoxy_gate\"}[1h])",
+          "legendFormat": "Rejected ({{parameter}})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60
+          }
+        }
+      }
+    },
+    {
+      "title": "Success Rate Over Time",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "targets": [
+        {
+          "expr": "vitruvyan_plasticity_success_rate{consumer=\"orthodoxy_gate\", parameter=\"heretical_threshold\"}",
+          "legendFormat": "Heretical Threshold"
+        },
+        {
+          "expr": "vitruvyan_plasticity_success_rate{consumer=\"orthodoxy_gate\", parameter=\"purified_threshold\"}",
+          "legendFormat": "Purified Threshold"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "pointSize": 5,
+            "showPoints": "auto"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 0.4 },
+              { "color": "green", "value": 0.9 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Outcomes Recorded (rate/5m)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "targets": [
+        {
+          "expr": "rate(vitruvyan_plasticity_outcome_recorded_total{consumer=\"orthodoxy_gate\"}[5m])",
+          "legendFormat": "Outcomes/s"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 30,
+            "gradientMode": "scheme"
+          },
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "title": "Learning Cycle Duration",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+      "targets": [
+        {
+          "expr": "vitruvyan_plasticity_learning_cycle_duration_seconds",
+          "legendFormat": "Cycle Duration"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 15
+          }
+        }
+      }
+    },
+    {
+      "title": "Plasticity Errors",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
+      "targets": [
+        {
+          "expr": "rate(vitruvyan_plasticity_errors_total[5m])",
+          "legendFormat": "{{operation}} — {{error_type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80
+          },
+          "color": { "fixedColor": "red", "mode": "fixed" }
+        }
+      }
+    },
+    {
+      "title": "Rollbacks",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 22 },
+      "targets": [
+        {
+          "expr": "vitruvyan_plasticity_rollback_total",
+          "legendFormat": "Total Rollbacks"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "orange", "mode": "fixed" }
+        }
+      }
+    },
+    {
+      "title": "Adjustable Parameters",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 22 },
+      "targets": [
+        {
+          "expr": "vitruvyan_plasticity_parameters_adjustable{consumer=\"orthodoxy_gate\"}",
+          "legendFormat": "Adjustable"
+        },
+        {
+          "expr": "vitruvyan_plasticity_parameters_disabled{consumer=\"orthodoxy_gate\"}",
+          "legendFormat": "Disabled"
+        }
+      ]
+    },
+    {
+      "title": "Cycle Adjustments (Last Run)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 22 },
+      "targets": [
+        {
+          "expr": "vitruvyan_plasticity_learning_cycle_adjustments{status=\"proposed\"}",
+          "legendFormat": "Proposed"
+        },
+        {
+          "expr": "vitruvyan_plasticity_learning_cycle_adjustments{status=\"applied\"}",
+          "legendFormat": "Applied"
+        },
+        {
+          "expr": "vitruvyan_plasticity_learning_cycle_adjustments{status=\"rejected\"}",
+          "legendFormat": "Rejected"
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["vitruvyan", "plasticity", "learning", "orthodoxy"],
+  "templating": { "list": [] },
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "timezone": "utc",
+  "title": "Vitruvyan Plasticity — Learning System",
+  "uid": "vitruvyan-plasticity",
+  "version": 1
+}

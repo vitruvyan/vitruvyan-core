@@ -69,6 +69,9 @@ def orthodoxy_node(state: Dict[str, Any]) -> Dict[str, Any]:
         # --- STEP 2: Emit async audit (complementary, non-blocking) ---
         _emit_audit_event(state, user_id, session_start, verdict)
 
+        # --- STEP 3: Record outcome for Plasticity (non-blocking) ---
+        _record_plasticity_outcome(state, verdict)
+
         execution_ms = (time.time() - session_start) * 1000
         logger.info(
             f"[ORTHODOXY][GATE] Verdict: {verdict.status} "
@@ -195,6 +198,33 @@ def _emit_audit_event(
         )
     except Exception as e:
         logger.warning(f"[ORTHODOXY][GATE] Audit emit failed (non-fatal): {e}")
+
+
+def _record_plasticity_outcome(state: Dict[str, Any], verdict) -> None:
+    """Record verdict as Plasticity outcome. Non-blocking, fire-and-forget."""
+    try:
+        import asyncio
+        from api_graph.adapters.plasticity_adapter import get_plasticity_service
+
+        svc = get_plasticity_service()
+        if svc is None:
+            return
+
+        trace_id = state.get("trace_id", f"gate_{id(state)}")
+        coro = svc.record_verdict_outcome(
+            trace_id=trace_id,
+            verdict_status=verdict.status,
+            confidence=verdict.confidence,
+            findings_count=len(verdict.findings),
+        )
+
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(coro)
+        except RuntimeError:
+            pass  # No event loop — skip (pure test context)
+    except Exception as e:
+        logger.debug(f"[ORTHODOXY][GATE] Plasticity outcome skipped: {e}")
 
 
 def _apply_fallback(state: Dict[str, Any], reason: str) -> Dict[str, Any]:

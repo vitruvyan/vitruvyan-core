@@ -15,6 +15,7 @@ from .config import settings
 from .api import router, set_adapters
 from .adapters.graph_adapter import GraphOrchestrationAdapter
 from .adapters.persistence import GraphPersistence
+from .adapters.plasticity_adapter import init_plasticity_service, get_plasticity_service
 from .monitoring.health import prometheus_middleware, metrics_endpoint, install_node_metrics
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -40,8 +41,29 @@ async def lifespan(app: FastAPI):
     persistence = GraphPersistence()
     set_adapters(graph_adapter, persistence)
     install_node_metrics()
+
+    # --- Plasticity: initialize and start learning loop ---
+    plasticity_svc = None
+    if settings.PLASTICITY_ENABLED:
+        try:
+            from core.orchestration.langgraph.node.orthodoxy_node import _verdict_engine
+            plasticity_svc = init_plasticity_service(_verdict_engine)
+            await plasticity_svc.start()
+            logger.info("Plasticity LearningLoop + Observer started")
+        except Exception as e:
+            logger.warning("Plasticity init failed (non-fatal): %s", e)
+    else:
+        logger.info("Plasticity disabled (PLASTICITY_ENABLED=false)")
+
     logger.info("Adapters initialized")
     yield
+
+    # --- Shutdown ---
+    if plasticity_svc:
+        try:
+            await plasticity_svc.stop()
+        except Exception:
+            pass
     logger.info("Shutting down %s", settings.SERVICE_NAME)
 
 
