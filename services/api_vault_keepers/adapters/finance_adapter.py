@@ -27,7 +27,7 @@ def _get_finance_helpers():
             normalize_finance_source_order,
         )
     except ModuleNotFoundError:
-        from vitruvyan_core.domains.finance.vault_keepers.finance_config import (
+        from core.domains.finance.vault_keepers.finance_config import (
             FinanceVaultConfig,
             get_finance_backup_defaults,
             get_finance_retention_days,

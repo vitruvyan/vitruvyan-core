@@ -22,7 +22,7 @@ from typing import Dict, List, Optional
 try:
     from contracts.comprehension import ISignalContributor, SignalEvidence
 except ModuleNotFoundError:
-    from vitruvyan_core.contracts.comprehension import ISignalContributor, SignalEvidence
+    from core.cognitive.babel_gardens.domain import ISignalContributor, SignalEvidence
 
 logger = logging.getLogger(__name__)
 

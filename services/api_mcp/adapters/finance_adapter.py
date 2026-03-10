@@ -31,7 +31,7 @@ def _get_finance_helpers():
         )
     except ModuleNotFoundError:
         try:
-            from vitruvyan_core.domains.finance.mcp_server.finance_config import (
+            from core.domains.finance.mcp_server.finance_config import (
                 FinanceMCPConfig,
                 build_finance_phrase_samples,
                 get_finance_signal_source_candidates,

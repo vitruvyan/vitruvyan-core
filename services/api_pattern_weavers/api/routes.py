@@ -249,7 +249,7 @@ def _ensure_finance_plugin_registered():
             FinanceSemanticPlugin,
         )
     except ModuleNotFoundError:
-        from vitruvyan_core.domains.finance.pattern_weavers.finance_semantic_plugin import (
+        from core.domains.finance.pattern_weavers.finance_semantic_plugin import (
             FinanceSemanticPlugin,
         )
 
@@ -285,7 +285,7 @@ async def compile_ontology(request: Dict[str, Any]) -> Dict[str, Any]:
     try:
         from contracts.pattern_weavers import CompileRequest
     except ModuleNotFoundError:
-        from vitruvyan_core.contracts.pattern_weavers import CompileRequest
+        from contracts.pattern_weavers import CompileRequest
 
     # Determine domain: if PATTERN_DOMAIN=finance and request says "auto", use finance
     from ..config import get_config

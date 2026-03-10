@@ -42,7 +42,7 @@ class FinanceAdapter:
             try:
                 from domains.finance.pattern_weavers.financial_context import FinancialContextDetector
             except ModuleNotFoundError:
-                from vitruvyan_core.domains.finance.pattern_weavers.financial_context import (
+                from core.domains.finance.pattern_weavers.financial_context import (
                     FinancialContextDetector,
                 )
 
@@ -55,7 +55,7 @@ class FinanceAdapter:
             try:
                 from domains.finance.pattern_weavers.sector_resolver import SectorResolver
             except ModuleNotFoundError:
-                from vitruvyan_core.domains.finance.pattern_weavers.sector_resolver import (
+                from core.domains.finance.pattern_weavers.sector_resolver import (
                     SectorResolver,
                 )
             from .persistence import get_persistence
@@ -75,7 +75,7 @@ class FinanceAdapter:
             try:
                 from domains.finance.pattern_weavers.weave_config import FinanceWeaveConfig
             except ModuleNotFoundError:
-                from vitruvyan_core.domains.finance.pattern_weavers.weave_config import (
+                from core.domains.finance.pattern_weavers.weave_config import (
                     FinanceWeaveConfig,
                 )
 
@@ -110,7 +110,7 @@ class FinanceAdapter:
         try:
             from domains.finance.pattern_weavers.weave_config import get_category_boost
         except ModuleNotFoundError:
-            from vitruvyan_core.domains.finance.pattern_weavers.weave_config import (
+            from core.domains.finance.pattern_weavers.weave_config import (
                 get_category_boost,
             )
 

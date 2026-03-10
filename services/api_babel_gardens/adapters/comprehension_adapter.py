@@ -37,16 +37,16 @@ try:
         get_comprehension_registry,
     )
 except ModuleNotFoundError:
-    from vitruvyan_core.contracts.comprehension import (
+    from contracts.comprehension import (
         ComprehendRequest,
         ComprehendResponse,
         ComprehensionResult,
         IComprehensionPlugin,
     )
-    from vitruvyan_core.core.cognitive.babel_gardens.consumers.comprehension_consumer import (
+    from core.cognitive.babel_gardens.consumers.comprehension_consumer import (
         ComprehensionConsumer,
     )
-    from vitruvyan_core.core.cognitive.babel_gardens.governance.signal_registry import (
+    from core.cognitive.babel_gardens.governance.signal_registry import (
         ComprehensionPluginRegistry,
         get_comprehension_registry,
     )
@@ -110,7 +110,7 @@ class ComprehensionAdapter:
             try:
                 from core.agents.llm_agent import get_llm_agent
             except ModuleNotFoundError:
-                from vitruvyan_core.core.agents.llm_agent import get_llm_agent
+                from core.agents.llm_agent import get_llm_agent
             self._llm_agent = get_llm_agent()
         return self._llm_agent
 

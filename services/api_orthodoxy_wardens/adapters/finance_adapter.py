@@ -12,15 +12,15 @@ import logging
 from typing import Any, Dict, Optional
 
 try:
-    from vitruvyan_core.core.governance.orthodoxy_wardens.governance.rule import (
+    from core.governance.orthodoxy_wardens.governance.rule import (
         DEFAULT_RULES,
     )
-    from vitruvyan_core.core.governance.orthodoxy_wardens.governance.rule_registry import (
+    from core.governance.orthodoxy_wardens.governance.rule_registry import (
         get_governance_rule_registry,
     )
 except ModuleNotFoundError:
-    from core.governance.orthodoxy_wardens.governance.rule import DEFAULT_RULES
-    from core.governance.orthodoxy_wardens.governance.rule_registry import (
+    from vitruvyan_core.core.governance.orthodoxy_wardens.governance.rule import DEFAULT_RULES
+    from vitruvyan_core.core.governance.orthodoxy_wardens.governance.rule_registry import (
         get_governance_rule_registry,
     )
 
@@ -41,7 +41,7 @@ def _get_finance_config_helpers():
             get_finance_ruleset_version,
         )
     except ModuleNotFoundError:
-        from vitruvyan_core.domains.finance.orthodoxy_wardens.compliance_config import (
+        from core.domains.finance.orthodoxy_wardens.compliance_config import (
             FinanceOrthodoxyConfig,
             get_finance_event_defaults,
             get_finance_ruleset_version,
@@ -55,7 +55,7 @@ def _load_finance_domain_rules():
     try:
         from domains.finance.governance_rules import get_domain_rules
     except ModuleNotFoundError:
-        from vitruvyan_core.domains.finance.governance_rules import get_domain_rules
+        from core.domains.finance.governance_rules import get_domain_rules
     return tuple(get_domain_rules())
 
 

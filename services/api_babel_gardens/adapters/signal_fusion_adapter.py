@@ -35,7 +35,7 @@ try:
         get_signal_contributor_registry,
     )
 except ModuleNotFoundError:
-    from vitruvyan_core.contracts.comprehension import (
+    from contracts.comprehension import (
         ComprehensionResult,
         FuseRequest,
         FuseResponse,
@@ -43,10 +43,10 @@ except ModuleNotFoundError:
         FusionStrategy,
         SignalEvidence,
     )
-    from vitruvyan_core.core.cognitive.babel_gardens.consumers.signal_fusion_consumer import (
+    from core.cognitive.babel_gardens.consumers.signal_fusion_consumer import (
         SignalFusionConsumer,
     )
-    from vitruvyan_core.core.cognitive.babel_gardens.governance.signal_registry import (
+    from core.cognitive.babel_gardens.governance.signal_registry import (
         SignalContributorRegistry,
         get_signal_contributor_registry,
     )
@@ -200,7 +200,7 @@ class SignalFusionAdapter:
         try:
             from core.agents.llm_agent import get_llm_agent
         except ModuleNotFoundError:
-            from vitruvyan_core.core.agents.llm_agent import get_llm_agent
+            from core.agents.llm_agent import get_llm_agent
 
         try:
             llm = get_llm_agent()

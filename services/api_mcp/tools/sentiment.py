@@ -11,7 +11,7 @@ from adapters.finance_adapter import get_finance_adapter
 try:
     from core.agents.postgres_agent import PostgresAgent
 except ModuleNotFoundError:
-    from vitruvyan_core.core.agents.postgres_agent import PostgresAgent
+    from core.agents.postgres_agent import PostgresAgent
 
 logger = logging.getLogger(__name__)
 

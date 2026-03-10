@@ -6,7 +6,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from vitruvyan_core.core.middleware.auth import AuthMiddleware
+try:
+    from core.middleware.auth import AuthMiddleware
+except ModuleNotFoundError:
+    from vitruvyan_core.core.middleware.auth import AuthMiddleware
 
 from .api.routes import router
 from .config import PORT, LOG_LEVEL, CORS_ORIGINS

@@ -25,7 +25,7 @@ def _get_finance_helpers():
             get_finance_thresholds,
         )
     except ModuleNotFoundError:
-        from vitruvyan_core.domains.finance.memory_orders.finance_config import (
+        from core.domains.finance.memory_orders.finance_config import (
             FinanceMemoryConfig,
             get_finance_source_candidates,
             get_finance_thresholds,

@@ -10,8 +10,12 @@ from typing import Dict, List, Optional, Any
 
 import pandas as pd
 
-from vitruvyan_core.core.neural_engine import NeuralEngine
-from vitruvyan_core.contracts import IDataProvider, IScoringStrategy, IFilterStrategy
+try:
+    from core.neural_engine import NeuralEngine
+    from contracts import IDataProvider, IScoringStrategy, IFilterStrategy
+except ModuleNotFoundError:
+    from vitruvyan_core.core.neural_engine import NeuralEngine
+    from vitruvyan_core.contracts import IDataProvider, IScoringStrategy, IFilterStrategy
 from .response_builder import ResponseBuilder
 from ..adapters.persistence import NeuralEnginePersistence
 from ..config import (
@@ -43,21 +47,34 @@ class EngineOrchestrator:
         logger.info("🔧 Initializing Engine Orchestrator (domain=%s)...", self._domain)
         try:
             if self._domain == "finance":
-                from vitruvyan_core.domains.finance.neural_engine import (
-                    TickerDataProvider,
-                    FinancialScoringStrategy,
-                    FinancialFilterStrategy,
-                )
+                try:
+                    from domains.finance.neural_engine import (
+                        TickerDataProvider,
+                        FinancialScoringStrategy,
+                        FinancialFilterStrategy,
+                    )
+                except ModuleNotFoundError:
+                    from vitruvyan_core.domains.finance.neural_engine import (
+                        TickerDataProvider,
+                        FinancialScoringStrategy,
+                        FinancialFilterStrategy,
+                    )
 
                 self.data_provider = TickerDataProvider()
                 self.scoring_strategy = FinancialScoringStrategy()
                 self.filter_strategy = FinancialFilterStrategy()
                 logger.info("✅ Loaded finance provider + scoring + filter strategy")
             elif self._domain == "mock":
-                from vitruvyan_core.core.neural_engine.domain_examples import (
-                    MockDataProvider,
-                    MockScoringStrategy,
-                )
+                try:
+                    from core.neural_engine.domain_examples import (
+                        MockDataProvider,
+                        MockScoringStrategy,
+                    )
+                except ModuleNotFoundError:
+                    from vitruvyan_core.core.neural_engine.domain_examples import (
+                        MockDataProvider,
+                        MockScoringStrategy,
+                    )
 
                 self.data_provider = MockDataProvider(num_entities=100)
                 self.scoring_strategy = MockScoringStrategy()

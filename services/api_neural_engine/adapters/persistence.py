@@ -6,7 +6,10 @@ import json
 import logging
 from typing import Any, Dict
 
-from vitruvyan_core.core.agents.postgres_agent import PostgresAgent
+try:
+    from core.agents.postgres_agent import PostgresAgent
+except ModuleNotFoundError:
+    from vitruvyan_core.core.agents.postgres_agent import PostgresAgent
 
 logger = logging.getLogger(__name__)
 

@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import logging
 
-from vitruvyan_core.core.agents.postgres_agent import PostgresAgent
-from vitruvyan_core.core.synaptic_conclave.transport.streams import StreamBus
+try:
+    from core.agents.postgres_agent import PostgresAgent
+    from core.synaptic_conclave.transport.streams import StreamBus
+except ModuleNotFoundError:
+    from vitruvyan_core.core.agents.postgres_agent import PostgresAgent
+    from vitruvyan_core.core.synaptic_conclave.transport.streams import StreamBus
 from infrastructure.edge.oculus_prime.core.event_emitter import OculusPrimeEventEmitter
 
 from ..config import OculusPrimeSettings

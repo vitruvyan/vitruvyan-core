@@ -23,7 +23,7 @@ try:
         ComprehensionResult,
     )
 except ModuleNotFoundError:
-    from vitruvyan_core.contracts.comprehension import (
+    from contracts.comprehension import (
         ComprehendRequest,
         ComprehendResponse,
         FuseRequest,

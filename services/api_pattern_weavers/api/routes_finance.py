@@ -101,7 +101,7 @@ async def weave_finance(request: FinanceWeaveRequest):
     try:
         from domains.finance.pattern_weavers.weave_config import get_finance_threshold
     except ModuleNotFoundError:
-        from vitruvyan_core.domains.finance.pattern_weavers.weave_config import (
+        from core.domains.finance.pattern_weavers.weave_config import (
             get_finance_threshold,
         )
 

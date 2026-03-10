@@ -18,25 +18,25 @@ import logging
 from dataclasses import asdict
 from typing import Any, Dict, Optional
 
-from vitruvyan_core.core.governance.orthodoxy_wardens.consumers.confessor import (
+from core.governance.orthodoxy_wardens.consumers.confessor import (
     Confessor,
 )
-from vitruvyan_core.core.governance.orthodoxy_wardens.consumers.inquisitor import (
+from core.governance.orthodoxy_wardens.consumers.inquisitor import (
     Inquisitor,
 )
-from vitruvyan_core.core.governance.orthodoxy_wardens.consumers.penitent import (
+from core.governance.orthodoxy_wardens.consumers.penitent import (
     Penitent,
 )
-from vitruvyan_core.core.governance.orthodoxy_wardens.consumers.chronicler import (
+from core.governance.orthodoxy_wardens.consumers.chronicler import (
     Chronicler,
 )
-from vitruvyan_core.core.governance.orthodoxy_wardens.governance.verdict_engine import (
+from core.governance.orthodoxy_wardens.governance.verdict_engine import (
     VerdictEngine,
 )
-from vitruvyan_core.core.governance.orthodoxy_wardens.governance.rule import (
+from core.governance.orthodoxy_wardens.governance.rule import (
     DEFAULT_RULESET,
 )
-from vitruvyan_core.core.governance.orthodoxy_wardens.governance.workflow import (
+from core.governance.orthodoxy_wardens.governance.workflow import (
     FULL_AUDIT_WORKFLOW,
     QUICK_VALIDATION_WORKFLOW,
 )

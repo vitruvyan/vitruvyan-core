@@ -37,16 +37,16 @@ try:
         get_plugin_registry,
     )
 except ModuleNotFoundError:
-    from vitruvyan_core.contracts.pattern_weavers import (
+    from contracts.pattern_weavers import (
         CompileRequest,
         CompileResponse,
         ISemanticPlugin,
         OntologyPayload,
     )
-    from vitruvyan_core.core.cognitive.pattern_weavers.consumers.llm_compiler import (
+    from core.cognitive.pattern_weavers.consumers.llm_compiler import (
         LLMCompilerConsumer,
     )
-    from vitruvyan_core.core.cognitive.pattern_weavers.governance.semantic_plugin import (
+    from core.cognitive.pattern_weavers.governance.semantic_plugin import (
         SemanticPluginRegistry,
         get_plugin_registry,
     )
@@ -82,7 +82,7 @@ class LLMCompilerAdapter:
             try:
                 from core.agents.llm_agent import get_llm_agent
             except ModuleNotFoundError:
-                from vitruvyan_core.core.agents.llm_agent import get_llm_agent
+                from core.agents.llm_agent import get_llm_agent
             self._llm_agent = get_llm_agent()
         return self._llm_agent
 
