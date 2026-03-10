@@ -22,6 +22,12 @@ from dataclasses import dataclass, field
 from typing import Dict, Optional, Any, List, Callable
 import logging
 
+from vitruvyan_core.contracts.prompting import (
+    PromptResolution,
+    compute_prompt_hash,
+    build_prompt_id,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -190,6 +196,50 @@ class PromptRegistry:
 {scenario_prompt}"""
     
     @classmethod
+    def resolve(
+        cls,
+        domain: str,
+        scenario: str = "",
+        language: str = "en",
+        **template_vars,
+    ) -> PromptResolution:
+        """
+        Resolve a prompt with full metadata for audit trail.
+
+        Combines identity + scenario (if provided) and returns a
+        PromptResolution with prompt_id, hash, version, and token estimate.
+
+        This is the preferred entry point for new code. Existing methods
+        (get_identity, get_scenario, get_combined) remain for backward
+        compatibility.
+        """
+        config = cls._get_config(domain)
+        actual_domain = config.domain
+        fallback_used = actual_domain != domain
+
+        if scenario:
+            prompt_text = cls.get_combined(actual_domain, scenario, language, **template_vars)
+        else:
+            prompt_text = cls.get_identity(actual_domain, language, **template_vars)
+
+        version = config.version
+        prompt_id = build_prompt_id(actual_domain, scenario, version)
+        prompt_hash = compute_prompt_hash(prompt_text)
+        estimated_tokens = max(1, int(len(prompt_text.split()) * 1.3))
+
+        return PromptResolution(
+            system_prompt=prompt_text,
+            domain=actual_domain,
+            scenario=scenario,
+            language=language,
+            version=version,
+            prompt_id=prompt_id,
+            prompt_hash=prompt_hash,
+            estimated_tokens=estimated_tokens,
+            fallback_used=fallback_used,
+        )
+
+    @classmethod
     def list_domains(cls) -> List[str]:
         """List all registered domains."""
         return list(cls._domains.keys())
@@ -314,7 +364,26 @@ FORMAT:
 📚 CONCEPTS: [foundational knowledge]
 💡 EXAMPLES: [practical illustrations]
 ❓ MISCONCEPTIONS: [things often misunderstood]
-🎯 NEXT STEPS: [how to learn more]"""
+🎯 NEXT STEPS: [how to learn more]""",
+
+    "conversational": """You are an intelligent and friendly AI assistant. Respond naturally and professionally.
+Adapt your tone and style to the user's language and emotional state.
+Keep responses helpful, concise, and human.""",
+
+    "synthesis": """You are synthesizing analysis results into natural language.
+DO NOT calculate anything. Only explain pre-calculated results.
+Present findings clearly and accessibly in the user's language.""",
+
+    "mcp_tool_selection": """You are an epistemic reasoning assistant.
+You MUST select and call the most appropriate tool to answer the user's question.
+ALWAYS prefer calling a tool over answering directly — tools have access to live data that you don't.
+When calling tools, only include tenant_id if the user explicitly mentions a specific tenant/client.
+If the user asks about data for a LOCATION without specifying a tenant, do NOT include tenant_id — let the tool search across all tenants.
+Note: Entity type and domain are deployment-configured.""",
+
+    "early_exit": """You are a helpful conversational assistant.
+Reply in 1-2 sentences, warm and professional.
+Do NOT add any analysis, data, or suggestions.""",
 }
 
 
@@ -324,6 +393,44 @@ def register_generic_domain() -> None:
         domain="generic",
         identity_template=GENERIC_IDENTITY,
         scenario_templates=GENERIC_SCENARIOS,
+        translations={
+            "it": {
+                "scenario_conversational": (
+                    "Sei un assistente AI intelligente e cordiale. "
+                    "Rispondi in modo naturale e professionale. "
+                    "Adatta il tono e lo stile alla lingua e allo stato emotivo dell'utente."
+                ),
+                "scenario_early_exit": (
+                    "Sei un assistente conversazionale cordiale. "
+                    "Rispondi in 1-2 frasi, in modo caloroso e professionale. "
+                    "NON aggiungere analisi, dati o suggerimenti."
+                ),
+                "scenario_synthesis": (
+                    "Stai sintetizzando risultati di analisi in linguaggio naturale. "
+                    "NON calcolare nulla. Spiega solo risultati pre-calcolati. "
+                    "Presenta i risultati in modo chiaro e accessibile."
+                ),
+            },
+            "es": {
+                "scenario_conversational": (
+                    "Eres un asistente de IA inteligente y amigable. "
+                    "Responde de forma natural y profesional. "
+                    "Adapta tu tono y estilo al idioma y estado emocional del usuario."
+                ),
+                "scenario_early_exit": (
+                    "Eres un asistente conversacional amigable. "
+                    "Responde en 1-2 oraciones, cálido y profesional. "
+                    "NO agregues análisis, datos o sugerencias."
+                ),
+            },
+            "fr": {
+                "scenario_conversational": (
+                    "Tu es un assistant IA intelligent et amical. "
+                    "Réponds naturellement et professionnellement. "
+                    "Adapte ton ton et ton style à la langue et à l'état émotionnel de l'utilisateur."
+                ),
+            },
+        },
         template_vars=["assistant_name", "domain_description"],
         version="1.0",
         set_as_default=True

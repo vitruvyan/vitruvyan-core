@@ -132,16 +132,25 @@ def _generate_response(intent: str, language: str, input_text: str, emotion: str
     """LLM-first response; falls back to template if LLM unavailable."""
     try:
         from core.agents.llm_agent import get_llm_agent
+        from core.agents.prompt_agent import get_prompt_agent
+        from vitruvyan_core.contracts.prompting import PromptRequest
 
         llm = get_llm_agent()
+        prompt_agent = get_prompt_agent()
+
+        # Resolve system prompt via PromptAgent (multilingual)
+        resolution = prompt_agent.resolve(PromptRequest(
+            domain="generic",
+            scenario="early_exit",
+            language=language,
+        ))
+
         emotion_hint = f" The user's emotional tone is {emotion}." if emotion else ""
         prompt = (
             f"Respond to a '{intent}' message in {language}.{emotion_hint}\n"
             f"User said: \"{input_text}\"\n"
-            "Reply in 1-2 sentences, warm and professional. "
-            "Do NOT add any analysis, data, or suggestions."
         )
-        response = llm.complete(prompt, system_prompt="You are a helpful conversational assistant.")
+        response = llm.complete(prompt, system_prompt=resolution.system_prompt)
         if response and response.strip():
             return response.strip()
     except Exception as e:

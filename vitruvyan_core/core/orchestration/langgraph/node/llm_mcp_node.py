@@ -193,22 +193,27 @@ def llm_mcp_node(state: Dict[str, Any]) -> Dict[str, Any]:
     try:
         llm = get_llm_agent()
         
-        # Construct system prompt with context (domain-agnostic)
+        # Construct system prompt with context (domain-agnostic via PromptAgent)
         tenant_id = state.get("tenant_id", "")
         intent = state.get("intent", "unknown")
         logger.info(f"🔑 LLM MCP context: tenant_id='{tenant_id}', intent='{intent}', entities={entity_ids}")
-        system_prompt = f"""You are Vitruvyan AI, an epistemic reasoning assistant.
-User query language: {language}
-User's detected intent: {intent}
-Available entities: {', '.join(entity_ids) if entity_ids else 'None extracted yet'}
-Current tenant_id: {tenant_id if tenant_id else 'unknown'}
 
-You MUST select and call the most appropriate tool to answer the user's question.
-When calling tools, only include tenant_id if the user explicitly mentions a specific tenant/client.
-If the user asks about data for a LOCATION without specifying a tenant, do NOT include tenant_id — let the tool search across all tenants.
-ALWAYS prefer calling a tool over answering directly — tools have access to live data that you don't.
+        from core.agents.prompt_agent import get_prompt_agent
+        from vitruvyan_core.contracts.prompting import PromptRequest
 
-Note: Entity type and domain are deployment-configured (finance, documents, users, etc.)."""
+        prompt_agent = get_prompt_agent()
+        resolution = prompt_agent.resolve(PromptRequest(
+            domain=state.get("domain", "generic"),
+            scenario="mcp_tool_selection",
+            language=language,
+        ))
+        system_prompt = (
+            f"{resolution.system_prompt}\n"
+            f"User query language: {language}\n"
+            f"User's detected intent: {intent}\n"
+            f"Available entities: {', '.join(entity_ids) if entity_ids else 'None extracted yet'}\n"
+            f"Current tenant_id: {tenant_id if tenant_id else 'unknown'}"
+        )
         
         messages = [
             {"role": "system", "content": system_prompt},

@@ -45,6 +45,9 @@ class BaseGraphState(TypedDict, total=False):
     response: Dict[str, Any]                  # Final response to user
     user_id: Optional[str]                    # User identifier
     tenant_id: Optional[str]                  # Tenant identifier (multi-tenant operations)
+    domain: Optional[str]                     # Active domain ("generic", "finance", etc.)
+    model_tier: Optional[str]                 # LLM tier: "routing", "reasoning", "deep_context"
+    inline_context: Optional[str]             # Ephemeral context injected into prompt (e.g. upload)
     
     # =========================================================================
     # INTENT & CLARIFICATION — Understanding what user wants
@@ -129,7 +132,8 @@ GraphStateType = BaseGraphState
 # FIELD CATEGORIES — For introspection and validation
 # =============================================================================
 ESSENTIAL_FIELDS = frozenset([
-    "input_text", "route", "result", "error", "response", "user_id"
+    "input_text", "route", "result", "error", "response", "user_id",
+    "tenant_id", "domain", "model_tier", "inline_context",
 ])
 
 INTENT_FIELDS = frozenset([

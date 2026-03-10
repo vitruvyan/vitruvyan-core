@@ -71,6 +71,7 @@ def semantic_grounding_node(state: Dict[str, Any]) -> Dict[str, Any]:
     result = _ENGINE.ground(
         text=input_text, user_id=user_id,
         intent=intent, language=language,
+        tenant_id=state.get("tenant_id", ""),
     )
 
     # Record hit metrics per match

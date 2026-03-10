@@ -130,6 +130,14 @@ from .rag import (
     get_collection_declaration,
     is_declared_collection,
 )
+from .prompting import (
+    PromptPolicy,
+    PromptRequest,
+    PromptResolution,
+    DEFAULT_POLICY,
+    compute_prompt_hash,
+    build_prompt_id,
+)
 
 __all__ = [
     # Base contracts
@@ -231,4 +239,11 @@ __all__ = [
     "ALL_DECLARED_COLLECTIONS",
     "get_collection_declaration",
     "is_declared_collection",
+    # Prompting Contract V1
+    "PromptPolicy",
+    "PromptRequest",
+    "PromptResolution",
+    "DEFAULT_POLICY",
+    "compute_prompt_hash",
+    "build_prompt_id",
 ]

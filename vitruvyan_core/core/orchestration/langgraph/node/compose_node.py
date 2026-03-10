@@ -28,6 +28,8 @@ Contract Compliance:
 from typing import Dict, Any
 import os
 from core.agents.llm_agent import get_llm_agent
+from core.agents.prompt_agent import get_prompt_agent
+from vitruvyan_core.contracts.prompting import PromptRequest
 
 # NOTE: Configuration via environment variables only.
 # load_dotenv() is called in service entrypoints (main.py), not in core modules.
@@ -139,15 +141,15 @@ def _generate_conversational_response(
     try:
         llm = get_llm_agent()
         
-        # Build language-aware system prompt (domain-agnostic)
-        system_prompts = {
-            "it": "Sei un assistente AI intelligente e cordiale. Rispondi in modo naturale e professionale.",
-            "en": "You are an intelligent and friendly AI assistant. Respond naturally and professionally.",
-            "es": "Eres un asistente de IA inteligente y amigable. Responde de forma natural y profesional.",
-            "fr": "Tu es un assistant IA intelligent et amical. Réponds naturellement et professionnellement.",
-        }
-        
-        system_prompt = system_prompts.get(language, system_prompts["en"])
+        # Resolve system prompt via PromptAgent (domain-agnostic, multilingual)
+        prompt_agent = get_prompt_agent()
+        domain = state.get("domain", "generic")
+        resolution = prompt_agent.resolve(PromptRequest(
+            domain=domain,
+            scenario="conversational",
+            language=language,
+        ))
+        system_prompt = resolution.system_prompt
         
         # Extract emotion context if available (pre-calculated by emotion_detector node)
         emotion = state.get("emotion_detected", "neutral")
@@ -242,11 +244,16 @@ def _synthesize_from_results(
         
         context_str = "\n".join(context_parts) if context_parts else "No detailed results available"
         
-        # Build LLM prompt (synthesis, not calculation)
+        # Resolve system prompt via PromptAgent (domain-agnostic)
+        prompt_agent = get_prompt_agent()
+        resolution = prompt_agent.resolve(PromptRequest(
+            domain=state.get("domain", "generic") if hasattr(state, 'get') else "generic",
+            scenario="synthesis",
+            language=language,
+        ))
         system_prompt = (
-            f"You are synthesizing analysis results into natural language. "
+            f"{resolution.system_prompt}\n"
             f"User language: {language}. Intent: {intent}. "
-            f"DO NOT calculate anything. Only explain pre-calculated results. "
             f"Respond in {language}."
         )
         

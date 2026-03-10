@@ -46,7 +46,8 @@ class VSGSEngine:
 
     def ground(self, text: str, user_id: str = "demo",
                intent: str = "unknown",
-               language: str = "en") -> GroundingResult:
+               language: str = "en",
+               tenant_id: str = "") -> GroundingResult:
         """Run full semantic grounding pipeline.
 
         Args:
@@ -54,6 +55,7 @@ class VSGSEngine:
             user_id: User filter for Qdrant search
             intent: Detected intent (for metrics)
             language: Detected language (for metrics)
+            tenant_id: Optional tenant for data isolation
 
         Returns:
             GroundingResult with matches, status, and timing
@@ -70,7 +72,7 @@ class VSGSEngine:
             embedding = self._embed(text)
 
             # Phase 2: Search Qdrant
-            raw_results = self._search(embedding, user_id)
+            raw_results = self._search(embedding, user_id, tenant_id=tenant_id)
 
             # Phase 3: Classify and format
             matches = self._format_matches(raw_results)
@@ -115,22 +117,31 @@ class VSGSEngine:
     # ── Phase 2: Qdrant search ───────────────────────────────────────────────
 
     def _search(self, embedding: List[float],
-                user_id: str) -> List[Dict[str, Any]]:
+                user_id: str,
+                tenant_id: str = "") -> List[Dict[str, Any]]:
         """Query Qdrant for top-k semantic matches.
 
-        Performs an unfiltered search first. If no results are found and
-        user_id is provided, this avoids returning empty results just because
-        the stored vectors have no user_id payload field (e.g. system-level
-        evidence packs). A user_id filter is only applied when the collection
-        is known to contain per-user data.
+        If tenant_id is provided, applies a payload filter for data isolation.
+        Without tenant_id, behaviour is unchanged (backward compatible).
         """
         qdrant = self._get_qdrant()
 
-        # Search without user_id filter — evidence vectors are system-level
+        # Build tenant filter if tenant_id is provided
+        qfilter = None
+        if tenant_id:
+            try:
+                from qdrant_client.models import Filter, FieldCondition, MatchValue
+                qfilter = Filter(
+                    must=[FieldCondition(key="tenant_id", match=MatchValue(value=tenant_id))]
+                )
+            except ImportError:
+                logger.warning("qdrant_client.models not available — tenant filter skipped")
+
         results = qdrant.search(
             collection=self.config.collection,
             query_vector=embedding,
             top_k=self.config.top_k,
+            qfilter=qfilter,
         )
 
         if results.get("status") != "ok":

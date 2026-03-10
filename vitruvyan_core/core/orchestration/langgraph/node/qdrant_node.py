@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import os
 import logging
 import httpx
@@ -8,6 +8,23 @@ logger = logging.getLogger(__name__)
 
 # Init Qdrant agent once
 _agent = QdrantAgent()
+
+
+def _build_tenant_filter(tenant_id: Optional[str]):
+    """Build a Qdrant payload filter for tenant isolation.
+
+    Returns None if tenant_id is empty (backward compatible — no filtering).
+    """
+    if not tenant_id:
+        return None
+    try:
+        from qdrant_client.models import Filter, FieldCondition, MatchValue
+        return Filter(
+            must=[FieldCondition(key="tenant_id", match=MatchValue(value=tenant_id))]
+        )
+    except ImportError:
+        logger.warning("qdrant_client.models not available — tenant filter skipped")
+        return None
 
 # Embedding API endpoint (configurable via env var)
 EMBEDDING_API = os.getenv("EMBEDDING_API_URL", "http://embedding:8010/v1/embeddings/batch")
@@ -42,8 +59,11 @@ def qdrant_node(state: Dict[str, Any]) -> Dict[str, Any]:
         # Generate embedding
         vec = _get_embedding(text)
 
+        # Tenant isolation: filter by tenant_id if present in state
+        tenant_filter = _build_tenant_filter(state.get("tenant_id"))
+
         # 1️⃣ conversations_embeddings — conversational memory
-        res = _agent.search("conversations_embeddings", vec, top_k=5)
+        res = _agent.search("conversations_embeddings", vec, top_k=5, qfilter=tenant_filter)
         hits = res.get("results", []) if isinstance(res, dict) else (res or [])
 
         # 2️⃣ phrases_embeddings — NLP seed phrases (explicit collection)
@@ -75,7 +95,7 @@ def qdrant_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
         # 3️⃣ weave_embeddings — ontological patterns (Pattern Weavers)
         if not hits:
-            res = _agent.search("weave_embeddings", vec, top_k=5)
+            res = _agent.search("weave_embeddings", vec, top_k=5, qfilter=tenant_filter)
             weave_hits = res.get("results", []) if isinstance(res, dict) else (res or [])
             if weave_hits:
                 hits = [
