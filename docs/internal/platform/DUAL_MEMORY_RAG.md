@@ -1,6 +1,8 @@
 # Dual Memory Layer & RAG
 
-<p class="kb-subtitle">How Vitruvyan composes RAG from two storages: Archivarium (PostgreSQL) + Mnemosyne (Qdrant), plus migrations (Alembic) and embedding services.</p>
+> **Last updated**: Mar 10, 2026 19:00 UTC
+
+<p class="kb-subtitle">How Vitruvyan composes RAG from two storages: Archivarium (PostgreSQL) + Mnemosyne (Qdrant), with retrieval quality contracts, tenant isolation, context routing, and embedding governance.</p>
 
 ## What it does
 
@@ -11,10 +13,9 @@
   - `PostgresAgent` for SQL read/write (no schema assumptions).
   - `QdrantAgent` for collections, upsert, and similarity search.
   - `AlchemistAgent` for **schema migrations** via Alembic (where enabled).
-- Explains where **RAG** lives in the stack:
-  - embeddings are produced by a dedicated service (`services/api_embedding/`) and/or by Babel Gardens embedding routes
-  - persistence and retrieval are performed via the agents + service adapters
-  - **coherence** and **sync planning** are governed by Memory Orders (not by ad-hoc scripts)
+- Separates core infrastructure from vertical-specific policy:
+  - **Core provides**: agents, collection governance, retrieval interfaces, metrics, tenant filtering.
+  - **Verticals provide**: schemas, re-rankers, query transformers, evaluators, domain collections.
 
 ## Semantic responsibility split (verified)
 
@@ -42,6 +43,7 @@ Code: `vitruvyan_core/core/agents/postgres_agent.py`
 - **Role**: Qdrant connectivity + collection management + search/upsert utilities.
 - **Contract**: caller logic is domain-owned, but collection naming/payload minimums are governed by `docs/contracts/rag/RAG_GOVERNANCE_CONTRACT_V1.md`.
 - **Env**: `QDRANT_HOST`, `QDRANT_PORT` *(or `QDRANT_URL`)*, `QDRANT_API_KEY`, `QDRANT_TIMEOUT`.
+- **Tenant isolation**: search methods accept an optional `tenant_id` for payload-based filtering in multi-tenant deployments.
 
 Code: `vitruvyan_core/core/agents/qdrant_agent.py`
 
@@ -55,44 +57,74 @@ Code: `vitruvyan_core/core/agents/qdrant_agent.py`
 
 Code: `vitruvyan_core/core/agents/alchemist_agent.py`
 
-## How RAG is assembled (system view)
+## Embedding model
 
-RAG is not a single module: it emerges from **(1) embedding**, **(2) dual persistence**, and **(3) retrieval**.
+The canonical embedding model is **`nomic-ai/nomic-embed-text-v1.5`**:
+
+| Property | Value |
+|----------|-------|
+| Dimension | 768 |
+| Max tokens | 8,192 |
+| Architecture | `nomic-bert-2048` (custom, requires `trust_remote_code=True`) |
+| Dependencies | `sentence-transformers`, `einops` |
+
+The model is registered in the embedding model registry (`contracts/rag.py → EMBEDDING_MODELS`) which enforces that collection `vector_size` matches the model dimension. Previous model (`all-MiniLM-L6-v2`, 384d) was migrated in March 2026.
+
+## Retrieval quality contracts
+
+The retrieval pipeline is extensible through four interfaces defined in `contracts/retrieval.py`:
 
 ```mermaid
 flowchart LR
-  U[User / Request] --> S[Service / Sacred Order (LIVELLO 2)]
-  S -->|text| E[Embedding Service]
-  E -->|vector| Q[QdrantAgent (Mnemosyne)]
-  S -->|facts/logs| P[PostgresAgent (Archivarium)]
-  S -->|retrieve| Q
-  S -->|retrieve| P
-  MO[Memory Orders] -->|coherence + sync planning| P
-  MO -->|coherence + sync planning| Q
+  Q[User Query] --> QT[IQueryTransformer]
+  QT -->|"variants[]"| VS[Vector Search]
+  VS -->|"RankedResult[]"| RR[IReranker]
+  RR -->|"re-ranked[]"| CR[IContextRouter]
+  CR -->|inline / embed| CMP[Compose]
+  CMP --> EV[IRAGEvaluator]
 ```
 
-## Runtime flow (today)
+| Interface | Purpose | Default |
+|-----------|---------|---------|
+| `IQueryTransformer` | Pre-retrieval query expansion | Pass-through |
+| `IReranker` | Post-retrieval re-ordering | No-op (Qdrant order) |
+| `IContextRouter` | Decides inline vs. RAG vs. both | Size-based (≤15k chars → inline) |
+| `IRAGEvaluator` | Evaluates faithfulness/relevance/precision | Vertical provides |
 
-1. A service/node asks the embedding layer for vectors (today, often `api_embedding`).
-2. Vectors are persisted/retrieved through `QdrantAgent` (Mnemosyne), while structured context remains in PostgreSQL via `PostgresAgent` (Archivarium).
-3. Retrieval combines semantic hits from Qdrant with structured records from PostgreSQL.
-4. Memory Orders monitors drift and plans synchronization when PG↔Qdrant coherence degrades.
+Key data structures: `RankedResult` (scored hit), `CitationRef` (attribution), `EvalResult` (quality scores), `ContextRouting` (routing enum).
 
-This is why the RAG behavior is dual: **semantic recall + structured truth**.
+## How RAG is assembled (system view)
+
+RAG is not a single module: it emerges from **(1) embedding**, **(2) dual persistence**, **(3) retrieval**, and **(4) quality enforcement**.
+
+```mermaid
+flowchart LR
+  U[User / Request] --> S[Service / Sacred Order]
+  S -->|text| E[Embedding Service]
+  E -->|768d vector| Q[QdrantAgent — Mnemosyne]
+  S -->|facts/logs| P[PostgresAgent — Archivarium]
+  S -->|retrieve| Q
+  S -->|retrieve| P
+  MO[Memory Orders] -->|coherence + sync| P
+  MO -->|coherence + sync| Q
+```
+
+## Runtime flow
+
+1. A service/node generates embeddings via the embedding service (`api_embedding` or Babel Gardens routes).
+2. Vectors (768-dim, nomic) are persisted through `QdrantAgent` with `RAGPayload` lifecycle metadata. Structured context goes to PostgreSQL via `PostgresAgent`.
+3. At retrieval time:
+   - `IQueryTransformer` expands the query into search variants.
+   - Parallel Qdrant searches are merged and deduplicated.
+   - `IReranker` re-orders results using a more expensive relevance signal.
+   - `IContextRouter` decides whether content goes inline or to RAG.
+4. `CitationRef` objects are attached to the response for attribution.
+5. Memory Orders monitors PG↔Qdrant drift and plans synchronization when coherence degrades.
 
 ### Embedding layer
 
-Common patterns in the codebase:
-
-- **Dedicated embedding service** exposes `/v1/embeddings/*`: `services/api_embedding/`
-- **Babel Gardens** exposes embedding routes (including multilingual) and can cooperate with the embedding service: `services/api_babel_gardens/`
-
-Appendix reference: `.github/Vitruvyan_Appendix_E_RAG_System.md`
-
-Internal KB:
-
-- Sacred Order: `docs/internal/orders/BABEL_GARDENS.md`
-- Service: `docs/internal/services/BABEL_GARDENS_API.md`
+- **Dedicated embedding service**: `services/api_embedding/` — exposes `/v1/embeddings/*`, loads `nomic-embed-text-v1.5` at startup.
+- **Babel Gardens**: `services/api_babel_gardens/` — exposes embedding routes (including multilingual), cooperates with the embedding service.
 
 ### Coherence, drift, and healing
 
@@ -104,47 +136,32 @@ The dual-memory system needs constant monitoring because “row count” and “
 
 Order reference: `docs/internal/orders/MEMORY_ORDERS.md`
 
-## Evolution roadmap (toward Babel Gardens as embedding front layer)
+## RAG metrics and tenant isolation
 
-Target direction: Babel Gardens becomes the main semantic-embedding front layer, while orchestration/routing stays in LangGraph.
+Phase 4 added comprehensive metrics instrumentation (`RAG_METRICS`) on the agent layer:
 
-### What must be implemented
+- **Search metrics**: latency, result count, collection, tenant filtering.
+- **Upsert metrics**: payload size, batch count, collection.
+- **Governance metrics**: undeclared collection warnings, dimension mismatches.
 
-1. **Unify embedding contract**
-   - Standard request/response schema for Graph, Pattern Weavers, Memory Orders, Babel.
-   - Freeze mandatory metadata: `language`, `model_type`, `dimension`, correlation/trace ids.
-2. **Migrate callers incrementally**
-   - Switch one consumer at a time from legacy embedding endpoints to Babel endpoints.
-   - Keep compatibility adapters during transition.
-3. **Centralize vector-write semantics**
-   - Single owner for id strategy, payload schema, collection naming conventions.
-   - Enforce this at adapter boundary, not inside business nodes.
-4. **Guard coherence during migration**
-   - Add PG↔Qdrant reconciliation checks after each migration step.
-   - Use Memory Orders drift metrics as release gate.
-5. **Deprecate legacy path**
-   - Mark old embedding endpoints deprecated.
-   - Remove only after all consumers are migrated and stable in production.
+Multi-tenant RAG is supported via payload-based filtering: `RAGPayload.tenant_id` is persisted on every Qdrant point and search methods accept `tenant_id` to filter at query time. Tenant filtering is opt-in (backward compatible).
 
-### Important boundary
+## Verticalization
 
-- Even after migration, Babel Gardens should **not** own routing decisions.
-- Routing remains in LangGraph (`intent_detection_node` + `route_node`).
+The core is domain-agnostic; verticals own:
 
-## Verticalization (finance pilot)
-
-The core is domain-agnostic; the finance vertical owns:
-
-- **PostgreSQL schema**: tables, indexes, constraints (e.g., market entities, logs, audits, phrase stores).
-- **Qdrant domain extensions**: domain collections and adapters within RAG governance constraints (e.g., `<domain>.<purpose>`, declared ownership, payload metadata).
+- **PostgreSQL schema**: tables, indexes, constraints (domain-specific data).
+- **Qdrant domain extensions**: domain collections within RAG governance constraints.
+- **Retrieval implementations**: concrete `IQueryTransformer`, `IReranker`, `IRAGEvaluator`.
 - **Adapters**: what gets embedded, stored, retrieved, filtered, and how scores/thresholds are applied.
 
-Example (finance pack): `examples/verticals/finance/CODEX_HUNTERS_DOMAIN_PACK.md`
-
-## References (deep dive)
+## References
 
 - Agents: `vitruvyan_core/core/agents/__init__.py`
-- RAG contract: `docs/contracts/rag/RAG_GOVERNANCE_CONTRACT_V1.md`
+- Retrieval contracts: `vitruvyan_core/contracts/retrieval.py`
+- RAG governance contract: `vitruvyan_core/contracts/rag.py`
+- RAG governance docs: `docs/contracts/rag/RAG_GOVERNANCE_CONTRACT_V1.md`
 - RAG operations: `docs/contracts/rag/RAG_GOVERNANCE_OPERATIONS.md`
+- Embedding service: `services/api_embedding/`
+- Memory Orders: `docs/internal/orders/MEMORY_ORDERS.md`
 - RAG Appendix: `.github/Vitruvyan_Appendix_E_RAG_System.md`
-- Architectural map (agents + integration): `docs/architecture/MAPPA_ARCHITETTURALE_MODULI.md`

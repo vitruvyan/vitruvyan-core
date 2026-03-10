@@ -1,6 +1,8 @@
 # Embedding API
 
-<p class="kb-subtitle">LIVELLO 2 service for MiniLM embeddings and optional Qdrant storage.</p>
+> **Last updated**: Mar 10, 2026 19:00 UTC
+
+<p class="kb-subtitle">LIVELLO 2 service for text embeddings (nomic-embed-text-v1.5, 768d) and optional Qdrant storage.</p>
 
 ## Location
 

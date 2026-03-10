@@ -1,7 +1,7 @@
 # ============================================================================
 # MkDocs Configuration — Vitruvyan Core Knowledge Base
 # ============================================================================
-# Last Updated: March 1, 2026
+# Last Updated: February 20, 2026
 # Purpose: User & administrator documentation (domain-agnostic epistemic OS)
 # Deploy: docker compose up -d mkdocs → http://localhost:9800
 # Build:  mkdocs build → site/ (static HTML)
@@ -119,10 +119,20 @@ nav:
     - Epistemic Charter: docs/foundational/Vitruvyan_Epistemic_Charter.md
     - Pipeline Walkthrough: docs/foundational/VITRUVYAN_PIPELINE_WALKTHROUGH.md
 
+  - Installation:
+    - Overview: docs/installation/README.md
+    - Requirements: docs/installation/REQUIREMENTS.md
+    - Local Setup: docs/installation/LOCAL.md
+    - Docker Setup: docs/installation/DOCKER.md
+    - Production Deployment: docs/installation/PRODUCTION.md
+    - Environment Variables: docs/installation/ENV_VARS.md
+    - Health Checks: docs/installation/HEALTH_CHECKS.md
+
   - System Core:
     - Orchestration:
       - Overview: vitruvyan_core/core/orchestration/README.md
       - Slot Filling Alignment: vitruvyan_core/core/orchestration/langgraph/docs/SLOT_FILLING_ARCHITECTURE_ALIGNMENT.md
+      - API Graph (Service): services/api_graph/README.md
     - Cognitive Bus (Synaptic Conclave):
       - Overview: vitruvyan_core/core/synaptic_conclave/docs/README.md
       - Topology (Mermaid): infrastructure/docker/monitoring/grafana/SYNAPTIC_CONCLAVE_TOPOLOGY.md
@@ -130,6 +140,7 @@ nav:
       - Index: docs/internal/platform/README.md
       - Dual Memory & RAG: docs/internal/platform/DUAL_MEMORY_RAG.md
       - LLM / AI Layer: docs/internal/platform/LLM_LAYER.md
+      - Prompt Governance: docs/internal/platform/PROMPT_GOVERNANCE.md
     - Sacred Orders:
       - Introduction: docs/foundational/SACRED_ORDERS_INTRO.md
       - Index: docs/internal/orders/README.md
@@ -141,15 +152,11 @@ nav:
       - Pattern Weavers: docs/internal/orders/PATTERN_WEAVERS.md
     - Compute (Neural Engine):
       - Overview: vitruvyan_core/core/neural_engine/README.md
+      - Neural Engine API: docs/internal/services/NEURAL_ENGINE_API.md
  
   - Architecture:
     - Overview: docs/architecture/README.md
-    - "Pipeline E2E — Guida Completa": docs/architecture/PIPELINE_E2E.md
-    - Graph Layer (Audit A+): docs/architecture/LANGGRAPH_ARCHITECTURAL_AUDIT_MAR2026.md
-    - Module Architecture Map: docs/architecture/MAPPA_ARCHITETTURALE_MODULI.md
-    - Module Status Map: docs/foundational/MODULE_STATUS_MAP.md
     - Dual Memory Layer: docs/architecture/DUAL_MEMORY_LAYER.md
-    - Semantic & Ontology: docs/architecture/SEMANTIC_ONTOLOGY_ARCHITECTURE.md
     - Sacred Orders Pattern: vitruvyan_core/core/governance/SACRED_ORDER_PATTERN.md
     - Technical Debt Audit: docs/architecture/TECHNICAL_DEBT_AUDIT.md
 
@@ -178,42 +185,19 @@ nav:
     - Contracts: docs/knowledge_base/web_ui/contracts.md
     - Stack & Technology: docs/knowledge_base/web_ui/stack.md
     
-  - Verticali:
-    - Guida Generale:
-      - Implementation Guide: docs/knowledge_base/development/Vertical_Implementation_Guide.md
-      - Domain: docs/knowledge_base/development/verticals/Vertical_Domain.md
-      - Orchestration (LangGraph): docs/knowledge_base/development/verticals/Vertical_Orchestration_LangGraph.md
-      - Sacred Orders Integration: docs/knowledge_base/development/verticals/Vertical_Sacred_Orders.md
-      - Pattern Guide: docs/knowledge_base/development/verticals/Vertical_Patterns.md
-      - Technical Reference: docs/knowledge_base/development/verticals/Vertical_Technical_Reference.md
-      - Pattern Examples: examples/verticals/README.md
-    - Contratti:
-      - Overview: docs/contracts/verticals/README.md
-      - Vertical Contract V1: docs/contracts/verticals/VERTICAL_CONTRACT_V1.md
-      - Conformance Checklist: docs/contracts/verticals/VERTICAL_CONFORMANCE_CHECKLIST.md
-      - Pattern Notes: docs/contracts/verticals/pattern.md
-      - Manifest Template: docs/contracts/verticals/templates/vertical_manifest.yaml
-    - "AiComSec (Security)":
-      - Brainstorm Report: docs/knowledge_base/development/verticals/security/AICOMSEC_BRAINSTORM_REPORT.md
-      - Excel Ingestion Walkthrough: docs/knowledge_base/development/verticals/security/AICOMSEC_EXCEL_INGESTION_WALKTHROUGH.md
-    - Finance (Legacy):
-      - Codex Hunters Domain Pack: examples/verticals/finance/CODEX_HUNTERS_DOMAIN_PACK.md
-
   - Infrastructure:
     - Overview: infrastructure/README_INFRASTRUCTURE.md
-    - Installation:
-      - Overview: docs/installation/README.md
-      - Requirements: docs/installation/REQUIREMENTS.md
-      - Local Setup: docs/installation/LOCAL.md
-      - Docker Setup: docs/installation/DOCKER.md
-      - Production Deployment: docs/installation/PRODUCTION.md
-      - Environment Variables: docs/installation/ENV_VARS.md
-      - Health Checks: docs/installation/HEALTH_CHECKS.md
     - Docker Setup: infrastructure/docker/README.md
-    - Oculus Prime: infrastructure/edge/oculus_prime/README.md
-    - Oculus Prime Flow Graph: docs/knowledge_base/oculus_prime/intake_flow_graph.md
+    - Edge (Deprecated): infrastructure/edge/README.md
     - Monitoring: infrastructure/docker/monitoring/README.md
+    - Synaptic Topology (Mermaid): infrastructure/docker/monitoring/grafana/SYNAPTIC_CONCLAVE_TOPOLOGY.md
     - KB Access Control: infrastructure/docker/mkdocs/ACCESS_CONTROL.md
+
+  - Edge Modules:
+    - Overview: vitruvyan_edge/README.md
+    - Oculus Prime: vitruvyan_edge/oculus_prime/README.md
+    - Oculus Prime Core: vitruvyan_edge/oculus_prime/core/README.md
+    - Oculus Prime Flow Graph: docs/knowledge_base/oculus_prime/intake_flow_graph.md
     
   - Development:
     - Testing: tests/README_TESTS.md
@@ -222,23 +206,26 @@ nav:
       - Update System Contract V1: docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md
       - Package Manager Contract V1: docs/contracts/platform/PACKAGE_MANAGER_SYSTEM_CONTRACT_V1.md
       - Capabilities Summary: docs/knowledge_base/development/UPDATE_MANAGER_CAPABILITIES_SUMMARY.md
-    - RAG Governance:
-      - Overview: docs/contracts/rag/README.md
-      - Contract V1: docs/contracts/rag/RAG_GOVERNANCE_CONTRACT_V1.md
-      - Operations: docs/contracts/rag/RAG_GOVERNANCE_OPERATIONS.md
     - Templates: docs/foundational/TEMPLATE_SACRED_ORDER_COMPONENT.md
+    - Verticals:
+      - Implementation Guide (Overview): docs/knowledge_base/development/Vertical_Implementation_Guide.md
+      - Domain: docs/knowledge_base/development/verticals/Vertical_Domain.md
+      - Orchestration (LangGraph): docs/knowledge_base/development/verticals/Vertical_Orchestration_LangGraph.md
+      - Sacred Orders Integration: docs/knowledge_base/development/verticals/Vertical_Sacred_Orders.md
+      - Pattern Guide: docs/knowledge_base/development/verticals/Vertical_Patterns.md
+      - Technical Reference: docs/knowledge_base/development/verticals/Vertical_Technical_Reference.md
+      - Pattern Examples: examples/verticals/README.md
+      - Contracts:
+        - Overview: docs/contracts/verticals/README.md
+        - Vertical Contract V1: docs/contracts/verticals/VERTICAL_CONTRACT_V1.md
+        - Conformance Checklist: docs/contracts/verticals/VERTICAL_CONFORMANCE_CHECKLIST.md
+        - Pattern Notes: docs/contracts/verticals/pattern.md
+        - Manifest Template: docs/contracts/verticals/templates/vertical_manifest.yaml
+      - Finance:
+        - Codex Hunters Domain Pack: examples/verticals/finance/CODEX_HUNTERS_DOMAIN_PACK.md
     - Examples: examples/README_EXAMPLES.md
     - Configuration: config/README_CONFIG.md
     - Scripts: scripts/README_SCRIPTS.md
-
-  # DOCS_FEDERATION_NAV_START
-  - Federated KB:
-    - Overview: docs/knowledge_base/federated/README.md
-    - Operations: docs/knowledge_base/federated/Docs_Federation_Operations.md
-    - Core Producers: docs/knowledge_base/federated/core/README.md
-    - Vertical Producers: docs/knowledge_base/federated/verticals/README.md
-    - Contract V1: docs/contracts/platform/DOCS_FEDERATION_CONTRACT_V1.md
-  # DOCS_FEDERATION_NAV_END
     
   # - Planning:
   #   - Roadmap: docs/planning/_ALBERATURA_FRAMEWORK_CONSOLIDATA_FEB14_2026.md
@@ -250,10 +237,10 @@ extra:
     provider: mike  # Versioning provider (optional)
 
 extra_css:
-  - docs/stylesheets/material_v1.css?v=20260226a
+  - docs/stylesheets/material_v1.css?v=20260220q
 
 extra_javascript:
-  - docs/javascripts/vitruvyan.js?v=20260226a
+  - docs/javascripts/vitruvyan.js?v=20260219k
 
 # Copyright
 copyright: Copyright &copy; 2026 Vitruvyan Team
