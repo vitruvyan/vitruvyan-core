@@ -17,11 +17,10 @@ The decorator:
 3. Is a no-op when both sets are empty — wrapping cost is zero.
 4. Never swallows exceptions from the wrapped node.
 
-Design rationale:
-    Phase 3 enforcement is *observability-first*: violations are logged so
-    that the contract registry can be populated incrementally without
-    breaking the graph at startup.  Hard enforcement (raise on violation)
-    is a future Phase 4 flag.
+Enforcement modes (ENFORCE_CONTRACTS env var):
+    "warn"   — (default) Log violations as warnings, do not raise.
+    "strict" — Raise ContractViolationError on any violation.
+    "off"    — Disable all contract checks (zero overhead).
 
 Author: Vitruvyan Core Team
 Created: March 2026
@@ -31,9 +30,19 @@ from __future__ import annotations
 
 import functools
 import logging
+import os
 from typing import Any, Callable, Dict, Optional, Set
 
 logger = logging.getLogger(__name__)
+
+
+class ContractViolationError(RuntimeError):
+    """Raised in strict mode when a node contract is violated."""
+
+
+def _get_enforcement_mode() -> str:
+    """Read enforcement mode from env var (checked per-call for hot reload)."""
+    return os.getenv("ENFORCE_CONTRACTS", "warn").lower()
 
 
 def enforced(
@@ -62,14 +71,21 @@ def enforced(
 
         @functools.wraps(fn)
         def wrapper(state: Dict[str, Any]) -> Dict[str, Any]:
+            mode = _get_enforcement_mode()
+
+            if mode == "off":
+                return fn(state)
+
             # ── Pre-condition check ──────────────────────────────────────────
             missing_in = _requires - set(state.keys())
             if missing_in:
-                logger.warning(
-                    "[contract] node=%s REQUIRES missing keys: %s",
-                    node_name,
-                    sorted(missing_in),
+                msg = (
+                    f"[contract] node={node_name} REQUIRES missing keys: "
+                    f"{sorted(missing_in)}"
                 )
+                if mode == "strict":
+                    raise ContractViolationError(msg)
+                logger.warning(msg)
 
             # ── Execute node ─────────────────────────────────────────────────
             result = fn(state)
@@ -78,11 +94,13 @@ def enforced(
             if result is not None:
                 missing_out = _produces - set(result.keys())
                 if missing_out:
-                    logger.warning(
-                        "[contract] node=%s PRODUCES missing keys: %s",
-                        node_name,
-                        sorted(missing_out),
+                    msg = (
+                        f"[contract] node={node_name} PRODUCES missing keys: "
+                        f"{sorted(missing_out)}"
                     )
+                    if mode == "strict":
+                        raise ContractViolationError(msg)
+                    logger.warning(msg)
 
             return result
 
