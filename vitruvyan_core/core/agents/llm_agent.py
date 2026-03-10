@@ -250,6 +250,8 @@ class LLMMetrics:
     """Metrics for LLM usage tracking."""
     total_requests: int = 0
     total_tokens: int = 0
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
     cache_hits: int = 0
     cache_misses: int = 0
     rate_limited: int = 0
@@ -270,6 +272,8 @@ class LLMMetrics:
         return {
             "total_requests": self.total_requests,
             "total_tokens": self.total_tokens,
+            "prompt_tokens": self.prompt_tokens,
+            "completion_tokens": self.completion_tokens,
             "cache_hits": self.cache_hits,
             "cache_misses": self.cache_misses,
             "cache_hit_rate": round(self.cache_hit_rate, 3),
@@ -399,6 +403,7 @@ class LLMAgent:
         cache_key: str = None,
         cache_ttl_hours: int = 24,
         skip_cache: bool = False,
+        prompt_metadata: Dict[str, Any] = None,
     ) -> str:
         """
         Complete a prompt using the LLM.
@@ -484,6 +489,9 @@ class LLMAgent:
             if self._rate_limiter:
                 self._rate_limiter.record_actual_tokens(actual_tokens)
             self._metrics.total_tokens += actual_tokens
+            if response.usage:
+                self._metrics.prompt_tokens += response.usage.prompt_tokens or 0
+                self._metrics.completion_tokens += response.usage.completion_tokens or 0
             
             # Extract response
             result = response.choices[0].message.content.strip()
@@ -504,6 +512,20 @@ class LLMAgent:
             self._metrics.total_latency_ms += latency
             
             logger.debug(f"✅ LLM complete (model={model}, tokens={actual_tokens}, latency={latency:.1f}ms)")
+            
+            # Audit trail (Phase 4.1)
+            if prompt_metadata:
+                logger.info("llm_audit", extra={
+                    "prompt_id": prompt_metadata.get("prompt_id"),
+                    "prompt_version": prompt_metadata.get("version"),
+                    "domain": prompt_metadata.get("domain"),
+                    "scenario": prompt_metadata.get("scenario"),
+                    "model": model,
+                    "tokens": actual_tokens,
+                    "tenant_id": prompt_metadata.get("tenant_id"),
+                    "latency_ms": round(latency, 1),
+                })
+            
             return result
             
         except Exception as e:
@@ -599,6 +621,7 @@ class LLMAgent:
         temperature: float = 0.0,
         max_tokens: int = 1000,
         tool_choice: str = "auto",
+        prompt_metadata: Dict[str, Any] = None,
     ) -> Dict[str, Any]:
         """
         Complete with function calling / tool use (MCP, OpenAI functions).
@@ -649,12 +672,27 @@ class LLMAgent:
             if self._rate_limiter:
                 self._rate_limiter.record_actual_tokens(actual_tokens)
             self._metrics.total_tokens += actual_tokens
+            if response.usage:
+                self._metrics.prompt_tokens += response.usage.prompt_tokens or 0
+                self._metrics.completion_tokens += response.usage.completion_tokens or 0
             
             latency = (time.time() - start_time) * 1000
             self._metrics.total_latency_ms += latency
             
             message = response.choices[0].message
             logger.debug(f"✅ LLM tools (model={model}, tokens={actual_tokens}, latency={latency:.1f}ms)")
+            
+            # Audit trail (Phase 4.1)
+            if prompt_metadata:
+                logger.info("llm_audit", extra={
+                    "prompt_id": prompt_metadata.get("prompt_id"),
+                    "domain": prompt_metadata.get("domain"),
+                    "model": model,
+                    "tokens": actual_tokens,
+                    "tenant_id": prompt_metadata.get("tenant_id"),
+                    "latency_ms": round(latency, 1),
+                    "tool_calls": len(message.tool_calls or []),
+                })
             
             return {
                 "content": message.content,
@@ -687,6 +725,7 @@ class LLMAgent:
         max_tokens: int = 500,
         json_mode: bool = False,
         skip_cache: bool = False,
+        prompt_metadata: Dict[str, Any] = None,
     ) -> str:
         """
         Complete with a raw messages array (full control over conversation).
@@ -740,6 +779,9 @@ class LLMAgent:
             if self._rate_limiter:
                 self._rate_limiter.record_actual_tokens(actual_tokens)
             self._metrics.total_tokens += actual_tokens
+            if response.usage:
+                self._metrics.prompt_tokens += response.usage.prompt_tokens or 0
+                self._metrics.completion_tokens += response.usage.completion_tokens or 0
             
             result = response.choices[0].message.content.strip()
             
@@ -747,6 +789,18 @@ class LLMAgent:
             self._metrics.total_latency_ms += latency
             
             logger.debug(f"✅ LLM messages (model={model}, tokens={actual_tokens}, latency={latency:.1f}ms)")
+            
+            # Audit trail (Phase 4.1)
+            if prompt_metadata:
+                logger.info("llm_audit", extra={
+                    "prompt_id": prompt_metadata.get("prompt_id"),
+                    "domain": prompt_metadata.get("domain"),
+                    "model": model,
+                    "tokens": actual_tokens,
+                    "tenant_id": prompt_metadata.get("tenant_id"),
+                    "latency_ms": round(latency, 1),
+                })
+            
             return result
             
         except Exception as e:

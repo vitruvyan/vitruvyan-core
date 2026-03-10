@@ -193,3 +193,65 @@ class DefaultContextRouter(IContextRouter):
         if len(content) <= self.threshold:
             return ContextRouting.INLINE
         return ContextRouting.EMBED
+
+
+# ── RAG Evaluation ────────────────────────────────────────────────────────────
+
+@dataclass
+class EvalResult:
+    """
+    Evaluation scores for a single RAG retrieval + generation cycle.
+
+    Verticals implement the evaluator (RAGAS, LLM-as-judge, human eval).
+    The core defines the result schema.
+    """
+
+    faithfulness: float        # Is the response faithful to the context? (0-1)
+    relevance: float           # Is the response relevant to the query? (0-1)
+    context_precision: float   # Were the injected chunks all relevant? (0-1)
+    details: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self):
+        for name in ("faithfulness", "relevance", "context_precision"):
+            val = getattr(self, name)
+            if not (0.0 <= val <= 1.0):
+                raise ValueError(f"EvalResult.{name} must be 0-1, got {val}")
+
+    @property
+    def composite_score(self) -> float:
+        """Harmonic mean of the three scores (penalises weak dimensions)."""
+        scores = [self.faithfulness, self.relevance, self.context_precision]
+        if any(s == 0 for s in scores):
+            return 0.0
+        return 3.0 / sum(1.0 / s for s in scores)
+
+
+class IRAGEvaluator(ABC):
+    """
+    Interface for evaluating retrieval + generation quality.
+
+    The core defines the contract. Verticals provide concrete evaluators
+    (RAGAS, LLM-as-judge, human evaluation, or custom metrics).
+    """
+
+    @abstractmethod
+    def evaluate(
+        self,
+        query: str,
+        response: str,
+        context_chunks: List[str],
+        expected_answer: Optional[str] = None,
+    ) -> EvalResult:
+        """
+        Evaluate a RAG cycle.
+
+        Args:
+            query: Original user query.
+            response: Generated response text.
+            context_chunks: The chunks that were injected into the prompt.
+            expected_answer: Ground-truth answer (for supervised eval).
+
+        Returns:
+            EvalResult with scored dimensions.
+        """
+        ...

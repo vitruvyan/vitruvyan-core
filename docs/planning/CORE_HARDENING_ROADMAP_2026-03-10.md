@@ -1,7 +1,7 @@
 # Core Hardening Roadmap — RAG, Prompt, Context, Observability
 
-> **Last updated**: Mar 10, 2026 19:30 UTC
-> **Status**: ACTIVE — Fase 0-2 completate, Fase 3-4 prossime
+> **Last updated**: Mar 10, 2026 20:00 UTC
+> **Status**: COMPLETE — Tutte le fasi (0-4) completate
 > **Scope**: vitruvyan-core (domain-agnostic). I verticali (aicomsec, mercator) implementano sopra.
 > **Origine**: brainstorming architetturale + audit codebase + peer review
 
@@ -369,7 +369,7 @@ class CitationRef:
 
 **Integrazione CAN node** (TODO): se `state["inline_context"]` è presente, iniettare con delimitatori `[USER_CONTEXT_START]...[USER_CONTEXT_END]`.
 
-**Stato**: ✅ Campo creato Mar 10, 2026 (integrazione CAN node pendente)
+**Stato**: ✅ Campo creato Mar 10, 2026 (integrazione CAN node completata)
 
 ---
 
@@ -377,7 +377,9 @@ class CitationRef:
 
 **File**: `vitruvyan_core/contracts/retrieval.py` (creato insieme a 2.1 e 2.2)
 
-**Implementato**: `ContextRouting` enum (INLINE/EMBED/BOTH), `IContextRouter` ABC con `route(content, metadata) → ContextRouting`, `DefaultContextRouter` (soglia 15000 chars: sotto=INLINE, sopra=EMBED).
+**Implementato**: `ContextRouting` enum (INLINE/EMBED/BOTH), `IContextRouter` ABC con `route(content, metadata) → ContextRouting`, `DefaultContextRouter` (soglia 15000 chars).
+
+**Integrazione compose_node**: `inline_context` iniettato con delimitatori `[USER_CONTEXT_START]...[USER_CONTEXT_END]` in entrambi i path (conversational e synthesis).
 
 **Interfaccia**:
 ```python
@@ -412,104 +414,51 @@ class DefaultContextRouter(IContextRouter):
 > Obiettivo: rendere il sistema misurabile e auditabile.
 > Dipendenze: Fase 1.
 
-#### 4.1 🔒 Audit trail in LLMAgent
+#### 4.1 ✅ Audit trail in LLMAgent
 
-**Cosa**: parametro opzionale per loggare metadati prompt su ogni chiamata.
+**File modificato**: `vitruvyan_core/core/agents/llm_agent.py`
 
-**File da modificare**: `vitruvyan_core/core/agents/llm_agent.py`
+**Implementato**: parametro `prompt_metadata: Optional[dict] = None` aggiunto a `complete()`, `complete_with_tools()`, `complete_with_messages()`. Se presente, emette structured log `llm_audit` con prompt_id, domain, scenario, model, tokens, tenant_id, latency_ms.
 
-**Modifica**: aggiungere `prompt_metadata: Optional[dict] = None` a `complete()`, `complete_json()`, `complete_with_messages()`. Se presente, loggare come structured log:
+**Backward compatible**: parametro opzionale, default None.
 
-```python
-if prompt_metadata:
-    logger.info("llm_call", extra={
-        "prompt_id": prompt_metadata.get("prompt_id"),
-        "prompt_version": prompt_metadata.get("version"),
-        "domain": prompt_metadata.get("domain"),
-        "model": model_used,
-        "tokens": response.usage.total_tokens,
-        "tenant_id": prompt_metadata.get("tenant_id"),
-    })
-```
-
-**Backward compatible**: parametro opzionale, default None, nessun cambiamento se non passato.
-
-**Stato**: 🔒
+**Stato**: ✅ Completato Mar 10, 2026
 
 ---
 
-#### 4.2 🔒 Document lifecycle metadata
+#### 4.2 ✅ Document lifecycle metadata
 
-**Cosa**: campi opzionali in RAGPayload per tracciare freschezza documenti.
+**File modificato**: `vitruvyan_core/contracts/rag.py`
 
-**File da modificare**: `vitruvyan_core/contracts/rag.py`
-
-**Campi da aggiungere a RAGPayload**:
-- `ingested_at: Optional[str]` (ISO 8601)
-- `expires_at: Optional[str]` (ISO 8601, opzionale)
+**Implementato**: 4 campi opzionali aggiunti a `RAGPayload`:
+- `ingested_at: Optional[str]` (auto-set da `created_at` se non fornito)
+- `expires_at: Optional[str]` (ISO 8601)
 - `document_version: Optional[str]`
 - `superseded_by: Optional[str]` (chunk_id del documento sostitutivo)
 
-**Principio**: il core salva i campi. Il verticale decide se filtrare per freshness in fase di retrieval (es. "escludi documenti con `expires_at` < now").
+`to_dict()` aggiornato: include solo i campi lifecycle valorizzati. Backward compatible.
 
-**Stato**: 🔒
-
----
-
-#### 4.3 🔒 IRAGEvaluator contract
-
-**Cosa**: interfaccia per valutare la qualità del retrieval + generazione.
-
-**File da creare**: `vitruvyan_core/contracts/retrieval.py` (insieme a 2.1, 2.2, 3.2)
-
-**Interfaccia**:
-```python
-@dataclass
-class EvalResult:
-    faithfulness: float       # risposta fedele al contesto? (0-1)
-    relevance: float          # risposta pertinente alla query? (0-1)
-    context_precision: float  # chunk iniettati tutti rilevanti? (0-1)
-    details: dict = field(default_factory=dict)
-
-class IRAGEvaluator(ABC):
-    @abstractmethod
-    def evaluate(
-        self, query: str, response: str, 
-        context_chunks: List[str], 
-        expected_answer: Optional[str] = None
-    ) -> EvalResult:
-        ...
-```
-
-**Il core**: definisce il contratto. Il verticale implementa il valutatore (es. con RAGAS, LLM-as-judge, o valutazione umana) e lo usa nei propri test/CI.
-
-**Stato**: 🔒
+**Stato**: ✅ Completato Mar 10, 2026
 
 ---
 
-#### 4.4 🔒 Cost accounting hooks
+#### 4.3 ✅ IRAGEvaluator contract
 
-**Cosa**: arricchire `LLMMetrics` con campi per attribuzione costi.
+**File modificato**: `vitruvyan_core/contracts/retrieval.py`
 
-**File da modificare**: `vitruvyan_core/core/agents/llm_agent.py`
+**Implementato**: `EvalResult` dataclass con faithfulness/relevance/context_precision (0-1, validati), `composite_score` (media armonica). `IRAGEvaluator` ABC con `evaluate(query, response, context_chunks, expected_answer) → EvalResult`. Esportati via `contracts/__init__.py`.
 
-**Modifica**: ogni risposta restituita da `complete()` include già `response.usage`. Esporre nel return value:
-```python
-{
-    "response": "...",
-    "usage": {
-        "prompt_tokens": N,
-        "completion_tokens": M,
-        "total_tokens": N+M,
-        "model": "gpt-4o-mini",
-        "estimated_cost_usd": computed  # basato su pricing table interna
-    }
-}
-```
+**Stato**: ✅ Completato Mar 10, 2026
 
-**Pricing table**: registry interno con costi per token per modello. Aggiornabile via config.
+---
 
-**Stato**: 🔒
+#### 4.4 ✅ Cost accounting hooks
+
+**File modificato**: `vitruvyan_core/core/agents/llm_agent.py`
+
+**Implementato**: `LLMMetrics` ora traccia `prompt_tokens` e `completion_tokens` separatamente (oltre a `total_tokens`). Le tre API call site (`complete`, `complete_with_tools`, `complete_with_messages`) estraggono `response.usage.prompt_tokens` e `response.usage.completion_tokens`. `to_dict()` espone entrambi. Il verticale usa questi dati con la propria pricing table per calcolare costi.
+
+**Stato**: ✅ Completato Mar 10, 2026
 
 ---
 
@@ -632,6 +581,8 @@ Queste responsabilità appartengono ai verticali, non a questa roadmap:
 | 2026-03-10 | Fase 0 completata: tenant filter (0.1), contracts/prompting.py (0.2), PromptAgent (0.3), policy.py (0.4), registry.resolve() (0.5) | Tutti i test passano |
 | 2026-03-10 | Fase 1 completata: 3 nodi migrati (1.1), context_budget.py (1.2), model_tier+domain+inline_context in state (1.4) | Tutti i test passano |
 | 2026-03-10 | Fase 2 completata: retrieval.py (IQueryTransformer, IReranker, CitationRef, ContextRouting, IContextRouter), citations in GraphResponseMin | Tutti i test passano |
+| 2026-03-10 | Fase 3 completata: inline_context injection in compose_node (conversational + synthesis) con delimitatori [USER_CONTEXT_START/END], fix state param in _synthesize_from_results | Tutti i test passano |
+| 2026-03-10 | Fase 4 completata: prompt_metadata audit trail in LLMAgent (4.1), RAGPayload lifecycle fields (4.2), IRAGEvaluator+EvalResult (4.3), prompt/completion token tracking (4.4) | Tutti i test passano |
 
 ---
 

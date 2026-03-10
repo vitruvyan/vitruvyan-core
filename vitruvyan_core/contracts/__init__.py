@@ -148,6 +148,8 @@ from .retrieval import (
     ContextRouting,
     IContextRouter,
     DefaultContextRouter,
+    EvalResult,
+    IRAGEvaluator,
 )
 
 __all__ = [
@@ -267,4 +269,6 @@ __all__ = [
     "ContextRouting",
     "IContextRouter",
     "DefaultContextRouter",
+    "EvalResult",
+    "IRAGEvaluator",
 ]

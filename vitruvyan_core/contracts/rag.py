@@ -189,12 +189,22 @@ class RAGPayload:
     Every upserted point MUST include `source` and `created_at`.
     `text`, `version`, and `domain` are SHOULD-level fields.
     Additional domain-specific fields can be added via `extra`.
+
+    Document lifecycle fields (Phase 4.2):
+    - `ingested_at`: When the document entered the RAG system (ISO 8601)
+    - `expires_at`: Optional TTL for document freshness filtering
+    - `document_version`: Version of the source document
+    - `superseded_by`: chunk_id of the replacement document (for updates)
     """
     source: str                     # MUST: origin identifier
     created_at: str = ""            # MUST: ISO 8601 timestamp
     text: Optional[str] = None      # SHOULD: original embedded text
     version: str = "1.0"            # SHOULD: payload schema version
     domain: str = "generic"         # SHOULD: domain tag
+    ingested_at: Optional[str] = None       # OPTIONAL: RAG ingestion timestamp
+    expires_at: Optional[str] = None        # OPTIONAL: TTL for freshness filtering
+    document_version: Optional[str] = None  # OPTIONAL: source document version
+    superseded_by: Optional[str] = None     # OPTIONAL: chunk_id of newer version
     extra: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
@@ -202,6 +212,8 @@ class RAGPayload:
             self.created_at = datetime.now(timezone.utc).isoformat()
         if not self.source:
             raise ValueError("RAGPayload.source is REQUIRED (contract Section 5.2)")
+        if self.ingested_at is None:
+            self.ingested_at = self.created_at
 
     def to_dict(self) -> Dict[str, Any]:
         """Flatten to Qdrant payload dict."""
@@ -213,6 +225,14 @@ class RAGPayload:
         }
         if self.text is not None:
             payload["text"] = self.text
+        if self.ingested_at:
+            payload["ingested_at"] = self.ingested_at
+        if self.expires_at:
+            payload["expires_at"] = self.expires_at
+        if self.document_version:
+            payload["document_version"] = self.document_version
+        if self.superseded_by:
+            payload["superseded_by"] = self.superseded_by
         payload.update(self.extra)
         return payload
 

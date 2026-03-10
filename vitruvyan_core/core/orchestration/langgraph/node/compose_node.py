@@ -110,7 +110,8 @@ def compose_node(state: Dict[str, Any]) -> Dict[str, Any]:
         raw_output=raw_output,
         user_input=user_input,
         language=language,
-        intent=intent
+        intent=intent,
+        state=state,
     )
     
     state["narrative"] = narrative
@@ -161,8 +162,17 @@ def _generate_conversational_response(
             }
             system_prompt += f" {emotion_hints.get(language, emotion_hints['en'])}"
         
+        # Inject inline context if present (Phase 3 — user-uploaded content)
+        inline_context = state.get("inline_context")
+        prompt_text = user_input
+        if inline_context:
+            prompt_text = (
+                f"[USER_CONTEXT_START]\n{inline_context}\n[USER_CONTEXT_END]\n\n"
+                f"{user_input}"
+            )
+        
         narrative = llm.complete(
-            prompt=user_input,
+            prompt=prompt_text,
             system_prompt=system_prompt,
             temperature=0.7,
             max_tokens=300,
@@ -189,7 +199,8 @@ def _synthesize_from_results(
     raw_output: Dict[str, Any],
     user_input: str,
     language: str,
-    intent: str
+    intent: str,
+    state: Dict[str, Any] = None,
 ) -> str:
     """
     Synthesize narrative from pre-calculated service results.
@@ -204,10 +215,12 @@ def _synthesize_from_results(
         user_input: Original user query
         language: Detected language
         intent: Classified intent
+        state: Full graph state (for inline_context, domain, etc.)
         
     Returns:
         Synthesized natural language narrative
     """
+    state = state or {}
     try:
         llm = get_llm_agent()
         
@@ -257,7 +270,14 @@ def _synthesize_from_results(
             f"Respond in {language}."
         )
         
+        # Inject inline context if present (Phase 3 — user-uploaded content)
+        inline_block = ""
+        inline_context = state.get("inline_context")
+        if inline_context:
+            inline_block = f"[USER_CONTEXT_START]\n{inline_context}\n[USER_CONTEXT_END]\n\n"
+        
         user_prompt = (
+            f"{inline_block}"
             f"User query: {user_input}\n\n"
             f"Pre-calculated results:\n{context_str}\n\n"
             f"Synthesize a natural, helpful response explaining these results."
