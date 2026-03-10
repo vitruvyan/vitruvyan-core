@@ -138,6 +138,17 @@ from .prompting import (
     compute_prompt_hash,
     build_prompt_id,
 )
+from .retrieval import (
+    IQueryTransformer,
+    DefaultQueryTransformer,
+    IReranker,
+    DefaultReranker,
+    RankedResult,
+    CitationRef,
+    ContextRouting,
+    IContextRouter,
+    DefaultContextRouter,
+)
 
 __all__ = [
     # Base contracts
@@ -246,4 +257,14 @@ __all__ = [
     "DEFAULT_POLICY",
     "compute_prompt_hash",
     "build_prompt_id",
+    # Retrieval Contract V1
+    "IQueryTransformer",
+    "DefaultQueryTransformer",
+    "IReranker",
+    "DefaultReranker",
+    "RankedResult",
+    "CitationRef",
+    "ContextRouting",
+    "IContextRouter",
+    "DefaultContextRouter",
 ]

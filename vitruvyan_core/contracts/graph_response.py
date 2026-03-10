@@ -23,11 +23,14 @@ from __future__ import annotations
 
 import hashlib
 from datetime import datetime, timezone
-from typing import Any, ClassVar, Dict, List, Literal, Optional
+from typing import Any, ClassVar, Dict, List, Literal, Optional, TYPE_CHECKING
 
 from pydantic import Field
 
 from .base import BaseContract
+
+if TYPE_CHECKING:
+    from .retrieval import CitationRef
 
 # ---------------------------------------------------------------------------
 # Canonical Orthodoxy statuses (source of truth: Verdict._VALID_STATUSES)
@@ -132,6 +135,10 @@ class GraphResponseMin(BaseContract):
         description="When facts were computed (or when greeting was produced)",
     )
     session_min: SessionMin
+    citations: Optional[List[Any]] = Field(
+        None,
+        description="Source attribution: list of CitationRef dicts from retrieval",
+    )
     full_payload: Optional[Dict[str, Any]] = Field(
         None,
         description="Optional full graph output (existing behavior)",

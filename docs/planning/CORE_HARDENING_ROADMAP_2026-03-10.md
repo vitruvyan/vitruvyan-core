@@ -1,7 +1,7 @@
 # Core Hardening Roadmap — RAG, Prompt, Context, Observability
 
-> **Last updated**: Mar 10, 2026 19:00 UTC
-> **Status**: ACTIVE — Fase 0 completata, Fase 1 completata
+> **Last updated**: Mar 10, 2026 19:30 UTC
+> **Status**: ACTIVE — Fase 0-2 completate, Fase 3-4 prossime
 > **Scope**: vitruvyan-core (domain-agnostic). I verticali (aicomsec, mercator) implementano sopra.
 > **Origine**: brainstorming architetturale + audit codebase + peer review
 
@@ -271,7 +271,13 @@ Implementato: `ContextBudgetManager`, `ContextItem`, `estimate_tokens()`, model 
 > Obiettivo: migliorare la precisione del retrieval con hook per verticali.
 > Dipendenze: Fase 0, parzialmente Fase 1.
 
-#### 2.1 🔒 IQueryTransformer contract
+#### 2.1 ✅ IQueryTransformer contract
+
+**File creato**: `vitruvyan_core/contracts/retrieval.py`
+
+**Implementato**: `IQueryTransformer` ABC con `transform(query, context) → List[str]`, `DefaultQueryTransformer` (passthrough). Verticals implementano HyDE, multi-query, synonym expansion.
+
+**Stato**: ✅ Completato Mar 10, 2026
 
 **Cosa**: interfaccia per trasformazione query pre-retrieval.
 
@@ -306,39 +312,26 @@ class HyDEQueryTransformer(IQueryTransformer):
 
 ---
 
-#### 2.2 🔒 IReranker contract
+#### 2.2 ✅ IReranker contract
 
-**Cosa**: interfaccia per re-ranking post-retrieval.
+**File**: `vitruvyan_core/contracts/retrieval.py` (stesso di 2.1)
 
-**File**: stesso di 2.1
-
-**Interfaccia**:
-```python
-@dataclass
-class RankedResult:
-    chunk_id: str
-    text: str
-    original_score: float
-    reranked_score: Optional[float] = None
-    metadata: dict = field(default_factory=dict)
-
-class IReranker(ABC):
-    @abstractmethod
-    def rerank(self, query: str, results: List[RankedResult]) -> List[RankedResult]:
-        ...
-
-class DefaultReranker(IReranker):
-    def rerank(self, query, results):
-        return results  # ordine Qdrant invariato
-```
+**Implementato**: `RankedResult` dataclass con `effective_score` property (usa `reranked_score` se disponibile, altrimenti `original_score`), `IReranker` ABC con `rerank(query, results, top_k) → List[RankedResult]`, `DefaultReranker` (ordine Qdrant invariato, top_k truncation).
 
 **Integrazione**: tra ricerca Qdrant e iniezione nel CAN node. Recupera top-10, re-ranka, inietta top-3.
 
-**Stato**: 🔒
+**Stato**: ✅ Completato Mar 10, 2026
 
 ---
 
-#### 2.3 🔒 CitationRef nel response schema
+#### 2.3 ✅ CitationRef nel response schema
+
+**File modificato**: `vitruvyan_core/contracts/graph_response.py`
+**File creato**: `vitruvyan_core/contracts/retrieval.py` (contiene `CitationRef`)
+
+**Implementato**: `CitationRef` frozen dataclass (chunk_id, source_name, text_excerpt, relevance_score, collection, metadata). Campo `citations: Optional[List[Any]]` aggiunto a `GraphResponseMin`. Anche `ContextRouting` enum e `IContextRouter`/`DefaultContextRouter` (anticipati da Fase 3).
+
+**Stato**: ✅ Completato Mar 10, 2026
 
 **Cosa**: campo opzionale nel response per attribuire fonti.
 
@@ -368,31 +361,23 @@ class CitationRef:
 > Obiettivo: abilitare i verticali a implementare upload-in-chat e long context.
 > Dipendenze: Fase 1 (context budget).
 
-#### 3.1 🔒 Inline context nel BaseGraphState
+#### 3.1 ✅ Inline context nel BaseGraphState
 
-**Cosa**: campo per contesto effimero iniettato direttamente nel prompt.
+**File modificato**: `vitruvyan_core/core/orchestration/base_state.py` (Fase 1.4)
 
-**File da modificare**: `vitruvyan_core/core/orchestration/base_state.py`
+**Implementato**: campo `inline_context: Optional[str]` aggiunto a BaseGraphState. Contesto opaco (può essere testo estratto da un PDF, un CSV, un log). Il core non sa cos'è, lo inietta nel prompt con delimitatori strutturali.
 
-**Campo**: `inline_context: Optional[str]` — contesto opaco (può essere testo estratto da un PDF, un CSV, un log). Il core non sa cos'è, lo inietta nel prompt con delimitatori strutturali.
+**Integrazione CAN node** (TODO): se `state["inline_context"]` è presente, iniettare con delimitatori `[USER_CONTEXT_START]...[USER_CONTEXT_END]`.
 
-**Integrazione CAN node**: se `state["inline_context"]` è presente:
-```
-[USER_CONTEXT_START]
-{inline_context}
-[USER_CONTEXT_END]
-```
-Inserito nel prompt prima della query utente. I delimitatori proteggono da prompt injection (il system prompt istruisce l'LLM a trattare il contenuto tra i delimitatori come dati, non istruzioni).
-
-**Stato**: 🔒
+**Stato**: ✅ Campo creato Mar 10, 2026 (integrazione CAN node pendente)
 
 ---
 
-#### 3.2 🔒 IContextRouter contract
+#### 3.2 ✅ IContextRouter contract
 
-**Cosa**: interfaccia che decide se un contenuto va nel long context (inline) o nella RAG (embed).
+**File**: `vitruvyan_core/contracts/retrieval.py` (creato insieme a 2.1 e 2.2)
 
-**File da creare**: `vitruvyan_core/contracts/retrieval.py` (insieme a 2.1 e 2.2)
+**Implementato**: `ContextRouting` enum (INLINE/EMBED/BOTH), `IContextRouter` ABC con `route(content, metadata) → ContextRouting`, `DefaultContextRouter` (soglia 15000 chars: sotto=INLINE, sopra=EMBED).
 
 **Interfaccia**:
 ```python
@@ -418,7 +403,7 @@ class DefaultContextRouter(IContextRouter):
 
 **Principio**: il default è basato su dimensione. Il verticale può overridare con logica propria (es. "i documenti PDF vanno sempre in RAG, i messaggi brevi vanno inline").
 
-**Stato**: 🔒
+**Stato**: ✅ Completato Mar 10, 2026 (anticipato da Fase 2)
 
 ---
 
@@ -645,8 +630,8 @@ Queste responsabilità appartengono ai verticali, non a questa roadmap:
 |------|---------------|------|
 | 2026-03-10 | Brainstorming architetturale, audit codebase, creazione roadmap | Piano consolidato |
 | 2026-03-10 | Fase 0 completata: tenant filter (0.1), contracts/prompting.py (0.2), PromptAgent (0.3), policy.py (0.4), registry.resolve() (0.5) | Tutti i test passano |
-| 2026-03-10 | Fase 1 iniziata: migrazione prompt hardcoded, context budget, model tier | In corso |
 | 2026-03-10 | Fase 1 completata: 3 nodi migrati (1.1), context_budget.py (1.2), model_tier+domain+inline_context in state (1.4) | Tutti i test passano |
+| 2026-03-10 | Fase 2 completata: retrieval.py (IQueryTransformer, IReranker, CitationRef, ContextRouting, IContextRouter), citations in GraphResponseMin | Tutti i test passano |
 
 ---
 
