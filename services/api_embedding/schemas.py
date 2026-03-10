@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 class EmbeddingRequest(BaseModel):
     """Single text embedding request."""
     text: str = Field(..., description="Text to embed")
-    model: Optional[str] = Field("sentence-transformers/all-MiniLM-L6-v2", description="Model to use")
+    model: Optional[str] = Field("nomic-ai/nomic-embed-text-v1.5", description="Model to use")
     store_in_qdrant: Optional[bool] = Field(True, description="Store in Qdrant collection")
     collection_name: Optional[str] = Field("phrases_embeddings", description="Qdrant collection")
 
@@ -16,7 +16,7 @@ class EmbeddingRequest(BaseModel):
 class BatchEmbeddingRequest(BaseModel):
     """Batch embedding request."""
     texts: List[str] = Field(..., description="List of texts to embed")
-    model: Optional[str] = Field("sentence-transformers/all-MiniLM-L6-v2", description="Model to use")
+    model: Optional[str] = Field("nomic-ai/nomic-embed-text-v1.5", description="Model to use")
     store_in_qdrant: Optional[bool] = Field(False, description="Store in Qdrant collection")
     collection_name: Optional[str] = Field("phrases_embeddings", description="Qdrant collection")
 

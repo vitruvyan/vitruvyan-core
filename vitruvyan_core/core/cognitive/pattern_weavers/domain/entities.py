@@ -114,7 +114,7 @@ class EmbeddingVector:
     vector: List[float]
     text: str
     language: str = "auto"
-    dimension: int = 384
+    dimension: int = 768
     
     def validate(self) -> bool:
         """Validate embedding dimensions."""

@@ -200,7 +200,7 @@ class EmbeddingEngineModule(GemmaServiceBase):
                             "processing_time_ms": processing_time,
                             "dimension": cooperative_result["dimension"],
                             "cooperative_mode": True,
-                            "model_used": "sentence-transformers/all-MiniLM-L6-v2",
+                            "model_used": "nomic-ai/nomic-embed-text-v1.5",
                             "api_processing_time": cooperative_result.get("processing_time", 0)
                         }
                     )
@@ -267,7 +267,7 @@ class EmbeddingEngineModule(GemmaServiceBase):
                             "dimension": cooperative_result["dimension"],
                             "cooperative_mode": True,
                             "multilingual_specialized": True,
-                            "model_used": "sentence-transformers/all-MiniLM-L6-v2",
+                            "model_used": "nomic-ai/nomic-embed-text-v1.5",
                             "api_processing_time": cooperative_result.get("processing_time", 0),
                             "complexity_level": self._assess_language_complexity(detected_language)
                         }

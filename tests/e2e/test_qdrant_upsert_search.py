@@ -19,11 +19,11 @@ E2E_COLLECTION = "e2e_test_vectors"
 @pytest.fixture(scope="module")
 def qdrant_collection(qdrant_http):
     """Create a test collection and clean up after."""
-    # Create collection with 384 dimensions (MiniLM-L6-v2)
+    # Create collection with 768 dimensions (nomic-embed-text-v1.5)
     r = httpx.put(
         f"{qdrant_http}/collections/{E2E_COLLECTION}",
         json={
-            "vectors": {"size": 384, "distance": "Cosine"},
+            "vectors": {"size": 768, "distance": "Cosine"},
         },
         timeout=10.0,
     )
@@ -56,7 +56,7 @@ class TestCollectionManagement:
         name = f"e2e_temp_{uuid.uuid4().hex[:8]}"
         r = httpx.put(
             f"{qdrant_http}/collections/{name}",
-            json={"vectors": {"size": 384, "distance": "Cosine"}},
+            json={"vectors": {"size": 768, "distance": "Cosine"}},
             timeout=10.0,
         )
         assert r.status_code == 200
@@ -97,7 +97,7 @@ class TestEmbeddingGeneration:
         """Generate a single embedding and validate dimensions."""
         vec = _get_embedding(embedding_api, "test di embedding vettoriale")
         assert isinstance(vec, list)
-        assert len(vec) == 384
+        assert len(vec) == 768
         assert all(isinstance(v, float) for v in vec)
 
     def test_embedding_deterministic(self, embedding_api):
@@ -125,7 +125,7 @@ class TestEmbeddingGeneration:
         assert data.get("success")
         embeddings = data.get("embeddings", [])
         assert len(embeddings) == 3
-        assert all(len(e) == 384 for e in embeddings)
+        assert all(len(e) == 768 for e in embeddings)
 
 
 class TestUpsertAndSearch:

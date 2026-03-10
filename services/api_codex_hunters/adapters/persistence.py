@@ -85,7 +85,7 @@ class PersistenceAdapter:
             with httpx.Client(base_url=cfg.url, timeout=cfg.timeout) as client:
                 resp = client.post(
                     cfg.endpoint,
-                    json={"text": text, "model": "all-MiniLM-L6-v2"},
+                    json={"text": text, "model": "nomic-embed-text-v1.5"},
                 )
                 resp.raise_for_status()
                 data = resp.json()

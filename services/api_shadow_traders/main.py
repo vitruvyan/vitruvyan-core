@@ -1718,7 +1718,7 @@ def _embed_pattern_to_qdrant(
         except:
             qa.client.create_collection(
                 collection_name="shadow_patterns",
-                vectors_config=VectorParams(size=384, distance=Distance.COSINE)
+                vectors_config=VectorParams(size=768, distance=Distance.COSINE)
             )
             logger.info("✅ Created shadow_patterns collection in Qdrant")
         

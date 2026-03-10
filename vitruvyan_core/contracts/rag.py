@@ -70,8 +70,8 @@ class EmbeddingModel:
     Each model defines a name and its output vector dimension.
     The registry enforces that collection vector_size matches the model dimension.
     """
-    name: str           # e.g., "all-MiniLM-L6-v2"
-    dimension: int      # e.g., 384
+    name: str           # e.g., "nomic-embed-text-v1.5"
+    dimension: int      # e.g., 768
     family: str = ""    # e.g., "sentence-transformers", "openai"
 
     def __str__(self) -> str:
@@ -80,6 +80,11 @@ class EmbeddingModel:
 
 # Canonical model registry — extend when adding new models
 EMBEDDING_MODELS: Dict[str, EmbeddingModel] = {
+    "nomic-embed-text-v1.5": EmbeddingModel(
+        name="nomic-embed-text-v1.5",
+        dimension=768,
+        family="nomic-ai",
+    ),
     "all-MiniLM-L6-v2": EmbeddingModel(
         name="all-MiniLM-L6-v2",
         dimension=384,
@@ -102,7 +107,7 @@ EMBEDDING_MODELS: Dict[str, EmbeddingModel] = {
     ),
 }
 
-DEFAULT_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+DEFAULT_EMBEDDING_MODEL = "nomic-embed-text-v1.5"
 
 
 def get_embedding_model(name: str) -> Optional[EmbeddingModel]:
@@ -315,7 +320,7 @@ def validate_collection_name(name: str) -> bool:
 CORE_COLLECTIONS: List[CollectionDeclaration] = [
     CollectionDeclaration(
         name="semantic_states",
-        vector_size=384,
+        vector_size=768,
         distance=DistanceMetric.COSINE,
         tier=CollectionTier.CORE,
         owner="VSGS Engine",
@@ -323,7 +328,7 @@ CORE_COLLECTIONS: List[CollectionDeclaration] = [
     ),
     CollectionDeclaration(
         name="phrases_embeddings",
-        vector_size=384,
+        vector_size=768,
         distance=DistanceMetric.COSINE,
         tier=CollectionTier.CORE,
         owner="Embedding Service",
@@ -331,7 +336,7 @@ CORE_COLLECTIONS: List[CollectionDeclaration] = [
     ),
     CollectionDeclaration(
         name="conversations_embeddings",
-        vector_size=384,
+        vector_size=768,
         distance=DistanceMetric.COSINE,
         tier=CollectionTier.CORE,
         owner="LangGraph",
@@ -342,7 +347,7 @@ CORE_COLLECTIONS: List[CollectionDeclaration] = [
 ORDER_COLLECTIONS: List[CollectionDeclaration] = [
     CollectionDeclaration(
         name="entity_embeddings",
-        vector_size=384,
+        vector_size=768,
         distance=DistanceMetric.COSINE,
         tier=CollectionTier.ORDER,
         owner="Codex Hunters",
@@ -350,7 +355,7 @@ ORDER_COLLECTIONS: List[CollectionDeclaration] = [
     ),
     CollectionDeclaration(
         name="weave_embeddings",
-        vector_size=384,
+        vector_size=768,
         distance=DistanceMetric.COSINE,
         tier=CollectionTier.ORDER,
         owner="Pattern Weavers",
@@ -438,7 +443,7 @@ def check_stale_collection(
 
         # Get collection dimension for zero-vector query
         decl = get_collection_declaration(collection)
-        dim = decl.vector_size if decl else 384
+        dim = decl.vector_size if decl else 768
 
         # Search with zero-vector to get a sample of points with payloads
         result = agent.search(
@@ -584,7 +589,7 @@ class RAGMetricsCollector:
     
     Usage:
         collector = RAGMetricsCollector()
-        metrics = collector.record_search("conversations_embeddings", 384, 10, results)
+        metrics = collector.record_search("conversations_embeddings", 768, 10, results)
         summary = collector.summary("conversations_embeddings")
     """
 

@@ -27,7 +27,7 @@ class EmbeddingModelConfig:
     
     name: str = "multilingual"
     endpoint: str = "/v1/embeddings"
-    dimension: int = 384
+    dimension: int = 768
     max_tokens: int = 512
     batch_size: int = 32
 

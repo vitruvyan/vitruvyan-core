@@ -79,8 +79,8 @@ def vsgs_disabled(config_disabled):
 
 @pytest.fixture
 def mock_embedding():
-    """Embedding fittizio (vettore 384-dim)."""
-    return [0.1] * 384
+    """Embedding fittizio (vettore 768-dim)."""
+    return [0.1] * 768
 
 
 @pytest.fixture

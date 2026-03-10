@@ -160,8 +160,8 @@ class SignalConfig:
     
     signals: List[SignalSchema]
     taxonomy_categories: List[str] = field(default_factory=list)
-    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
-    embedding_dimension: int = 384
+    embedding_model: str = "nomic-ai/nomic-embed-text-v1.5"
+    embedding_dimension: int = 768
     metadata: Dict[str, Any] = field(default_factory=dict)
     
     def get_signal(self, name: str) -> Optional[SignalSchema]:
@@ -290,7 +290,7 @@ def load_config_from_yaml(signals_path: str, taxonomy_path: Optional[str] = None
       categories: [cat1, cat2, ...]
       embeddings:
         model: "model-name"
-        dimension: 384
+        dimension: 768
     
     metadata:
       vertical: "vertical-name"
@@ -355,7 +355,7 @@ def load_config_from_yaml(signals_path: str, taxonomy_path: Optional[str] = None
     taxonomy_categories = taxonomy.get("categories", [])
     
     # Parse embedding model (optional)
-    embedding_model = "sentence-transformers/all-MiniLM-L6-v2"  # default
+    embedding_model = "nomic-ai/nomic-embed-text-v1.5"  # default
     if "embeddings" in taxonomy:
         embedding_model = taxonomy["embeddings"].get("model", embedding_model)
     

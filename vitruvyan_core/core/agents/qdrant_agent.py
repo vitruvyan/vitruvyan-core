@@ -130,7 +130,7 @@ class QdrantAgent:
         
         Args:
             name: Collection name
-            vector_size: Vector dimension (384 for MiniLM-L6-v2)
+            vector_size: Vector dimension (768 for nomic-embed-text-v1.5)
             distance: Distance metric (Cosine or Dot)
             force_recreate: If True, DELETE ALL DATA and recreate (DANGEROUS!)
         
@@ -241,7 +241,7 @@ class QdrantAgent:
         Search seed phrases with optional source filtering.
         
         Args:
-            query_vector: Query embedding (384-dim for MiniLM-L6-v2)
+            query_vector: Query embedding (768-dim for nomic-embed-text-v1.5)
             top_k: Number of results (default 10)
             source_filter: Optional list of allowed source names for filtering.
                            If None, no source filtering is applied.
@@ -341,7 +341,7 @@ class QdrantAgent:
             matches = [
                 {
                     "id": "hash_123",
-                    "embedding": [0.1, 0.2, ..., 0.384],  # 384-dim vector
+                    "embedding": [0.1, 0.2, ..., 0.768],  # 768-dim vector
                     "text": "analyze entity_123 trend",
                     "score": 0.87,
                     "language": "it"
@@ -457,7 +457,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="QdrantAgent CLI")
     parser.add_argument("--mode", choices=["health", "ensure", "metrics"], default="health")
     parser.add_argument("--collection", type=str, default="entity_embeddings")
-    parser.add_argument("--dim", type=int, default=384)
+    parser.add_argument("--dim", type=int, default=768)
     args = parser.parse_args()
 
     agent = QdrantAgent()

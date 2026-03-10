@@ -12,7 +12,7 @@ entity_table:
 
 embedding_collection:
   name: entity_embeddings
-  vector_size: 384
+  vector_size: 768
   distance_metric: Cosine
   description: "Finance entity embeddings (uses shared entity_embeddings collection)"
 
@@ -45,6 +45,6 @@ quality:
   max_null_ratio: 0.50
 
 # Embeddings (pilot defaults)
-embedding_model: sentence-transformers/all-MiniLM-L6-v2
-embedding_dimension: 384
+embedding_model: nomic-ai/nomic-embed-text-v1.5
+embedding_dimension: 768
 

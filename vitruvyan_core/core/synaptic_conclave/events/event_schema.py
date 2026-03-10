@@ -335,7 +335,7 @@ class BabelLanguagePayload:
     text: str                                  # Text to analyze
     source_language: Optional[str] = None      # Original language
     target_languages: Optional[List[str]] = None  # Translation targets
-    semantic_embedding: Optional[List[float]] = None  # 384-dim vector
+    semantic_embedding: Optional[List[float]] = None  # 768-dim vector
     cultural_context: Optional[str] = None     # Cultural markers
     correlation_id: Optional[str] = None
     metadata: Dict[str, Any] = None

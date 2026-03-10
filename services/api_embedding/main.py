@@ -1,4 +1,4 @@
-"""Vitruvyan Embedding API — MiniLM embedding service — Port 8010."""
+"""Vitruvyan Embedding API — Nomic embedding service — Port 8010."""
 
 import logging
 import os

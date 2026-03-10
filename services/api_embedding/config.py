@@ -15,7 +15,7 @@ class ServiceConfig:
 @dataclass(frozen=True)
 class ModelConfig:
     """Embedding model configuration."""
-    name: str = "sentence-transformers/all-MiniLM-L6-v2"
+    name: str = "nomic-ai/nomic-embed-text-v1.5"
     collection_name: str = "phrases_embeddings"
 
 
@@ -39,7 +39,7 @@ def get_config() -> EmbeddingConfig:
                 log_level=os.getenv("LOG_LEVEL", "INFO"),
             ),
             model=ModelConfig(
-                name=os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"),
+                name=os.getenv("EMBEDDING_MODEL", "nomic-ai/nomic-embed-text-v1.5"),
                 collection_name=os.getenv("QDRANT_COLLECTION", "phrases_embeddings"),
             ),
         )

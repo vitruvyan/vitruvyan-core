@@ -35,7 +35,7 @@ class SourceConfig:
 class CollectionConfig:
     """Configuration for a storage collection (Qdrant/vector store)."""
     name: str
-    vector_size: int = 384
+    vector_size: int = 768
     distance_metric: str = "Cosine"
     description: str = ""
 
@@ -108,7 +108,7 @@ class CodexConfig:
     embedding_collection: CollectionConfig = field(
         default_factory=lambda: CollectionConfig(
             name="entity_embeddings",
-            vector_size=384,
+            vector_size=768,
             description="Entity semantic embeddings"
         )
     )
@@ -142,8 +142,8 @@ class CodexConfig:
     quality: QualityConfig = field(default_factory=QualityConfig)
     
     # Embedding model (domain-agnostic default)
-    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
-    embedding_dimension: int = 384
+    embedding_model: str = "nomic-ai/nomic-embed-text-v1.5"
+    embedding_dimension: int = 768
     
     # Expedition settings
     default_batch_size: int = 100
@@ -177,7 +177,7 @@ class CodexConfig:
               schema: "public"
             embedding_collection:
               name: "my_embeddings"
-              vector_size: 384
+              vector_size: 768
             sources:
               source1:
                 name: "Source One"
@@ -207,7 +207,7 @@ class CodexConfig:
                 ec_data = data["embedding_collection"]
                 embedding_collection = CollectionConfig(
                     name=ec_data.get("name", "entity_embeddings"),
-                    vector_size=ec_data.get("vector_size", 384),
+                    vector_size=ec_data.get("vector_size", 768),
                     distance_metric=ec_data.get("distance_metric", "Cosine"),
                     description=ec_data.get("description", "")
                 )
@@ -254,8 +254,8 @@ class CodexConfig:
                 sources=sources if sources else cls().sources,
                 streams=streams,
                 quality=quality,
-                embedding_model=data.get("embedding_model", "sentence-transformers/all-MiniLM-L6-v2"),
-                embedding_dimension=data.get("embedding_dimension", 384),
+                embedding_model=data.get("embedding_model", "nomic-ai/nomic-embed-text-v1.5"),
+                embedding_dimension=data.get("embedding_dimension", 768),
                 default_batch_size=data.get("default_batch_size", 100),
                 max_concurrent_expeditions=data.get("max_concurrent_expeditions", 5),
                 expedition_timeout_seconds=data.get("expedition_timeout_seconds", 300)

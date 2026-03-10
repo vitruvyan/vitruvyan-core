@@ -6,7 +6,7 @@ Initialize Qdrant Collections for Mercator
 Creates required Qdrant collections if they don't exist.
 Safe to run multiple times (won't delete existing data).
 
-All collections use 384-dim vectors (MiniLM-L6-v2) with Cosine distance.
+All collections use 768-dim vectors (nomic-embed-text-v1.5) with Cosine distance.
 
 Migrated from vitruvyan production (27 collections, 1.87M vectors).
 
@@ -44,19 +44,19 @@ COLLECTIONS = [
     # ═══════════════════════════════════════════════════════════════════════
     # CORE: OS-level, domain-agnostic, permanent
     # ═══════════════════════════════════════════════════════════════════════
-    {"name": "semantic_states",          "vector_size": 384, "distance": "Cosine",
-     "description": "CORE: VSGS Engine — Semantic grounding contexts"},
-    {"name": "phrases_embeddings",       "vector_size": 384, "distance": "Cosine",
-     "description": "CORE: Embedding Service — NLP phrase embeddings (general-purpose RAG)"},
-    {"name": "conversations_embeddings", "vector_size": 384, "distance": "Cosine",
+    {"name": "semantic_states",          "vector_size": 768, "distance": "Cosine",
+     "description": "CORE: VSGS Engine \u2014 Semantic grounding contexts"},
+    {"name": "phrases_embeddings",       "vector_size": 768, "distance": "Cosine",
+     "description": "CORE: Embedding Service \u2014 NLP phrase embeddings (general-purpose RAG)"},
+    {"name": "conversations_embeddings", "vector_size": 768, "distance": "Cosine",
      "description": "CORE: LangGraph — Conversational memory for RAG retrieval"},
 
     # ═══════════════════════════════════════════════════════════════════════
     # ORDER: Sacred Order operational data
     # ═══════════════════════════════════════════════════════════════════════
-    {"name": "entity_embeddings",        "vector_size": 384, "distance": "Cosine",
-     "description": "ORDER: Codex Hunters — Ingested entity semantic embeddings"},
-    {"name": "weave_embeddings",         "vector_size": 384, "distance": "Cosine",
+    {"name": "entity_embeddings",        "vector_size": 768, "distance": "Cosine",
+     "description": "ORDER: Codex Hunters \u2014 Ingested entity semantic embeddings"},
+    {"name": "weave_embeddings",         "vector_size": 768, "distance": "Cosine",
      "description": "ORDER: Pattern Weavers — Ontological pattern result embeddings"},
 ]
 

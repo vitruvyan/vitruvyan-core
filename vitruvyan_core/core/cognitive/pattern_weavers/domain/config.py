@@ -21,7 +21,7 @@ class EmbeddingConfig:
     
     api_url: str = "http://localhost:8010"
     endpoint: str = "/v1/embeddings/multilingual"
-    dimension: int = 384
+    dimension: int = 768
     timeout_seconds: float = 5.0
     cache_ttl_hours: int = 168  # 7 days
 
@@ -180,7 +180,7 @@ class PatternConfig:
             embedding=EmbeddingConfig(
                 api_url=os.getenv("PATTERN_EMBEDDING_URL", "http://localhost:8010"),
                 endpoint=os.getenv("PATTERN_EMBEDDING_ENDPOINT", "/v1/embeddings/multilingual"),
-                dimension=int(os.getenv("PATTERN_EMBEDDING_DIM", "384")),
+                dimension=int(os.getenv("PATTERN_EMBEDDING_DIM", "768")),
             ),
             collection=CollectionConfig(
                 embeddings=os.getenv("PATTERN_COLLECTION_EMBEDDINGS", "patterns"),

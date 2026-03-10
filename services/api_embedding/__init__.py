@@ -3,10 +3,10 @@ API Embedding — Cognitive Service (Tier 1)
 Sacred Order: Perception (Order I)
 
 Embedding service for semantic vectorization using SentenceTransformers.
-Provides HTTP API for MiniLM embeddings with Qdrant storage integration.
+Provides HTTP API for Nomic embeddings with Qdrant storage integration.
 
 Architecture:
-- Model: sentence-transformers/all-MiniLM-L6-v2 (384 dimensions)
+- Model: nomic-ai/nomic-embed-text-v1.5 (768 dimensions)
 - Storage: Qdrant collections (phrases_embeddings, semantic_states)
 - Caching: PostgreSQL + Qdrant cooperative storage
 

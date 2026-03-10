@@ -230,18 +230,23 @@ Implementato: `ContextBudgetManager`, `ContextItem`, `estimate_tokens()`, model 
 
 ---
 
-#### 1.3 ⬜ Embedding model upgrade path
+#### 1.3 ✅ Embedding model upgrade — nomic-embed-text-v1.5
 
-**Cosa**: rendere il modello di embedding configurabile per collection, non globale.
+**Cosa**: migrazione da `all-MiniLM-L6-v2` (384-dim, 256 token window) a `nomic-embed-text-v1.5` (768-dim, 8192 token window).
 
-**File da modificare**:
-- `vitruvyan_core/contracts/rag.py` → `CollectionDeclaration` ha già `model_name` (Phase 4). Verificare che sia usato ovunque
-- `services/api_embedding/config.py` → supportare multi-model via endpoint (già supporta `model` param nella request)
-- Documentare la procedura di migrazione collection (re-embed con nuovo modello)
+**Modifiche effettuate** (19 file, ~44 reference points):
+- `vitruvyan_core/contracts/rag.py` → nuovo DEFAULT, modello in registry, tutte le collection a 768-dim
+- `services/api_embedding/` → config, schemas, __init__, main aggiornati
+- `vitruvyan_core/core/agents/qdrant_agent.py` → docstrings + CLI default
+- `vitruvyan_core/core/cognitive/babel_gardens/domain/` → signal_schema, config
+- `vitruvyan_core/core/cognitive/pattern_weavers/domain/` → config, entities
+- `vitruvyan_core/core/governance/codex_hunters/domain/config.py` → tutti i default
+- `services/api_babel_gardens/`, `services/api_codex_hunters/`, `services/api_shadow_traders/`
+- `scripts/init_qdrant_collections.py`
+- `tests/e2e/test_qdrant_upsert_search.py`, `tests/e2e/test_babel_gardens_agnostic.py`, `tests/unit/algorithms/test_vsgs_engine.py`
+- Tutti i YAML example files (finance, cybersecurity, healthcare, legal, maritime)
 
-**Non fare**: cambiare il modello di default adesso. Questo è un percorso che il verticale attiva quando è pronto.
-
-**Stato**: ⬜
+**Stato**: ✅ (smoke test: all contracts + domain configs verified 768-dim)
 
 ---
 

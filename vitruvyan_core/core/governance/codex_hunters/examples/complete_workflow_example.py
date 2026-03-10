@@ -53,7 +53,7 @@ def main():
         collections={
             "entity_vectors": CollectionConfig(
                 name="entity_vectors",
-                vector_size=384,
+                vector_size=768,
                 distance_metric="Cosine",
                 description="Vector embeddings for entity search"
             ),

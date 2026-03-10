@@ -52,8 +52,8 @@ class TestSynthesisConsumer:
 
     def test_concatenation_fusion(self, synthesis_consumer):
         """Concatenation fusion must combine two vectors."""
-        semantic = np.random.rand(384).tolist()
-        sentiment = np.random.rand(384).tolist()
+        semantic = np.random.rand(768).tolist()
+        sentiment = np.random.rand(768).tolist()
 
         result = synthesis_consumer.process({
             "semantic_vector": semantic,
@@ -64,11 +64,11 @@ class TestSynthesisConsumer:
         assert result.success, f"Fusion failed: {result.errors}"
         fused = result.data.get("unified_vector", [])
         # Concatenation should produce a vector of double size
-        assert len(fused) == 768
+        assert len(fused) == 1536
 
     def test_weighted_average_fusion(self, synthesis_consumer):
         """Weighted average must produce a vector of same dimensions."""
-        dim = 384
+        dim = 768
         semantic = np.random.rand(dim).tolist()
         sentiment = np.random.rand(dim).tolist()
 
@@ -85,7 +85,7 @@ class TestSynthesisConsumer:
 
     def test_fusion_preserves_information(self, synthesis_consumer):
         """Fused vector should not be all zeros or identical to input."""
-        dim = 384
+        dim = 768
         semantic = np.random.rand(dim).tolist()
         sentiment = np.random.rand(dim).tolist()
 
@@ -229,7 +229,7 @@ class TestEmbeddingAPI:
     """Embedding API (api_embedding:9010) — vector generation for all services."""
 
     def test_single_embedding(self, http_client, embedding_api):
-        """Generate a single 384-dim embedding."""
+        """Generate a single 768-dim embedding."""
         r = http_client.post(
             f"{embedding_api}/v1/embeddings/create",
             json={"text": "test embedding generation", "source": "e2e"},
@@ -237,7 +237,7 @@ class TestEmbeddingAPI:
         assert r.status_code == 200
         data = r.json()
         assert data.get("success")
-        assert len(data["embedding"]) == 384
+        assert len(data["embedding"]) == 768
 
     def test_batch_embeddings(self, http_client, embedding_api):
         """Batch embedding for multiple texts."""

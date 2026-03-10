@@ -55,7 +55,7 @@ class UnifiedModelManager(GemmaServiceBase):
         # Model configurations
         self.model_configs = {
             "gemma_embeddings": {
-                "model_name": "sentence-transformers/all-MiniLM-L6-v2",  # Lightweight model for testing
+                "model_name": "nomic-ai/nomic-embed-text-v1.5",  # Default embedding model
                 "type": "embeddings",
                 "max_length": 512,
                 "batch_size": 16,
