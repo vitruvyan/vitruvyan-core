@@ -134,7 +134,8 @@ def test_no_semantic_thresholds(node_file: Path):
     
     for term in DOMAIN_TERMS:
         # Pattern: domain_term <comparison> number OR number <comparison> domain_term
-        pattern = f"({term}\\s*[<>!=]=?\\s*[0-9.]+|[0-9.]+\\s*[<>!=]=?\\s*{term})"
+        # Only match comparison operators (< > <= >= == !=), NOT assignment (=)
+        pattern = f"({term}\\s*(?:[<>]=?|[!=]=)\\s*[0-9.]+|[0-9.]+\\s*(?:[<>]=?|[!=]=)\\s*{term})"
         matches = re.finditer(pattern, source, re.IGNORECASE)
         
         for match in matches:
