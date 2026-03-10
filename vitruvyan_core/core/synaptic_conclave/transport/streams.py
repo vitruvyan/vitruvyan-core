@@ -18,8 +18,8 @@ Architecture:
     Example: "vitruvyan:codex:entity_updated"
 
 Usage:
-    from vitruvyan_core.core.synaptic_conclave.transport.streams import StreamBus
-    from vitruvyan_core.core.synaptic_conclave.events.event_envelope import TransportEvent
+    from core.synaptic_conclave.transport.streams import StreamBus
+    from core.synaptic_conclave.events.event_envelope import TransportEvent
     
     bus = StreamBus()
     

@@ -8,17 +8,17 @@ Every step is pure, deterministic, and side-effect free.
 The service layer would wrap this in StreamBus adapters for production.
 """
 
-from vitruvyan_core.core.governance.orthodoxy_wardens.consumers import (
+from core.governance.orthodoxy_wardens.consumers import (
     Confessor,
     Inquisitor,
     Penitent,
     Chronicler,
 )
-from vitruvyan_core.core.governance.orthodoxy_wardens.governance import (
+from core.governance.orthodoxy_wardens.governance import (
     VerdictEngine,
     DEFAULT_RULESET,
 )
-from vitruvyan_core.core.governance.orthodoxy_wardens.events.orthodoxy_events import (
+from core.governance.orthodoxy_wardens.events.orthodoxy_events import (
     OrthodoxyEvent,
 )
 from datetime import datetime, timezone

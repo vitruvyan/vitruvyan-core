@@ -23,7 +23,7 @@ from typing import Optional, List, Dict, Any
 try:
     from contracts import IDataProvider, DataProviderError
 except ModuleNotFoundError:
-    from vitruvyan_core.contracts import IDataProvider, DataProviderError
+    from core.contracts import IDataProvider, DataProviderError
 
 
 class MockDataProvider(IDataProvider):

@@ -37,14 +37,14 @@ try:
         OntologyPayload,
     )
 except ModuleNotFoundError:
-    from vitruvyan_core.contracts.comprehension import (
+    from core.cognitive.babel_gardens.domain import (
         ComprehensionResult,
         EmotionPayload,
         LinguisticPayload,
         SemanticPayload,
         SentimentPayload,
     )
-    from vitruvyan_core.contracts.pattern_weavers import (
+    from core.cognitive.pattern_weavers.domain import (
         DomainGate,
         GateVerdict,
         OntologyPayload,

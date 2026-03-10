@@ -18,11 +18,11 @@ import os
 # Add vitruvyan_core to path for standalone execution
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 
-from vitruvyan_core.core.governance.memory_orders.domain import CoherenceInput, CoherenceReport, ComponentHealth, SystemHealth, SyncInput
-from vitruvyan_core.core.governance.memory_orders.consumers.coherence_analyzer import CoherenceAnalyzer
-from vitruvyan_core.core.governance.memory_orders.consumers.health_aggregator import HealthAggregator
-from vitruvyan_core.core.governance.memory_orders.consumers.sync_planner import SyncPlanner
-from vitruvyan_core.core.governance.memory_orders.governance import DEFAULT_THRESHOLDS
+from core.governance.memory_orders.domain import CoherenceInput, CoherenceReport, ComponentHealth, SystemHealth, SyncInput
+from core.governance.memory_orders.consumers.coherence_analyzer import CoherenceAnalyzer
+from core.governance.memory_orders.consumers.health_aggregator import HealthAggregator
+from core.governance.memory_orders.consumers.sync_planner import SyncPlanner
+from core.governance.memory_orders.governance import DEFAULT_THRESHOLDS
 
 
 def main():

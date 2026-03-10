@@ -26,7 +26,7 @@ import pandas as pd
 try:
     from contracts import IDataProvider, IScoringStrategy
 except ModuleNotFoundError:
-    from vitruvyan_core.contracts import IDataProvider, IScoringStrategy
+    from core.contracts import IDataProvider, IScoringStrategy
 from .scoring import ZScoreCalculator, StratificationMode
 from .composite import CompositeScorer
 from .ranking import RankingEngine

@@ -12,7 +12,7 @@ Available consumers:
   - SignalArchivist: Plans signal timeseries archival (Babel Gardens v2.1)
 
 Usage:
-    from vitruvyan_core.core.governance.vault_keepers.consumers import (
+    from core.governance.vault_keepers.consumers import (
         Guardian, Sentinel, Archivist, Chamberlain, SignalArchivist
     )
     

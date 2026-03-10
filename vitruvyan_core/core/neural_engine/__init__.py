@@ -11,8 +11,8 @@ Components:
 - ranking.py: Entity ranking (RankingEngine)
 
 Usage:
-    from vitruvyan_core.core.neural_engine import NeuralEngine
-    from vitruvyan_core.contracts import IDataProvider, IScoringStrategy
+    from core.neural_engine import NeuralEngine
+    from contracts import IDataProvider, IScoringStrategy
     
     # Provide domain-specific implementations
     provider = MyDataProvider()  # implements IDataProvider

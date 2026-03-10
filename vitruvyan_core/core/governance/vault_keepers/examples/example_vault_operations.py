@@ -18,9 +18,9 @@ import os
 # Add vitruvyan_core to path for standalone execution
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 
-from vitruvyan_core.core.governance.vault_keepers.domain.vault_objects import IntegrityReport, VaultSnapshot
-from vitruvyan_core.core.governance.vault_keepers.consumers.sentinel import Sentinel
-from vitruvyan_core.core.governance.vault_keepers.consumers.archivist import Archivist
+from core.governance.vault_keepers.domain.vault_objects import IntegrityReport, VaultSnapshot
+from core.governance.vault_keepers.consumers.sentinel import Sentinel
+from core.governance.vault_keepers.consumers.archivist import Archivist
 
 
 def main():

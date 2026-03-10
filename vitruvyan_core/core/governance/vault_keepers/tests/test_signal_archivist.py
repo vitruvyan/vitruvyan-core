@@ -11,11 +11,11 @@ Layer: Testing
 import pytest
 from datetime import datetime
 
-from vitruvyan_core.core.governance.vault_keepers.consumers.signal_archivist import (
+from core.governance.vault_keepers.consumers.signal_archivist import (
     SignalArchivist,
     archive_signal_timeseries
 )
-from vitruvyan_core.core.governance.vault_keepers.domain.signal_archive import (
+from core.governance.vault_keepers.domain.signal_archive import (
     SignalTimeseries,
     SignalDataPoint
 )

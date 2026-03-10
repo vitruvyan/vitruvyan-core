@@ -6,7 +6,7 @@ Usage:
     python -m vitruvyan_core.core.platform.update_manager.notifications.periodic_poller
     
     # Or programmatically
-    from vitruvyan_core.core.platform.update_manager.notifications import PeriodicPoller
+    from core.platform.update_manager.notifications import PeriodicPoller
     
     poller = PeriodicPoller(manifest_path="vertical_manifest.yaml")
     poller.start()  # Blocking (runs until SIGINT/SIGTERM)
@@ -124,7 +124,7 @@ def start_polling_daemon(manifest_path: Optional[str] = None) -> PeriodicPoller:
     Helper function to start periodic poller programmatically.
     
     Usage:
-        from vitruvyan_core.core.platform.update_manager.notifications import start_polling_daemon
+        from core.platform.update_manager.notifications import start_polling_daemon
         
         poller = start_polling_daemon("vertical_manifest.yaml")
         # Poller runs in current thread (blocking)

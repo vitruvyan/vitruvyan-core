@@ -9,7 +9,7 @@ Available modules:
   - workflows: Consumer orchestration patterns
 
 Usage:
-    from vitruvyan_core.core.governance.vault_keepers.governance import (
+    from core.governance.vault_keepers.governance import (
         VaultRules, VaultWorkflows
     )
     

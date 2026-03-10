@@ -128,7 +128,7 @@ class TestOrthodoxyBusAdapter:
     # -- Custom RuleSet --------------------------------------------------------
 
     def test_custom_ruleset(self):
-        from vitruvyan_core.core.governance.orthodoxy_wardens.governance.rule import (
+        from core.governance.orthodoxy_wardens.governance.rule import (
             RuleSet, Rule,
         )
 
@@ -181,7 +181,7 @@ class TestOrthodoxyBusAdapter:
 
     def test_serialize_frozen_dataclass(self):
         """Frozen dataclasses (like Verdict) should serialize via asdict."""
-        from vitruvyan_core.core.governance.orthodoxy_wardens.domain.verdict import Verdict
+        from core.governance.orthodoxy_wardens.domain.verdict import Verdict
 
         v = Verdict.blessed(confidence=0.95, explanation="All good")
         result = _serialize(v)

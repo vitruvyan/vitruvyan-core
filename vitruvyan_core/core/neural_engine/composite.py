@@ -19,7 +19,7 @@ import pandas as pd
 try:
     from contracts import IScoringStrategy
 except ModuleNotFoundError:
-    from vitruvyan_core.contracts import IScoringStrategy
+    from core.contracts import IScoringStrategy
 
 logger = logging.getLogger(__name__)
 

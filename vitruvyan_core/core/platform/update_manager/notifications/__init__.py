@@ -10,7 +10,7 @@ Provides automatic update visibility through multiple channels:
 - Log-based notifications
 
 Usage:
-    from vitruvyan_core.core.platform.update_manager.notifications import startup_check
+    from core.platform.update_manager.notifications import startup_check
     
     # Check for updates on startup
 startup_check()

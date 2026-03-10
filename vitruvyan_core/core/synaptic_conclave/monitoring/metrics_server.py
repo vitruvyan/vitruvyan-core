@@ -4,7 +4,7 @@
 Simple HTTP server to expose Prometheus metrics for listener services
 
 Usage:
-    from vitruvyan_core.core.synaptic_conclave.monitoring.metrics_server import start_metrics_server
+    from core.synaptic_conclave.monitoring.metrics_server import start_metrics_server
     
     # In listener main():
     start_metrics_server(port=8019)  # Runs in separate thread

@@ -16,7 +16,7 @@ New usage (recommended):
     register_generic_domain()
     
     # Or register domain-specific prompts
-    from vitruvyan_core.domains.finance.prompts import register_finance_prompts
+    from domains.finance.prompts import register_finance_prompts
     register_finance_prompts()
     
     # Get prompts

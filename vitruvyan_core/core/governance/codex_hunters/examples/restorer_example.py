@@ -20,9 +20,9 @@ from datetime import datetime
 # Add the core module to path for standalone execution
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
 
-from vitruvyan_core.core.governance.codex_hunters.domain.entities import DiscoveredEntity, EntityStatus
-from vitruvyan_core.core.governance.codex_hunters.domain.config import CodexConfig, SourceConfig
-from vitruvyan_core.core.governance.codex_hunters.consumers.restorer import RestorerConsumer
+from core.governance.codex_hunters.domain.entities import DiscoveredEntity, EntityStatus
+from core.governance.codex_hunters.domain.config import CodexConfig, SourceConfig
+from core.governance.codex_hunters.consumers.restorer import RestorerConsumer
 
 
 def main():

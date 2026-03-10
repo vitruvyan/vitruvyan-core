@@ -7,7 +7,7 @@ All consumers are pure decision engines: same input → same output, no I/O.
 import pytest
 from datetime import datetime, timezone
 
-from vitruvyan_core.core.governance.orthodoxy_wardens.consumers import (
+from core.governance.orthodoxy_wardens.consumers import (
     SacredRole,
     Confessor,
     Inquisitor,
@@ -19,14 +19,14 @@ from vitruvyan_core.core.governance.orthodoxy_wardens.consumers import (
     ArchiveDirective,
     ChronicleDecision,
 )
-from vitruvyan_core.core.governance.orthodoxy_wardens.domain.confession import Confession
-from vitruvyan_core.core.governance.orthodoxy_wardens.domain.finding import Finding
-from vitruvyan_core.core.governance.orthodoxy_wardens.domain.verdict import Verdict
-from vitruvyan_core.core.governance.orthodoxy_wardens.domain.log_decision import LogDecision
-from vitruvyan_core.core.governance.orthodoxy_wardens.events.orthodoxy_events import (
+from core.governance.orthodoxy_wardens.domain.confession import Confession
+from core.governance.orthodoxy_wardens.domain.finding import Finding
+from core.governance.orthodoxy_wardens.domain.verdict import Verdict
+from core.governance.orthodoxy_wardens.domain.log_decision import LogDecision
+from core.governance.orthodoxy_wardens.events.orthodoxy_events import (
     OrthodoxyEvent,
 )
-from vitruvyan_core.core.governance.orthodoxy_wardens.governance import (
+from core.governance.orthodoxy_wardens.governance import (
     VerdictEngine,
     DEFAULT_RULESET,
 )
@@ -378,7 +378,7 @@ class TestInquisitorProcess:
         assert result.code_examined is False
 
     def test_custom_ruleset(self, sample_confession):
-        from vitruvyan_core.core.governance.orthodoxy_wardens.governance import RuleSet, Rule
+        from core.governance.orthodoxy_wardens.governance import RuleSet, Rule
         custom_ruleset = RuleSet.create(
             version="custom_v1",
             rules=(

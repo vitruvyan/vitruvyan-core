@@ -31,7 +31,7 @@ try:
         OntologyPayload,
     )
 except ModuleNotFoundError:
-    from vitruvyan_core.contracts.pattern_weavers import (
+    from core.cognitive.pattern_weavers.domain import (
         DomainGate,
         GateVerdict,
         OntologyEntity,

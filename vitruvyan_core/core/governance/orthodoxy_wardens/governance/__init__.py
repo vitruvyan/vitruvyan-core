@@ -14,7 +14,7 @@ Components:
     workflow.py        — Declarative workflow definitions (frozen data)
 
 Usage:
-    from vitruvyan_core.core.governance.orthodoxy_wardens.governance import (
+    from core.governance.orthodoxy_wardens.governance import (
         Rule, RuleSet, DEFAULT_RULESET,
         LLMClassifier, ASTClassifier,
         VerdictEngine, ScoringWeights,

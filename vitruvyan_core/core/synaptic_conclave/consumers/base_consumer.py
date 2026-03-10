@@ -518,7 +518,7 @@ class BaseConsumer(ABC):
                              (recommended for CRITICAL consumers)
         
         Example:
-            from vitruvyan_core.core.synaptic_conclave.plasticity import ParameterBounds, OutcomeTracker
+            from core.synaptic_conclave.plasticity import ParameterBounds, OutcomeTracker
             
             bounds = {
                 "confidence_threshold": ParameterBounds(
@@ -534,7 +534,7 @@ class BaseConsumer(ABC):
             tracker = OutcomeTracker(postgres_agent)
             consumer.enable_plasticity(bounds, tracker, require_approval=False)
         """
-        from vitruvyan_core.core.synaptic_conclave.plasticity.manager import PlasticityManager
+        from core.synaptic_conclave.plasticity.manager import PlasticityManager
         
         self.plasticity = PlasticityManager(
             consumer=self,
@@ -559,7 +559,7 @@ class BaseConsumer(ABC):
             outcome: Outcome dataclass with decision details
         
         Example:
-            from vitruvyan_core.core.synaptic_conclave.plasticity import Outcome
+            from core.synaptic_conclave.plasticity import Outcome
             
             outcome = Outcome(
                 decision_event_id=event.id,

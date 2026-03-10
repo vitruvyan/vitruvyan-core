@@ -19,7 +19,7 @@ from typing import Dict, List, Optional
 try:
     from contracts.pattern_weavers import ISemanticPlugin, OntologyPayload
 except ModuleNotFoundError:
-    from vitruvyan_core.contracts.pattern_weavers import ISemanticPlugin, OntologyPayload
+    from core.cognitive.pattern_weavers.domain import ISemanticPlugin, OntologyPayload
 
 logger = logging.getLogger(__name__)
 

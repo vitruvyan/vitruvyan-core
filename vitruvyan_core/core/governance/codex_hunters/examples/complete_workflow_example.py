@@ -22,10 +22,10 @@ from datetime import datetime
 # Add the core module to path for standalone execution
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..'))
 
-from vitruvyan_core.core.governance.codex_hunters.domain.config import CodexConfig, SourceConfig, CollectionConfig, TableConfig
-from vitruvyan_core.core.governance.codex_hunters.consumers.tracker import TrackerConsumer
-from vitruvyan_core.core.governance.codex_hunters.consumers.restorer import RestorerConsumer
-from vitruvyan_core.core.governance.codex_hunters.consumers.binder import BinderConsumer
+from core.governance.codex_hunters.domain.config import CodexConfig, SourceConfig, CollectionConfig, TableConfig
+from core.governance.codex_hunters.consumers.tracker import TrackerConsumer
+from core.governance.codex_hunters.consumers.restorer import RestorerConsumer
+from core.governance.codex_hunters.consumers.binder import BinderConsumer
 
 
 def main():

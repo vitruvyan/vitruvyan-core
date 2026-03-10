@@ -5,7 +5,7 @@ Provides pytest markers, fixtures, and helpers for testing Core compatibility
 against all active verticals.
 
 Usage in tests:
-    from vitruvyan_core.core.platform.update_manager.ci import compatibility_test
+    from core.platform.update_manager.ci import compatibility_test
 
     @compatibility_test
     def test_core_compatible_with_verticals(vertical_manifests):
@@ -133,7 +133,7 @@ def parametrize_verticals(metafunc):
 
     Usage in conftest.py:
         def pytest_generate_tests(metafunc):
-            from vitruvyan_core.core.platform.update_manager.ci import parametrize_verticals
+            from core.platform.update_manager.ci import parametrize_verticals
             parametrize_verticals(metafunc)
 
     Then in tests:

@@ -34,7 +34,7 @@ try:
         SignalEvidence,
     )
 except ModuleNotFoundError:
-    from vitruvyan_core.contracts.comprehension import (
+    from core.cognitive.babel_gardens.domain import (
         ComprehensionResult,
         FusionContributor,
         FusionResult,

@@ -6,11 +6,11 @@ Pure domain tests — no Docker, no Redis, no PostgreSQL, no Qdrant.
 
 import pytest
 
-from vitruvyan_core.core.governance.codex_hunters.consumers.inspector import (
+from core.governance.codex_hunters.consumers.inspector import (
     InspectorConsumer,
     DEFAULT_THRESHOLDS,
 )
-from vitruvyan_core.core.governance.codex_hunters.domain.entities import (
+from core.governance.codex_hunters.domain.entities import (
     ConsistencyStatus,
 )
 

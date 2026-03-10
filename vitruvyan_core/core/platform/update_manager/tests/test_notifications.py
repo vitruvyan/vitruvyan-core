@@ -19,20 +19,20 @@ from unittest.mock import MagicMock, mock_open, patch
 import pytest
 import yaml
 
-from vitruvyan_core.core.platform.update_manager.notifications.config import (
+from core.platform.update_manager.notifications.config import (
     NotificationChannel,
     NotificationConfig,
     get_last_check_time,
     load_notification_config,
     set_last_check_time,
 )
-from vitruvyan_core.core.platform.update_manager.notifications.notifiers import (
+from core.platform.update_manager.notifications.notifiers import (
     DesktopNotifier,
     LogNotifier,
     UpdateNotification,
     WebhookNotifier,
 )
-from vitruvyan_core.core.platform.update_manager.notifications.startup_check import (
+from core.platform.update_manager.notifications.startup_check import (
     should_check_updates,
     startup_check,
 )
@@ -271,8 +271,8 @@ def test_should_check_updates_disabled(sample_manifest, tmp_path, monkeypatch):
     assert should_check_updates(config) is False
 
 
-@patch("vitruvyan_core.core.platform.update_manager.notifications.startup_check.ReleaseRegistry")
-@patch("vitruvyan_core.core.platform.update_manager.notifications.startup_check._send_notifications")
+@patch("core.platform.update_manager.notifications.startup_check.ReleaseRegistry")
+@patch("core.platform.update_manager.notifications.startup_check._send_notifications")
 def test_startup_check_update_available(mock_send, mock_registry, sample_manifest, tmp_path, monkeypatch):
     """Test startup_check sends notification when update available."""
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -296,8 +296,8 @@ def test_startup_check_update_available(mock_send, mock_registry, sample_manifes
     assert notification.available_version == "1.2.0"
 
 
-@patch("vitruvyan_core.core.platform.update_manager.notifications.startup_check.ReleaseRegistry")
-@patch("vitruvyan_core.core.platform.update_manager.notifications.startup_check._send_notifications")
+@patch("core.platform.update_manager.notifications.startup_check.ReleaseRegistry")
+@patch("core.platform.update_manager.notifications.startup_check._send_notifications")
 def test_startup_check_already_latest(mock_send, mock_registry, sample_manifest, tmp_path, monkeypatch):
     """Test startup_check does not notify if already on latest."""
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -323,11 +323,11 @@ def test_startup_check_already_latest(mock_send, mock_registry, sample_manifest,
 # ============================================================================
 
 
-@patch("vitruvyan_core.core.platform.update_manager.notifications.periodic_poller.startup_check")
+@patch("core.platform.update_manager.notifications.periodic_poller.startup_check")
 @patch("time.sleep")
 def test_periodic_poller_shutdown(mock_sleep, mock_startup_check, sample_manifest, tmp_path, monkeypatch):
     """Test PeriodicPoller handles graceful shutdown."""
-    from vitruvyan_core.core.platform.update_manager.notifications.periodic_poller import PeriodicPoller
+    from core.platform.update_manager.notifications.periodic_poller import PeriodicPoller
     
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     

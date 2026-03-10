@@ -14,10 +14,10 @@ from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 
-from vitruvyan_core.core.governance.orthodoxy_wardens.domain import (
+from core.governance.orthodoxy_wardens.domain import (
     Confession, Finding, Verdict, LogDecision,
 )
-from vitruvyan_core.core.governance.orthodoxy_wardens.governance import (
+from core.governance.orthodoxy_wardens.governance import (
     Rule, RuleSet, DEFAULT_RULESET, DEFAULT_RULES,
     PatternClassifier, ASTClassifier, classify_text,
     VerdictEngine, ScoringWeights, DEFAULT_WEIGHTS,

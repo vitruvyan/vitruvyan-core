@@ -24,7 +24,7 @@ from typing import Dict, List, Optional, Any
 try:
     from contracts import IScoringStrategy, ScoringStrategyError
 except ModuleNotFoundError:
-    from vitruvyan_core.contracts import IScoringStrategy, ScoringStrategyError
+    from core.contracts import IScoringStrategy, ScoringStrategyError
 
 
 class MockScoringStrategy(IScoringStrategy):

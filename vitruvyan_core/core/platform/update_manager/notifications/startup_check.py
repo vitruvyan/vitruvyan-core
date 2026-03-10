@@ -2,7 +2,7 @@
 Startup check — Check for updates on system boot/service startup.
 
 Usage:
-    from vitruvyan_core.core.platform.update_manager.notifications import startup_check
+    from core.platform.update_manager.notifications import startup_check
     
     # Call this in service startup (e.g., api_graph/__init__.py)
     startup_check()
