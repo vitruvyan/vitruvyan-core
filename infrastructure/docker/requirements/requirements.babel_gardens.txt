@@ -19,6 +19,7 @@ safetensors>=0.4.0
 
 # Sentence transformers for embeddings
 sentence-transformers>=2.2.2
+einops>=0.7.0
 
 # ===========================
 # DATA PROCESSING

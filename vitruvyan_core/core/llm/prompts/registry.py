@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Optional, Any, List, Callable
 import logging
 
-from vitruvyan_core.contracts.prompting import (
+from contracts.prompting import (
     PromptResolution,
     compute_prompt_hash,
     build_prompt_id,

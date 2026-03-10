@@ -199,7 +199,7 @@ def llm_mcp_node(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"🔑 LLM MCP context: tenant_id='{tenant_id}', intent='{intent}', entities={entity_ids}")
 
         from core.agents.prompt_agent import get_prompt_agent
-        from vitruvyan_core.contracts.prompting import PromptRequest
+        from contracts.prompting import PromptRequest
 
         prompt_agent = get_prompt_agent()
         resolution = prompt_agent.resolve(PromptRequest(

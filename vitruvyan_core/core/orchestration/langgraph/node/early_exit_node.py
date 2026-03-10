@@ -133,7 +133,7 @@ def _generate_response(intent: str, language: str, input_text: str, emotion: str
     try:
         from core.agents.llm_agent import get_llm_agent
         from core.agents.prompt_agent import get_prompt_agent
-        from vitruvyan_core.contracts.prompting import PromptRequest
+        from contracts.prompting import PromptRequest
 
         llm = get_llm_agent()
         prompt_agent = get_prompt_agent()

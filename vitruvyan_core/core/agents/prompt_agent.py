@@ -30,15 +30,15 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from vitruvyan_core.contracts.prompting import (
+from contracts.prompting import (
     DEFAULT_POLICY,
     PromptPolicy,
     PromptRequest,
     PromptResolution,
     compute_prompt_hash,
 )
-from vitruvyan_core.core.llm.prompts.policy import apply_policy
-from vitruvyan_core.core.llm.prompts.registry import PromptRegistry
+from core.llm.prompts.policy import apply_policy
+from core.llm.prompts.registry import PromptRegistry
 
 logger = logging.getLogger(__name__)
 

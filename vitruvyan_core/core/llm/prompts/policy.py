@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 from typing import Dict, Optional
 
-from vitruvyan_core.contracts.prompting import PromptPolicy
+from contracts.prompting import PromptPolicy
 
 logger = logging.getLogger(__name__)
 

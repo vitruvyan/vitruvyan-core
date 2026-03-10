@@ -34,7 +34,7 @@ class EmbeddingService:
         logger.info("✅ Qdrant connected")
         
         logger.info(f"🤖 Loading model: {self.config.model.name}")
-        self.model = SentenceTransformer(self.config.model.name)
+        self.model = SentenceTransformer(self.config.model.name, trust_remote_code=True)
         logger.info("✅ Embedding model loaded")
     
     async def cleanup(self) -> None:

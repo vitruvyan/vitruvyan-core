@@ -29,7 +29,7 @@ from typing import Dict, Any
 import os
 from core.agents.llm_agent import get_llm_agent
 from core.agents.prompt_agent import get_prompt_agent
-from vitruvyan_core.contracts.prompting import PromptRequest
+from contracts.prompting import PromptRequest
 
 # NOTE: Configuration via environment variables only.
 # load_dotenv() is called in service entrypoints (main.py), not in core modules.

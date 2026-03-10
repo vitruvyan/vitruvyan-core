@@ -200,12 +200,12 @@ class UnifiedModelManager(GemmaServiceBase):
     async def _load_embedding_model(self, model_name: str, config: Dict) -> Any:
         """Load embedding model"""
         try:
-            if "sentence-transformers" in model_name:
+            if "sentence-transformers" in model_name or "nomic-ai" in model_name:
                 from sentence_transformers import SentenceTransformer
-                model = SentenceTransformer(model_name)
+                model = SentenceTransformer(model_name, trust_remote_code=True)
                 return model
             else:
-                model = AutoModel.from_pretrained(model_name)
+                model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
                 if config["device"] == "cuda" and torch.cuda.is_available():
                     model = model.cuda()
                 model.eval()
