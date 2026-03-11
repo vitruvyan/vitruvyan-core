@@ -35,6 +35,7 @@ from .commands.remove import register_remove_command
 from .commands.list_cmd import register_list_command
 from .commands.search import register_search_command
 from .commands.info import register_info_command
+from .commands.setup import register_setup_command
 from .channel_state import set_default_channel
 
 # Configure logging
@@ -83,6 +84,7 @@ def cli_main():
     register_list_command(subparsers)
     register_search_command(subparsers)
     register_info_command(subparsers)
+    register_setup_command(subparsers)
     
     # vit channel
     channel_parser = subparsers.add_parser(

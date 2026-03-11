@@ -387,12 +387,68 @@ with open('package_tags.txt', 'w') as f:
           }
         }
 
+        // Generate release_metadata.json from .vit manifests + git log
+        sh '''
+          set -eu
+          . .venv/bin/activate
+
+          # Read version from release.properties
+          VERSION=$(grep RELEASE_VERSION release.properties | cut -d= -f2)
+
+          python3 -c "
+import yaml, glob, json
+from datetime import datetime, timezone
+
+version = '${VERSION}'
+manifests = glob.glob('vitruvyan_core/core/platform/package_manager/packages/manifests/*.vit')
+packages = []
+for m in manifests:
+    if 'TEMPLATE' in m:
+        continue
+    with open(m) as f:
+        data = yaml.safe_load(f)
+    packages.append({
+        'name': data.get('package_name', ''),
+        'version': data.get('package_version', ''),
+        'type': data.get('package_type', ''),
+        'tier': data.get('tier', ''),
+        'status': data.get('status', 'stable'),
+    })
+
+metadata = {
+    'version': version,
+    'channel': 'stable',
+    'release_date': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+    'packages': sorted(packages, key=lambda p: p['name']),
+}
+
+with open('release_metadata.json', 'w') as f:
+    json.dump(metadata, f, indent=2)
+print(f'Generated release_metadata.json for v{version} with {len(packages)} packages')
+"
+        '''
+
         sh '''
           set -eu
           git push origin --tags
           echo "All tags pushed."
         '''
-        archiveArtifacts artifacts: 'release.properties', allowEmptyArchive: true
+
+        // Create GitHub Release with metadata asset (requires gh CLI)
+        sh '''
+          set -eu
+          VERSION=$(grep RELEASE_VERSION release.properties | cut -d= -f2)
+          if command -v gh >/dev/null 2>&1; then
+            CHANGELOG=$(git log --oneline --no-merges "$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo HEAD~10)..HEAD" | head -20)
+            gh release create "v${VERSION}" \
+              --title "v${VERSION}" \
+              --notes "${CHANGELOG}" \
+              release_metadata.json || echo "GitHub Release creation skipped (may already exist)"
+          else
+            echo "gh CLI not available — skipping GitHub Release creation"
+          fi
+        '''
+        archiveArtifacts artifacts: 'release.properties,release_metadata.json', allowEmptyArchive: true
       }
     }
   }
