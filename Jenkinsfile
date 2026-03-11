@@ -1,19 +1,25 @@
 /*
  * Vitruvyan OS — CI/CD Pipeline
  * ──────────────────────────────
- * Quality gate + multi-service Docker build + release automation.
+ * Smart change detection + quality gate + per-package Docker build + release.
  *
  * Pipeline stages:
- *   1. Install        → Python venv + dependencies
- *   2. Quality Gate   → Unit tests, architectural tests, contract validation, smoke tests
- *   3. Docker Build   → Parallel build of all service images
- *   4. Docker Push    → Push images to registry (manual trigger)
- *   5. Release        → Tag + GitHub Release (manual trigger, main branch only)
+ *   1. Install            → Python venv + dependencies
+ *   2. Change Detection   → Detect which packages/services changed since last green build
+ *   3. Quality Gate       → Unit tests, architectural tests, contract validation, smoke tests
+ *   4. Docker Build       → Build only changed service images (or all if core changed)
+ *   5. Docker Push        → Push changed images to registry (manual trigger)
+ *   6. Release            → Per-package version tags + monorepo tag (manual, main only)
+ *
+ * Change detection:
+ *   - Core change (vitruvyan_core/core/, contracts, tests) → rebuild ALL services
+ *   - Service-only change (services/api_*) → rebuild only affected service(s)
+ *   - Docs/scripts-only change → skip Docker build entirely
  *
  * Triggers:
- *   - Every push to any branch → Stages 1-3 (quality gate)
- *   - Manual "Push Images"     → Stage 4
- *   - Manual "Create Release"  → Stage 5 (main only)
+ *   - Every push to any branch → Stages 1-4
+ *   - Manual "Push Images"     → Stage 5
+ *   - Manual "Create Release"  → Stage 6 (main only)
  */
 
 pipeline {
@@ -30,6 +36,7 @@ pipeline {
     string(name: 'DOCKER_REGISTRY', defaultValue: 'vitruvyan', description: 'Docker registry prefix (e.g. vitruvyan, ghcr.io/dbaldoni)')
     string(name: 'DOCKER_REGISTRY_CREDENTIALS_ID', defaultValue: 'docker-registry', description: 'Jenkins credentials ID for Docker registry')
     booleanParam(name: 'PUSH_IMAGES', defaultValue: false, description: 'Push Docker images to registry after build')
+    booleanParam(name: 'BUILD_ALL', defaultValue: false, description: 'Force build all services (skip change detection)')
     booleanParam(name: 'CREATE_RELEASE', defaultValue: false, description: 'Create a GitHub Release (main branch only)')
     string(name: 'RELEASE_VERSION', defaultValue: '', description: 'Release version (e.g. 1.16.0). Leave empty for auto-increment.')
   }
@@ -54,7 +61,96 @@ pipeline {
       }
     }
 
-    // ── Stage 2: Quality Gate ─────────────────────────────────────
+    // ── Stage 2: Change Detection ─────────────────────────────────
+    stage('Change Detection') {
+      steps {
+        script {
+          // Service directory → image name mapping
+          def serviceMap = [
+            'services/api_graph'             : 'graph',
+            'services/api_babel_gardens'     : 'babel-gardens',
+            'services/api_memory_orders'     : 'memory-orders',
+            'services/api_vault_keepers'     : 'vault-keepers',
+            'services/api_orthodoxy_wardens' : 'orthodoxy-wardens',
+            'services/api_codex_hunters'     : 'codex-hunters',
+            'services/api_pattern_weavers'   : 'pattern-weavers',
+            'services/api_embedding'         : 'embedding',
+            'services/api_conclave'          : 'conclave',
+            'services/api_neural_engine'     : 'neural-engine',
+            'services/api_mcp'              : 'mcp',
+          ]
+
+          // Core paths — if ANY of these change, rebuild ALL services
+          def corePaths = [
+            'vitruvyan_core/core/',
+            'vitruvyan_core/contracts/',
+            'infrastructure/docker/',
+            'pyproject.toml',
+            'Jenkinsfile',
+          ]
+
+          // Skip paths — changes here don't trigger Docker builds
+          def skipPaths = ['docs/', 'scripts/', '.github/', 'ui/', 'README', 'mkdocs', '.md']
+
+          if (params.BUILD_ALL) {
+            echo "BUILD_ALL=true — building all services"
+            env.CHANGED_SERVICES = serviceMap.values().join(',')
+            env.CORE_CHANGED = 'true'
+          } else {
+            // Get changed files since last successful build (or HEAD~1 for first build)
+            def lastGreen = currentBuild.previousSuccessfulBuild?.getId()
+            def changedFiles = []
+            if (lastGreen) {
+              changedFiles = sh(
+                script: "git diff --name-only HEAD...\$(git log -1 --format='%H' ${lastGreen}) 2>/dev/null || git diff --name-only HEAD~1",
+                returnStdout: true
+              ).trim().split('\n').findAll { it }
+            } else {
+              changedFiles = sh(
+                script: "git diff --name-only HEAD~1 2>/dev/null || git ls-files",
+                returnStdout: true
+              ).trim().split('\n').findAll { it }
+            }
+
+            echo "Changed files (${changedFiles.size()}):\n${changedFiles.take(30).join('\n')}"
+            if (changedFiles.size() > 30) echo "... and ${changedFiles.size() - 30} more"
+
+            // Check if core changed
+            def coreChanged = changedFiles.any { f -> corePaths.any { p -> f.startsWith(p) } }
+            env.CORE_CHANGED = coreChanged.toString()
+
+            if (coreChanged) {
+              echo "Core paths changed — all services will be rebuilt"
+              env.CHANGED_SERVICES = serviceMap.values().join(',')
+            } else {
+              // Find which services changed
+              def changed = [] as Set
+              changedFiles.each { f ->
+                serviceMap.each { dir, name ->
+                  if (f.startsWith(dir)) changed.add(name)
+                }
+              }
+
+              if (changed.isEmpty()) {
+                // Check if ONLY skip-paths changed
+                def onlySkip = changedFiles.every { f -> skipPaths.any { p -> f.startsWith(p) || f.contains(p) } }
+                if (onlySkip) {
+                  echo "Only docs/scripts changed — no Docker builds needed"
+                } else {
+                  echo "Non-service changes detected — building all as safety net"
+                  changed.addAll(serviceMap.values())
+                }
+              }
+
+              env.CHANGED_SERVICES = changed.join(',')
+              echo "Services to build: ${env.CHANGED_SERVICES ?: '(none)'}"
+            }
+          }
+        }
+      }
+    }
+
+    // ── Stage 3: Quality Gate ─────────────────────────────────────
     stage('Quality Gate') {
       parallel {
 
@@ -137,148 +233,63 @@ print(f'All {len(results)} manifest(s) valid')
       }
     }
 
-    // ── Stage 3: Docker Build (parallel per-service) ──────────────
+    // ── Stage 4: Docker Build (smart — only changed services) ────
     stage('Docker Build') {
-      parallel {
+      when {
+        expression { return env.CHANGED_SERVICES?.trim() }
+      }
+      steps {
+        script {
+          // Dockerfile mapping (image name → Dockerfile path)
+          def dockerfileMap = [
+            'graph'             : 'infrastructure/docker/dockerfiles/Dockerfile.api_graph',
+            'babel-gardens'     : 'infrastructure/docker/dockerfiles/Dockerfile.api_babel_gardens',
+            'memory-orders'     : 'infrastructure/docker/dockerfiles/Dockerfile.api_memory_orders',
+            'vault-keepers'     : 'infrastructure/docker/dockerfiles/Dockerfile.vault_keepers',
+            'orthodoxy-wardens' : 'infrastructure/docker/dockerfiles/Dockerfile.orthodoxy_wardens',
+            'codex-hunters'     : 'infrastructure/docker/dockerfiles/Dockerfile.api_codex_hunters',
+            'pattern-weavers'   : 'infrastructure/docker/dockerfiles/Dockerfile.api_weavers',
+            'embedding'         : 'infrastructure/docker/dockerfiles/Dockerfile.api_embedding',
+            'conclave'          : 'infrastructure/docker/dockerfiles/Dockerfile.api_conclave',
+            'neural-engine'     : 'infrastructure/docker/dockerfiles/Dockerfile.api_neural',
+            'mcp'               : 'infrastructure/docker/dockerfiles/Dockerfile.api_mcp',
+          ]
 
-        stage('graph') {
-          steps {
-            sh """
-              docker build \
-                -f infrastructure/docker/dockerfiles/Dockerfile.api_graph \
-                -t ${params.DOCKER_REGISTRY}/vit-graph:${IMAGE_TAG} \
-                -t ${params.DOCKER_REGISTRY}/vit-graph:latest \
-                .
-            """
-          }
-        }
+          def services = env.CHANGED_SERVICES.split(',').findAll { it.trim() }
+          def total = services.size()
+          echo "Building ${total} service(s): ${services.join(', ')}"
 
-        stage('babel-gardens') {
-          steps {
-            sh """
-              docker build \
-                -f infrastructure/docker/dockerfiles/Dockerfile.api_babel_gardens \
-                -t ${params.DOCKER_REGISTRY}/vit-babel-gardens:${IMAGE_TAG} \
-                -t ${params.DOCKER_REGISTRY}/vit-babel-gardens:latest \
-                .
-            """
+          // Build in parallel batches
+          def parallelStages = [:]
+          services.each { svc ->
+            def dockerfile = dockerfileMap[svc]
+            if (!dockerfile) {
+              echo "WARNING: No Dockerfile mapping for '${svc}' — skipping"
+              return
+            }
+            parallelStages[svc] = {
+              sh """
+                docker build \
+                  -f ${dockerfile} \
+                  -t ${params.DOCKER_REGISTRY}/vit-${svc}:${IMAGE_TAG} \
+                  -t ${params.DOCKER_REGISTRY}/vit-${svc}:latest \
+                  .
+              """
+            }
           }
-        }
-
-        stage('memory-orders') {
-          steps {
-            sh """
-              docker build \
-                -f infrastructure/docker/dockerfiles/Dockerfile.api_memory_orders \
-                -t ${params.DOCKER_REGISTRY}/vit-memory-orders:${IMAGE_TAG} \
-                -t ${params.DOCKER_REGISTRY}/vit-memory-orders:latest \
-                .
-            """
-          }
-        }
-
-        stage('vault-keepers') {
-          steps {
-            sh """
-              docker build \
-                -f infrastructure/docker/dockerfiles/Dockerfile.vault_keepers \
-                -t ${params.DOCKER_REGISTRY}/vit-vault-keepers:${IMAGE_TAG} \
-                -t ${params.DOCKER_REGISTRY}/vit-vault-keepers:latest \
-                .
-            """
-          }
-        }
-
-        stage('orthodoxy-wardens') {
-          steps {
-            sh """
-              docker build \
-                -f infrastructure/docker/dockerfiles/Dockerfile.orthodoxy_wardens \
-                -t ${params.DOCKER_REGISTRY}/vit-orthodoxy-wardens:${IMAGE_TAG} \
-                -t ${params.DOCKER_REGISTRY}/vit-orthodoxy-wardens:latest \
-                .
-            """
-          }
-        }
-
-        stage('codex-hunters') {
-          steps {
-            sh """
-              docker build \
-                -f infrastructure/docker/dockerfiles/Dockerfile.api_codex_hunters \
-                -t ${params.DOCKER_REGISTRY}/vit-codex-hunters:${IMAGE_TAG} \
-                -t ${params.DOCKER_REGISTRY}/vit-codex-hunters:latest \
-                .
-            """
-          }
-        }
-
-        stage('pattern-weavers') {
-          steps {
-            sh """
-              docker build \
-                -f infrastructure/docker/dockerfiles/Dockerfile.api_pattern_weavers \
-                -t ${params.DOCKER_REGISTRY}/vit-pattern-weavers:${IMAGE_TAG} \
-                -t ${params.DOCKER_REGISTRY}/vit-pattern-weavers:latest \
-                .
-            """
-          }
-        }
-
-        stage('embedding') {
-          steps {
-            sh """
-              docker build \
-                -f infrastructure/docker/dockerfiles/Dockerfile.api_embedding \
-                -t ${params.DOCKER_REGISTRY}/vit-embedding:${IMAGE_TAG} \
-                -t ${params.DOCKER_REGISTRY}/vit-embedding:latest \
-                .
-            """
-          }
-        }
-
-        stage('conclave') {
-          steps {
-            sh """
-              docker build \
-                -f infrastructure/docker/dockerfiles/Dockerfile.api_conclave \
-                -t ${params.DOCKER_REGISTRY}/vit-conclave:${IMAGE_TAG} \
-                -t ${params.DOCKER_REGISTRY}/vit-conclave:latest \
-                .
-            """
-          }
-        }
-
-        stage('neural-engine') {
-          steps {
-            sh """
-              docker build \
-                -f infrastructure/docker/dockerfiles/Dockerfile.api_neural_engine \
-                -t ${params.DOCKER_REGISTRY}/vit-neural-engine:${IMAGE_TAG} \
-                -t ${params.DOCKER_REGISTRY}/vit-neural-engine:latest \
-                .
-            """
-          }
-        }
-
-        stage('mcp') {
-          steps {
-            sh """
-              docker build \
-                -f infrastructure/docker/dockerfiles/Dockerfile.api_mcp \
-                -t ${params.DOCKER_REGISTRY}/vit-mcp:${IMAGE_TAG} \
-                -t ${params.DOCKER_REGISTRY}/vit-mcp:latest \
-                .
-            """
-          }
+          parallel parallelStages
+          echo "Built ${total} image(s) successfully"
         }
       }
     }
 
-    // ── Stage 4: Docker Push (manual) ─────────────────────────────
+    // ── Stage 5: Docker Push (manual, only changed services) ─────
     stage('Docker Push') {
       when {
-        expression { return params.PUSH_IMAGES }
+        allOf {
+          expression { return params.PUSH_IMAGES }
+          expression { return env.CHANGED_SERVICES?.trim() }
+        }
       }
       steps {
         withCredentials([usernamePassword(
@@ -286,25 +297,24 @@ print(f'All {len(results)} manifest(s) valid')
           usernameVariable: 'DOCKER_USER',
           passwordVariable: 'DOCKER_PASS'
         )]) {
-          sh '''
-            set -eu
-            printf '%s' "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
+          script {
+            sh 'printf \'%s\' "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin'
 
-            SERVICES="graph babel-gardens memory-orders vault-keepers orthodoxy-wardens codex-hunters pattern-weavers embedding conclave neural-engine mcp"
-
-            for svc in $SERVICES; do
+            def services = env.CHANGED_SERVICES.split(',').findAll { it.trim() }
+            services.each { svc ->
               echo "Pushing vit-${svc}..."
-              docker push "${DOCKER_REGISTRY}/vit-${svc}:${IMAGE_TAG}"
-              docker push "${DOCKER_REGISTRY}/vit-${svc}:latest"
-            done
+              sh "docker push '${params.DOCKER_REGISTRY}/vit-${svc}:${IMAGE_TAG}'"
+              sh "docker push '${params.DOCKER_REGISTRY}/vit-${svc}:latest'"
+            }
 
-            docker logout
-          '''
+            sh 'docker logout'
+          }
         }
       }
     }
 
-    // ── Stage 5: Create Release (manual, main only) ───────────────
+    // ── Stage 6: Release (manual, main only) ─────────────────────
+    //   Creates monorepo tag (v1.16.0) + per-package tags (vit-neural-engine/2.1.0)
     stage('Release') {
       when {
         allOf {
@@ -317,11 +327,10 @@ print(f'All {len(results)} manifest(s) valid')
           set -eu
           . .venv/bin/activate
 
-          # Determine version
+          # Determine monorepo version
           if [ -n "${RELEASE_VERSION}" ]; then
             VERSION="${RELEASE_VERSION}"
           else
-            # Auto-increment: read latest tag, bump patch
             LATEST=$(git tag -l "v*" --sort=-v:refname | head -1 | sed 's/^v//')
             if [ -z "$LATEST" ]; then
               VERSION="1.0.0"
@@ -333,14 +342,55 @@ print(f'All {len(results)} manifest(s) valid')
             fi
           fi
 
-          echo "Creating release v${VERSION}..."
-
-          # Tag
+          echo "Creating monorepo release v${VERSION}..."
           git tag -a "v${VERSION}" -m "Release v${VERSION} — build #${BUILD_NUMBER}"
-          git push origin "v${VERSION}"
 
-          echo "Tagged v${VERSION}. GitHub Release can be created from this tag."
           echo "RELEASE_VERSION=${VERSION}" > release.properties
+          echo "RELEASE_PACKAGES=" >> release.properties
+        '''
+
+        // Per-package version tags from .vit manifests
+        script {
+          def services = env.CHANGED_SERVICES?.split(',')?.findAll { it.trim() } ?: []
+          if (services) {
+            sh '''
+              set -eu
+              . .venv/bin/activate
+              python3 -c "
+import yaml, glob, os
+manifests = glob.glob('vitruvyan_core/core/platform/package_manager/packages/manifests/*.vit')
+tags = []
+for m in manifests:
+    with open(m) as f:
+        data = yaml.safe_load(f)
+    name = data.get('package_name', '')
+    ver = data.get('package_version', '')
+    if name and ver:
+        tag = f'{name}/{ver}'
+        tags.append(tag)
+        print(f'  Package tag: {tag}')
+# Write tags for git
+with open('package_tags.txt', 'w') as f:
+    f.write('\\n'.join(tags))
+"
+              # Create per-package tags (idempotent — skip if tag exists)
+              while IFS= read -r tag; do
+                if [ -n "$tag" ] && ! git rev-parse "$tag" >/dev/null 2>&1; then
+                  git tag -a "$tag" -m "Package release: $tag — build #${BUILD_NUMBER}"
+                  echo "  Tagged: $tag"
+                else
+                  echo "  Skip (exists): $tag"
+                fi
+              done < package_tags.txt
+              rm -f package_tags.txt
+            '''
+          }
+        }
+
+        sh '''
+          set -eu
+          git push origin --tags
+          echo "All tags pushed."
         '''
         archiveArtifacts artifacts: 'release.properties', allowEmptyArchive: true
       }
