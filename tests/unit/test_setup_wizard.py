@@ -16,8 +16,10 @@ import pytest
 
 from vitruvyan_core.core.platform.package_manager.bootstrap import (
     BootstrapReport,
+    DEFAULT_INFRA_PORTS,
     ENV_TEMPLATE,
     PrereqResult,
+    _parse_compose_ports,
     check_docker,
     check_docker_compose,
     check_port,
@@ -200,6 +202,40 @@ class TestRunAllChecks:
         with patch("vitruvyan_core.core.platform.package_manager.bootstrap.Path.is_dir", return_value=True):
             report = run_all_checks()
         assert len(report.checks) >= 4  # git, python, docker, compose + infra
+
+
+class TestComposePortParsing:
+    def test_parses_custom_ports(self):
+        """Verify _parse_compose_ports reads host ports from docker-compose.yml."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            compose_dir = Path(tmpdir) / "infrastructure" / "docker"
+            compose_dir.mkdir(parents=True)
+            compose_file = compose_dir / "docker-compose.yml"
+            compose_file.write_text(
+                "services:\n"
+                "  redis:\n"
+                "    ports:\n"
+                "      - '9379:6379'\n"
+                "  postgres:\n"
+                "    ports:\n"
+                "      - '9432:5432'\n"
+                "  qdrant:\n"
+                "    ports:\n"
+                "      - '9333:6333'\n"
+                "      - '9334:6334'\n"
+            )
+            # Also create vitruvyan_core dir so find_repo_root would work
+            (Path(tmpdir) / "vitruvyan_core").mkdir()
+            ports = _parse_compose_ports(repo_root=Path(tmpdir))
+            assert ports["redis"] == 9379
+            assert ports["postgres"] == 9432
+            assert ports["qdrant_rest"] == 9333
+            assert ports["qdrant_grpc"] == 9334
+
+    def test_falls_back_to_defaults(self):
+        """Without compose file, should return default ports."""
+        ports = _parse_compose_ports(repo_root=Path("/nonexistent"))
+        assert ports == DEFAULT_INFRA_PORTS
 
 
 # ══════════════════════════════════════════════════════════════════

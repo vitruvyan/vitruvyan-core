@@ -11,6 +11,7 @@ Checks:
 """
 
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -47,12 +48,19 @@ class BootstrapReport:
         return lines
 
 
-# Ports used by core infrastructure
-INFRA_PORTS = {
+# Default ports (fallback if docker-compose.yml cannot be parsed)
+DEFAULT_INFRA_PORTS = {
     "redis": 6379,
     "postgres": 5432,
     "qdrant_rest": 6333,
     "qdrant_grpc": 6334,
+}
+
+# Map compose service names to our check names + internal ports
+_COMPOSE_SERVICE_MAP = {
+    "redis":   {"check_name": "redis",       "internal_port": 6379},
+    "postgres":{"check_name": "postgres",    "internal_port": 5432},
+    "qdrant":  {"check_name": "qdrant_rest", "internal_port": 6333, "extra": {"qdrant_grpc": 6334}},
 }
 
 # Default env template for first-run
@@ -149,6 +157,46 @@ def check_git_repo() -> PrereqResult:
         return PrereqResult("Git repo", False, "git not available", required=True)
 
 
+def _parse_compose_ports(repo_root: Optional[Path] = None) -> Dict[str, int]:
+    """Parse host ports from docker-compose.yml, falling back to defaults."""
+    root = repo_root or find_repo_root()
+    if not root:
+        return dict(DEFAULT_INFRA_PORTS)
+
+    compose_path = root / "infrastructure" / "docker" / "docker-compose.yml"
+    if not compose_path.exists():
+        return dict(DEFAULT_INFRA_PORTS)
+
+    try:
+        import yaml
+        with open(compose_path) as f:
+            data = yaml.safe_load(f)
+    except Exception:
+        return dict(DEFAULT_INFRA_PORTS)
+
+    services = data.get("services", {}) if data else {}
+    ports: Dict[str, int] = dict(DEFAULT_INFRA_PORTS)
+
+    for svc_name, mapping in _COMPOSE_SERVICE_MAP.items():
+        svc = services.get(svc_name, {})
+        svc_ports = svc.get("ports", [])
+        for port_str in svc_ports:
+            port_str = str(port_str)
+            # Parse "9379:6379" → host=9379, container=6379
+            m = re.match(r"(\d+):(\d+)", port_str)
+            if not m:
+                continue
+            host_port, container_port = int(m.group(1)), int(m.group(2))
+            if container_port == mapping["internal_port"]:
+                ports[mapping["check_name"]] = host_port
+            # Handle extra ports (e.g. qdrant gRPC)
+            for extra_name, extra_internal in mapping.get("extra", {}).items():
+                if container_port == extra_internal:
+                    ports[extra_name] = host_port
+
+    return ports
+
+
 def run_all_checks() -> BootstrapReport:
     """Run all prerequisite checks and return a report."""
     report = BootstrapReport()
@@ -156,7 +204,8 @@ def run_all_checks() -> BootstrapReport:
     report.checks.append(check_python())
     report.checks.append(check_docker())
     report.checks.append(check_docker_compose())
-    for name, port in INFRA_PORTS.items():
+    infra_ports = _parse_compose_ports()
+    for name, port in infra_ports.items():
         report.checks.append(check_infra_service(name, port))
     return report
 
