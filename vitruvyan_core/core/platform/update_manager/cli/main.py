@@ -2,17 +2,21 @@
 CLI Entry Point for `vit` Command
 
 Usage:
-    vit update
-    vit upgrade
-    vit plan --target v1.2.0
-    vit rollback
-    vit channel stable
-    vit status
+    # Core management
+    vit update                  # check for Core updates
+    vit upgrade                 # apply Core update
+    vit plan --target v1.2.0    # preview upgrade plan
+    vit rollback                # revert last upgrade
+    vit status                  # show system status
+    vit channel stable          # switch update channel
     vit release                 # create GitHub Release from current tag
-    vit release --dry-run       # preview without API calls
 
-Phase 2: upgrade, plan, rollback implemented
-Phase 3: release command added
+    # Package management
+    vit install <package>       # install a .vit package
+    vit remove <package>        # remove an installed package
+    vit list [--all]            # list installed/available packages
+    vit search <query>          # search available packages
+    vit info <package>          # show package details
 """
 
 import sys
@@ -26,6 +30,11 @@ from .commands.rollback import register_rollback_command
 from .commands.status import register_status_command
 from .commands.completion import register_completion_command
 from .commands.release import register_release_command
+from .commands.install import register_install_command
+from .commands.remove import register_remove_command
+from .commands.list_cmd import register_list_command
+from .commands.search import register_search_command
+from .commands.info import register_info_command
 from .channel_state import set_default_channel
 
 # Configure logging
@@ -53,13 +62,13 @@ def cli_main():
     """
     parser = argparse.ArgumentParser(
         prog="vit",
-        description="Vitruvyan Core Update Manager",
-        epilog="Documentation: docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md"
+        description="Vitruvyan OS — System & Package Manager",
+        epilog="Docs: docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md"
     )
     
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
     
-    # Register commands (Phase 2+: update, upgrade, plan, rollback, status, release)
+    # Core management commands
     register_update_command(subparsers)
     register_upgrade_command(subparsers)
     register_plan_command(subparsers)
@@ -67,6 +76,13 @@ def cli_main():
     register_status_command(subparsers)
     register_completion_command(subparsers)
     register_release_command(subparsers)
+
+    # Package management commands
+    register_install_command(subparsers)
+    register_remove_command(subparsers)
+    register_list_command(subparsers)
+    register_search_command(subparsers)
+    register_info_command(subparsers)
     
     # vit channel
     channel_parser = subparsers.add_parser(
