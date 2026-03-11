@@ -1,0 +1,65 @@
+# Vitruvyan Vertical Template — Copy and customize for new verticals
+# Type: vertical — Meta-package that installs all domain components
+# Doc:  vitruvyan_core/core/platform/package_manager/packages/VIT_FORMAT_SPEC.md
+#
+# Usage:
+#   1. Copy this file as vertical-<domain>.vit
+#   2. Replace all <PLACEHOLDERS> with actual values
+#   3. Place in packages/manifests/ directory
+#   4. Test: vit info <domain>
+
+package_name: vertical-<DOMAIN>
+package_version: "1.0.0"
+package_type: vertical
+status: stable
+tier: package
+description: "<DOMAIN> domain — brief description of what this vertical provides"
+
+compatibility:
+  min_core_version: "1.15.0"
+  max_core_version: "1.x.x"
+  contracts_major: 1
+  conflicts_with: []
+
+dependencies:
+  required:
+    - "vitruvyan-core>=1.15.0"
+    # Add required service packages here:
+    # - "service-neural-engine>=2.0.0"
+  optional:
+    # Add optional service packages here:
+    # - "service-mcp>=0.5.0"
+  system:
+    - docker
+    - redis
+    - postgres
+    - qdrant
+
+installation:
+  method: script
+  components:
+    - name: <domain>-intents
+      source: vitruvyan_core/domains/<DOMAIN>/intent_config.py
+      description: "<DOMAIN> intent detection configuration"
+    - name: <domain>-prompts
+      source: vitruvyan_core/domains/<DOMAIN>/prompts/
+      description: "<DOMAIN>-specific LLM prompts"
+  env_required: []
+  env_optional:
+    - INTENT_DOMAIN=<DOMAIN>
+    - DOMAIN=<DOMAIN>
+
+health:
+  endpoint: null
+
+smoke_tests:
+  path: "vitruvyan_core/domains/<DOMAIN>/tests/"
+  timeout: 180
+
+uninstallation:
+  preserve_data: true
+  cleanup_streams: false
+
+ownership:
+  team: <TEAM>
+  contact: <CONTACT>

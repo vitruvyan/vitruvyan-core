@@ -54,7 +54,7 @@ class PackageInstaller:
 
         Steps:
             1. Collect required env vars (if interactive)
-            2. Start Docker service
+            2. Start Docker service (or validate components for verticals)
             3. Wait for health check
             4. Register in state
 
@@ -65,6 +65,8 @@ class PackageInstaller:
 
         if manifest.install_method == "docker_compose":
             return self._install_docker_compose(manifest, interactive)
+        elif manifest.install_method == "script":
+            return self._install_script(manifest, interactive)
         else:
             logger.error("Unsupported install method: %s", manifest.install_method)
             return False
@@ -74,7 +76,7 @@ class PackageInstaller:
         Remove an installed package.
 
         Steps:
-            1. Stop Docker service
+            1. Stop Docker service (if docker_compose)
             2. Optionally purge data
             3. Remove from state
 
@@ -85,6 +87,8 @@ class PackageInstaller:
 
         if manifest.install_method == "docker_compose":
             return self._remove_docker_compose(manifest, purge)
+        elif manifest.install_method == "script":
+            return self._remove_script(manifest, purge)
         else:
             logger.error("Unsupported install method: %s", manifest.install_method)
             return False
@@ -205,6 +209,69 @@ class PackageInstaller:
                     logger.warning("Cleanup command failed: %s — %s", cmd_str, e)
 
         # Unregister
+        self.state.remove(manifest.package_name)
+        return True
+
+    def _install_script(self, manifest: PackageManifest, interactive: bool) -> bool:
+        """Install a vertical/meta-package via script method.
+
+        Verticals don't run their own Docker service — they configure
+        the system (env vars, domain configs) and rely on required
+        dependencies for actual service containers.
+        """
+        # Validate components exist
+        if manifest.components:
+            missing = []
+            for component in manifest.components:
+                source = component.get("source", "")
+                if source:
+                    source_path = self.repo_root / source
+                    if not source_path.exists():
+                        missing.append(source)
+            if missing:
+                logger.warning("Missing component sources: %s", missing)
+                if interactive:
+                    print(f"\n  Warning: {len(missing)} component source(s) not found:")
+                    for m in missing:
+                        print(f"    - {m}")
+                    print("  This is normal if domain code is not deployed yet.")
+
+        # Check required env vars
+        if interactive and manifest.env_required:
+            missing_env = self._check_env_vars(manifest.env_required)
+            if missing_env:
+                print(f"\n  Required environment variables for {manifest.package_name}:")
+                for var in missing_env:
+                    print(f"    - {var}")
+                print(f"\n  Set them in your .env file or environment before installing.")
+                return False
+
+        # Run init commands
+        for cmd_str in manifest.init_commands:
+            try:
+                subprocess.run(cmd_str, shell=True, check=True, timeout=60)
+            except Exception as e:
+                logger.warning("Init command failed: %s — %s", cmd_str, e)
+
+        # Register
+        self.state.add(
+            name=manifest.package_name,
+            version=manifest.package_version,
+            install_method=manifest.install_method,
+            ports=manifest.ports,
+        )
+
+        return True
+
+    def _remove_script(self, manifest: PackageManifest, purge: bool) -> bool:
+        """Remove a vertical/meta-package."""
+        if purge:
+            for cmd_str in manifest.cleanup_commands:
+                try:
+                    subprocess.run(cmd_str, shell=True, timeout=30)
+                except Exception as e:
+                    logger.warning("Cleanup command failed: %s — %s", cmd_str, e)
+
         self.state.remove(manifest.package_name)
         return True
 
