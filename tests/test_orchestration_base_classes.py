@@ -312,11 +312,19 @@ class TestLLMAgent:
     def test_llm_agent_is_singleton(self):
         """LLMAgent should be a singleton."""
         from vitruvyan_core.core.agents.llm_agent import LLMAgent
+        from unittest.mock import patch, MagicMock
         
-        agent1 = LLMAgent()
-        agent2 = LLMAgent()
+        # Reset singleton for clean test
+        LLMAgent._instance = None
         
-        assert agent1 is agent2
+        with patch("vitruvyan_core.core.agents.llm_agent.OpenAI", return_value=MagicMock()):
+            agent1 = LLMAgent(api_key="test-key")
+            agent2 = LLMAgent(api_key="test-key")
+        
+            assert agent1 is agent2
+        
+        # Clean up singleton so other tests aren't affected
+        LLMAgent._instance = None
     
     def test_rate_limiter(self):
         """RateLimiter should track requests."""

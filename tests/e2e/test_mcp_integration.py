@@ -174,6 +174,7 @@ class TestMCPNodeExecution:
         assert "mcp_skipped" in result or "mcp_result" not in result
     
     @patch.dict(os.environ, {"USE_MCP": "1"})
+    @patch("core.orchestration.langgraph.node.llm_mcp_node.USE_MCP", True)
     @patch("core.orchestration.langgraph.node.llm_mcp_node.get_llm_agent")
     @patch("core.orchestration.langgraph.node.llm_mcp_node.execute_mcp_tool", new_callable=AsyncMock)
     @patch("core.orchestration.langgraph.node.llm_mcp_node.get_mcp_tools", new_callable=AsyncMock)

@@ -68,7 +68,7 @@ def state_with_weaver_concepts(base_state):
 class TestCANContextIntegration:
     """Test context integration nel CAN node."""
     
-    @patch('core.agents.llm_agent.get_llm_agent')
+    @patch('core.orchestration.langgraph.node.can_node.get_llm_agent')
     def test_vsgs_context_extraction(self, mock_llm_agent_factory, state_with_vsgs_context):
         """Verifica estrazione context da VSGS semantic matches."""
         # Mock LLM

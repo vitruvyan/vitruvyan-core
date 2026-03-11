@@ -15,9 +15,9 @@ from unittest.mock import patch
 def _import_fresh(mode: str = "warn"):
     """Import contract_enforcement with a specific mode (fresh module)."""
     import importlib
-    with patch.dict(os.environ, {"CONTRACT_ENFORCE_MODE": mode}):
-        import vitruvyan_core.core.orchestration.contract_enforcement as mod
-        importlib.reload(mod)
+    os.environ["CONTRACT_ENFORCE_MODE"] = mode
+    import vitruvyan_core.core.orchestration.contract_enforcement as mod
+    importlib.reload(mod)
     return mod
 
 

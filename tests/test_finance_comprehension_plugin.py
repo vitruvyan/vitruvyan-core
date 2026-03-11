@@ -505,6 +505,12 @@ class TestFinanceSignalFusion:
 class TestFinBERTContributorContract:
     """Test FinBERTContributor implements ISignalContributor correctly."""
 
+    @pytest.fixture(autouse=True)
+    def _mock_pg(self):
+        """Mock PostgresAgent to avoid real DB connections during import."""
+        with patch("core.agents.postgres_agent.PostgresAgent.__init__", return_value=None):
+            yield
+
     def test_contributor_name(self):
         from services.api_babel_gardens.plugins.finbert_contributor import FinBERTContributor
         contributor = FinBERTContributor()
