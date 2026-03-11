@@ -1,0 +1,51 @@
+# Vitruvyan Package Manifest — Neural Engine
+# Type: service (optional, installable via 'vit install')
+
+package_name: service-neural-engine
+package_version: "2.1.0"
+package_type: service
+status: stable
+tier: package
+description: "Neural computation engine for pattern scoring, entity analysis, and domain-specific reasoning"
+
+compatibility:
+  min_core_version: "1.15.0"
+  max_core_version: "1.x.x"
+  contracts_major: 1
+  conflicts_with: []
+
+dependencies:
+  required:
+    - "vitruvyan-core>=1.15.0"
+  optional:
+    - "service-mcp>=0.5.0"
+  system:
+    - docker
+
+installation:
+  method: docker_compose
+  compose_service: neural_engine
+  compose_file: infrastructure/docker/docker-compose.yml
+  dockerfile: services/api_neural_engine/Dockerfile
+  ports:
+    - "9003:8003"
+  env_required: []
+  env_optional:
+    - LOG_LEVEL=info
+    - DOMAIN=mock
+
+health:
+  endpoint: "http://localhost:9003/health"
+  interval: 30
+  timeout: 10
+
+smoke_tests:
+  timeout: 60
+
+uninstallation:
+  preserve_data: true
+  cleanup_streams: false
+
+ownership:
+  team: core
+  contact: dev@vitruvyan.io

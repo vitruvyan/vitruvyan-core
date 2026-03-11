@@ -1,0 +1,57 @@
+# Vitruvyan Package Manifest — Edge DSE (Domain-Specific Engine)
+# Type: service (optional, installable via 'vit install')
+
+package_name: service-edge-dse
+package_version: "1.0.0"
+package_type: service
+status: experimental
+tier: package
+description: "Edge computing engine for domain-specific data acquisition, provider management, and real-time feeds"
+
+compatibility:
+  min_core_version: "1.15.0"
+  max_core_version: "1.x.x"
+  contracts_major: 1
+  conflicts_with: []
+
+dependencies:
+  required:
+    - "vitruvyan-core>=1.15.0"
+    - "service-neural-engine>=2.0.0"
+  optional: []
+  system:
+    - docker
+    - redis
+    - postgres
+
+installation:
+  method: docker_compose
+  compose_service: edge_oculus_prime
+  compose_file: infrastructure/docker/docker-compose.yml
+  dockerfile: services/api_edge_oculus_prime/Dockerfile
+  ports:
+    - "9050:8050"
+  env_required:
+    - POSTGRES_PASSWORD
+  env_optional:
+    - LOG_LEVEL=INFO
+    - PORT=8050
+
+health:
+  endpoint: "http://localhost:9050/health"
+  interval: 30
+  timeout: 10
+
+smoke_tests:
+  timeout: 120
+
+uninstallation:
+  preserve_data: true
+  cleanup_streams: true
+  cleanup_channels:
+    - "edge.acquisition.completed"
+    - "edge.provider.status"
+
+ownership:
+  team: core
+  contact: dev@vitruvyan.io

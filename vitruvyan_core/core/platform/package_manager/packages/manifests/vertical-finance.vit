@@ -1,0 +1,62 @@
+# Vitruvyan Package Manifest — Finance Vertical
+# Type: vertical — Meta-package that installs all finance domain components
+# Tier: package — installable via 'vit install vertical-finance'
+
+package_name: vertical-finance
+package_version: "1.0.0"
+package_type: vertical
+status: stable
+tier: package
+description: "Finance domain — trading analysis, portfolio management, entity screening, risk monitoring"
+
+compatibility:
+  min_core_version: "1.15.0"
+  max_core_version: "1.x.x"
+  contracts_major: 1
+  conflicts_with: []
+
+dependencies:
+  required:
+    - "vitruvyan-core>=1.15.0"
+    - "service-neural-engine>=2.0.0"
+  optional:
+    - "service-mcp>=0.5.0"
+    - "service-edge-dse>=1.0.0"
+  system:
+    - docker
+    - redis
+    - postgres
+    - qdrant
+
+installation:
+  method: script
+  components:
+    - name: finance-intents
+      source: vitruvyan_core/domains/finance/intent_config.py
+      description: "Finance intent detection configuration"
+    - name: finance-prompts
+      source: vitruvyan_core/domains/finance/prompts/
+      description: "Finance-specific LLM prompts"
+    - name: finance-contracts
+      source: vitruvyan_core/domains/finance/
+      description: "Finance domain contracts and rules"
+  env_required:
+    - OPENAI_API_KEY
+  env_optional:
+    - INTENT_DOMAIN=finance
+    - DOMAIN=finance
+
+health:
+  endpoint: "http://localhost:9003/health"
+
+smoke_tests:
+  path: "vitruvyan_core/domains/finance/tests/"
+  timeout: 180
+
+uninstallation:
+  preserve_data: true
+  cleanup_streams: true
+
+ownership:
+  team: mercator
+  contact: dev@vitruvyan.io
