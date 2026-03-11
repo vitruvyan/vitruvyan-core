@@ -16,14 +16,16 @@ import pytest
 
 from vitruvyan_core.core.platform.package_manager.bootstrap import (
     BootstrapReport,
-    DEFAULT_INFRA_PORTS,
     ENV_TEMPLATE,
+    PortConfig,
+    PORT_FIELDS,
     PrereqResult,
-    _parse_compose_ports,
     check_docker,
     check_docker_compose,
-    check_port,
+    check_port_available,
+    check_port_reachable,
     check_python,
+    can_install_docker,
     generate_env_file,
     read_existing_env,
     run_all_checks,
@@ -108,7 +110,7 @@ class TestCheckDocker:
         mock_which.return_value = None
         result = check_docker()
         assert not result.passed
-        assert "not found" in result.message
+        assert "not installed" in result.message
 
     @patch("vitruvyan_core.core.platform.package_manager.bootstrap.subprocess.run")
     @patch("vitruvyan_core.core.platform.package_manager.bootstrap.shutil.which")
@@ -142,9 +144,52 @@ class TestCheckDockerCompose:
 
 
 class TestCheckPort:
-    def test_closed_port(self):
-        """Port 19999 should not be in use."""
-        assert not check_port(19999)
+    def test_closed_port_is_available(self):
+        """Port 19999 should not be in use → available."""
+        assert check_port_available(19999)
+
+    def test_closed_port_not_reachable(self):
+        """Port 19999 should not be reachable."""
+        assert not check_port_reachable(19999)
+
+
+class TestPortConfig:
+    def test_default_ports(self):
+        config = PortConfig()
+        assert config.redis == 6379
+        assert config.postgres == 5432
+        assert config.qdrant_rest == 6333
+        assert config.qdrant_grpc == 6334
+
+    def test_custom_ports(self):
+        config = PortConfig(redis=9379, postgres=9432)
+        assert config.redis == 9379
+        assert config.postgres == 9432
+        assert config.qdrant_rest == 6333  # default
+
+    def test_as_env_dict(self):
+        config = PortConfig(redis=9379, postgres=9432, qdrant_rest=9333, qdrant_grpc=9334)
+        env = config.as_env_dict()
+        assert env["HOST_REDIS_PORT"] == "9379"
+        assert env["HOST_POSTGRES_PORT"] == "9432"
+        assert env["HOST_QDRANT_REST_PORT"] == "9333"
+        assert env["HOST_QDRANT_GRPC_PORT"] == "9334"
+
+    def test_items(self):
+        config = PortConfig()
+        items = config.items()
+        names = [name for name, _ in items]
+        assert "redis" in names
+        assert "postgres" in names
+        assert len(items) == 4
+
+    def test_port_fields_consistent(self):
+        """PORT_FIELDS should have 4 entries matching PortConfig fields."""
+        assert len(PORT_FIELDS) == 4
+        config = PortConfig()
+        for field_name, env_var, label, std_port in PORT_FIELDS:
+            assert hasattr(config, field_name)
+            assert getattr(config, field_name) == std_port
 
 
 class TestEnvFile:
@@ -158,7 +203,21 @@ class TestEnvFile:
             assert result == env_path
             content = env_path.read_text()
             assert "OPENAI_API_KEY=sk-test123" in content
-            assert "POSTGRES_USER=vitruvyan" in content  # default
+            assert "POSTGRES_USER=vitruvyan_core_user" in content  # default
+        finally:
+            env_path.unlink(missing_ok=True)
+
+    def test_generate_env_with_port_config(self):
+        with tempfile.NamedTemporaryFile(suffix=".env", delete=False) as f:
+            env_path = Path(f.name)
+        try:
+            env_path.unlink()
+            ports = PortConfig(redis=9379, postgres=9432)
+            result = generate_env_file(env_path, port_config=ports)
+            content = env_path.read_text()
+            assert "HOST_REDIS_PORT=9379" in content
+            assert "HOST_POSTGRES_PORT=9432" in content
+            assert "HOST_QDRANT_REST_PORT=6333" in content  # default
         finally:
             env_path.unlink(missing_ok=True)
 
@@ -204,38 +263,16 @@ class TestRunAllChecks:
         assert len(report.checks) >= 4  # git, python, docker, compose + infra
 
 
-class TestComposePortParsing:
-    def test_parses_custom_ports(self):
-        """Verify _parse_compose_ports reads host ports from docker-compose.yml."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            compose_dir = Path(tmpdir) / "infrastructure" / "docker"
-            compose_dir.mkdir(parents=True)
-            compose_file = compose_dir / "docker-compose.yml"
-            compose_file.write_text(
-                "services:\n"
-                "  redis:\n"
-                "    ports:\n"
-                "      - '9379:6379'\n"
-                "  postgres:\n"
-                "    ports:\n"
-                "      - '9432:5432'\n"
-                "  qdrant:\n"
-                "    ports:\n"
-                "      - '9333:6333'\n"
-                "      - '9334:6334'\n"
-            )
-            # Also create vitruvyan_core dir so find_repo_root would work
-            (Path(tmpdir) / "vitruvyan_core").mkdir()
-            ports = _parse_compose_ports(repo_root=Path(tmpdir))
-            assert ports["redis"] == 9379
-            assert ports["postgres"] == 9432
-            assert ports["qdrant_rest"] == 9333
-            assert ports["qdrant_grpc"] == 9334
+class TestCanInstallDocker:
+    @patch("vitruvyan_core.core.platform.package_manager.bootstrap.shutil.which")
+    def test_can_install_with_apt(self, mock_which):
+        mock_which.return_value = "/usr/bin/apt-get"
+        assert can_install_docker()
 
-    def test_falls_back_to_defaults(self):
-        """Without compose file, should return default ports."""
-        ports = _parse_compose_ports(repo_root=Path("/nonexistent"))
-        assert ports == DEFAULT_INFRA_PORTS
+    @patch("vitruvyan_core.core.platform.package_manager.bootstrap.shutil.which")
+    def test_cannot_install_without_apt(self, mock_which):
+        mock_which.return_value = None
+        assert not can_install_docker()
 
 
 # ══════════════════════════════════════════════════════════════════

@@ -14,11 +14,20 @@ from pathlib import Path
 
 from vitruvyan_core.core.platform.package_manager.bootstrap import (
     BootstrapReport,
+    PortConfig,
+    can_install_docker,
+    check_docker,
+    check_docker_compose,
+    check_git_repo,
+    check_python,
     collect_env_interactive,
+    collect_ports_interactive,
     find_repo_root,
     generate_env_file,
+    install_docker,
     read_existing_env,
     run_all_checks,
+    start_infrastructure,
 )
 from vitruvyan_core.core.platform.package_manager.profiles import (
     CUSTOM,
@@ -79,7 +88,7 @@ def _env_only() -> int:
     if not repo_root:
         print("  Could not find vitruvyan-core repository root.")
         return 1
-    env_path = repo_root / ".env"
+    env_path = repo_root / "infrastructure" / "docker" / ".env"
     values = collect_env_interactive()
     generate_env_file(env_path, values)
     print(f"\n  ✅ Environment file written to {env_path}")
@@ -92,20 +101,66 @@ def _interactive_wizard(skip_confirm: bool = False) -> int:
     """Full interactive setup wizard."""
     print(BANNER)
 
-    # Step 1: Prerequisites
-    print("  Step 1/4 — Checking prerequisites\n")
-    report = run_all_checks()
-    for line in report.summary_lines:
-        print(line)
+    repo_root = find_repo_root()
+    if not repo_root:
+        print("  Could not find vitruvyan-core repository root.")
+        return 1
 
-    if not report.all_required_passed:
+    # Step 1: Prerequisites (Python, git, Docker)
+    print("  Step 1/5 — Checking prerequisites\n")
+    git_check = check_git_repo()
+    py_check = check_python()
+    docker_check = check_docker()
+    compose_check = check_docker_compose()
+
+    for c in [git_check, py_check, docker_check, compose_check]:
+        icon = "✅" if c.passed else "❌"
+        print(f"  {icon} {c.name}: {c.message}")
+
+    if not git_check.passed or not py_check.passed:
         print("\n  ❌ Required prerequisites are missing. Fix them and run 'vit setup' again.")
         return 1
 
+    # Offer to install Docker if missing
+    if not docker_check.passed or not compose_check.passed:
+        if can_install_docker():
+            print("\n  Docker is not installed. Would you like to install it?")
+            try:
+                answer = input("  Install Docker? [Y/n]: ").strip().lower()
+            except (EOFError, KeyboardInterrupt):
+                print("\n  Aborted.")
+                return 1
+            if answer in ("", "y", "yes"):
+                if install_docker():
+                    print("  ✅ Docker installed successfully\n")
+                    # Re-check
+                    docker_check = check_docker()
+                    compose_check = check_docker_compose()
+                    if not docker_check.passed:
+                        print("  ❌ Docker is installed but not responding.")
+                        print("     Try: sudo systemctl start docker")
+                        return 1
+                else:
+                    print("  ❌ Docker installation failed.")
+                    print("     Install manually: https://docs.docker.com/engine/install/ubuntu/")
+                    return 1
+            else:
+                print("  Install Docker before running setup:")
+                print("    curl -fsSL https://get.docker.com | sh")
+                return 1
+        else:
+            print("\n  ❌ Docker is required. Install it and run 'vit setup' again.")
+            print("     https://docs.docker.com/engine/install/")
+            return 1
+
     print("\n  ✅ Prerequisites OK\n")
 
-    # Step 2: Profile selection
-    print("  Step 2/4 — Choose installation profile\n")
+    # Step 2: Port configuration
+    print("  Step 2/5 — Port configuration\n")
+    port_config = collect_ports_interactive()
+
+    # Step 3: Profile selection
+    print("\n  Step 3/5 — Choose installation profile\n")
     profiles = list_profiles()
     for i, p in enumerate(profiles, 1):
         print(f"    {i}) {p.summary}")
@@ -122,17 +177,11 @@ def _interactive_wizard(skip_confirm: bool = False) -> int:
             print("\n  Aborted.")
             return 1
 
-    # Step 3: Environment configuration
-    print(f"\n  Step 3/4 — Environment configuration\n")
-    repo_root = find_repo_root()
-    if not repo_root:
-        print("  Could not find repository root.")
-        return 1
-
-    env_path = repo_root / ".env"
+    # Step 4: Environment configuration
+    print(f"\n  Step 4/5 — Environment configuration\n")
+    env_path = repo_root / "infrastructure" / "docker" / ".env"
     existing_env = read_existing_env(env_path)
 
-    # Check if required env vars are set
     missing_env = _check_profile_env(profile, existing_env)
     if missing_env:
         print(f"  The following env vars are needed for this profile:")
@@ -140,12 +189,21 @@ def _interactive_wizard(skip_confirm: bool = False) -> int:
             print(f"    - {key}")
         print()
         values = collect_env_interactive()
-        generate_env_file(env_path, values)
+        generate_env_file(env_path, values, port_config=port_config)
         print(f"\n  ✅ Environment file written to {env_path}\n")
     else:
-        print(f"  ✅ Environment file already configured ({env_path})\n")
+        # Still write port config if ports were customized
+        generate_env_file(env_path, port_config=port_config)
+        print(f"  ✅ Environment configured ({env_path})\n")
 
-    # Step 4: Install packages
+    # Step 5: Install packages + start infrastructure
+    print("  Starting infrastructure containers...\n")
+    if start_infrastructure(repo_root):
+        print("  ✅ Infrastructure started (redis, postgres, qdrant)\n")
+    else:
+        print("  ⚠️  Could not start infrastructure containers.")
+        print("     Run manually: cd infrastructure/docker && docker compose up -d\n")
+
     return _run_with_profile(profile, skip_confirm=skip_confirm)
 
 
@@ -243,7 +301,7 @@ def _run_with_profile(profile: InstallProfile, skip_confirm: bool = False) -> in
     installer = PackageInstaller(state)
 
     # Resolve all packages
-    print(f"\n  Step 4/4 — Installing profile '{profile.label}'\n")
+    print(f"\n  Step 5/5 — Installing profile '{profile.label}'\n")
     print(f"  Resolving {len(profile.packages)} package(s)...\n")
 
     plans = []

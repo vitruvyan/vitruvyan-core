@@ -1,17 +1,18 @@
 """
-Bootstrap — prerequisite checker and .env generator for first-run setup.
+Bootstrap — prerequisite checker, Docker installer, port configurator, .env generator.
 
-Checks:
-  - Docker daemon running
-  - Docker Compose available
-  - Python version ≥ 3.10
-  - Infrastructure containers (redis, postgres, qdrant) reachable
-  - Required ports available
-  - .env file exists with required keys
+Designed for fresh VPS installations (Ubuntu with nothing pre-installed).
+
+Flow:
+  1. Check Python ≥ 3.10 and git repo
+  2. Check/install Docker + Docker Compose
+  3. Configure infrastructure ports (standard defaults, user can customize)
+  4. Collect API keys / passwords
+  5. Generate .env file
+  6. Start infrastructure containers
 """
 
 import os
-import re
 import shutil
 import socket
 import subprocess
@@ -48,42 +49,70 @@ class BootstrapReport:
         return lines
 
 
-# Default ports (fallback if docker-compose.yml cannot be parsed)
-DEFAULT_INFRA_PORTS = {
-    "redis": 6379,
-    "postgres": 5432,
-    "qdrant_rest": 6333,
-    "qdrant_grpc": 6334,
-}
+# ── Port configuration ───────────────────────────────────────────
 
-# Map compose service names to our check names + internal ports
-_COMPOSE_SERVICE_MAP = {
-    "redis":   {"check_name": "redis",       "internal_port": 6379},
-    "postgres":{"check_name": "postgres",    "internal_port": 5432},
-    "qdrant":  {"check_name": "qdrant_rest", "internal_port": 6333, "extra": {"qdrant_grpc": 6334}},
-}
+@dataclass
+class PortConfig:
+    """Infrastructure host port configuration."""
+    redis: int = 6379
+    postgres: int = 5432
+    qdrant_rest: int = 6333
+    qdrant_grpc: int = 6334
 
-# Default env template for first-run
+    def as_env_dict(self) -> Dict[str, str]:
+        """Return env vars for docker-compose.yml host port mapping."""
+        return {
+            "HOST_REDIS_PORT": str(self.redis),
+            "HOST_POSTGRES_PORT": str(self.postgres),
+            "HOST_QDRANT_REST_PORT": str(self.qdrant_rest),
+            "HOST_QDRANT_GRPC_PORT": str(self.qdrant_grpc),
+        }
+
+    def items(self) -> list:
+        """Return (name, port) pairs for iteration."""
+        return [
+            ("redis", self.redis),
+            ("postgres", self.postgres),
+            ("qdrant_rest", self.qdrant_rest),
+            ("qdrant_grpc", self.qdrant_grpc),
+        ]
+
+
+DEFAULT_PORTS = PortConfig()
+
+# (field_name, env_var, label, standard_port)
+PORT_FIELDS = [
+    ("redis",       "HOST_REDIS_PORT",       "Redis",       6379),
+    ("postgres",    "HOST_POSTGRES_PORT",    "PostgreSQL",  5432),
+    ("qdrant_rest", "HOST_QDRANT_REST_PORT", "Qdrant REST", 6333),
+    ("qdrant_grpc", "HOST_QDRANT_GRPC_PORT", "Qdrant gRPC", 6334),
+]
+
+
+# ── Env template ─────────────────────────────────────────────────
+
+# key: (default_value, description)
 ENV_TEMPLATE: Dict[str, Tuple[str, str]] = {
-    # key: (default_value, description)
     "OPENAI_API_KEY": ("", "OpenAI API key (required for LLM features)"),
-    "POSTGRES_USER": ("vitruvyan", "PostgreSQL username"),
+    "POSTGRES_USER": ("vitruvyan_core_user", "PostgreSQL username"),
     "POSTGRES_PASSWORD": ("", "PostgreSQL password"),
-    "POSTGRES_DB": ("vitruvyan_db", "PostgreSQL database name"),
-    "POSTGRES_HOST": ("localhost", "PostgreSQL host"),
-    "POSTGRES_PORT": ("5432", "PostgreSQL port"),
-    "REDIS_HOST": ("localhost", "Redis host"),
-    "REDIS_PORT": ("6379", "Redis port"),
-    "QDRANT_HOST": ("localhost", "Qdrant host"),
-    "QDRANT_PORT": ("6333", "Qdrant REST port"),
+    "POSTGRES_DB": ("vitruvyan_core", "PostgreSQL database name"),
+    "POSTGRES_HOST": ("core_postgres", "PostgreSQL host (Docker service name)"),
+    "POSTGRES_PORT": ("5432", "PostgreSQL internal port"),
+    "REDIS_HOST": ("core_redis", "Redis host (Docker service name)"),
+    "REDIS_PORT": ("6379", "Redis internal port"),
+    "QDRANT_HOST": ("core_qdrant", "Qdrant host (Docker service name)"),
+    "QDRANT_PORT": ("6333", "Qdrant internal port"),
     "LOG_LEVEL": ("INFO", "Logging level"),
 }
 
 
+# ── Prerequisite checks ─────────────────────────────────────────
+
 def check_docker() -> PrereqResult:
     """Check if Docker daemon is running."""
     if not shutil.which("docker"):
-        return PrereqResult("Docker", False, "docker not found in PATH", required=True)
+        return PrereqResult("Docker", False, "not installed", required=True)
     try:
         result = subprocess.run(
             ["docker", "info"],
@@ -108,7 +137,7 @@ def check_docker_compose() -> PrereqResult:
             return PrereqResult("Docker Compose", True, f"v{version}")
         return PrereqResult("Docker Compose", False, "not available", required=True)
     except Exception:
-        return PrereqResult("Docker Compose", False, "command failed", required=True)
+        return PrereqResult("Docker Compose", False, "not available", required=True)
 
 
 def check_python() -> PrereqResult:
@@ -120,8 +149,17 @@ def check_python() -> PrereqResult:
     return PrereqResult("Python", False, f"{version_str} (need ≥ 3.10)", required=True)
 
 
-def check_port(port: int, host: str = "127.0.0.1") -> bool:
-    """Check if a port is accepting connections."""
+def check_port_available(port: int, host: str = "127.0.0.1") -> bool:
+    """Check if a port is FREE (not in use). Returns True if available."""
+    try:
+        with socket.create_connection((host, port), timeout=1):
+            return False  # Something is listening → port is taken
+    except (ConnectionRefusedError, OSError, TimeoutError):
+        return True  # Nothing listening → port is free
+
+
+def check_port_reachable(port: int, host: str = "127.0.0.1") -> bool:
+    """Check if a port is accepting connections (service is running)."""
     try:
         with socket.create_connection((host, port), timeout=2):
             return True
@@ -130,8 +168,8 @@ def check_port(port: int, host: str = "127.0.0.1") -> bool:
 
 
 def check_infra_service(name: str, port: int) -> PrereqResult:
-    """Check if an infrastructure service is reachable on its port."""
-    if check_port(port):
+    """Check if an infrastructure service is reachable on its host port."""
+    if check_port_reachable(port):
         return PrereqResult(name, True, f"reachable on port {port}", required=False)
     return PrereqResult(
         name, False,
@@ -157,58 +195,142 @@ def check_git_repo() -> PrereqResult:
         return PrereqResult("Git repo", False, "git not available", required=True)
 
 
-def _parse_compose_ports(repo_root: Optional[Path] = None) -> Dict[str, int]:
-    """Parse host ports from docker-compose.yml, falling back to defaults."""
-    root = repo_root or find_repo_root()
-    if not root:
-        return dict(DEFAULT_INFRA_PORTS)
-
-    compose_path = root / "infrastructure" / "docker" / "docker-compose.yml"
-    if not compose_path.exists():
-        return dict(DEFAULT_INFRA_PORTS)
-
-    try:
-        import yaml
-        with open(compose_path) as f:
-            data = yaml.safe_load(f)
-    except Exception:
-        return dict(DEFAULT_INFRA_PORTS)
-
-    services = data.get("services", {}) if data else {}
-    ports: Dict[str, int] = dict(DEFAULT_INFRA_PORTS)
-
-    for svc_name, mapping in _COMPOSE_SERVICE_MAP.items():
-        svc = services.get(svc_name, {})
-        svc_ports = svc.get("ports", [])
-        for port_str in svc_ports:
-            port_str = str(port_str)
-            # Parse "9379:6379" → host=9379, container=6379
-            m = re.match(r"(\d+):(\d+)", port_str)
-            if not m:
-                continue
-            host_port, container_port = int(m.group(1)), int(m.group(2))
-            if container_port == mapping["internal_port"]:
-                ports[mapping["check_name"]] = host_port
-            # Handle extra ports (e.g. qdrant gRPC)
-            for extra_name, extra_internal in mapping.get("extra", {}).items():
-                if container_port == extra_internal:
-                    ports[extra_name] = host_port
-
-    return ports
-
-
-def run_all_checks() -> BootstrapReport:
+def run_all_checks(port_config: Optional[PortConfig] = None) -> BootstrapReport:
     """Run all prerequisite checks and return a report."""
     report = BootstrapReport()
     report.checks.append(check_git_repo())
     report.checks.append(check_python())
     report.checks.append(check_docker())
     report.checks.append(check_docker_compose())
-    infra_ports = _parse_compose_ports()
-    for name, port in infra_ports.items():
+    ports = port_config or _read_configured_ports()
+    for name, port in ports.items():
         report.checks.append(check_infra_service(name, port))
     return report
 
+
+# ── Docker installation ─────────────────────────────────────────
+
+def can_install_docker() -> bool:
+    """Check if we can install Docker (Ubuntu/Debian with apt)."""
+    return shutil.which("apt-get") is not None
+
+
+def install_docker() -> bool:
+    """
+    Install Docker Engine + Compose on Ubuntu/Debian.
+
+    Uses the official Docker convenience script.
+    Returns True if installation succeeded.
+    """
+    print("  Installing Docker Engine...")
+    try:
+        result = subprocess.run(
+            ["bash", "-c", "curl -fsSL https://get.docker.com | sh"],
+            timeout=300,
+        )
+        if result.returncode != 0:
+            return False
+
+        # Add current user to docker group
+        user = os.environ.get("USER", "")
+        if user and user != "root":
+            subprocess.run(
+                ["sudo", "usermod", "-aG", "docker", user],
+                timeout=10,
+            )
+            print(f"  Added '{user}' to docker group.")
+            print("  Note: you may need to log out and back in for group changes to take effect.")
+
+        # Start Docker service
+        subprocess.run(["sudo", "systemctl", "start", "docker"], timeout=30)
+        subprocess.run(["sudo", "systemctl", "enable", "docker"], timeout=10)
+
+        return True
+    except Exception as e:
+        print(f"  Docker installation failed: {e}")
+        return False
+
+
+# ── Port configuration ───────────────────────────────────────────
+
+def _read_configured_ports() -> PortConfig:
+    """Read port configuration from .env file or use defaults."""
+    root = find_repo_root()
+    if not root:
+        return PortConfig()
+
+    env_path = root / "infrastructure" / "docker" / ".env"
+    existing = read_existing_env(env_path)
+
+    return PortConfig(
+        redis=int(existing.get("HOST_REDIS_PORT", "6379")),
+        postgres=int(existing.get("HOST_POSTGRES_PORT", "5432")),
+        qdrant_rest=int(existing.get("HOST_QDRANT_REST_PORT", "6333")),
+        qdrant_grpc=int(existing.get("HOST_QDRANT_GRPC_PORT", "6334")),
+    )
+
+
+def collect_ports_interactive() -> PortConfig:
+    """Ask user to configure infrastructure ports."""
+    print("\n  Port configuration:")
+    print("  Standard ports will be used unless you specify alternatives.")
+    print("  (press Enter to accept defaults shown in brackets)\n")
+
+    # First ask if they want standard or custom
+    try:
+        choice = input("  Use standard ports? [Y/n]: ").strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        print("\n  Using standard ports.")
+        return PortConfig()
+
+    if choice in ("", "y", "yes"):
+        # Verify standard ports are available
+        conflicts = []
+        for field_name, _, label, std_port in PORT_FIELDS:
+            if not check_port_available(std_port):
+                conflicts.append((label, std_port))
+        if conflicts:
+            print("\n  ⚠️  Port conflicts detected:")
+            for label, port in conflicts:
+                print(f"    - {label} port {port} is already in use")
+            print("  Switching to custom port configuration.\n")
+        else:
+            print("  ✅ All standard ports available.\n")
+            return PortConfig()
+
+    # Custom port selection
+    config = PortConfig()
+    for field_name, _env_var, label, std_port in PORT_FIELDS:
+        while True:
+            try:
+                raw = input(f"  {label} port [{std_port}]: ").strip()
+            except (EOFError, KeyboardInterrupt):
+                print(f"\n  Using default {std_port}.")
+                break
+
+            if not raw:
+                port = std_port
+            else:
+                try:
+                    port = int(raw)
+                    if not (1024 <= port <= 65535):
+                        print(f"    Port must be between 1024 and 65535.")
+                        continue
+                except ValueError:
+                    print(f"    Invalid port number.")
+                    continue
+
+            if not check_port_available(port):
+                print(f"    ⚠️  Port {port} is already in use. Choose another.")
+                continue
+
+            setattr(config, field_name, port)
+            break
+
+    return config
+
+
+# ── Repository root ──────────────────────────────────────────────
 
 def find_repo_root() -> Optional[Path]:
     """Find the vitruvyan-core repository root."""
@@ -221,6 +343,8 @@ def find_repo_root() -> Optional[Path]:
     except Exception:
         return None
 
+
+# ── .env file management ─────────────────────────────────────────
 
 def read_existing_env(env_path: Path) -> Dict[str, str]:
     """Read existing .env file into a dict."""
@@ -240,9 +364,10 @@ def read_existing_env(env_path: Path) -> Dict[str, str]:
 def generate_env_file(
     env_path: Path,
     overrides: Optional[Dict[str, str]] = None,
+    port_config: Optional[PortConfig] = None,
 ) -> Path:
     """
-    Generate or update .env file with required variables.
+    Generate or update .env file with required variables and port config.
 
     Preserves existing values; only fills in missing keys.
     Returns path to the .env file.
@@ -252,17 +377,26 @@ def generate_env_file(
 
     lines = ["# Vitruvyan OS — Environment Configuration", "# Generated by 'vit setup'", ""]
 
+    # Port configuration section
+    if port_config:
+        lines.append("# === Host Port Mapping (docker-compose) ===")
+        for field_name, env_var, label, _std_port in PORT_FIELDS:
+            port_val = getattr(port_config, field_name)
+            lines.append(f"{env_var}={port_val}")
+        lines.append("")
+
+    # Standard env vars
     for key, (default, description) in ENV_TEMPLATE.items():
-        # Priority: override > existing > default
         value = overrides.get(key, existing.get(key, default))
         lines.append(f"# {description}")
         lines.append(f"{key}={value}")
         lines.append("")
 
-    # Preserve any extra keys from existing .env
+    # Preserve any extra keys from existing .env not in template or port vars
     template_keys = set(ENV_TEMPLATE.keys())
+    port_keys = {pf[1] for pf in PORT_FIELDS}
     for key, value in existing.items():
-        if key not in template_keys:
+        if key not in template_keys and key not in port_keys:
             lines.append(f"{key}={value}")
 
     env_path.write_text("\n".join(lines) + "\n")
@@ -299,3 +433,32 @@ def collect_env_interactive() -> Dict[str, str]:
         values[key] = user_input if user_input else default
 
     return values
+
+
+# ── Infrastructure startup ───────────────────────────────────────
+
+def start_infrastructure(repo_root: Path) -> bool:
+    """Start infrastructure containers (redis, postgres, qdrant)."""
+    compose_file = repo_root / "infrastructure" / "docker" / "docker-compose.yml"
+    if not compose_file.exists():
+        print(f"  Compose file not found: {compose_file}")
+        return False
+
+    try:
+        result = subprocess.run(
+            [
+                "docker", "compose",
+                "-f", str(compose_file),
+                "up", "-d",
+                "redis", "postgres", "qdrant",
+            ],
+            cwd=str(compose_file.parent),
+            timeout=120,
+        )
+        return result.returncode == 0
+    except subprocess.TimeoutExpired:
+        print("  Docker compose timed out after 120s.")
+        return False
+    except Exception as e:
+        print(f"  Failed to start infrastructure: {e}")
+        return False
