@@ -58,6 +58,12 @@ COLLECTIONS = [
      "description": "ORDER: Codex Hunters \u2014 Ingested entity semantic embeddings"},
     {"name": "weave_embeddings",         "vector_size": 768, "distance": "Cosine",
      "description": "ORDER: Pattern Weavers — Ontological pattern result embeddings"},
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # USER: Per-user uploaded documents (opt-in persistent RAG)
+    # ═══════════════════════════════════════════════════════════════════════
+    {"name": "user_documents",           "vector_size": 768, "distance": "Cosine",
+     "description": "USER: Chat Upload — User-uploaded document chunks for persistent RAG"},
 ]
 
 

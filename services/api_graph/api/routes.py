@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Body, Depends, Query
+from fastapi import APIRouter, Body, Depends, File, Form, Query, UploadFile
 from fastapi.responses import Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
@@ -152,6 +152,100 @@ async def run_graph_endpoint(
         user_id=data.user_id or settings.DEFAULT_USER_ID,
         validated_entities=data.validated_tickers or data.validated_entities,
         language=data.language,
+        inline_context=data.inline_context,
+        persist_document=data.persist_document,
+    )
+
+
+# Allowed MIME types for document upload (security: no executables)
+_ALLOWED_MIME = {
+    "text/plain", "text/markdown", "text/csv",
+    "application/pdf",
+    "application/json",
+}
+_MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+
+
+@router.post("/run/upload", response_model=GraphResponseSchema)
+async def run_graph_with_document(
+    file: UploadFile = File(...),
+    query: str = Form(...),
+    user_id: str = Form("anonymous"),
+    persist_document: bool = Form(False),
+    language: Optional[str] = Form(None),
+    adapter: GraphOrchestrationAdapter = Depends(get_graph_adapter),
+):
+    """
+    Execute graph with an uploaded document as inline context.
+
+    The document is chunked (Babel Gardens), optionally embedded and persisted
+    in Qdrant (user_documents collection), and injected into the LangGraph
+    state via inline_context.
+
+    Accepts: multipart/form-data with file + query + options.
+    """
+    from core.cognitive.babel_gardens.consumers.document_chunker import (
+        chunk_text, ChunkerConfig,
+    )
+
+    # ── Validate file ────────────────────────────────────────────────────
+    content_type = file.content_type or ""
+    if content_type not in _ALLOWED_MIME:
+        from fastapi import HTTPException
+        raise HTTPException(400, f"Unsupported file type: {content_type}")
+
+    raw_bytes = await file.read()
+    if len(raw_bytes) > _MAX_FILE_SIZE:
+        from fastapi import HTTPException
+        raise HTTPException(400, f"File too large (max {_MAX_FILE_SIZE // 1024 // 1024} MB)")
+
+    # Decode text (UTF-8 with fallback to latin-1)
+    try:
+        text = raw_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        text = raw_bytes.decode("latin-1")
+
+    # ── Chunk ────────────────────────────────────────────────────────────
+    filename = file.filename or "upload"
+    chunks = chunk_text(text, filename=filename, config=ChunkerConfig())
+    if not chunks:
+        inline = text[:4000]
+    else:
+        inline = "\n\n---\n\n".join(c.text for c in chunks)
+
+    logger.info(
+        "[upload] file=%s size=%d chunks=%d persist=%s",
+        filename, len(raw_bytes), len(chunks), persist_document,
+    )
+
+    # ── Persist to Qdrant (opt-in) ───────────────────────────────────────
+    if persist_document and chunks:
+        try:
+            import httpx
+
+            embed_api = settings.EMBEDDING_API_URL
+            chunk_texts = [c.text for c in chunks]
+            resp = httpx.post(
+                embed_api,
+                json={
+                    "texts": chunk_texts,
+                    "store_in_qdrant": True,
+                    "collection_name": "user_documents",
+                },
+                timeout=30.0,
+            )
+            resp.raise_for_status()
+            logger.info("[upload] Persisted %d chunks to user_documents", len(chunks))
+        except Exception as e:
+            logger.warning("[upload] Qdrant persistence failed (non-blocking): %s", e)
+
+    # ── Execute graph with inline_context ────────────────────────────────
+    return await adapter.execute_graph(
+        input_text=query,
+        user_id=user_id,
+        language=language,
+        inline_context=inline,
+        persist_document=False,  # already handled above
     )
 
 

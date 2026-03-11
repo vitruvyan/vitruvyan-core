@@ -1,6 +1,15 @@
+---
+tags:
+  - rag
+  - memory
+  - architecture
+  - system-core
+  - long-context
+---
+
 # Dual Memory Layer & RAG
 
-> **Last updated**: Mar 10, 2026 19:00 UTC
+> **Last updated**: Mar 11, 2026 11:30 UTC
 
 <p class="kb-subtitle">How Vitruvyan composes RAG from two storages: Archivarium (PostgreSQL) + Mnemosyne (Qdrant), with retrieval quality contracts, tenant isolation, context routing, and embedding governance.</p>
 
@@ -145,6 +154,36 @@ Phase 4 added comprehensive metrics instrumentation (`RAG_METRICS`) on the agent
 - **Governance metrics**: undeclared collection warnings, dimension mismatches.
 
 Multi-tenant RAG is supported via payload-based filtering: `RAGPayload.tenant_id` is persisted on every Qdrant point and search methods accept `tenant_id` to filter at query time. Tenant filtering is opt-in (backward compatible).
+
+## Long Context — User Document Upload
+
+Users can attach documents to chat messages. The content is chunked by Babel Gardens (`document_chunker.py`) and injected as `inline_context` in the LangGraph state. This context is wrapped by `compose_node` with `[USER_CONTEXT_START]...[USER_CONTEXT_END]` delimiters.
+
+When the user enables **"Save to memory"**, chunks are also batch-embedded (768-dim, nomic) and stored in the `user_documents` Qdrant collection for persistent RAG retrieval.
+
+### Retrieval cascade (qdrant_node)
+
+The `qdrant_node` searches collections in a **4-tier cascade** (early-exit on first match):
+
+| Tier | Collection | Source | Tenant Filter |
+|------|------------|--------|---------------|
+| 0 | `user_documents` | User-uploaded document chunks | `user_id` |
+| 1 | `conversations_embeddings` | Conversational memory | `tenant_id` |
+| 2 | `phrases_embeddings` | NLP seed phrases | source filter |
+| 3 | `weave_embeddings` | Ontological patterns | `tenant_id` |
+
+User documents take highest priority when semantically relevant to the query.
+
+### Upload endpoint
+
+`POST /run/upload` (multipart/form-data) in `api_graph`:
+
+- Validates MIME type (text/plain, markdown, csv, pdf, json) and size (max 5 MB)
+- Chunks via `chunk_text()` (sliding window, paragraph-boundary snapping, configurable overlap)
+- Optionally embeds + stores in `user_documents` collection
+- Passes joined chunks as `inline_context` to `run_graph_once()`
+
+Full documentation: `docs/knowledge_base/web_ui/long_context.md`
 
 ## Verticalization
 

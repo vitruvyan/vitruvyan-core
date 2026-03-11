@@ -292,6 +292,42 @@ export const DEFAULT_THINKING_STEPS: ThinkingStep[] = [
 ]
 
 // ═══════════════════════════════════════════════════════════════
+// DOCUMENT ATTACHMENT CONTRACT
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Document attachment metadata.
+ * Represents a file attached by the user for inline context injection.
+ */
+export interface DocumentAttachment {
+  /** Original filename */
+  name: string
+
+  /** File size in bytes */
+  size: number
+
+  /** MIME type */
+  type: string
+
+  /** Whether to persist chunks in Qdrant for future RAG */
+  persist: boolean
+}
+
+/**
+ * Allowed MIME types for document upload
+ */
+export const ALLOWED_DOCUMENT_TYPES = [
+  'text/plain',
+  'text/markdown',
+  'text/csv',
+  'application/pdf',
+  'application/json',
+] as const
+
+/** Maximum file size (5 MB) */
+export const MAX_DOCUMENT_SIZE = 5 * 1024 * 1024
+
+// ═══════════════════════════════════════════════════════════════
 // TYPE GUARDS
 // ═══════════════════════════════════════════════════════════════
 

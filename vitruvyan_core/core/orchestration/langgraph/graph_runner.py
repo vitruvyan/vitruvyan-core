@@ -128,6 +128,7 @@ def run_graph_once(
     return_full: bool = False,
     validated_entities: list = None,
     language: str = None,
+    inline_context: str = None,
 ) -> Dict[str, Any]:
     """
     Execute the graph once for a given user input.
@@ -170,6 +171,10 @@ def run_graph_once(
 
     state["input_text"] = input_text
     state["user_id"] = user_id
+
+    # Inject user-uploaded document context (already chunked by caller)
+    if inline_context:
+        state["inline_context"] = inline_context
     
     # Clear stale error/route/result from previous sessions (avoid codex_trigger false positives)
     for _clear_key in ("error", "codex_error_message", "route", "result", "ok", "raw_output"):

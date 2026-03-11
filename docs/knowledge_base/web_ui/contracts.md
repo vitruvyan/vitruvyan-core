@@ -1,3 +1,10 @@
+---
+tags:
+  - web-ui
+  - api
+  - governance
+---
+
 # Web UI Contracts — TypeScript Interface Documentation
 
 > **Last updated**: Feb 20, 2026 21:20 UTC  

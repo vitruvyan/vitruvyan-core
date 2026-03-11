@@ -57,5 +57,8 @@ class Settings:
     PLASTICITY_ENABLED: bool = os.getenv("PLASTICITY_ENABLED", "true").lower() == "true"
     PLASTICITY_INTERVAL_HOURS: int = int(os.getenv("PLASTICITY_INTERVAL_HOURS", "24"))
 
+    # Embedding service URL (for document upload persistence)
+    EMBEDDING_API_URL: str = os.getenv("EMBEDDING_API_URL", "http://embedding:8010/v1/embeddings/batch")
+
 
 settings = Settings()

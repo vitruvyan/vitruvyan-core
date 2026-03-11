@@ -1,9 +1,16 @@
 // components/chat/MessageFeedback.jsx
 // Thumbs up/down feedback for AI messages — Plasticity integration
-// Last updated: Mar 07, 2026
+// Last updated: Mar 11, 2026
 'use client'
 
 import { ThumbsUp, ThumbsDown } from 'lucide-react'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { useOnboardingTip, localizedTip } from '@/hooks/useOnboardingTip'
+
+const FEEDBACK_TIP = {
+  en: 'Your feedback helps Vitruvyan learn and improve its responses over time.',
+  it: 'Il tuo feedback aiuta Vitruvyan a imparare e migliorare le risposte nel tempo.',
+}
 
 /**
  * MessageFeedback — renders thumbs up/down under AI messages.
@@ -17,11 +24,14 @@ import { ThumbsUp, ThumbsDown } from 'lucide-react'
  * @param {function} props.onFeedback - (feedback: 'positive'|'negative') => void
  */
 export function MessageFeedback({ message, currentFeedback, onFeedback }) {
+  const { shouldShow } = useOnboardingTip('feedback_thumbs', 15)
+  const tipText = localizedTip(FEEDBACK_TIP)
+
   if (message.sender !== 'ai' || !message.isComplete || message.error) {
     return null
   }
 
-  return (
+  const feedbackRow = (
     <div className="flex items-center gap-1 mt-2 pt-1 border-t border-gray-100">
       <span className="text-[10px] text-gray-400 mr-1">Helpful?</span>
       <button
@@ -54,5 +64,18 @@ export function MessageFeedback({ message, currentFeedback, onFeedback }) {
         </span>
       )}
     </div>
+  )
+
+  if (!shouldShow) return feedbackRow
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {feedbackRow}
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[250px]">
+        {tipText}
+      </TooltipContent>
+    </Tooltip>
   )
 }

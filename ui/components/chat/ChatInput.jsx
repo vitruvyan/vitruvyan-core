@@ -8,6 +8,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { Send } from 'lucide-react'
+import { DocumentUpload } from './DocumentUpload'
 
 export function ChatInput({
   onSend,
@@ -16,7 +17,13 @@ export function ChatInput({
   onEntityAdd,
   onEntityRemove,
   placeholder = 'Ask a question...',
-  extensions = {}
+  extensions = {},
+  // Document upload props
+  attachedFile = null,
+  onFileSelect,
+  onFileClear,
+  persistDocument = false,
+  onPersistChange,
 }) {
   const [inputValue, setInputValue] = useState('')
   const textareaRef = useRef(null)
@@ -59,6 +66,18 @@ export function ChatInput({
 
       {/* Input Area */}
       <div className="flex items-center gap-3">
+        {/* Document upload */}
+        {onFileSelect && (
+          <DocumentUpload
+            file={attachedFile}
+            onFileSelect={onFileSelect}
+            onFileClear={onFileClear}
+            persistDocument={persistDocument}
+            onPersistChange={onPersistChange}
+            disabled={isProcessing}
+          />
+        )}
+
         <textarea
           ref={textareaRef}
           value={inputValue}

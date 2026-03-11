@@ -1,3 +1,9 @@
+---
+tags:
+  - web-ui
+  - installation
+---
+
 # Web UI Stack — Technology & Tools
 
 > **Last updated**: Feb 20, 2026 21:30 UTC  

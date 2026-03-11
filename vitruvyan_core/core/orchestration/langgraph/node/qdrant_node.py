@@ -62,6 +62,19 @@ def qdrant_node(state: Dict[str, Any]) -> Dict[str, Any]:
         # Tenant isolation: filter by tenant_id if present in state
         tenant_filter = _build_tenant_filter(state.get("tenant_id"))
 
+        # 0️⃣ user_documents — user-uploaded document chunks (highest priority)
+        hits = []
+        user_id = state.get("user_id")
+        if user_id:
+            try:
+                user_filter = _build_tenant_filter(user_id)
+                res = _agent.search("user_documents", vec, top_k=5, qfilter=user_filter)
+                hits = res.get("results", []) if isinstance(res, dict) else (res or [])
+                if hits:
+                    logger.info("[qdrant_node] user_documents: %d hits for user=%s", len(hits), user_id)
+            except Exception as e:
+                logger.debug("[qdrant_node] user_documents search skipped: %s", e)
+
         # 1️⃣ conversations_embeddings — conversational memory
         res = _agent.search("conversations_embeddings", vec, top_k=5, qfilter=tenant_filter)
         hits = res.get("results", []) if isinstance(res, dict) else (res or [])

@@ -184,6 +184,8 @@ nav:
     - Philosophy: docs/knowledge_base/web_ui/philosophy.md
     - Contracts: docs/knowledge_base/web_ui/contracts.md
     - Stack & Technology: docs/knowledge_base/web_ui/stack.md
+    - Plasticity (Learning Loop): docs/knowledge_base/web_ui/plasticity.md
+    - Long Context (Document Upload): docs/knowledge_base/web_ui/long_context.md
     
   - Infrastructure:
     - Overview: infrastructure/README_INFRASTRUCTURE.md

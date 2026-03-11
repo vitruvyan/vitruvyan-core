@@ -23,6 +23,8 @@ export function useChat({ apiEndpoint = '/api/graph/run', userId = null, thinkin
   const { messages, isTyping, setIsTyping, addUserMessage, addAIMessage, updateLastMessage } = useMessages()
 
   const [selectedEntities, setSelectedEntities] = useState([])
+  const [attachedFile, setAttachedFile] = useState(null)
+  const [persistDocument, setPersistDocument] = useState(false)
 
   const steps = thinkingSteps || DEFAULT_THINKING_STEPS
 
@@ -56,16 +58,30 @@ export function useChat({ apiEndpoint = '/api/graph/run', userId = null, thinkin
       // Start thinking animation
       simulateThinkingSteps()
 
-      // Call backend
-      const response = await fetch(apiEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: text,
-          user_id: userId || 'anonymous',
-          entities: entities.length > 0 ? entities : undefined
+      // Call backend — FormData for file uploads, JSON for text-only
+      let response
+      if (attachedFile) {
+        const formData = new FormData()
+        formData.append('file', attachedFile)
+        formData.append('query', text)
+        formData.append('user_id', userId || 'anonymous')
+        formData.append('persist_document', String(persistDocument))
+
+        response = await fetch(`${apiEndpoint}/upload`, {
+          method: 'POST',
+          body: formData,
         })
-      })
+      } else {
+        response = await fetch(apiEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: text,
+            user_id: userId || 'anonymous',
+            entities: entities.length > 0 ? entities : undefined,
+          }),
+        })
+      }
 
       if (!response.ok) {
         throw new Error(`Backend error: ${response.status}`)
@@ -95,14 +111,27 @@ export function useChat({ apiEndpoint = '/api/graph/run', userId = null, thinkin
       })
     } finally {
       setIsTyping(false)
+      // Clear file attachment after send (whether success or failure)
+      setAttachedFile(null)
+      setPersistDocument(false)
     }
-  }, [apiEndpoint, userId, steps, adaptResponse, addUserMessage, addAIMessage, updateLastMessage, setIsTyping])
+  }, [apiEndpoint, userId, steps, adaptResponse, addUserMessage, addAIMessage, updateLastMessage, setIsTyping, attachedFile, persistDocument])
+
+  const clearFile = useCallback(() => {
+    setAttachedFile(null)
+    setPersistDocument(false)
+  }, [])
 
   return {
     messages,
     isProcessing: isTyping,
     selectedEntities,
     sendMessage,
-    setSelectedEntities
+    setSelectedEntities,
+    attachedFile,
+    setAttachedFile,
+    clearFile,
+    persistDocument,
+    setPersistDocument,
   }
 }

@@ -16,6 +16,12 @@ Use tags to quickly filter content by topic and audience.
 - `operations` — runbooks, monitoring, production concerns
 - `admin` — internal/admin-only depth
 - `public` — public-facing docs
+- `web-ui` — user interface components and contracts
+- `plasticity` — adaptive learning loop, feedback system
+- `rag` — retrieval-augmented generation, vector search
+- `long-context` — document upload, inline context injection
+- `document-upload` — file attachment and chunking
+- `learning` — system adaptation and parameter tuning
 
 ## Tag index (initial set)
 
@@ -48,6 +54,24 @@ Use tags to quickly filter content by topic and audience.
 ### `governance`
 - [Sacred Orders Introduction](SACRED_ORDERS_INTRO.md)
 - [Dual Memory Layer](../architecture/DUAL_MEMORY_LAYER.md)
+
+### `web-ui`
+- [Web UI Overview](../knowledge_base/web_ui/index.md)
+- [Web UI Philosophy](../knowledge_base/web_ui/philosophy.md)
+- [Web UI Contracts](../knowledge_base/web_ui/contracts.md)
+- [Web UI Stack](../knowledge_base/web_ui/stack.md)
+- [Plasticity](../knowledge_base/web_ui/plasticity.md)
+- [Long Context](../knowledge_base/web_ui/long_context.md)
+
+### `plasticity`
+- [Plasticity — Adaptive Learning Loop](../knowledge_base/web_ui/plasticity.md)
+
+### `rag`
+- [Dual Memory & RAG](../internal/platform/DUAL_MEMORY_RAG.md)
+- [Long Context — Document Upload](../knowledge_base/web_ui/long_context.md)
+
+### `long-context`
+- [Long Context — Document Upload](../knowledge_base/web_ui/long_context.md)
 - [Sacred Orders (Admin)](../internal/orders/README.md)
 
 ## How to tag a page

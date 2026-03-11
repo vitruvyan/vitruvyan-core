@@ -1,29 +1,78 @@
 {
-  "version": "1.12.0",
+  "version": "1.3.0",
   "channel": "stable",
-  "release_date": "2026-03-07",
-  "contracts_version": "1.0.0",
+  "release_date": "2026-02-22T19:00:00Z",
   "changes": {
-    "breaking": [],
     "features": [
-      "feat(contracts): Codex Hunters event contract formalization — codex_events.py + registry 4→14 channels",
-      "feat(causal): causation_id causal query — SQL migration 007, pure domain causal_query.py, REST endpoints",
-      "feat(observability): channel_health.json Grafana dashboard (8 panels) + dead letter metrics",
-      "feat(orthodoxy): POST /verdict/sync endpoint for synchronous quick validation",
-      "feat(audit): Plasticity roadmap — 4-phase plan from gate to self-learning cognitive loop"
+      "Created vitruvyan_edge/ as first-class package (multi-module container)",
+      "Extracted Oculus Prime from infrastructure/edge/ to vitruvyan_edge/oculus_prime/",
+      "Added __init__.py at all package levels (regular packages, setuptools-compatible)",
+      "Added vitruvyan_edge to pyproject.toml package discovery",
+      "New 'Edge Modules' category in MkDocs Knowledge Base navigation",
+      "MkDocs runtime visibility (compose mount + docs_root symlink)"
     ],
-    "fixes": [
-      "fix(codex): streams_listener imports from codex_events.py instead of hardcoded channel lists",
-      "fix(conclave): persistence.py expanded from stub to real implementation (log_causal_event, fetch_trace, fetch_children)"
+    "fixes": [],
+    "documentation": [
+      "Created vitruvyan_edge/README.md (multi-module architecture guide)",
+      "Deprecated infrastructure/edge/README.md (deployment-only pointer)",
+      "Updated 10 documentation files with new vitruvyan_edge paths",
+      "Updated MkDocs nav (main + backup yml) for Edge Modules section",
+      "Added VITRUVYAN_EDGE_EXTRACTION_PLAN_FEB22_2026.md (9-phase migration plan)"
+    ],
+    "breaking_changes": [
+      "Python imports changed: infrastructure.edge.oculus_prime → vitruvyan_edge.oculus_prime",
+      "Dockerfile COPY changed: infrastructure/edge/oculus_prime → vitruvyan_edge"
     ]
   },
-  "commits": [],
+  "commits": [
+    {
+      "hash": "803885c",
+      "message": "Merge feat/vitruvyan-edge-extraction: create vitruvyan_edge package"
+    },
+    {
+      "hash": "be366ed",
+      "message": "refactor(edge): complete vitruvyan_edge extraction [FINAL]"
+    },
+    {
+      "hash": "ba827d3",
+      "message": "docs(mkdocs): update edge nav and runtime path visibility"
+    },
+    {
+      "hash": "4c765ce",
+      "message": "docs(edge): update documentation for vitruvyan_edge migration"
+    },
+    {
+      "hash": "e69b100",
+      "message": "feat(packaging): add vitruvyan_edge to installable packages"
+    },
+    {
+      "hash": "fac6864",
+      "message": "refactor(edge): update Dockerfile COPY paths"
+    },
+    {
+      "hash": "cb70940",
+      "message": "refactor(edge): update test imports"
+    },
+    {
+      "hash": "28e611c",
+      "message": "refactor(edge): update service adapter imports"
+    },
+    {
+      "hash": "badb61b",
+      "message": "refactor(edge): update internal imports in vitruvyan_edge"
+    },
+    {
+      "hash": "74e723d",
+      "message": "feat(edge): create vitruvyan_edge package structure"
+    }
+  ],
   "validation": [
-    "261/265 architectural tests passing (4 pre-existing failures in test_pipeline_contract_enforcement.py)",
-    "59/59 Phase 3 tests passing",
-    "13/13 causal_query pure domain tests passing",
-    "46/46 channel alignment tests passing (expanded from 38)",
-    "Phase 3 roadmap: 4/4 fixes completed (F3.1-F3.4)"
+    "Test suite: 7/8 passed (identical to v1.2.2 baseline)",
+    "All vitruvyan_edge imports resolved (regular packages)",
+    "Docker build + deploy: healthy, zero errors",
+    "Zero infrastructure.edge references in runtime Python code",
+    "MkDocs navigation updated (main + backup yml)",
+    "9 atomic commits with rollback points"
   ],
   "upgrade_instructions": "vit upgrade --channel stable",
   "checksum": {

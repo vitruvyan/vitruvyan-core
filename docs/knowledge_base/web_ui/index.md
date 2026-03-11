@@ -1,6 +1,13 @@
+---
+tags:
+  - web-ui
+  - overview
+  - architecture
+---
+
 # Web UI — Overview
 
-> **Last updated**: Feb 20, 2026 21:00 UTC  
+> **Last updated**: Mar 11, 2026 11:30 UTC  
 > **Status**: ✅ Foundation Complete  
 > **Location**: `vitruvyan-core/ui/`
 
@@ -79,6 +86,8 @@ Domain-agnostic chat orchestration:
 - **Chat.jsx** (183 LOC) — Main orchestrator
 - **ChatMessage.jsx** (145 LOC) — Message renderer
 - **ChatInput.jsx** — Input with validation
+- **DocumentUpload.jsx** — Attach documents to messages (see [Long Context](long_context.md))
+- **MessageFeedback.jsx** — Thumbs up/down (see [Plasticity](plasticity.md))
 - **ThinkingSteps.jsx** — Backend reasoning display
 
 ### Response Infrastructure
@@ -319,6 +328,8 @@ ui/
 |-----------|--------|-------|
 | **Contracts** | ✅ Complete | 820 |
 | **Chat Module** | ✅ Complete | ~500 |
+| **Document Upload** | ✅ Complete | ~100 |
+| **Plasticity Feedback** | ✅ Complete | ~150 |
 | **Renderer** | ✅ Complete | ~600 |
 | **Composites** | ✅ Complete | ~400 |
 | **Explainability** | ✅ Complete | ~300 |

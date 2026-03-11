@@ -45,6 +45,11 @@ export default function Chat({
     selectedEntities,
     sendMessage,
     setSelectedEntities,
+    attachedFile,
+    setAttachedFile,
+    clearFile,
+    persistDocument,
+    setPersistDocument,
   } = useChat({ apiEndpoint, userId, thinkingSteps, adaptResponse })
 
   const { submitFeedback, getFeedback } = useFeedback(apiEndpoint)
@@ -120,6 +125,11 @@ export default function Chat({
           onEntityRemove={handleEntityRemove}
           placeholder={placeholder}
           extensions={extensions.input}
+          attachedFile={attachedFile}
+          onFileSelect={setAttachedFile}
+          onFileClear={clearFile}
+          persistDocument={persistDocument}
+          onPersistChange={setPersistDocument}
         />
       </div>
     </div>

@@ -1,3 +1,10 @@
+---
+tags:
+  - web-ui
+  - architecture
+  - governance
+---
+
 # Web UI Philosophy — Constitutional Principles
 
 > **Last updated**: Feb 20, 2026 21:10 UTC  

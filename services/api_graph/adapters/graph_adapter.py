@@ -81,6 +81,8 @@ class GraphOrchestrationAdapter:
         user_id: str,
         validated_entities: list = None,
         language: str = None,
+        inline_context: str = None,
+        persist_document: bool = False,
     ) -> Dict[str, Any]:
         """
         Execute graph with per-user locking and thread offload.
@@ -104,6 +106,7 @@ class GraphOrchestrationAdapter:
                     user_id=user_id,
                     validated_entities=validated_entities,
                     language=language,
+                    inline_context=inline_context,
                 )
                 audit_monitored = self.audit_enabled
 

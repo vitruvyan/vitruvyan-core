@@ -18,6 +18,8 @@ class GraphInputSchema(BaseModel):
     validated_tickers: Optional[List[str]] = Field(None, description="Client-validated tickers (authoritative per Golden Rules)")
     validated_entities: Optional[List[str]] = Field(None, description="DEPRECATED: Use validated_tickers. Backward-compat alias.")
     language: Optional[str] = Field(None, description="Language hint (en, it, es)")
+    inline_context: Optional[str] = Field(None, description="Ephemeral document context injected into prompt")
+    persist_document: Optional[bool] = Field(False, description="Whether to persist document chunks in Qdrant (user_documents)")
 
 
 class GraphResponseSchema(BaseModel):
