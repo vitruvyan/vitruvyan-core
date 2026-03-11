@@ -1,0 +1,43 @@
+# Vitruvyan Package Manifest — Graph Engine (Core Kernel)
+# Type: service — Orchestration engine
+# Tier: core — managed via 'vit upgrade', NOT 'vit install'
+
+package_name: service-graph
+package_version: "1.15.0"
+package_type: service
+status: stable
+tier: core
+description: "LangGraph orchestration engine — cognitive pipeline, intent routing, semantic grounding"
+
+compatibility:
+  min_core_version: "1.0.0"
+  max_core_version: "1.x.x"
+  contracts_major: 1
+
+dependencies:
+  required:
+    - "vitruvyan-core>=1.0.0"
+  system:
+    - docker
+    - redis
+    - postgres
+    - qdrant
+
+installation:
+  method: docker_compose
+  compose_service: graph
+  compose_file: infrastructure/docker/docker-compose.yml
+  dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_graph
+  ports:
+    - "9004:8004"
+
+health:
+  endpoint: "http://localhost:9004/health"
+
+smoke_tests:
+  path: "smoke_tests/"
+  timeout: 120
+
+ownership:
+  team: core
+  contact: dev@vitruvyan.io

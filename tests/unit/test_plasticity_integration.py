@@ -159,7 +159,7 @@ class TestVerdictOutcomeMapping:
         mock_tracker.record_outcome = AsyncMock()
         svc, _ = _make_service(mock_tracker)
 
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             svc.record_verdict_outcome("trace-1", "blessed", 0.95, 0)
         )
 
@@ -172,7 +172,7 @@ class TestVerdictOutcomeMapping:
         mock_tracker.record_outcome = AsyncMock()
         svc, _ = _make_service(mock_tracker)
 
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             svc.record_verdict_outcome("trace-2", "heretical", 0.1, 3)
         )
 
@@ -184,7 +184,7 @@ class TestVerdictOutcomeMapping:
         mock_tracker.record_outcome = AsyncMock()
         svc, _ = _make_service(mock_tracker)
 
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             svc.record_verdict_outcome("trace-3", "purified", 0.7, 1)
         )
 
@@ -196,7 +196,7 @@ class TestVerdictOutcomeMapping:
         mock_tracker.record_outcome = AsyncMock()
         svc, _ = _make_service(mock_tracker)
 
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             svc.record_verdict_outcome("trace-4", "non_liquet", 0.5, 0)
         )
 
@@ -208,7 +208,7 @@ class TestVerdictOutcomeMapping:
         mock_tracker.record_outcome = AsyncMock()
         svc, _ = _make_service(mock_tracker)
 
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             svc.record_verdict_outcome("trace-5", "unknown_status", 0.5, 0)
         )
 
@@ -220,7 +220,7 @@ class TestVerdictOutcomeMapping:
         mock_tracker.record_outcome = AsyncMock()
         svc, _ = _make_service(mock_tracker)
 
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             svc.record_verdict_outcome("trace-6", "blessed", 0.95, 2)
         )
 
@@ -243,7 +243,7 @@ class TestFeedbackOutcomeMapping:
         mock_tracker.record_outcome = AsyncMock()
         svc, _ = _make_service(mock_tracker)
 
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             svc.record_feedback_outcome("msg-1", "trace-1", "positive", 1.0)
         )
 
@@ -257,7 +257,7 @@ class TestFeedbackOutcomeMapping:
         mock_tracker.record_outcome = AsyncMock()
         svc, _ = _make_service(mock_tracker)
 
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             svc.record_feedback_outcome("msg-2", None, "negative", 0.0, "inaccurate")
         )
 
@@ -271,7 +271,7 @@ class TestFeedbackOutcomeMapping:
         mock_tracker.record_outcome = AsyncMock()
         svc, _ = _make_service(mock_tracker)
 
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             svc.record_feedback_outcome("msg-3", "trace-3", "positive", 1.0)
         )
 

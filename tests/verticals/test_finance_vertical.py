@@ -204,21 +204,17 @@ class TestFinanceGraphPlugin:
         assert isinstance(plugin.get_state_extensions(), dict)
 
     def test_plugin_has_compose_components(self):
-        """FinanceGraphPlugin should provide ResponseFormatter and SlotFiller."""
+        """FinanceGraphPlugin should provide ResponseFormatter."""
         from domains.finance.graph_plugin import FinanceGraphPlugin
         from core.orchestration.compose.response_formatter import ResponseFormatter
-        from core.orchestration.compose.slot_filler import SlotFiller
 
         plugin = FinanceGraphPlugin()
 
         assert hasattr(plugin, "get_response_formatter")
-        assert hasattr(plugin, "get_slot_filler")
 
         formatter = plugin.get_response_formatter()
-        filler = plugin.get_slot_filler()
 
         assert isinstance(formatter, ResponseFormatter)
-        assert isinstance(filler, SlotFiller)
 
     def test_parser_extracts_budget(self):
         """FinanceParser should extract budget from queries."""

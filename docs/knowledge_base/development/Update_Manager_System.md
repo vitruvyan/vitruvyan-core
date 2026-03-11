@@ -1,9 +1,20 @@
 # Update Manager System 🚀
 
-> **Last updated**: Feb 20, 2026 10:30 UTC  
-> **Status**: Phase 3 Complete — Package Manager planned  
-> **CLI Command**: `vit update` / `vit upgrade`  
+> **Last updated**: Feb 20, 2026 14:30 UTC  
+> **Status**: Phase 3 Complete — Package Manager implemented  
+> **CLI Command**: `vit update` / `vit upgrade` (core) + `vit install` / `vit remove` (packages)  
 > **Architecture**: Hybrid (Library + CLI, built-in to Core)
+
+## Overview
+
+The Vitruvyan update system has two tiers:
+
+| Tier | Commands | Scope |
+|------|----------|-------|
+| **Core** | `vit update`, `vit upgrade`, `vit rollback` | Sacred Orders, Graph, Conclave, Agents, Platform |
+| **Package** | `vit install`, `vit remove`, `vit list`, `vit search`, `vit info` | Neural Engine, MCP, DSE, verticals |
+
+> 📦 See [Package Manager System](Package_Manager_System.md) for full package management docs.
 
 ## Objective 🎯
 

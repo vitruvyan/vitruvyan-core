@@ -61,7 +61,7 @@ class MockEventEmitter:
 
 from infrastructure.edge.oculus_prime.core.agents.reddit_intake import RedditIntakeAgent
 from infrastructure.edge.oculus_prime.core.agents.gnews_intake import GNewsIntakeAgent
-from infrastructure.edge.oculus_prime.core.agents.fred_intake import FREDIntakeAgent, POPULAR_SERIES
+from vitruvyan_core.domains.finance.intake.fred_intake import FREDIntakeAgent, POPULAR_SERIES
 
 
 # ============================================================================

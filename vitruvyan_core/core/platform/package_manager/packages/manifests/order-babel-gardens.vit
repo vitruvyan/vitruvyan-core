@@ -1,0 +1,44 @@
+# Vitruvyan Package Manifest — Babel Gardens (Core Kernel)
+# Type: order — Sacred Order: Perception
+# Tier: core — managed via 'vit upgrade', NOT 'vit install'
+
+package_name: order-babel-gardens
+package_version: "1.15.0"
+package_type: order
+status: stable
+tier: core
+description: "Multilingual NLU preprocessing — language detection, emotion analysis, entity extraction"
+sacred_order: perception
+
+compatibility:
+  min_core_version: "1.0.0"
+  max_core_version: "1.x.x"
+  contracts_major: 1
+
+dependencies:
+  required:
+    - "vitruvyan-core>=1.0.0"
+  system:
+    - docker
+    - redis
+    - postgres
+    - qdrant
+
+installation:
+  method: docker_compose
+  compose_service: babel_gardens
+  compose_file: infrastructure/docker/docker-compose.yml
+  dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_babel_gardens
+  ports:
+    - "9009:8009"
+
+health:
+  endpoint: "http://localhost:9009/health"
+
+smoke_tests:
+  path: "vitruvyan_core/core/cognitive/babel_gardens/tests/"
+  timeout: 120
+
+ownership:
+  team: core
+  contact: dev@vitruvyan.io

@@ -1,0 +1,59 @@
+# Vitruvyan Package Manifest — MCP Server
+# Type: service (optional, installable via 'vit install')
+
+package_name: service-mcp
+package_version: "0.5.2"
+package_type: service
+status: beta
+tier: package
+description: "Model Context Protocol integration — OpenAI Function Calling, Claude tools, external API orchestration"
+
+compatibility:
+  min_core_version: "1.15.0"
+  max_core_version: "1.x.x"
+  contracts_major: 1
+  conflicts_with: []
+
+dependencies:
+  required:
+    - "vitruvyan-core>=1.15.0"
+  optional:
+    - "service-neural-engine>=2.0.0"
+  system:
+    - docker
+    - redis
+    - postgres
+
+installation:
+  method: docker_compose
+  compose_service: mcp
+  compose_file: infrastructure/docker/docker-compose.yml
+  dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_mcp
+  ports:
+    - "8020:8020"
+  env_required:
+    - OPENAI_API_KEY
+  env_optional:
+    - MCP_LOG_LEVEL=INFO
+    - MCP_OPENAI_MODEL=gpt-4o-mini
+    - MCP_Z_THRESHOLD=3.0
+    - MCP_COMPOSITE_THRESHOLD=5.0
+
+health:
+  endpoint: "http://localhost:8020/health"
+  interval: 30
+  timeout: 10
+
+smoke_tests:
+  timeout: 60
+
+uninstallation:
+  preserve_data: true
+  cleanup_streams: true
+  cleanup_channels:
+    - "mcp.tool.request"
+    - "mcp.tool.completed"
+
+ownership:
+  team: core
+  contact: dev@vitruvyan.io

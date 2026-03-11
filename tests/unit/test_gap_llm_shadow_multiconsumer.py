@@ -365,7 +365,7 @@ class TestShadowEvaluator:
     """Tests for ShadowEvaluator pre-validation of parameter adjustments."""
 
     def _run_async(self, coro):
-        return asyncio.get_event_loop().run_until_complete(coro)
+        return asyncio.run(coro)
 
     def test_insufficient_data_auto_approves(self):
         """With fewer than min_outcomes, adjustment is auto-approved."""
@@ -588,7 +588,7 @@ class TestPlasticityServiceMultiConsumer:
         mock_tracker.get_success_rate = AsyncMock(return_value=0.7)
         mock_tracker.get_recent_outcomes = AsyncMock(return_value=[])
 
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             svc.shadow_evaluate("heretical_threshold", 2.5)
         )
         assert "approved" in result
