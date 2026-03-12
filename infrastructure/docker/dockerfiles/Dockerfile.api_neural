@@ -35,16 +35,8 @@ WORKDIR /app
 # Copy service code
 COPY services/api_neural_engine/ /app/api_neural_engine/
 
-# Copy core structure (order matters: parent directories first)
-COPY vitruvyan_core/core/__init__.py /app/core/__init__.py
-COPY vitruvyan_core/core/foundation/__init__.py /app/core/foundation/__init__.py
-COPY vitruvyan_core/core/foundation/persistence/ /app/core/foundation/persistence/
-
-# Create cognitive directory structure and copy Neural Engine
-RUN mkdir -p /app/core/cognitive
-COPY vitruvyan_core/core/cognitive/__init__.py /app/core/cognitive/__init__.py
-COPY vitruvyan_core/core/cognitive/neural_engine/ /app/core/cognitive/neural_engine/
-COPY vitruvyan_core/core/cognitive/vitruvyan_proprietary/ /app/core/cognitive/vitruvyan_proprietary/
+# Copy entire core (matches conclave/babel_gardens pattern)
+COPY vitruvyan_core/core/ /app/core/
 
 # Create user and setup permissions
 RUN useradd --create-home --shell /bin/bash neural && \
