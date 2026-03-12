@@ -12,6 +12,7 @@ import json
 import os
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 import yaml
@@ -491,7 +492,8 @@ class TestPackageManagerIntegration:
         assert pkg is not None
         assert pkg.package_name == "service-neural-engine"
 
-    def test_builtin_vertical_resolve(self, tmp_state_dir):
+    @patch("vitruvyan_core.core.platform.package_manager.resolver.DependencyResolver._is_container_running", return_value=True)
+    def test_builtin_vertical_resolve(self, mock_container, tmp_state_dir):
         registry = PackageRegistry()
         registry.discover()
         state = PackageState(state_dir=tmp_state_dir)

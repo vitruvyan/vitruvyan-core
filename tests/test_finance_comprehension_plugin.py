@@ -502,6 +502,14 @@ class TestFinanceSignalFusion:
 # FinBERTContributor contract tests (without actual model)
 # ─────────────────────────────────────────────────────────────
 
+_torch_available = True
+try:
+    import torch  # noqa: F401
+except ImportError:
+    _torch_available = False
+
+
+@pytest.mark.skipif(not _torch_available, reason="torch not installed")
 class TestFinBERTContributorContract:
     """Test FinBERTContributor implements ISignalContributor correctly."""
 

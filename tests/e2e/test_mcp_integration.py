@@ -24,6 +24,9 @@ from unittest.mock import Mock, patch, MagicMock, AsyncMock
 # Use Docker network name when running in container, localhost from host
 MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:8020")
 
+# All tests in this file require a running MCP service
+pytestmark = pytest.mark.e2e
+
 
 class TestMCPServiceHealth:
     """Test MCP service availability and health."""

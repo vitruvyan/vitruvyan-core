@@ -262,8 +262,6 @@ class TestEnforcedIntegration:
             def bad_node(state):
                 return {"other_field": "value"}
 
-            with pytest.warns(None) as _:  # noqa: PT017
-                pass
             # Warn mode should NOT raise — just log
             result = bad_node({"input_text": "hello"})
             assert result == {"other_field": "value"}
