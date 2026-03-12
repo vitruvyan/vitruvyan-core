@@ -42,8 +42,11 @@ pipeline {
   }
 
   environment {
-    PYTHONPATH = "${WORKSPACE}/vitruvyan_core:${WORKSPACE}"
-    IMAGE_TAG  = "${env.BUILD_NUMBER}"
+    PYTHONPATH      = "${WORKSPACE}/vitruvyan_core:${WORKSPACE}"
+    IMAGE_TAG       = "${env.BUILD_NUMBER}"
+    // Override any stale DOCKER_CONTEXT job parameter — Docker CLI uses this
+    // env var to select a named context; "." would cause build failures.
+    DOCKER_CONTEXT  = 'default'
   }
 
   stages {
