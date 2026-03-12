@@ -14,7 +14,7 @@ FAIL=0
 run_test() {
     local name="$1"
     shift
-    if "$@" 2>/dev/null; then
+    if "$@" 2>&1; then
         echo "  ✅ $name"
         ((PASS++)) || true
     else

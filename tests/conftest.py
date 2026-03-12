@@ -214,6 +214,9 @@ try:
     from contracts import IDataProvider
     from contracts import IScoringStrategy
 
+    if IDataProvider is None or IScoringStrategy is None:
+        raise ImportError("Neural Engine contracts not available (missing pandas?)")
+
     class MockDataProvider(IDataProvider):
         """Returns controlled data for Neural Engine tests."""
 

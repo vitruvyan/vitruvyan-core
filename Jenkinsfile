@@ -225,6 +225,7 @@ print(f'All {len(results)} manifest(s) valid')
           steps {
             sh '''
               set -eu
+              . .venv/bin/activate
               export PYTHONPATH="${WORKSPACE}/vitruvyan_core:${WORKSPACE}:${PYTHONPATH:-}"
               bash smoke_tests/run.sh
             '''
