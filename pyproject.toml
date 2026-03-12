@@ -35,7 +35,13 @@ dependencies = [
     "qdrant-client>=1.7",
     "openai>=1.0",
     "langgraph>=0.2.0",
-    "langchain-core>=0.3.0"
+    "langchain-core>=0.3.0",
+    "structlog>=21.0",
+    "prometheus-client>=0.17.0",
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "fastapi>=0.100",
+    "langdetect>=1.0"
 ]
 
 [project.optional-dependencies]
@@ -54,9 +60,8 @@ mcp = [
     "anthropic>=0.18.0"
 ]
 
-# Monitoring (optional)
+# Monitoring (optional — grafana-api only, prometheus-client is now a core dep)
 monitoring = [
-    "prometheus-client>=0.17.0",
     "grafana-api>=1.0"
 ]
 
