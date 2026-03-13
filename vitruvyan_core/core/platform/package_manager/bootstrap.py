@@ -596,8 +596,9 @@ def start_infrastructure(repo_root: Path) -> bool:
         return False
 
     # Phase 2: core services (slow first time — builds images)
+    # First-run can take 20-30+ min: torch/CUDA pip downloads are 500-900 MB per service.
     print("  Starting core services (this may take several minutes on first run)...")
-    if not _run(_CORE_SERVICES, timeout=600):
+    if not _run(_CORE_SERVICES, timeout=1800):
         print("  ⚠️  Some core services failed to start. Run: cd infrastructure/docker && docker compose up -d")
         return True
 
