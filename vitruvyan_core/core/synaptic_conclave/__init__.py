@@ -18,7 +18,13 @@ Hardened: 2026-01-24
 # ============================================================================
 # CANONICAL BUS - Redis Streams Only
 # ============================================================================
-from .transport.streams import StreamBus, StreamEvent
+# Graceful import: LIVELLO 1 submodules (channels, events) are pure and must
+# be importable without Redis/structlog. Transport is I/O-heavy (LIVELLO 2).
+try:
+    from .transport.streams import StreamBus, StreamEvent
+except ImportError:  # redis / structlog not installed (e.g. test-only env)
+    StreamBus = None  # type: ignore[assignment,misc]
+    StreamEvent = None  # type: ignore[assignment,misc]
 from .utils.lexicon import get_lexicon
 
 # ============================================================================
