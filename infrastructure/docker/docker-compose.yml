@@ -128,6 +128,7 @@ services:
   # ══════════════════════════════════════════════════════════════════════════
 
   graph:
+    image: vitruvyan/vit-graph:latest
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_graph
@@ -170,6 +171,7 @@ services:
       - core-net
 
   neural_engine:
+    image: vitruvyan/vit-neural-engine:latest
     build:
       context: ../..
       dockerfile: services/api_neural_engine/Dockerfile
@@ -218,6 +220,7 @@ services:
       start_period: 30s
 
   mcp:
+    image: vitruvyan/vit-mcp:latest
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_mcp
@@ -266,6 +269,7 @@ services:
       start_period: 40s
 
   embedding:
+    image: vitruvyan/vit-embedding:latest
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_embedding
@@ -295,6 +299,7 @@ services:
   # ══════════════════════════════════════════════════════════════════════════
 
   orthodoxy_wardens:
+    image: vitruvyan/vit-orthodoxy-wardens:latest
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.orthodoxy_wardens
@@ -337,6 +342,7 @@ services:
       start_period: 10s
 
   vault_keepers:
+    image: vitruvyan/vit-vault-keepers:latest
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.vault_keepers
@@ -394,6 +400,7 @@ services:
       start_period: 10s
 
   conclave:
+    image: vitruvyan/vit-conclave:latest
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_conclave
@@ -445,6 +452,7 @@ services:
   # ══════════════════════════════════════════════════════════════════════════
 
   babel_gardens:
+    image: vitruvyan/vit-babel-gardens:latest
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_babel_gardens
@@ -496,6 +504,7 @@ services:
       start_period: 60s
 
   memory_orders:
+    image: vitruvyan/vit-memory-orders:latest
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_memory_orders
@@ -551,6 +560,7 @@ services:
       start_period: 15s
 
   memory_orders_listener:
+    image: vitruvyan/vit-memory-orders:latest
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_memory_orders
@@ -597,6 +607,7 @@ services:
     command: ["python3", "/app/api_memory_orders/streams_listener.py"]
 
   codex_hunters:
+    image: vitruvyan/vit-codex-hunters:latest
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_codex_hunters
@@ -636,6 +647,7 @@ services:
       start_period: 10s
 
   pattern_weavers:
+    image: vitruvyan/vit-pattern-weavers:latest
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_weavers
@@ -680,6 +692,7 @@ services:
   # ══════════════════════════════════════════════════════════════════════════
 
   conclave_listener:
+    image: vitruvyan/vit-conclave:latest
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_conclave
@@ -699,6 +712,7 @@ services:
     command: ["python3", "/app/api_conclave/streams_listener.py"]
 
   orthodoxy_listener:
+    image: vitruvyan/vit-orthodoxy-wardens:latest
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.orthodoxy_wardens
@@ -718,6 +732,7 @@ services:
     command: ["python3", "/app/api_orthodoxy_wardens/streams_listener.py"]
 
   vault_listener:
+    image: vitruvyan/vit-vault-keepers:latest
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.vault_keepers
@@ -751,6 +766,7 @@ services:
     command: ["python3", "/app/api_vault_keepers/streams_listener.py"]
 
   babel_listener:
+    image: vitruvyan/vit-babel-gardens:latest
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_babel_gardens
@@ -784,6 +800,7 @@ services:
     command: ["python3", "/app/api_babel_gardens/streams_listener.py"]
 
   codex_listener:
+    image: vitruvyan/vit-codex-hunters:latest
     build:
       context: ../..
       dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_codex_hunters

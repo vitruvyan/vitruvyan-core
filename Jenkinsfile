@@ -8,8 +8,9 @@
  *   2. Change Detection   → Detect which packages/services changed since last green build
  *   3. Quality Gate       → Unit tests, architectural tests, contract validation, smoke tests
  *   4. Docker Build       → Build only changed service images (or all if core changed)
- *   5. Docker Push        → Push changed images to registry (manual trigger)
- *   6. Release            → Per-package version tags + monorepo tag (manual, main only)
+ *   5. Deploy Local       → Restart changed services on this VPS (auto, skip with DEPLOY_LOCAL=false)
+ *   6. Docker Push        → Push changed images to registry (manual trigger)
+ *   7. Release            → Per-package version tags + monorepo tag (manual, main only)
  *
  * Change detection:
  *   - Core change (vitruvyan_core/core/, contracts, tests) → rebuild ALL services
@@ -17,9 +18,9 @@
  *   - Docs/scripts-only change → skip Docker build entirely
  *
  * Triggers:
- *   - Every push to any branch → Stages 1-4
- *   - Manual "Push Images"     → Stage 5
- *   - Manual "Create Release"  → Stage 6 (main only)
+ *   - Every push to any branch → Stages 1-5
+ *   - Manual "Push Images"     → Stage 6
+ *   - Manual "Create Release"  → Stage 7 (main only)
  */
 
 pipeline {
@@ -35,6 +36,7 @@ pipeline {
   parameters {
     string(name: 'DOCKER_REGISTRY', defaultValue: 'vitruvyan', description: 'Docker registry prefix (e.g. vitruvyan, ghcr.io/dbaldoni)')
     string(name: 'DOCKER_REGISTRY_CREDENTIALS_ID', defaultValue: 'docker-registry', description: 'Jenkins credentials ID for Docker registry')
+    booleanParam(name: 'DEPLOY_LOCAL', defaultValue: true, description: 'Restart changed services on this VPS after build (set false to skip deploy)')
     booleanParam(name: 'PUSH_IMAGES', defaultValue: false, description: 'Push Docker images to registry after build')
     booleanParam(name: 'BUILD_ALL', defaultValue: false, description: 'Force build all services (skip change detection)')
     booleanParam(name: 'CREATE_RELEASE', defaultValue: false, description: 'Create a GitHub Release (main branch only)')
@@ -287,7 +289,50 @@ print(f'All {len(results)} manifest(s) valid')
       }
     }
 
-    // ── Stage 5: Docker Push (manual, only changed services) ─────
+    // ── Stage 5: Deploy Local (auto, only changed services) ──────
+    stage('Deploy Local') {
+      when {
+        allOf {
+          expression { return params.DEPLOY_LOCAL }
+          expression { return env.CHANGED_SERVICES?.trim() }
+        }
+      }
+      steps {
+        script {
+          // Map pipeline service names → compose service names (+ listeners)
+          def composeMap = [
+            'graph'             : ['graph'],
+            'babel-gardens'     : ['babel_gardens', 'babel_listener'],
+            'memory-orders'     : ['memory_orders', 'memory_orders_listener'],
+            'vault-keepers'     : ['vault_keepers', 'vault_listener'],
+            'orthodoxy-wardens' : ['orthodoxy_wardens', 'orthodoxy_listener'],
+            'codex-hunters'     : ['codex_hunters', 'codex_listener'],
+            'pattern-weavers'   : ['pattern_weavers'],
+            'embedding'         : ['embedding'],
+            'conclave'          : ['conclave', 'conclave_listener'],
+            'neural-engine'     : ['neural_engine'],
+            'mcp'               : ['mcp'],
+          ]
+
+          def services = env.CHANGED_SERVICES.split(',').findAll { it.trim() }
+          def composeSvcs = services.collectMany { svc -> composeMap[svc] ?: [] }
+
+          if (composeSvcs.isEmpty()) {
+            echo "No compose services to deploy — skipping"
+            return
+          }
+
+          echo "Deploying ${composeSvcs.size()} container(s): ${composeSvcs.join(', ')}"
+          sh """
+            cd infrastructure/docker
+            docker compose up -d --no-deps --no-build ${composeSvcs.join(' ')}
+          """
+          echo "Deploy complete"
+        }
+      }
+    }
+
+    // ── Stage 6: Docker Push (manual, only changed services) ─────
     stage('Docker Push') {
       when {
         allOf {
@@ -317,7 +362,7 @@ print(f'All {len(results)} manifest(s) valid')
       }
     }
 
-    // ── Stage 6: Release (manual, main only) ─────────────────────
+    // ── Stage 7: Release (manual, main only) ─────────────────────
     //   Creates monorepo tag (v1.16.0) + per-package tags (vit-neural-engine/2.1.0)
     stage('Release') {
       when {
