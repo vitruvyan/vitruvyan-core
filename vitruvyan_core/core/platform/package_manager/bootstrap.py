@@ -92,18 +92,43 @@ PORT_FIELDS = [
 # ── Env template ─────────────────────────────────────────────────
 
 # key: (default_value, description)
+# Required vars are prompted interactively; optional vars get sensible defaults silently.
 ENV_TEMPLATE: Dict[str, Tuple[str, str]] = {
+    # ── Required ─────────────────────────────────────────────────
     "OPENAI_API_KEY": ("", "OpenAI API key (required for LLM features)"),
     "POSTGRES_USER": ("vitruvyan_core_user", "PostgreSQL username"),
     "POSTGRES_PASSWORD": ("", "PostgreSQL password"),
     "POSTGRES_DB": ("vitruvyan_core", "PostgreSQL database name"),
+    # ── Internal service addresses (Docker network) ───────────────
     "POSTGRES_HOST": ("core_postgres", "PostgreSQL host (Docker service name)"),
     "POSTGRES_PORT": ("5432", "PostgreSQL internal port"),
     "REDIS_HOST": ("core_redis", "Redis host (Docker service name)"),
     "REDIS_PORT": ("6379", "Redis internal port"),
+    "REDIS_URL": ("redis://core_redis:6379", "Redis URL"),
     "QDRANT_HOST": ("core_qdrant", "Qdrant host (Docker service name)"),
     "QDRANT_PORT": ("6333", "Qdrant internal port"),
+    "QDRANT_URL": ("http://core_qdrant:6333", "Qdrant URL"),
+    # ── Optional / feature flags ──────────────────────────────────
     "LOG_LEVEL": ("INFO", "Logging level"),
+    "GRAFANA_ADMIN_USER": ("admin", "Grafana admin username"),
+    "GRAFANA_ADMIN_PASSWORD": ("vitruvyan", "Grafana admin password"),
+    "HUGGINGFACE_HUB_TOKEN": ("", "HuggingFace token (optional, for private models)"),
+    "SLACK_WEBHOOK_URL": ("", "Slack webhook URL (optional, for notifications)"),
+    # ── MCP service defaults ──────────────────────────────────────
+    "MCP_LOG_LEVEL": ("INFO", "MCP service log level"),
+    "MCP_OPENAI_MODEL": ("gpt-4o-mini", "MCP OpenAI model"),
+    "MCP_Z_THRESHOLD": ("2.0", "MCP Z-score threshold"),
+    "MCP_COMPOSITE_THRESHOLD": ("0.6", "MCP composite threshold"),
+    "MCP_MIN_SUMMARY_WORDS": ("50", "MCP min summary words"),
+    "MCP_MAX_SUMMARY_WORDS": ("200", "MCP max summary words"),
+    "MCP_FACTOR_KEYS": ("", "MCP factor keys (optional)"),
+    # ── VSGS defaults ─────────────────────────────────────────────
+    "VSGS_ENABLED": ("true", "Enable VSGS semantic grounding"),
+    "VSGS_STORE_EVERY_N": ("1", "VSGS store frequency"),
+    "VSGS_PROMPT_BUDGET_CHARS": ("4000", "VSGS prompt budget chars"),
+    "VSGS_GROUNDING_TOPK": ("5", "VSGS grounding top-k results"),
+    # ── Edge / experimental ───────────────────────────────────────
+    "OCULUS_PRIME_EVENT_MIGRATION_MODE": ("false", "Edge Oculus Prime migration mode"),
 }
 
 
@@ -437,8 +462,21 @@ def collect_env_interactive() -> Dict[str, str]:
 
 # ── Infrastructure startup ───────────────────────────────────────
 
+# Network and volume names declared as `external: true` in docker-compose.yml.
+# On a fresh install they don't exist yet — we create them before compose up.
+_DOCKER_NETWORK = "vitruvyan_core_net"
+_DOCKER_VOLUMES = [
+    "docker_redis_data_core",
+    "docker_postgres_data_core",
+    "docker_qdrant_data_core",
+    "docker_babel_gardens_models",
+    "docker_babel_gardens_logs",
+    "docker_vault_keeper_data",
+    "docker_prometheus_data",
+    "docker_grafana_data",
+]
+
 # Core services that must always be running for Vitruvyan to function.
-# Split into phases so infra is healthy before services start.
 _INFRA_SERVICES = ["redis", "postgres", "qdrant"]
 _CORE_SERVICES = [
     "graph", "embedding",
@@ -453,12 +491,48 @@ _CORE_SERVICES = [
 ]
 
 
+def ensure_docker_prerequisites() -> None:
+    """
+    Create Docker network and volumes declared as external in docker-compose.yml.
+
+    Safe to call multiple times — `docker network/volume create` is idempotent
+    (exits 0 if resource already exists on most Docker versions, or exits 1 with
+    a 'already exists' message which we ignore).
+
+    Works on: VPS bare metal, VM, WSL2 + Docker Desktop, macOS Docker Desktop.
+    """
+    # Create network
+    try:
+        result = subprocess.run(
+            ["docker", "network", "create", _DOCKER_NETWORK],
+            capture_output=True, text=True, timeout=15,
+        )
+        if result.returncode == 0:
+            print(f"  Created Docker network: {_DOCKER_NETWORK}")
+        # returncode != 0 means it already exists — that's fine
+    except Exception as e:
+        print(f"  ⚠️  Could not create network {_DOCKER_NETWORK}: {e}")
+
+    # Create volumes
+    for vol in _DOCKER_VOLUMES:
+        try:
+            subprocess.run(
+                ["docker", "volume", "create", vol],
+                capture_output=True, text=True, timeout=15,
+            )
+        except Exception:
+            pass  # Already exists or Docker unavailable — compose will catch it
+
+
 def start_infrastructure(repo_root: Path) -> bool:
-    """Start infrastructure containers (redis, postgres, qdrant) then core services."""
+    """Ensure Docker prerequisites, then start infrastructure and core services."""
     compose_file = repo_root / "infrastructure" / "docker" / "docker-compose.yml"
     if not compose_file.exists():
         print(f"  Compose file not found: {compose_file}")
         return False
+
+    # Create network + volumes before compose (they are declared external)
+    ensure_docker_prerequisites()
 
     def _run(services: list, timeout: int) -> bool:
         try:
@@ -483,7 +557,6 @@ def start_infrastructure(repo_root: Path) -> bool:
     # Phase 2: core services (slow first time — builds images)
     print("  Starting core services (this may take several minutes on first run)...")
     if not _run(_CORE_SERVICES, timeout=600):
-        # Non-fatal: warn but don't fail setup
         print("  ⚠️  Some core services failed to start. Run: cd infrastructure/docker && docker compose up -d")
         return True
 

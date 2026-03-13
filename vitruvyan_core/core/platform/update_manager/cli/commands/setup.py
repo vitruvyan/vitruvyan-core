@@ -197,9 +197,10 @@ def _interactive_wizard(skip_confirm: bool = False) -> int:
         print(f"  ✅ Environment configured ({env_path})\n")
 
     # Step 5: Install packages + start infrastructure
-    print("  Starting infrastructure containers...\n")
+    print("  Step 5/5 — Starting containers\n")
+    print("  Creating Docker network and volumes...")
     if start_infrastructure(repo_root):
-        print("  ✅ Infrastructure started (redis, postgres, qdrant)\n")
+        print("  ✅ Infrastructure and core services started\n")
     else:
         print("  ⚠️  Could not start infrastructure containers.")
         print("     Run manually: cd infrastructure/docker && docker compose up -d\n")
