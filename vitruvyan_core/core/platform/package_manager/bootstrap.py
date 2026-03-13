@@ -575,7 +575,7 @@ def start_infrastructure(repo_root: Path) -> bool:
     # Create network + volumes before compose (they are declared external)
     ensure_docker_prerequisites()
 
-    def _run(services: list, timeout: int) -> bool:
+    def _run(services: list, timeout: int | None = None) -> bool:
         try:
             result = subprocess.run(
                 ["docker", "compose", "-f", str(compose_file), "up", "-d"] + services,
@@ -595,10 +595,10 @@ def start_infrastructure(repo_root: Path) -> bool:
     if not _run(_INFRA_SERVICES, timeout=120):
         return False
 
-    # Phase 2: core services (slow first time — builds images)
-    # First-run can take 20-30+ min: torch/CUDA pip downloads are 500-900 MB per service.
+    # Phase 2: core services — no timeout: first-run builds download torch/CUDA
+    # packages (~1 GB per service) and may take 20-60+ min depending on bandwidth.
     print("  Starting core services (this may take several minutes on first run)...")
-    if not _run(_CORE_SERVICES, timeout=1800):
+    if not _run(_CORE_SERVICES):
         print("  ⚠️  Some core services failed to start. Run: cd infrastructure/docker && docker compose up -d")
         return True
 
