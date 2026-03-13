@@ -437,28 +437,54 @@ def collect_env_interactive() -> Dict[str, str]:
 
 # ── Infrastructure startup ───────────────────────────────────────
 
+# Core services that must always be running for Vitruvyan to function.
+# Split into phases so infra is healthy before services start.
+_INFRA_SERVICES = ["redis", "postgres", "qdrant"]
+_CORE_SERVICES = [
+    "graph", "embedding",
+    "babel_gardens", "babel_listener",
+    "memory_orders", "memory_orders_listener",
+    "codex_hunters", "codex_listener",
+    "pattern_weavers",
+    "vault_keepers", "vault_listener",
+    "orthodoxy_wardens", "orthodoxy_listener",
+    "conclave", "conclave_listener",
+    "mcp",
+]
+
+
 def start_infrastructure(repo_root: Path) -> bool:
-    """Start infrastructure containers (redis, postgres, qdrant)."""
+    """Start infrastructure containers (redis, postgres, qdrant) then core services."""
     compose_file = repo_root / "infrastructure" / "docker" / "docker-compose.yml"
     if not compose_file.exists():
         print(f"  Compose file not found: {compose_file}")
         return False
 
-    try:
-        result = subprocess.run(
-            [
-                "docker", "compose",
-                "-f", str(compose_file),
-                "up", "-d",
-                "redis", "postgres", "qdrant",
-            ],
-            cwd=str(compose_file.parent),
-            timeout=120,
-        )
-        return result.returncode == 0
-    except subprocess.TimeoutExpired:
-        print("  Docker compose timed out after 120s.")
+    def _run(services: list, timeout: int) -> bool:
+        try:
+            result = subprocess.run(
+                ["docker", "compose", "-f", str(compose_file), "up", "-d"] + services,
+                cwd=str(compose_file.parent),
+                timeout=timeout,
+            )
+            return result.returncode == 0
+        except subprocess.TimeoutExpired:
+            print(f"  docker compose timed out after {timeout}s.")
+            return False
+        except Exception as e:
+            print(f"  Failed to start services: {e}")
+            return False
+
+    # Phase 1: infra (fast — pre-built images)
+    print("  Starting infrastructure (redis, postgres, qdrant)...")
+    if not _run(_INFRA_SERVICES, timeout=120):
         return False
-    except Exception as e:
-        print(f"  Failed to start infrastructure: {e}")
-        return False
+
+    # Phase 2: core services (slow first time — builds images)
+    print("  Starting core services (this may take several minutes on first run)...")
+    if not _run(_CORE_SERVICES, timeout=600):
+        # Non-fatal: warn but don't fail setup
+        print("  ⚠️  Some core services failed to start. Run: cd infrastructure/docker && docker compose up -d")
+        return True
+
+    return True

@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-import requests
+import httpx
 
 from .models import PackageManifest
 from .state import PackageState
@@ -116,7 +116,7 @@ class PackageInstaller:
                 print(f"\n  Set them in your .env file or environment before installing.")
                 return False
 
-        # Start service
+        # Start service (stream output so user sees progress during long builds)
         try:
             cmd = [
                 "docker", "compose",
@@ -128,17 +128,15 @@ class PackageInstaller:
             result = subprocess.run(
                 cmd,
                 cwd=str(compose_file.parent),
-                capture_output=True,
-                text=True,
-                timeout=300,
+                timeout=600,
             )
 
             if result.returncode != 0:
-                logger.error("Docker compose failed:\n%s", result.stderr)
+                logger.error("Docker compose failed for %s", manifest.package_name)
                 return False
 
         except subprocess.TimeoutExpired:
-            logger.error("Docker compose timed out after 300s")
+            logger.error("Docker compose timed out after 600s")
             return False
 
         # Health check
@@ -294,10 +292,10 @@ class PackageInstaller:
         deadline = time.time() + timeout
         while time.time() < deadline:
             try:
-                resp = requests.get(endpoint, timeout=5)
+                resp = httpx.get(endpoint, timeout=5)
                 if resp.status_code == 200:
                     return True
-            except requests.ConnectionError:
+            except (httpx.ConnectError, httpx.TimeoutException):
                 pass
             time.sleep(interval)
         return False
