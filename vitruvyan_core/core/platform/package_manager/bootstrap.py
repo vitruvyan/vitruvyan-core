@@ -447,14 +447,23 @@ def collect_credentials_interactive(existing_env: Optional[Dict[str, str]] = Non
     else:
         print("  PostgreSQL password")
         print("  (press Enter to auto-generate a secure random password)")
-        try:
-            pwd = getpass.getpass("  Password: ").strip()
-        except (EOFError, KeyboardInterrupt):
-            pwd = ""
-        if not pwd:
-            pwd = secrets.token_hex(16)
-            print(f"  Generated password: {pwd}")
-            print("  ⚠️  Save this password — you will need it to access the database directly.")
+        while True:
+            try:
+                pwd = getpass.getpass("  Password: ").strip()
+            except (EOFError, KeyboardInterrupt):
+                pwd = ""
+            if not pwd:
+                pwd = secrets.token_hex(16)
+                print(f"  Generated password: {pwd}")
+                print("  ⚠️  Save this password — you will need it to access the database directly.")
+                break
+            try:
+                confirm = getpass.getpass("  Confirm password: ").strip()
+            except (EOFError, KeyboardInterrupt):
+                confirm = ""
+            if pwd == confirm:
+                break
+            print("  ❌ Passwords do not match — try again.\n")
         values["POSTGRES_PASSWORD"] = pwd
 
     return values
