@@ -43,6 +43,14 @@ pipeline {
     string(name: 'RELEASE_VERSION', defaultValue: '', description: 'Release version (e.g. 1.16.0). Leave empty for auto-increment.')
   }
 
+  triggers {
+    // Fallback: poll every 5 minutes in case the GitHub webhook is not configured.
+    // When https://build.vitruvyan.com/github-webhook/ is registered as a push
+    // webhook on vitruvyan/vitruvyan-core the GitHubPushTrigger in the job config
+    // fires immediately and the poll never runs (Jenkins deduplicates).
+    pollSCM('H/5 * * * *')
+  }
+
   environment {
     PYTHONPATH      = "${WORKSPACE}/vitruvyan_core:${WORKSPACE}"
     IMAGE_TAG       = "${env.BUILD_NUMBER}"
