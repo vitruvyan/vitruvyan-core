@@ -12,7 +12,9 @@ Flow:
   6. Start infrastructure containers
 """
 
+import getpass
 import os
+import secrets
 import shutil
 import socket
 import subprocess
@@ -426,6 +428,36 @@ def generate_env_file(
 
     env_path.write_text("\n".join(lines) + "\n")
     return env_path
+
+
+def collect_credentials_interactive(existing_env: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+    """Ask user for DB credentials (Postgres password). Hidden input, auto-generate option.
+
+    Returns a dict with at minimum ``POSTGRES_PASSWORD`` set to a non-empty value.
+    Safe to call on re-runs: if password is already in existing_env it is kept.
+    """
+    existing_env = existing_env or {}
+    values: Dict[str, str] = {}
+
+    # ----- PostgreSQL password -----
+    existing_pg_pwd = existing_env.get("POSTGRES_PASSWORD", "").strip()
+    if existing_pg_pwd:
+        print("  PostgreSQL password: already set (keeping existing)")
+        values["POSTGRES_PASSWORD"] = existing_pg_pwd
+    else:
+        print("  PostgreSQL password")
+        print("  (press Enter to auto-generate a secure random password)")
+        try:
+            pwd = getpass.getpass("  Password: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            pwd = ""
+        if not pwd:
+            pwd = secrets.token_hex(16)
+            print(f"  Generated password: {pwd}")
+            print("  ⚠️  Save this password — you will need it to access the database directly.")
+        values["POSTGRES_PASSWORD"] = pwd
+
+    return values
 
 
 def collect_env_interactive() -> Dict[str, str]:

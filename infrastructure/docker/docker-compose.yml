@@ -561,9 +561,6 @@ services:
 
   memory_orders_listener:
     image: vitruvyan/vit-memory-orders:latest
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_memory_orders
     container_name: core_memory_orders_listener
     restart: unless-stopped
     environment:
@@ -693,9 +690,6 @@ services:
 
   conclave_listener:
     image: vitruvyan/vit-conclave:latest
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_conclave
     container_name: core_conclave_listener
     restart: unless-stopped
     environment:
@@ -713,9 +707,6 @@ services:
 
   orthodoxy_listener:
     image: vitruvyan/vit-orthodoxy-wardens:latest
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.orthodoxy_wardens
     container_name: core_orthodoxy_listener
     restart: unless-stopped
     environment:
@@ -733,9 +724,6 @@ services:
 
   vault_listener:
     image: vitruvyan/vit-vault-keepers:latest
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.vault_keepers
     container_name: core_vault_listener
     restart: unless-stopped
     environment:
@@ -767,9 +755,6 @@ services:
 
   babel_listener:
     image: vitruvyan/vit-babel-gardens:latest
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_babel_gardens
     container_name: core_babel_listener
     restart: unless-stopped
     environment:
@@ -801,9 +786,6 @@ services:
 
   codex_listener:
     image: vitruvyan/vit-codex-hunters:latest
-    build:
-      context: ../..
-      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.api_codex_hunters
     container_name: core_codex_listener
     restart: unless-stopped
     environment:

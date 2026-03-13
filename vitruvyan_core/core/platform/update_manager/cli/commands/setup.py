@@ -20,6 +20,7 @@ from vitruvyan_core.core.platform.package_manager.bootstrap import (
     check_docker_compose,
     check_git_repo,
     check_python,
+    collect_credentials_interactive,
     collect_env_interactive,
     collect_ports_interactive,
     find_repo_root,
@@ -182,6 +183,10 @@ def _interactive_wizard(skip_confirm: bool = False) -> int:
     env_path = repo_root / "infrastructure" / "docker" / ".env"
     existing_env = read_existing_env(env_path)
 
+    # Always collect DB credentials (required for Postgres to start)
+    cred_overrides = collect_credentials_interactive(existing_env)
+    print()
+
     missing_env = _check_profile_env(profile, existing_env)
     if missing_env:
         print(f"  The following env vars are needed for this profile:")
@@ -189,11 +194,12 @@ def _interactive_wizard(skip_confirm: bool = False) -> int:
             print(f"    - {key}")
         print()
         values = collect_env_interactive()
+        values.update(cred_overrides)  # credentials take precedence
         generate_env_file(env_path, values, port_config=port_config)
         print(f"\n  ✅ Environment file written to {env_path}\n")
     else:
-        # Still write port config if ports were customized
-        generate_env_file(env_path, port_config=port_config)
+        # Write port config + credentials
+        generate_env_file(env_path, cred_overrides, port_config=port_config)
         print(f"  ✅ Environment configured ({env_path})\n")
 
     # Step 5: Install packages + start infrastructure
