@@ -49,6 +49,11 @@ if [ -f /app/docs/stylesheets/vitruvyan-logo-white-hover.png ]; then
   cp /app/docs/stylesheets/vitruvyan-logo-white-hover.png /app/docs_root_public/assets/kb/vitruvyan-logo-white-hover.png
   echo "✅ Copied vitruvyan-logo-white-hover.png → public stylesheets/assets"
 fi
+if [ -f /app/docs/stylesheets/vitruvyan-header.svg ]; then
+  cp /app/docs/stylesheets/vitruvyan-header.svg /app/docs_root_public/docs/stylesheets/vitruvyan-header.svg
+  cp /app/docs/stylesheets/vitruvyan-header.svg /app/docs_root_public/assets/kb/vitruvyan-header.svg
+  echo "✅ Copied vitruvyan-header.svg → public stylesheets/assets"
+fi
 if [ -f /app/docs/assets/images/vitruvyan-logo.png ]; then
   cp /app/docs/assets/images/vitruvyan-logo.png /app/docs_root_public/assets/kb/vitruvyan-logo.png
   echo "✅ Copied vitruvyan-logo.png → docs_root_public/assets/kb/vitruvyan-logo.png"

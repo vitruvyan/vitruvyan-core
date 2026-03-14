@@ -19,22 +19,20 @@ site_dir: /app/site_public
 # Theme configuration (minimal)
 theme:
   name: material
-  logo: assets/kb/vitruvyan-logo-white.png
+  logo: assets/kb/vitruvyan-header.svg
   language: en
-  font:
-    text: Inconsolata
-    code: Inconsolata
+  font: false
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: black
+      primary: white
       accent: black
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: black
+      primary: white
       accent: blue
       toggle:
         icon: material/weather-sunny
@@ -77,7 +75,7 @@ nav:
   - Home: index.md
 
 extra_css:
-  - assets/kb/material_v1.css?v=20260226a
+  - assets/kb/material_v1.css?v=20260313c
 
 extra_javascript:
   - assets/kb/vitruvyan.js?v=20260226a

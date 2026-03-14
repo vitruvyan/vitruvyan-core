@@ -19,22 +19,20 @@ site_dir: /app/site
 # Theme configuration
 theme:
   name: material
-  logo: docs/stylesheets/vitruvyan-logo-white.png
+  logo: docs/stylesheets/vitruvyan-header.svg
   language: en
-  font:
-    text: Inconsolata
-    code: Inconsolata
+  font: false
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: black
+      primary: white
       accent: black
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: black
+      primary: white
       accent: blue
       toggle:
         icon: material/weather-sunny
@@ -202,6 +200,7 @@ nav:
   - Development:
     - Testing: tests/README_TESTS.md
     - Update & Package Manager:
+      - Package Manager System: docs/knowledge_base/development/Package_Manager_System.md
       - Update Manager System: docs/knowledge_base/development/Update_Manager_System.md
       - Update System Contract V1: docs/contracts/platform/UPDATE_SYSTEM_CONTRACT_V1.md
       - Package Manager Contract V1: docs/contracts/platform/PACKAGE_MANAGER_SYSTEM_CONTRACT_V1.md
@@ -237,7 +236,7 @@ extra:
     provider: mike  # Versioning provider (optional)
 
 extra_css:
-  - docs/stylesheets/material_v1.css?v=20260220q
+  - docs/stylesheets/material_v1.css?v=20260313c
 
 extra_javascript:
   - docs/javascripts/vitruvyan.js?v=20260219k

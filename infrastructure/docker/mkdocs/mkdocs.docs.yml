@@ -28,22 +28,20 @@ exclude_docs: |
 
 theme:
   name: material
-  logo: docs/stylesheets/vitruvyan-logo-white.png
+  logo: docs/stylesheets/vitruvyan-header.svg
   language: en
-  font:
-    text: Inconsolata
-    code: Inconsolata
+  font: false
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: black
+      primary: white
       accent: black
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: black
+      primary: white
       accent: blue
       toggle:
         icon: material/weather-sunny
@@ -149,7 +147,7 @@ nav:
     - Pattern Weavers: docs/orders/PATTERN_WEAVERS.md
 
 extra_css:
-  - docs/stylesheets/material_v1.css?v=20260226a
+  - docs/stylesheets/material_v1.css?v=20260313c
 
 extra_javascript:
   - docs/javascripts/vitruvyan.js?v=20260226a

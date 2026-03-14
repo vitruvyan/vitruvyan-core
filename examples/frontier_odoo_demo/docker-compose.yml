@@ -1,0 +1,48 @@
+# Vitruvyan Frontier — Odoo Demo Environment
+# Starts Odoo 17 + Postgres 15 for connector development and demo.
+#
+# Usage:
+#   docker compose up -d
+#   python seed_demo_data.py          # populate with Italian business data
+#
+# Access:
+#   http://localhost:8069  (database: vitruvyan_demo, admin/admin)
+
+services:
+  odoo-db:
+    image: postgres:15
+    container_name: odoo-db
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+    volumes:
+      - odoo-db-data:/var/lib/postgresql/data
+    networks:
+      - vitruvyan_core_net
+    restart: unless-stopped
+
+  odoo-demo:
+    image: odoo:17.0
+    container_name: odoo-demo
+    depends_on:
+      - odoo-db
+    ports:
+      - "8069:8069"
+    environment:
+      HOST: odoo-db
+      USER: odoo
+      PASSWORD: odoo
+    volumes:
+      - odoo-data:/var/lib/odoo
+    networks:
+      - vitruvyan_core_net
+    restart: unless-stopped
+
+volumes:
+  odoo-db-data:
+  odoo-data:
+
+networks:
+  vitruvyan_core_net:
+    external: true

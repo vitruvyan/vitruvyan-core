@@ -1,9 +1,243 @@
 /* Minimal Material overrides for Vitruvyan KB.
    Keep behavior close to upstream Material to avoid regressions. */
 
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inconsolata:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap");
+
 :root {
   /* Login control follows navbar tabs typography. */
-  --kb-login-font-size: var(--kb-tabs-font-size, 0.875rem);
+  --kb-login-font-size: var(--kb-tabs-font-size, 0.95rem);
+  --kb-tabs-font-size: 0.95rem;
+  --vit-font-sans: "Inter", system-ui, sans-serif;
+  --vit-font-mono: "Inconsolata", ui-monospace, monospace;
+  --vit-font-serif: "Libre Baskerville", Georgia, serif;
+  --md-text-font-family: var(--vit-font-sans);
+  --md-code-font-family: var(--vit-font-mono);
+  --md-primary-fg-color: #ffffff;
+  --md-primary-fg-color--light: #ffffff;
+  --md-primary-fg-color--dark: #f5f5f2;
+  --md-primary-bg-color: #1b1b18;
+  --md-primary-bg-color--light: #6b6b63;
+  --md-default-bg-color: #fafaf8;
+  --md-default-fg-color: #1b1b18;
+  --md-default-fg-color--light: #6b6b63;
+  --md-default-fg-color--lighter: #a8a89e;
+  --md-default-fg-color--lightest: #e8e5de;
+  --md-accent-fg-color: #1b1b18;
+  --md-accent-fg-color--transparent: rgba(27, 27, 24, 0.12);
+  --md-typeset-a-color: #1b1b18;
+  --md-typeset-color: #1b1b18;
+  --md-typeset-table-color: rgba(27, 27, 24, 0.12);
+  --md-typeset-table-color--light: rgba(27, 27, 24, 0.04);
+  --md-footer-bg-color: #fafaf8;
+  --md-footer-bg-color--dark: #f0ebe1;
+  --md-footer-fg-color: #1b1b18;
+  --md-footer-fg-color--light: #6b6b63;
+  --md-footer-fg-color--lighter: #a8a89e;
+}
+
+body,
+.md-header,
+.md-tabs,
+.md-nav,
+.md-search__form,
+.md-search__input,
+.md-search-result,
+.md-ellipsis,
+.md-typeset,
+.md-content,
+.md-sidebar,
+.md-nav__link,
+.md-tab,
+.md-header__topic,
+.md-header__button {
+  font-family: var(--vit-font-sans);
+}
+
+body {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+code,
+pre,
+.md-typeset code,
+.md-typeset pre,
+.md-typeset kbd,
+.md-search__input::placeholder {
+  font-family: var(--vit-font-mono);
+}
+
+.md-typeset blockquote,
+.md-typeset .admonition-title,
+.md-typeset .tabbed-labels > label {
+  font-family: var(--vit-font-sans);
+}
+
+.md-header {
+  background: #ffffff !important;
+  color: #1b1b18 !important;
+  box-shadow: none;
+  border-bottom: 1px solid #e8e5de;
+}
+
+.md-header__title,
+.md-header__topic,
+.md-header__button,
+.md-header__option,
+.md-search__icon,
+.md-search__input,
+.md-search__input::placeholder {
+  color: #1b1b18;
+}
+
+.md-header__button.md-logo {
+  padding-inline: 0 0.35rem;
+}
+
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg,
+.md-logo img,
+.md-logo svg {
+  width: auto !important;
+  height: 1.2rem !important;
+  max-width: min(11rem, 24vw);
+  filter: none;
+}
+
+.md-header__title {
+  display: none;
+}
+
+.md-tabs {
+  background: #ffffff !important;
+  color: #1b1b18 !important;
+  border-bottom: 1px solid #e8e5de;
+}
+
+.md-tabs__link {
+  color: #6b6b63 !important;
+}
+
+.md-tabs__link--active,
+.md-tabs__link:hover,
+.md-tabs__link:focus {
+  color: #1b1b18 !important;
+}
+
+.md-header__source,
+.md-header__option,
+.md-tabs__link,
+.md-tabs__item,
+.md-nav__title,
+.md-nav__button,
+.md-nav__link,
+.md-nav__item .md-nav__link,
+.md-search__form,
+.md-search__input,
+.md-search__icon {
+  color: #1b1b18 !important;
+}
+
+[data-md-color-primary="black"] .md-header,
+[data-md-color-primary="black"] .md-tabs,
+[data-md-color-primary="white"] .md-header,
+[data-md-color-primary="white"] .md-tabs {
+  background: #ffffff !important;
+  color: #1b1b18 !important;
+}
+
+.md-search__form {
+  background: rgba(240, 235, 225, 0.72);
+  border: 1px solid #e8e5de;
+  box-shadow: none;
+}
+
+.md-search__form:hover {
+  background: rgba(240, 235, 225, 0.92);
+}
+
+.md-search__input + .md-search__icon {
+  color: #6b6b63;
+}
+
+.md-main {
+  background: #fafaf8;
+}
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4,
+.md-typeset h5,
+.md-typeset h6 {
+  font-family: var(--vit-font-sans);
+  color: #1b1b18;
+  letter-spacing: -0.02em;
+}
+
+.md-typeset h1 {
+  font-size: clamp(1.7rem, 2.2vw, 2.35rem);
+  line-height: 1.08;
+  font-weight: 700;
+  margin: 0 0 1.1rem;
+}
+
+.md-typeset h2 {
+  font-size: clamp(1.22rem, 1.5vw, 1.5rem);
+  line-height: 1.18;
+  font-weight: 700;
+  margin: 1.9rem 0 0.75rem;
+}
+
+.md-typeset h3 {
+  font-size: clamp(1.02rem, 1.08vw, 1.14rem);
+  line-height: 1.24;
+  font-weight: 600;
+}
+
+.md-typeset p,
+.md-typeset li,
+.md-typeset td,
+.md-typeset th {
+  font-family: var(--vit-font-serif);
+  color: #1b1b18;
+  font-size: 0.92rem;
+  line-height: 1.58;
+}
+
+.md-typeset strong,
+.md-typeset b,
+.md-typeset summary,
+.md-typeset .admonition-title,
+.md-typeset .tabbed-labels > label {
+  font-family: var(--vit-font-sans);
+}
+
+.md-typeset ul li::marker,
+.md-typeset ol li::marker {
+  color: #6b6b63;
+}
+
+.md-typeset a {
+  color: #1b1b18;
+  text-decoration-thickness: 0.06em;
+  text-underline-offset: 0.12em;
+  text-decoration-color: rgba(27, 27, 24, 0.45);
+}
+
+.md-typeset a:hover,
+.md-typeset a:focus,
+.md-nav__link:hover,
+.md-nav__link:focus,
+.md-nav__link--active {
+  color: #1b1b18 !important;
+  text-decoration-color: #1b1b18;
+}
+
+.md-content__button,
+.md-content__button:hover,
+.md-content__button:focus {
+  color: #6b6b63 !important;
 }
 
 /* Top navigation tabs: force left alignment. */
@@ -22,6 +256,80 @@
 .md-tabs__item.kb-mega-tab--open > .md-tabs__link {
   background: var(--md-accent-fg-color);
   color: var(--md-primary-bg-color);
+}
+
+.md-sidebar {
+  color: #1b1b18;
+}
+
+.md-sidebar__scrollwrap {
+  scrollbar-color: #a8a89e #f0ebe1;
+}
+
+.md-sidebar__scrollwrap::-webkit-scrollbar {
+  width: 10px;
+}
+
+.md-sidebar__scrollwrap::-webkit-scrollbar-track {
+  background: #f0ebe1;
+}
+
+.md-sidebar__scrollwrap::-webkit-scrollbar-thumb {
+  background: #a8a89e;
+  border-radius: 999px;
+}
+
+.md-nav--secondary,
+.md-sidebar--secondary .md-sidebar__inner,
+.md-sidebar--secondary .md-nav {
+  background: transparent !important;
+}
+
+.md-sidebar--secondary {
+  border-left: 1px solid #e8e5de;
+  padding-left: 1.25rem;
+}
+
+.md-sidebar .md-nav__title,
+.md-sidebar .md-nav__title[for="__toc"],
+.md-sidebar .md-nav__title[for="__drawer"] {
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #6b6b63 !important;
+  font-family: var(--vit-font-sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 0.2rem 0 0.9rem;
+}
+
+.md-sidebar .md-nav__link,
+.md-nav--secondary .md-nav__link,
+.md-nav--primary .md-nav__link {
+  background: transparent !important;
+  color: #1b1b18 !important;
+  font-family: var(--vit-font-sans);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.md-nav__item--active > .md-nav__link,
+.md-sidebar .md-nav__link:hover,
+.md-sidebar .md-nav__link:focus,
+.md-nav--secondary .md-nav__link:hover,
+.md-nav--secondary .md-nav__link:focus,
+.md-nav--secondary .md-nav__link--active {
+  background: transparent !important;
+  color: #1b1b18 !important;
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.md-nav--secondary .md-nav__link--active::before,
+.md-nav--secondary .md-nav__link:hover::before,
+.md-nav--secondary .md-nav__link:focus::before {
+  background: #1b1b18 !important;
 }
 
 /* Material header account dropdown (injected by vitruvyan.js). */
