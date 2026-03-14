@@ -5,12 +5,49 @@ Usage:
     vit info neural_engine
     vit info babel_gardens
     vit info vertical-finance
+    vit info frontier-odoo        # shows remote info if not installed locally
 """
 
 import argparse
 
 from vitruvyan_core.core.platform.package_manager.registry import PackageRegistry
 from vitruvyan_core.core.platform.package_manager.state import PackageState
+
+
+def _show_remote_info(package_name: str) -> int:
+    """Show info from the remote registry when no local manifest exists."""
+    try:
+        from vitruvyan_core.core.platform.package_manager.remote import RemoteRegistry
+        remote = RemoteRegistry()
+        pkg = remote.get_package(package_name)
+    except Exception:
+        pkg = None
+
+    if not pkg:
+        print(f"  Package '{package_name}' not found (local or remote).")
+        return 1
+
+    print(f"\n  {'─' * 50}")
+    print(f"  {package_name}  [remote]")
+    print(f"  {'─' * 50}")
+    print(f"  Display:     {pkg.get('display_name', package_name)}")
+    print(f"  Type:        {pkg.get('type', '?')}")
+    print(f"  License:     {'premium' if pkg.get('license_required') else 'community'}")
+    print(f"  Description: {pkg.get('description', '')}")
+
+    latest = pkg.get("latest")
+    versions = pkg.get("versions", {})
+    if latest:
+        print(f"\n  Latest version: {latest}")
+
+    if versions:
+        print(f"  Available versions:")
+        for ver, info in versions.items():
+            print(f"    - {ver} (tag: {info.get('release_tag', '?')})")
+
+    print(f"\n  Install with: vit install {package_name}")
+    print()
+    return 0
 
 
 def cmd_info(args: argparse.Namespace) -> int:
@@ -22,8 +59,7 @@ def cmd_info(args: argparse.Namespace) -> int:
 
     manifest = registry.get(package_name)
     if not manifest:
-        print(f"  Package '{package_name}' not found.")
-        return 1
+        return _show_remote_info(package_name)
 
     installed = state.get(manifest.package_name)
 

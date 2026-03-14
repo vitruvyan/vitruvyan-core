@@ -6,6 +6,7 @@ Usage:
     vit install mcp --yes
     vit install vertical-finance
     vit install vertical-finance --with-optional
+    vit install frontier-odoo              # downloads from remote registry
 """
 
 import argparse
@@ -15,6 +16,89 @@ from vitruvyan_core.core.platform.package_manager.registry import PackageRegistr
 from vitruvyan_core.core.platform.package_manager.resolver import DependencyResolver
 from vitruvyan_core.core.platform.package_manager.installer import PackageInstaller
 from vitruvyan_core.core.platform.package_manager.state import PackageState
+from vitruvyan_core.core.platform.package_manager.remote import (
+    RemoteRegistry,
+    PackageDownloader,
+    read_license_token,
+)
+
+
+def _download_remote_package(package_name: str, skip_confirm: bool):
+    """
+    Attempt to find and download a package from the remote registry.
+
+    Returns a local PackageRegistry that includes the downloaded manifest,
+    and the manifest itself — or (None, None) if not found/failed.
+    """
+    remote = RemoteRegistry()
+
+    try:
+        pkg_info = remote.get_package(package_name)
+    except RuntimeError as e:
+        print(f"  Could not reach remote registry: {e}")
+        return None, None
+
+    if not pkg_info:
+        return None, None
+
+    # Determine version
+    latest = pkg_info.get("latest")
+    versions = pkg_info.get("versions", {})
+    if not latest or latest not in versions:
+        print(f"  Package '{package_name}' found in remote registry but has no published versions.")
+        return None, None
+
+    version_info = versions[latest]
+    license_required = pkg_info.get("license_required", False)
+    license_token = None
+
+    if license_required:
+        license_token = read_license_token()
+        if not license_token:
+            print(f"\n  {package_name} is a premium package and requires a license.")
+            print(f"  Set your license token in .vitruvyan/license.key")
+            print(f"  or export VIT_LICENSE_TOKEN=<your-token>")
+            return None, None
+
+    # Confirm download
+    tier_label = "premium" if license_required else "community"
+    print(f"\n  Found '{pkg_info.get('display_name', package_name)}' in remote registry ({tier_label})")
+    print(f"  Version: {latest}")
+    print(f"  {pkg_info.get('description', '')}")
+
+    if not skip_confirm:
+        answer = input("\n  Download and install? [Y/n] ").strip().lower()
+        if answer and answer != "y":
+            print("  Installation cancelled.")
+            return None, None
+
+    # Download and extract
+    downloader = PackageDownloader()
+    try:
+        extract_dir = downloader.download_and_extract(
+            package_name, latest, version_info, license_token
+        )
+    except RuntimeError as e:
+        print(f"  Download failed: {e}")
+        return None, None
+
+    # Create a registry that includes the downloaded manifest.
+    # Look up by the original name first; if that fails, use the first
+    # manifest found in the tarball (registry key may differ from
+    # the manifest's package_name).
+    from pathlib import Path
+    registry = PackageRegistry(extra_paths=[str(extract_dir)])
+    manifest = registry.get(package_name)
+    if not manifest:
+        # Discover any .vit in the extract dir
+        vit_files = list(extract_dir.glob("*.vit"))
+        if vit_files:
+            import yaml
+            with open(vit_files[0], "r") as f:
+                data = yaml.safe_load(f)
+            if data and "package_name" in data:
+                manifest = registry.get(data["package_name"])
+    return registry, manifest
 
 
 def cmd_install(args: argparse.Namespace) -> int:
@@ -28,12 +112,17 @@ def cmd_install(args: argparse.Namespace) -> int:
     resolver = DependencyResolver(registry, state)
     installer = PackageInstaller(state)
 
-    # Lookup package
+    # Lookup package (local first, then remote)
     manifest = registry.get(package_name)
     if not manifest:
-        print(f"  Package '{package_name}' not found.")
-        print(f"  Use 'vit search {package_name}' to find available packages.")
-        return 1
+        print(f"  Package '{package_name}' not found locally. Checking remote registry...")
+        registry, manifest = _download_remote_package(package_name, skip_confirm)
+        if not manifest:
+            print(f"  Package '{package_name}' not found.")
+            print(f"  Use 'vit search {package_name}' to find available packages.")
+            return 1
+        # Re-create resolver with the updated registry
+        resolver = DependencyResolver(registry, state)
 
     # Check if already installed
     if state.is_installed(manifest.package_name):
