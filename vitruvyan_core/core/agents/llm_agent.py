@@ -79,6 +79,32 @@ except ImportError:
 # NOTE: Configuration via environment variables only.
 # load_dotenv() is called in service entrypoints (main.py), not in core modules.
 
+# ===========================================================================
+# MULTI-PROVIDER CONFIG
+# ===========================================================================
+
+# Providers that expose an OpenAI-compatible API — just swap base_url + api_key.
+# Anthropic is handled separately (native SDK, different message format).
+_OPENAI_COMPAT_PROVIDERS = {
+    "openai":   None,   # default OpenAI endpoint
+    "gemini":   "https://generativelanguage.googleapis.com/v1beta/openai/",
+    "deepseek": "https://api.deepseek.com/v1",
+    "qwen":     "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "mistral":  "https://api.mistral.ai/v1",
+    # "custom": base_url read from VITRUVYAN_LLM_BASE_URL at runtime
+}
+
+# Default models per provider (used when VITRUVYAN_LLM_MODEL is not set)
+_PROVIDER_DEFAULT_MODELS = {
+    "openai":    "gpt-4o-mini",
+    "anthropic": "claude-3-5-sonnet-20241022",
+    "gemini":    "gemini-2.0-flash",
+    "deepseek":  "deepseek-chat",
+    "qwen":      "qwen-max",
+    "mistral":   "mistral-large-latest",
+    "custom":    "llama3.2",
+}
+
 logger = logging.getLogger(__name__)
 
 
@@ -289,20 +315,100 @@ class LLMMetrics:
 # ===========================================================================
 
 # ===========================================================================
-# MODEL RESOLUTION — unified env var chain
+# PROVIDER / MODEL RESOLUTION
 # ===========================================================================
+
+def _resolve_provider() -> str:
+    """Resolve LLM provider from env. Defaults to 'openai' for backward compat."""
+    return (os.getenv("VITRUVYAN_LLM_PROVIDER") or "openai").lower()
+
+
+def _resolve_api_key(provider: str) -> Optional[str]:
+    """Resolve API key: VITRUVYAN_LLM_API_KEY → OPENAI_API_KEY (compat)."""
+    return (
+        os.getenv("VITRUVYAN_LLM_API_KEY")
+        or os.getenv("OPENAI_API_KEY")
+    )
+
 
 def _resolve_default_model() -> str:
     """Resolve default LLM model from env var chain.
-    
-    Priority: VITRUVYAN_LLM_MODEL → GRAPH_LLM_MODEL → OPENAI_MODEL → gpt-4o-mini
+
+    Priority: VITRUVYAN_LLM_MODEL → GRAPH_LLM_MODEL → OPENAI_MODEL → provider default
     """
+    provider = _resolve_provider()
+    fallback = _PROVIDER_DEFAULT_MODELS.get(provider, "gpt-4o-mini")
     return (
         os.getenv("VITRUVYAN_LLM_MODEL")
         or os.getenv("GRAPH_LLM_MODEL")
         or os.getenv("OPENAI_MODEL")
-        or "gpt-4o-mini"
+        or fallback
     )
+
+
+# ===========================================================================
+# ANTHROPIC ADAPTER  (translates anthropic SDK → OpenAI-compatible interface)
+# ===========================================================================
+
+class _AnthropicUsage:
+    def __init__(self, usage):
+        self.prompt_tokens = getattr(usage, "input_tokens", 0)
+        self.completion_tokens = getattr(usage, "output_tokens", 0)
+        self.total_tokens = self.prompt_tokens + self.completion_tokens
+
+
+class _AnthropicMessage:
+    def __init__(self, content_text: str):
+        self.content = content_text
+        self.role = "assistant"
+        self.tool_calls = []  # tool calling via Anthropic SDK not yet wired
+
+
+class _AnthropicChoice:
+    def __init__(self, message: _AnthropicMessage):
+        self.message = message
+
+
+class _AnthropicResponse:
+    """Wraps anthropic.Message to look like openai.ChatCompletion."""
+    def __init__(self, response):
+        text = response.content[0].text if response.content else ""
+        self.choices = [_AnthropicChoice(_AnthropicMessage(text))]
+        self.usage = _AnthropicUsage(response.usage)
+
+
+class _AnthropicCompletionsAdapter:
+    def __init__(self, client):
+        self._client = client
+
+    def create(self, model, messages, temperature=0.0, max_tokens=500,
+               response_format=None, tools=None, tool_choice=None, **kwargs):
+        system = None
+        anthropic_messages = []
+        for msg in messages:
+            if msg["role"] == "system":
+                system = msg["content"]
+            else:
+                anthropic_messages.append({"role": msg["role"], "content": msg["content"]})
+
+        call_kwargs: Dict[str, Any] = {
+            "model": model,
+            "messages": anthropic_messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        if system:
+            call_kwargs["system"] = system
+
+        response = self._client.messages.create(**call_kwargs)
+        return _AnthropicResponse(response)
+
+
+class _AnthropicClientAdapter:
+    """Drop-in replacement for the OpenAI client inside LLMAgent."""
+    def __init__(self, anthropic_client):
+        self.chat = type("_Chat", (), {})()
+        self.chat.completions = _AnthropicCompletionsAdapter(anthropic_client)
 
 
 class LLMAgent:
@@ -337,10 +443,19 @@ class LLMAgent:
     ):
         """
         Initialize LLM agent.
-        
+
+        Provider selection (env var chain):
+            VITRUVYAN_LLM_PROVIDER → "openai" (default)
+
+        Supported providers:
+            openai, anthropic, gemini, deepseek, qwen, mistral, custom
+
+        API key resolution:
+            VITRUVYAN_LLM_API_KEY → OPENAI_API_KEY (backward compat)
+
         Args:
-            api_key: Provider API key (fallback to OPENAI_API_KEY env)
-            default_model: Default model (fallback to env var chain)
+            api_key: Override API key (normally read from env)
+            default_model: Override default model (normally read from env)
             enable_cache: Enable Redis-backed response caching
             enable_rate_limiting: Enable rate limiting
             enable_circuit_breaker: Enable circuit breaker
@@ -348,37 +463,64 @@ class LLMAgent:
         # Skip re-initialization for singleton
         if hasattr(self, '_initialized') and self._initialized:
             return
-        
-        # Check OpenAI availability (lazy import guard)
-        if not OPENAI_AVAILABLE:
-            raise ImportError(
-                "❌ LLMAgent requires 'openai' package. "
-                "Install it: pip install openai>=1.0.0\n"
-                "Note: Services importing PostgresAgent without using LLM "
-                "functionality will not trigger this error (lazy import)."
-            )
-        
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+
+        provider = _resolve_provider()
+        resolved_key = api_key or _resolve_api_key(provider)
+        self.api_key = resolved_key
+        self.provider = provider
         self.default_model = default_model or _resolve_default_model()
-        
-        # Initialize OpenAI client
-        self._client = OpenAI(api_key=self.api_key)
-        
-        # Cache (lazy load to avoid import issues)
+
+        # ── Build the right client ──────────────────────────────
+        if provider == "anthropic":
+            try:
+                import anthropic as _anthropic_sdk
+                _client_raw = _anthropic_sdk.Anthropic(api_key=resolved_key)
+                self._client = _AnthropicClientAdapter(_client_raw)
+                logger.info("✅ LLMAgent: Anthropic client initialised")
+            except ImportError:
+                raise ImportError(
+                    "❌ Provider 'anthropic' requires the 'anthropic' package.\n"
+                    "Install it: pip install anthropic"
+                )
+        elif provider == "custom":
+            if not OPENAI_AVAILABLE:
+                raise ImportError(
+                    "❌ LLMAgent requires 'openai' package even for custom/on-premise providers.\n"
+                    "Install it: pip install openai>=1.0.0"
+                )
+            base_url = os.getenv("VITRUVYAN_LLM_BASE_URL") or "http://localhost:11434/v1"
+            # Ollama and most local servers accept any non-empty string as key
+            self._client = OpenAI(api_key=resolved_key or "local", base_url=base_url)
+            logger.info(f"✅ LLMAgent: on-premise client ({base_url})")
+        else:
+            if not OPENAI_AVAILABLE:
+                raise ImportError(
+                    "❌ LLMAgent requires 'openai' package. "
+                    "Install it: pip install openai>=1.0.0\n"
+                    "Note: Services importing PostgresAgent without using LLM "
+                    "functionality will not trigger this error (lazy import)."
+                )
+            base_url = _OPENAI_COMPAT_PROVIDERS.get(provider)  # None → default OpenAI endpoint
+            self._client = OpenAI(api_key=resolved_key, base_url=base_url)
+            label = f"{provider} ({base_url})" if base_url else provider
+            logger.info(f"✅ LLMAgent: {label} client initialised")
+
+        # ── Cache / rate limiter / circuit breaker ───────────────
         self._cache = None
         self._enable_cache = enable_cache
-        
-        # Rate limiter
+
         self._rate_limiter = RateLimiter() if enable_rate_limiting else None
-        
-        # Circuit breaker
         self._circuit_breaker = CircuitBreaker() if enable_circuit_breaker else None
-        
-        # Metrics
         self._metrics = LLMMetrics()
-        
+
         self._initialized = True
-        logger.info(f"✅ LLMAgent initialized (model={default_model}, cache={enable_cache})")
+        logger.info(f"✅ LLMAgent ready (provider={provider}, model={self.default_model}, cache={enable_cache})")
+
+    @classmethod
+    def reset_instance(cls) -> None:
+        """Reset the singleton — allows re-initialisation after provider change (e.g. in tests)."""
+        with cls._lock:
+            cls._instance = None
     
     @property
     def cache(self):
