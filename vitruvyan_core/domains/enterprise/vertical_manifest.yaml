@@ -1,0 +1,95 @@
+domain_name: "enterprise"
+domain_version: "0.2.0"
+contract_version: "1.1.0"
+status: "active"
+
+# ============================================================================
+# UPSTREAM CORE
+# ============================================================================
+upstream:
+  repo: "dbaldoni/vitruvyan-core"
+
+# ============================================================================
+# COMPATIBILITY (UPDATE SYSTEM CONTRACT V1)
+# ============================================================================
+compatibility:
+  min_core_version: "1.2.1"
+  max_core_version: "1.x.x"
+  contracts_major: 1
+  update_channel: "stable"
+  breaking_changes_allowlist: []
+  smoke_tests_timeout: 300
+
+# ============================================================================
+# NOTIFICATIONS
+# ============================================================================
+notifications:
+  enabled: true
+  channels:
+    - "log"
+  check_on_startup: true
+  check_interval_hours: 24
+  desktop_urgency: "normal"
+
+# ============================================================================
+# OWNERSHIP
+# ============================================================================
+ownership:
+  team: "vitruvyan-frontier"
+  tech_lead: "dbaldoni"
+  contact: "frontier@vitruvyan.io"
+
+# ============================================================================
+# REQUIRED COMPONENTS (Vertical Contract V1)
+# ============================================================================
+required_components:
+  intent_config: true
+  prompts: true                   # MUST: register_enterprise_prompts()
+  graph_nodes_registry: true      # MUST: get_enterprise_graph_nodes()
+  governance_rules: true
+  readme: true
+  manifest: true
+
+# =============================================================================
+# SACRED ORDERS DOMAIN PACKS (Contract §13 — MUST)
+# =============================================================================
+sacred_orders_packs:
+  pattern_weavers: true           # taxonomy_enterprise.yaml + weave_config.py
+  babel_gardens: true             # signals_enterprise.yaml + enterprise_context.py
+  orthodoxy_wardens: true         # compliance_config.py
+  memory_orders: true             # enterprise_config.py (domain has persistent ERP data)
+  vault_keepers: true             # enterprise_config.py (10-year fiscal retention)
+  codex_hunters: false            # MAY — source-agnostic by design
+
+optional_components:
+  graph_plugin: false             # DEPRECATED — use graph_nodes/registry.py
+  graph_nodes: true               # Canonical pattern (graph_nodes/registry.py)
+  slot_filler: false
+  response_formatter: false
+  execution_config: false         # SHOULD when exec intents need domain data
+  entity_resolver_config: false
+  neural_engine: false            # SHOULD when domain has structured scoring
+
+# ============================================================================
+# ADAPTERS
+# ============================================================================
+adapters:
+  langgraph_plugin: false          # LEGACY
+  langgraph_graph_nodes_hook: true  # Canonical pattern (GRAPH_DOMAIN hook)
+  sacred_orders_rules: true
+  neural_engine_contracts: false
+
+# ============================================================================
+# CONTRACTS USED
+# ============================================================================
+contracts_used:
+  - contracts.GraphPlugin
+  - contracts.BaseParser
+
+# ============================================================================
+# COMPLIANCE
+# ============================================================================
+compliance:
+  checklist_version: "V1.1"
+  status: "pass"
+  last_verified_utc: null

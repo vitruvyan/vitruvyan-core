@@ -1,0 +1,88 @@
+# Enterprise ERP/Business Taxonomy — Pattern Weavers Ontology
+# Canonical categories for the enterprise domain.
+# Loaded by PatternConfig.from_env() when PATTERN_DOMAIN=enterprise.
+
+metadata:
+  vertical: enterprise
+  version: "1.0.0"
+  description: "ERP/Business ontology for enterprise domain"
+  last_updated: "2026-03-15"
+
+categories:
+
+  # --- CRM & Sales ---
+  - name: "CRM Pipeline"
+    keywords: ["lead", "opportunity", "pipeline", "conversion", "funnel", "prospect", "deal", "win rate", "close rate", "quotation"]
+    aliases_it: ["pipeline", "opportunità", "lead", "conversione", "imbuto", "prospect", "trattativa", "preventivo"]
+    aliases_es: ["pipeline", "oportunidad", "embudo", "conversión", "prospecto", "cotización"]
+
+  - name: "Sales"
+    keywords: ["revenue", "sales order", "discount", "margin", "upsell", "cross-sell", "target", "forecast", "quota"]
+    aliases_it: ["fatturato", "ordine di vendita", "sconto", "margine", "obiettivo", "previsione"]
+    aliases_es: ["ventas", "pedido de venta", "descuento", "margen", "objetivo", "pronóstico"]
+
+  # --- Finance & Accounting ---
+  - name: "Invoicing"
+    keywords: ["invoice", "credit note", "debit note", "payment", "aging", "receivable", "payable", "due date", "overdue"]
+    aliases_it: ["fattura", "nota di credito", "pagamento", "scadenza", "credito", "debito", "insoluto", "aging"]
+    aliases_es: ["factura", "nota de crédito", "pago", "vencimiento", "cobrar", "pagar"]
+
+  - name: "Accounting"
+    keywords: ["journal", "ledger", "balance sheet", "P&L", "profit", "loss", "cost center", "budget", "fiscal year", "tax"]
+    aliases_it: ["libro giornale", "bilancio", "conto economico", "centro di costo", "budget", "anno fiscale", "imposta"]
+    aliases_es: ["diario", "balance", "cuenta de resultados", "centro de coste", "presupuesto"]
+
+  # --- Procurement & Supply Chain ---
+  - name: "Purchasing"
+    keywords: ["purchase order", "supplier", "vendor", "procurement", "RFQ", "tender", "cost", "lead time"]
+    aliases_it: ["ordine di acquisto", "fornitore", "approvvigionamento", "RDO", "gara", "costo", "tempo di consegna"]
+    aliases_es: ["orden de compra", "proveedor", "adquisición", "licitación", "coste", "plazo de entrega"]
+
+  - name: "Inventory"
+    keywords: ["stock", "warehouse", "SKU", "lot", "serial number", "reorder point", "picking", "shipping", "delivery"]
+    aliases_it: ["magazzino", "giacenza", "lotto", "numero di serie", "punto di riordino", "spedizione", "consegna"]
+    aliases_es: ["almacén", "inventario", "lote", "número de serie", "punto de reorden", "envío"]
+
+  # --- HR & Organization ---
+  - name: "Human Resources"
+    keywords: ["employee", "department", "headcount", "payroll", "leave", "attendance", "contract", "onboarding", "offboarding"]
+    aliases_it: ["dipendente", "reparto", "organico", "busta paga", "ferie", "presenze", "contratto"]
+    aliases_es: ["empleado", "departamento", "nómina", "vacaciones", "asistencia", "contrato"]
+
+  # --- Products & Catalog ---
+  - name: "Product Catalog"
+    keywords: ["product", "variant", "BOM", "bill of materials", "category", "price list", "pricing", "attribute"]
+    aliases_it: ["prodotto", "variante", "distinta base", "categoria", "listino prezzi", "attributo"]
+    aliases_es: ["producto", "variante", "lista de materiales", "categoría", "lista de precios"]
+
+  # --- Projects & Operations ---
+  - name: "Projects"
+    keywords: ["project", "task", "milestone", "timesheet", "deadline", "sprint", "backlog", "resource"]
+    aliases_it: ["progetto", "attività", "milestone", "timesheet", "scadenza", "risorsa"]
+    aliases_es: ["proyecto", "tarea", "hito", "plazo", "recurso"]
+
+  - name: "Operations"
+    keywords: ["KPI", "SLA", "workflow", "automation", "efficiency", "throughput", "bottleneck", "process"]
+    aliases_it: ["KPI", "SLA", "flusso di lavoro", "automazione", "efficienza", "collo di bottiglia", "processo"]
+    aliases_es: ["KPI", "SLA", "flujo de trabajo", "automatización", "eficiencia", "cuello de botella"]
+
+  # --- Compliance & Legal ---
+  - name: "Compliance"
+    keywords: ["GDPR", "privacy", "audit", "regulation", "compliance", "policy", "retention", "data protection"]
+    aliases_it: ["GDPR", "privacy", "audit", "normativa", "conformità", "policy", "protezione dati"]
+    aliases_es: ["RGPD", "privacidad", "auditoría", "normativa", "cumplimiento", "protección de datos"]
+
+# --- Concept relationships ---
+relationships:
+  - from: "CRM Pipeline"
+    to: "Sales"
+    type: "feeds_into"
+  - from: "Sales"
+    to: "Invoicing"
+    type: "generates"
+  - from: "Purchasing"
+    to: "Inventory"
+    type: "supplies"
+  - from: "Invoicing"
+    to: "Accounting"
+    type: "journals_to"

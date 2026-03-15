@@ -1,0 +1,53 @@
+# Enterprise Signal Schema — Babel Gardens Domain Pack
+# Defines extractable signals for the enterprise/ERP domain.
+# Loaded by BabelConfig.from_env() when BABEL_DOMAIN=enterprise.
+
+metadata:
+  vertical: enterprise
+  version: "1.0.0"
+  description: "Enterprise business signals for ERP domain"
+  last_updated: "2026-03-15"
+  embedding_model: "nomic-ai/nomic-embed-text-v1.5"
+  embedding_dim: 768
+
+signals:
+
+  - name: business_health
+    description: "Overall business health sentiment extracted from user queries and ERP data context"
+    value_range: [-1.0, 1.0]
+    fusion_weight: 0.8
+    method: llm
+    interpretation:
+      negative: "Business concern, declining KPIs, cash flow issues"
+      neutral: "Routine query, informational"
+      positive: "Growth signals, strong pipeline, healthy margins"
+
+  - name: operational_urgency
+    description: "Perceived urgency in user's enterprise query"
+    value_range: [0.0, 1.0]
+    fusion_weight: 0.6
+    method: llm
+    interpretation:
+      low: "Strategic planning, trend review"
+      medium: "Operational decision, upcoming deadline"
+      high: "Critical issue, overdue invoices, blocked orders, compliance alert"
+
+  - name: compliance_risk
+    description: "Risk of GDPR/privacy/regulatory violation in query or response"
+    value_range: [0.0, 1.0]
+    fusion_weight: 0.7
+    method: heuristic:rules
+    interpretation:
+      low: "Standard business query, no sensitive data"
+      medium: "References employee data, partial PII"
+      high: "Explicit PII request, salary disclosure, personal data export"
+
+taxonomy:
+  - sales_performance
+  - procurement_efficiency
+  - cash_flow_management
+  - crm_conversion
+  - inventory_optimization
+  - hr_workforce
+  - compliance_audit
+  - project_delivery

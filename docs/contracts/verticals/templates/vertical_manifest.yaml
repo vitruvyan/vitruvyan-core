@@ -1,5 +1,6 @@
 domain_name: "example"
 domain_version: "0.1.0"
+contract_version: "1.1.0"
 status: "draft" # draft|active|deprecated
 
 # ============================================================================
@@ -55,21 +56,39 @@ ownership:
 
 required_components:
   intent_config: true
+  prompts: true                   # MUST: register_<domain>_prompts() factory
+  graph_nodes_registry: true      # MUST: get_<domain>_graph_nodes() factory
+  governance_rules: true          # MUST: domain governance rules
   readme: true
   manifest: true
 
+# =============================================================================
+# SACRED ORDERS DOMAIN PACKS (Contract §13 — MUST)
+# =============================================================================
+# Each Sacred Order MUST be specialized for the domain.
+# The core is agnostic so that domains CAN specialize it;
+# not specializing defeats the architecture's purpose.
+
+sacred_orders_packs:
+  pattern_weavers: true           # MUST: taxonomy_<domain>.yaml + weave_config.py
+  babel_gardens: true             # MUST: signals_<domain>.yaml + <domain>_context.py
+  orthodoxy_wardens: true         # MUST: compliance_config.py
+  memory_orders: false            # MUST when domain has persistent data
+  vault_keepers: false            # MUST when domain has persistent data
+  codex_hunters: false            # MAY: source-agnostic by design
+
 optional_components:
-  graph_plugin: true
-  graph_nodes: false              # OPTIONAL domain graph node pack (domains/<domain>/graph_nodes/)
-  governance_rules: true
+  graph_plugin: false             # DEPRECATED — use graph_nodes/registry.py
+  graph_nodes: true               # Canonical pattern (graph_nodes/registry.py)
   slot_filler: false
   response_formatter: false
-  execution_config: false
+  execution_config: false         # SHOULD when exec intents need domain data
   entity_resolver_config: false
+  neural_engine: false            # SHOULD when domain has structured scoring
 
 adapters:
-  langgraph_plugin: true
-  langgraph_graph_nodes_hook: false  # OPTIONAL (GRAPH_DOMAIN + graph_nodes/registry.py factories)
+  langgraph_graph_nodes_hook: true   # Canonical (GRAPH_DOMAIN + graph_nodes/registry.py)
+  langgraph_plugin: false            # DEPRECATED
   sacred_orders_rules: true
   neural_engine_contracts: false
 

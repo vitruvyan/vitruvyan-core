@@ -53,6 +53,16 @@ if _ctx_kw or _amb_pat:
 else:
     _intent_mod.configure(_intent_reg)
 
+# 🎨 Register domain prompts with PromptRegistry (dynamic import)
+if _INTENT_DOMAIN and _INTENT_DOMAIN != "generic":
+    try:
+        _prompts_mod = _importlib.import_module(f"domains.{_INTENT_DOMAIN}.prompts")
+        _register_prompts_fn = getattr(_prompts_mod, f"register_{_INTENT_DOMAIN}_prompts")
+        _register_prompts_fn()
+        _log.info(f"[graph_flow] Registered prompts for domain '{_INTENT_DOMAIN}'")
+    except (ImportError, AttributeError) as e:
+        _log.debug(f"[graph_flow] No prompts module for domain '{_INTENT_DOMAIN}': {e}")
+
 # Configure route_node with registry-driven intent routing (domain-agnostic)
 # NOTE: route_node.configure() is called AFTER _graph_routes_ext is loaded
 # so that direct_routes from domain extension are available.

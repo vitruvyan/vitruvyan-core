@@ -40,3 +40,4 @@ yfinance==0.2.63
 qdrant-client==1.15.0
 redis==5.0.8
 alembic>=1.13.0
+python-multipart>=0.0.6

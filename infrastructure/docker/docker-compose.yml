@@ -164,6 +164,9 @@ services:
       - VSGS_GROUNDING_TOPK=${VSGS_GROUNDING_TOPK:-3}
       - VSGS_PROMPT_BUDGET_CHARS=${VSGS_PROMPT_BUDGET_CHARS:-800}
       - VSGS_STORE_EVERY_N=${VSGS_STORE_EVERY_N:-1}
+      # Domain plugin (Vertical Contract V1)
+      - INTENT_DOMAIN=${INTENT_DOMAIN:-enterprise}
+      - GRAPH_DOMAIN=${GRAPH_DOMAIN:-enterprise}
     depends_on:
       - redis
       - postgres
