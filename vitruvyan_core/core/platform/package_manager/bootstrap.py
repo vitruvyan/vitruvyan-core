@@ -579,6 +579,72 @@ def collect_credentials_interactive(existing_env: Optional[Dict[str, str]] = Non
     return values
 
 
+def _test_llm_connection(provider_name: str, model_id: str, api_key: str, base_url: str = "") -> tuple:
+    """
+    Send a minimal test request to verify the LLM API key and endpoint are reachable.
+    Returns (success: bool, message: str).
+    """
+    import urllib.request
+    import urllib.error
+    import json as _json
+
+    _COMPAT_URLS = {
+        "openai":   "https://api.openai.com/v1/chat/completions",
+        "gemini":   "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        "deepseek": "https://api.deepseek.com/v1/chat/completions",
+        "qwen":     "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+        "mistral":  "https://api.mistral.ai/v1/chat/completions",
+    }
+
+    try:
+        if provider_name == "anthropic":
+            url = "https://api.anthropic.com/v1/messages"
+            payload = {
+                "model": model_id,
+                "max_tokens": 5,
+                "messages": [{"role": "user", "content": "Reply OK"}],
+            }
+            headers = {
+                "Content-Type": "application/json",
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+            }
+        else:
+            if base_url:
+                url = base_url.rstrip("/") + "/chat/completions"
+            else:
+                url = _COMPAT_URLS.get(provider_name, _COMPAT_URLS["openai"])
+            payload = {
+                "model": model_id,
+                "max_tokens": 5,
+                "messages": [{"role": "user", "content": "Reply OK"}],
+            }
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            }
+
+        req = urllib.request.Request(
+            url,
+            data=_json.dumps(payload).encode(),
+            headers=headers,
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=12):
+            return True, "API key and endpoint verified"
+
+    except urllib.error.HTTPError as e:
+        if e.code in (400, 422):   # bad request but auth passed
+            return True, f"Endpoint reachable, auth OK (HTTP {e.code})"
+        if e.code == 401:
+            return False, "Invalid API key (401 Unauthorized)"
+        if e.code == 403:
+            return False, "Access denied (403 Forbidden)"
+        return False, f"HTTP {e.code}: {e.reason}"
+    except Exception as exc:
+        return False, f"Connection failed: {exc}"
+
+
 def collect_llm_interactive(existing_env: Optional[Dict[str, str]] = None) -> Dict[str, str]:
     """
     Interactively collect LLM provider, model, and API key.
@@ -675,14 +741,20 @@ def collect_llm_interactive(existing_env: Optional[Dict[str, str]] = None) -> Di
         values["VITRUVYAN_LLM_API_KEY"] = key
         values["VITRUVYAN_LLM_BASE_URL"] = ""
 
-        # Backward-compat aliases so existing code that reads OPENAI_API_KEY / OPENAI_MODEL
-        # continues to work when OpenAI is selected
-        if provider["name"] == "openai":
-            values["OPENAI_API_KEY"] = key
-            values["OPENAI_MODEL"] = model_id
-        else:
-            values["OPENAI_API_KEY"] = ""
-            values["OPENAI_MODEL"] = ""
+        # Backward-compat aliases: OPENAI_API_KEY / OPENAI_MODEL always mirror the active
+        # LLM config so any service or script that reads those vars continues to work.
+        values["OPENAI_API_KEY"] = key
+        values["OPENAI_MODEL"] = model_id
+
+        # Live connection test
+        if key:
+            print(f"\n  Testing connection to {provider['label']}...")
+            ok, msg = _test_llm_connection(provider["name"], model_id, key)
+            if ok:
+                print(f"  ✅ {msg}")
+            else:
+                print(f"  ⚠️  {msg}")
+                print(f"     Proceeding anyway — verify the key in .env before starting.")
     else:
         # On-premise: ask for base URL only
         default_url = "http://localhost:11434/v1"
@@ -691,10 +763,21 @@ def collect_llm_interactive(existing_env: Optional[Dict[str, str]] = None) -> Di
             base_url = input(f"  Base URL [{default_url}]: ").strip()
         except (EOFError, KeyboardInterrupt):
             base_url = ""
-        values["VITRUVYAN_LLM_BASE_URL"] = base_url or default_url
+        resolved_url = base_url or default_url
+        values["VITRUVYAN_LLM_BASE_URL"] = resolved_url
         values["VITRUVYAN_LLM_API_KEY"] = ""
-        values["OPENAI_API_KEY"] = ""
-        values["OPENAI_MODEL"] = ""
+        # Backward-compat aliases for on-premise
+        values["OPENAI_API_KEY"] = "local"
+        values["OPENAI_MODEL"] = model_id
+
+        # Live connection test (no auth required for local)
+        print(f"\n  Testing connection to {resolved_url}...")
+        ok, msg = _test_llm_connection("custom", model_id, "local", base_url=resolved_url)
+        if ok:
+            print(f"  ✅ {msg}")
+        else:
+            print(f"  ⚠️  {msg}")
+            print(f"     Make sure the on-premise server is running before starting.")
 
     print(f"\n  ✅ LLM configured: {provider['label']} / {model_id}")
     return values

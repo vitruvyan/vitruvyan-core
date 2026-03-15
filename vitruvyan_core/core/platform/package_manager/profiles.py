@@ -46,22 +46,13 @@ STANDARD = InstallProfile(
     size_estimate="~4 GB",
 )
 
-FINANCE = InstallProfile(
-    name="finance",
-    label="Finance",
-    description="Standard + Finance vertical + Edge DSE",
-    packages=["neural_engine", "vertical_finance", "edge_dse"],
-    size_estimate="~6 GB",
-    env_keys=["OPENAI_API_KEY"],
-)
-
 FULL = InstallProfile(
     name="full",
     label="Full",
     description="All packages including beta (MCP, Edge DSE)",
-    packages=["neural_engine", "mcp", "edge_dse", "vertical_finance"],
+    packages=["neural_engine", "mcp", "edge_dse"],
     size_estimate="~8 GB",
-    env_keys=["OPENAI_API_KEY", "POSTGRES_PASSWORD"],
+    env_keys=["POSTGRES_PASSWORD"],
 )
 
 CUSTOM = InstallProfile(
@@ -74,9 +65,10 @@ CUSTOM = InstallProfile(
 
 
 # Ordered list for wizard display
-ALL_PROFILES: List[InstallProfile] = [MINIMAL, STANDARD, FINANCE, FULL, CUSTOM]
+ALL_PROFILES: List[InstallProfile] = [MINIMAL, STANDARD, FULL, CUSTOM]
 
 PROFILES_BY_NAME: Dict[str, InstallProfile] = {p.name: p for p in ALL_PROFILES}
+
 
 
 def get_profile(name: str) -> Optional[InstallProfile]:
