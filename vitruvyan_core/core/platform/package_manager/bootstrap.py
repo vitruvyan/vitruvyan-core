@@ -125,7 +125,9 @@ LLM_PROVIDERS: List[Dict] = [
         "key_url": "https://aistudio.google.com/app/apikey",
         "requires_key": True,
         "models": [
-            ("gemini-2.0-flash",   "Gemini 2.0 Flash — fast, free tier available (recommended)"),
+            ("gemini-3.5-pro",     "Gemini 3.5 Pro — most capable, latest generation (recommended)"),
+            ("gemini-3.5",         "Gemini 3.5 — latest generation, balanced"),
+            ("gemini-2.0-flash",   "Gemini 2.0 Flash — fast, free tier available"),
             ("gemini-1.5-pro",     "Gemini 1.5 Pro — long context (2M tokens)"),
             ("gemini-1.5-flash",   "Gemini 1.5 Flash — fast, economical"),
         ],

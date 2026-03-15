@@ -98,7 +98,7 @@ _OPENAI_COMPAT_PROVIDERS = {
 _PROVIDER_DEFAULT_MODELS = {
     "openai":    "gpt-4o-mini",
     "anthropic": "claude-sonnet-4-6",
-    "gemini":    "gemini-2.0-flash",
+    "gemini":    "gemini-3.5-pro",
     "deepseek":  "deepseek-chat",
     "qwen":      "qwen-max",
     "mistral":   "mistral-large-latest",
