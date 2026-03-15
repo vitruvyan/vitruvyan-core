@@ -1,0 +1,17 @@
+{
+  "verticals": [
+    {
+      "name": "finance",
+      "repo": "git@github.com:vitruvyan/vitruvyan-finance.git",
+      "branch": "main",
+      "status": "active"
+    },
+    {
+      "name": "enterprise",
+      "repo": "git@github.com:vitruvyan/vitruvyan-core.git",
+      "path": "vitruvyan_core/domains/enterprise",
+      "branch": "main",
+      "status": "active"
+    }
+  ]
+}

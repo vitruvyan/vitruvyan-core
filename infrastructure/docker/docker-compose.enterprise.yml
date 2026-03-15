@@ -1,0 +1,48 @@
+# docker-compose.enterprise.yml
+# Enterprise demo services — STANDALONE (outside core docker-compose)
+#
+# Usage:
+#   cd infrastructure/docker
+#   docker compose -f docker-compose.enterprise.yml up -d
+#
+# Prerequisites: Core stack must be running (redis, postgres, mcp, graph, etc.)
+# Network: connects to core-net to reach core services.
+
+services:
+  mcp_enterprise:
+    image: vitruvyan/vit-mcp-enterprise:latest
+    build:
+      context: ../..
+      dockerfile: services/api_mcp_enterprise/Dockerfile
+    container_name: enterprise_mcp
+    restart: unless-stopped
+    ports:
+      - "8021:8021"
+    environment:
+      - PORT=8021
+      - LOG_LEVEL=${MCP_ENTERPRISE_LOG_LEVEL:-INFO}
+      - MCP_CORE_URL=http://core_mcp:8020
+      - LANGGRAPH_URL=http://core_graph:8004
+      - NEURAL_ENGINE_API=http://neural_engine:8003
+      - PATTERN_WEAVERS_API=http://pattern_weavers:8017
+      - POSTGRES_HOST=${POSTGRES_HOST:-core_postgres}
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-vitruvyan_core}
+      - POSTGRES_USER=${POSTGRES_USER:-vitruvyan_core_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOST=core_redis
+      - REDIS_PORT=6379
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
+    networks:
+      - core-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8021/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  core-net:
+    external: true
+    name: docker_core-net

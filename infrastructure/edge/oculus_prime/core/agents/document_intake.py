@@ -365,78 +365,122 @@ class DocumentIntakeAgent:
             raise ValueError(f"Unknown chunking strategy: {strategy}")
 
     @staticmethod
+    def _split_at_sentence_boundaries(text: str) -> List[str]:
+        """
+        Split text at sentence-ending punctuation followed by whitespace.
+
+        Pre-epistemic structural segmentation: no regex, pure string iteration.
+        """
+        _SENT_ENDS = frozenset('.!?;\n')
+        _WS = frozenset(' \t\r\n')
+        sentences: List[str] = []
+        start = 0
+        i = 0
+        length = len(text)
+        while i < length:
+            if text[i] in _SENT_ENDS:
+                j = i + 1
+                while j < length and text[j] in _WS:
+                    j += 1
+                if j > i + 1:
+                    seg = text[start:i + 1].strip()
+                    if seg:
+                        sentences.append(seg)
+                    start = j
+                    i = j
+                    continue
+            i += 1
+        if start < length:
+            tail = text[start:].strip()
+            if tail:
+                sentences.append(tail)
+        return sentences if sentences else [text]
+
+    @staticmethod
+    def _find_sentence_boundary_offset(text: str) -> Optional[int]:
+        """Return char offset after first sentence boundary in *text*, or None."""
+        _SENT_ENDS = frozenset('.!?;')
+        _WS = frozenset(' \t\r\n')
+        for i, ch in enumerate(text):
+            if ch in _SENT_ENDS and i + 1 < len(text) and text[i + 1] in _WS:
+                j = i + 1
+                while j < len(text) and text[j] in _WS:
+                    j += 1
+                return j
+        return None
+
+    @staticmethod
     def _sentence_aware_chunk(text: str, chunk_size: int, overlap: int) -> List[str]:
         """
         Split text into chunks at sentence boundaries with overlap.
-        
+
         Avoids cutting sentences in half. Falls back to character split
         only for very long sentences that exceed chunk_size.
+        Pre-epistemic structural segmentation — no regex.
         """
-        import re
-        # Split on sentence-ending punctuation followed by whitespace
-        sentence_pattern = re.compile(r'(?<=[.!?;\n])\s+')
-        sentences = sentence_pattern.split(text)
-        
+        sentences = DocumentIntakeAgent._split_at_sentence_boundaries(text)
+
         if not sentences:
             return [text] if text else [""]
-        
+
         chunks: List[str] = []
         current_chunk = ""
-        
+
         for sentence in sentences:
             sentence = sentence.strip()
             if not sentence:
                 continue
-            
-            # If adding this sentence exceeds chunk_size and we already have content
+
             if current_chunk and len(current_chunk) + len(sentence) + 1 > chunk_size:
                 chunks.append(current_chunk.strip())
-                # Start next chunk with overlap from the end of current chunk
                 if overlap > 0 and len(current_chunk) > overlap:
-                    # Take last N chars, but try to start at a sentence boundary
                     overlap_text = current_chunk[-overlap:]
-                    # Find first sentence start in overlap region
-                    boundary = re.search(r'(?<=[.!?;])\s+', overlap_text)
-                    if boundary:
-                        overlap_text = overlap_text[boundary.end():]
+                    boundary = DocumentIntakeAgent._find_sentence_boundary_offset(overlap_text)
+                    if boundary is not None:
+                        overlap_text = overlap_text[boundary:]
                     current_chunk = overlap_text + " " + sentence
                 else:
                     current_chunk = sentence
             else:
                 current_chunk = (current_chunk + " " + sentence).strip() if current_chunk else sentence
-            
-            # Safety: if a single sentence exceeds chunk_size, force-split it
+
             while len(current_chunk) > chunk_size * 1.5:
                 split_point = chunk_size
-                # Try to split at a space
                 space_pos = current_chunk.rfind(' ', 0, chunk_size)
                 if space_pos > chunk_size * 0.5:
                     split_point = space_pos
                 chunks.append(current_chunk[:split_point].strip())
                 current_chunk = current_chunk[split_point:].strip()
-        
+
         if current_chunk.strip():
             chunks.append(current_chunk.strip())
-        
+
         return chunks if chunks else [text]
     
     def _detect_language_simple(self, text: str) -> str:
         """
-        Word-frequency language detection (no external dependencies).
-        
+        Word-frequency language detection (pre-epistemic metadata tagger).
+
         Detects: Italian, English, French, Spanish, German.
         Uses high-frequency function-word signatures per language.
         Returns ISO 639-1 code (e.g., 'en', 'it', 'fr', 'es', 'de').
         Fallback: 'unknown'
+
+        NOTE: This is a degradation-grade heuristic for pre-epistemic metadata.
+        For production NLU, delegate to LLM via Sacred Order: Perception.
         """
         if not text or not text.strip():
             return "unknown"
-        
+
         # Lowercase sample (first 5000 chars for speed)
         sample = text[:5000].lower()
-        # Extract words (letters only, 2+ chars)
-        import re
-        words = re.findall(r'\b[a-zà-öø-ÿ]{2,}\b', sample)
+        # Extract words without regex: split on whitespace, strip punctuation
+        _PUNCT = set('.,;:!?()[]{}"\'/\\<>@#$%^&*+=~`|«»…""''—–-_')
+        words = []
+        for token in sample.split():
+            word = token.strip(''.join(_PUNCT))
+            if len(word) >= 2 and word.isalpha():
+                words.append(word)
         if len(words) < 10:
             return "unknown"
         

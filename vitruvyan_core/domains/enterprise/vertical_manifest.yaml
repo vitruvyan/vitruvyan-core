@@ -68,7 +68,8 @@ optional_components:
   response_formatter: false
   execution_config: false         # SHOULD when exec intents need domain data
   entity_resolver_config: false
-  neural_engine: false            # SHOULD when domain has structured scoring
+  neural_engine: false            # SHOULD — activate when ERP provides structured scoring data
+  mcp_server: true                # Enterprise MCP domain pack (tool schemas + arg normalization)
 
 # ============================================================================
 # ADAPTERS

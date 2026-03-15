@@ -23,7 +23,6 @@ Key Principles:
 import uuid
 import hashlib
 import json
-import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
@@ -77,13 +76,13 @@ class LandscapeIntakeAgent:
     AGENT_ID = "landscape-intake-v1"
     AGENT_VERSION = "1.0.0"
     
-    # Map provider URL patterns
-    MAP_PROVIDERS = {
-        "mapbox": re.compile(r'mapbox\.com|api\.mapbox\.com'),
-        "google_maps": re.compile(r'maps\.google\.com|google\.com/maps'),
-        "openstreetmap": re.compile(r'openstreetmap\.org|osm\.org'),
-        "bing_maps": re.compile(r'bing\.com/maps'),
-        "esri": re.compile(r'arcgis\.com|esri\.com')
+    # Map provider domain patterns (structural URL parsing, no regex)
+    MAP_PROVIDER_DOMAINS = {
+        "mapbox": ("mapbox.com", "api.mapbox.com"),
+        "google_maps": ("maps.google.com", "www.google.com", "google.com"),
+        "openstreetmap": ("openstreetmap.org", "www.openstreetmap.org", "osm.org"),
+        "bing_maps": ("bing.com", "www.bing.com"),
+        "esri": ("arcgis.com", "www.arcgis.com", "esri.com", "www.esri.com"),
     }
     
     def __init__(self, event_emitter, postgres_agent=None):
@@ -340,7 +339,7 @@ class LandscapeIntakeAgent:
     
     def _parse_map_url(self, url: str) -> Dict[str, Any]:
         """
-        Parse map provider URL to extract context
+        Parse map provider URL to extract context (structural URL parsing, no regex).
         
         Examples:
         - Mapbox: https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/9.1859,45.4654,15/800x600?access_token=...
@@ -352,37 +351,64 @@ class LandscapeIntakeAgent:
         """
         result = {"provider": None, "zoom": None, "center": None, "style": None}
         
-        # Identify provider
-        for provider, pattern in self.MAP_PROVIDERS.items():
-            if pattern.search(url):
+        parsed = urlparse(url)
+        hostname = (parsed.hostname or "").lower()
+        
+        # Identify provider by domain matching
+        for provider, domains in self.MAP_PROVIDER_DOMAINS.items():
+            if any(hostname == d or hostname.endswith("." + d) for d in domains):
+                # For google_maps, also verify path contains /maps
+                if provider == "google_maps" and "/maps" not in parsed.path:
+                    continue
                 result["provider"] = provider
                 break
         
         if not result["provider"]:
             return result
         
-        # Parse provider-specific URL formats
+        # Parse provider-specific URL formats (structural path/fragment parsing)
         if result["provider"] == "mapbox":
             # Mapbox Static API: /styles/v1/{username}/{style_id}/static/{lon},{lat},{zoom}/{width}x{height}
-            match = re.search(r'/styles/v1/([^/]+)/([^/]+)/static/(-?\d+\.?\d*),(-?\d+\.?\d*),(\d+)/', url)
-            if match:
-                result["style"] = f"{match.group(1)}/{match.group(2)}"
-                result["center"] = [float(match.group(3)), float(match.group(4))]
-                result["zoom"] = int(match.group(5))
+            parts = parsed.path.split("/")
+            try:
+                static_idx = parts.index("static")
+                if static_idx >= 4:
+                    result["style"] = f"{parts[static_idx - 2]}/{parts[static_idx - 1]}"
+                coords_str = parts[static_idx + 1] if static_idx + 1 < len(parts) else ""
+                coord_parts = coords_str.split(",")
+                if len(coord_parts) >= 3:
+                    result["center"] = [float(coord_parts[0]), float(coord_parts[1])]
+                    result["zoom"] = int(coord_parts[2].split(".")[0])
+            except (ValueError, IndexError):
+                pass
         
         elif result["provider"] == "google_maps":
-            # Google Maps: @{lat},{lon},{zoom}z
-            match = re.search(r'@(-?\d+\.?\d*),(-?\d+\.?\d*),(\d+)z', url)
-            if match:
-                result["center"] = [float(match.group(2)), float(match.group(1))]
-                result["zoom"] = int(match.group(3))
+            # Google Maps: /maps/@{lat},{lon},{zoom}z
+            path = parsed.path
+            if "/@" in path:
+                at_part = path.split("/@")[1].split("/")[0]
+                coord_parts = at_part.split(",")
+                if len(coord_parts) >= 3:
+                    try:
+                        lat = float(coord_parts[0])
+                        lon = float(coord_parts[1])
+                        zoom_str = coord_parts[2].rstrip("z")
+                        result["center"] = [lon, lat]
+                        result["zoom"] = int(zoom_str.split(".")[0])
+                    except (ValueError, IndexError):
+                        pass
         
         elif result["provider"] == "openstreetmap":
             # OpenStreetMap: #map={zoom}/{lat}/{lon}
-            match = re.search(r'#map=(\d+)/(-?\d+\.?\d*)/(-?\d+\.?\d*)', url)
-            if match:
-                result["zoom"] = int(match.group(1))
-                result["center"] = [float(match.group(3)), float(match.group(2))]
+            fragment = parsed.fragment
+            if fragment.startswith("map="):
+                map_parts = fragment[4:].split("/")
+                if len(map_parts) >= 3:
+                    try:
+                        result["zoom"] = int(map_parts[0])
+                        result["center"] = [float(map_parts[2]), float(map_parts[1])]
+                    except (ValueError, IndexError):
+                        pass
         
         return result
     
