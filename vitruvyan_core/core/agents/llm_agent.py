@@ -97,7 +97,7 @@ _OPENAI_COMPAT_PROVIDERS = {
 # Default models per provider (used when VITRUVYAN_LLM_MODEL is not set)
 _PROVIDER_DEFAULT_MODELS = {
     "openai":    "gpt-4o-mini",
-    "anthropic": "claude-3-5-sonnet-20241022",
+    "anthropic": "claude-sonnet-4-6",
     "gemini":    "gemini-2.0-flash",
     "deepseek":  "deepseek-chat",
     "qwen":      "qwen-max",
