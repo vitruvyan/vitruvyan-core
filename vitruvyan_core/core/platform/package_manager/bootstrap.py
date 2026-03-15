@@ -82,6 +82,99 @@ class PortConfig:
 
 DEFAULT_PORTS = PortConfig()
 
+
+# ── LLM Provider catalog ─────────────────────────────────────────
+
+LLM_PROVIDERS: List[Dict] = [
+    {
+        "name": "openai",
+        "label": "OpenAI",
+        "key_url": "https://platform.openai.com/api-keys",
+        "requires_key": True,
+        "models": [
+            ("gpt-4o-mini",     "GPT-4o mini — fast, economical (recommended)"),
+            ("gpt-4o",          "GPT-4o — most capable, multimodal"),
+            ("gpt-4-turbo",     "GPT-4 Turbo — high capability"),
+            ("gpt-3.5-turbo",   "GPT-3.5 Turbo — cheapest OpenAI option"),
+            ("o1-mini",         "o1-mini — fast reasoning"),
+            ("o1",              "o1 — advanced reasoning (slow/expensive)"),
+        ],
+    },
+    {
+        "name": "anthropic",
+        "label": "Anthropic (Claude)",
+        "key_url": "https://console.anthropic.com/",
+        "requires_key": True,
+        "models": [
+            ("claude-3-5-sonnet-20241022",  "Claude 3.5 Sonnet — best balance (recommended)"),
+            ("claude-3-5-haiku-20241022",   "Claude 3.5 Haiku — fast, economical"),
+            ("claude-3-opus-20240229",      "Claude 3 Opus — most capable, expensive"),
+        ],
+    },
+    {
+        "name": "gemini",
+        "label": "Google Gemini",
+        "key_url": "https://aistudio.google.com/app/apikey",
+        "requires_key": True,
+        "models": [
+            ("gemini-2.0-flash",   "Gemini 2.0 Flash — fast, free tier available (recommended)"),
+            ("gemini-1.5-pro",     "Gemini 1.5 Pro — long context (2M tokens)"),
+            ("gemini-1.5-flash",   "Gemini 1.5 Flash — fast, economical"),
+        ],
+    },
+    {
+        "name": "deepseek",
+        "label": "DeepSeek",
+        "key_url": "https://platform.deepseek.com/",
+        "requires_key": True,
+        "models": [
+            ("deepseek-chat",      "DeepSeek V3 — very economical (recommended)"),
+            ("deepseek-reasoner",  "DeepSeek R1 — advanced reasoning"),
+        ],
+    },
+    {
+        "name": "qwen",
+        "label": "Qwen (Alibaba Cloud)",
+        "key_url": "https://dashscope.console.aliyun.com/",
+        "requires_key": True,
+        "models": [
+            ("qwen-max",    "Qwen Max — most capable (recommended)"),
+            ("qwen-plus",   "Qwen Plus — balanced"),
+            ("qwen-turbo",  "Qwen Turbo — fast, economical"),
+            ("qwen-long",   "Qwen Long — extended context"),
+        ],
+    },
+    {
+        "name": "mistral",
+        "label": "Mistral AI",
+        "key_url": "https://console.mistral.ai/",
+        "requires_key": True,
+        "models": [
+            ("mistral-large-latest",  "Mistral Large — most capable (recommended)"),
+            ("mistral-small-latest",  "Mistral Small — balanced"),
+            ("open-mistral-nemo",     "Mistral Nemo — open, multilingual"),
+            ("open-mistral-7b",       "Mistral 7B — smallest, fastest"),
+        ],
+    },
+    {
+        "name": "custom",
+        "label": "Custom / On-Premise (Ollama, LM Studio, vLLM, Gemma...)",
+        "key_url": "",
+        "requires_key": False,
+        "models": [],  # user types model name
+    },
+]
+
+# Keys managed exclusively by the LLM wizard step — skipped in generic collect_env_interactive()
+LLM_MANAGED_KEYS = {
+    "VITRUVYAN_LLM_PROVIDER",
+    "VITRUVYAN_LLM_MODEL",
+    "VITRUVYAN_LLM_API_KEY",
+    "VITRUVYAN_LLM_BASE_URL",
+    "OPENAI_API_KEY",
+    "OPENAI_MODEL",
+}
+
 # (field_name, env_var, label, standard_port)
 PORT_FIELDS = [
     ("redis",       "HOST_REDIS_PORT",       "Redis",       6379),
@@ -96,8 +189,15 @@ PORT_FIELDS = [
 # key: (default_value, description)
 # Required vars are prompted interactively; optional vars get sensible defaults silently.
 ENV_TEMPLATE: Dict[str, Tuple[str, str]] = {
+    # ── LLM provider (written by the LLM wizard step, not prompted generically) ──
+    "VITRUVYAN_LLM_PROVIDER": ("", "LLM provider (openai/anthropic/gemini/deepseek/qwen/mistral/custom)"),
+    "VITRUVYAN_LLM_MODEL": ("", "LLM model identifier"),
+    "VITRUVYAN_LLM_API_KEY": ("", "LLM provider API key"),
+    "VITRUVYAN_LLM_BASE_URL": ("", "LLM base URL (on-premise only)"),
+    # backward-compat alias — set automatically when provider=openai
+    "OPENAI_API_KEY": ("", "OpenAI API key (backward-compat alias, set by LLM step)"),
+    "OPENAI_MODEL": ("", "OpenAI model (backward-compat alias, set by LLM step)"),
     # ── Required ─────────────────────────────────────────────────
-    "OPENAI_API_KEY": ("", "OpenAI API key (required for LLM features)"),
     "POSTGRES_USER": ("vitruvyan_core_user", "PostgreSQL username"),
     "POSTGRES_PASSWORD": ("", "PostgreSQL password"),
     "POSTGRES_DB": ("vitruvyan_core", "PostgreSQL database name"),
@@ -469,6 +569,127 @@ def collect_credentials_interactive(existing_env: Optional[Dict[str, str]] = Non
     return values
 
 
+def collect_llm_interactive(existing_env: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+    """
+    Interactively collect LLM provider, model, and API key.
+
+    Flow: choose provider → choose model → enter API key (or base URL for on-premise).
+
+    Returns a dict of env vars to write.  LLM_MANAGED_KEYS are all set here;
+    the generic collect_env_interactive() skips them.
+    """
+    existing_env = existing_env or {}
+
+    # If already configured, offer to keep
+    existing_provider = existing_env.get("VITRUVYAN_LLM_PROVIDER", "").strip()
+    existing_model = existing_env.get("VITRUVYAN_LLM_MODEL", "").strip()
+    existing_key = (
+        existing_env.get("VITRUVYAN_LLM_API_KEY", "").strip()
+        or existing_env.get("OPENAI_API_KEY", "").strip()
+    )
+
+    if existing_provider and (existing_key or existing_provider == "custom"):
+        model_label = f" / {existing_model}" if existing_model else ""
+        print(f"  LLM already configured: {existing_provider}{model_label}")
+        try:
+            keep = input("  Keep existing configuration? [Y/n]: ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            keep = "y"
+        if keep in ("", "y", "yes"):
+            return {}
+
+    # ── Step A: choose provider ──────────────────────────────────
+    print("\n  Available LLM providers:\n")
+    for i, p in enumerate(LLM_PROVIDERS, 1):
+        print(f"    {i}) {p['label']}")
+
+    while True:
+        try:
+            raw = input(f"\n  Select provider [1-{len(LLM_PROVIDERS)}]: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\n  Aborted.")
+            return {}
+
+        try:
+            provider = LLM_PROVIDERS[int(raw) - 1]
+            break
+        except (ValueError, IndexError):
+            print(f"  Invalid selection — enter a number between 1 and {len(LLM_PROVIDERS)}.")
+
+    values: Dict[str, str] = {"VITRUVYAN_LLM_PROVIDER": provider["name"]}
+
+    # ── Step B: choose model ─────────────────────────────────────
+    if provider["models"]:
+        print(f"\n  Available models for {provider['label']}:\n")
+        for i, (model_id, label) in enumerate(provider["models"], 1):
+            rec = " ← recommended" if i == 1 else ""
+            print(f"    {i}) {model_id}  —  {label}{rec}")
+
+        while True:
+            try:
+                raw = input(f"\n  Select model [1-{len(provider['models'])}]: ").strip()
+            except (EOFError, KeyboardInterrupt):
+                raw = "1"
+
+            if not raw:
+                model_id = provider["models"][0][0]
+                break
+            try:
+                model_id = provider["models"][int(raw) - 1][0]
+                break
+            except (ValueError, IndexError):
+                print(f"  Invalid selection.")
+    else:
+        # Custom / on-premise: user types the model name
+        common_examples = "llama3.2, mistral, gemma2:9b, phi3, deepseek-r1:7b"
+        print(f"\n  On-premise model name (examples: {common_examples}):")
+        try:
+            model_id = input("  Model name [llama3.2]: ").strip() or "llama3.2"
+        except (EOFError, KeyboardInterrupt):
+            model_id = "llama3.2"
+
+    values["VITRUVYAN_LLM_MODEL"] = model_id
+
+    # ── Step C: API key or base URL ──────────────────────────────
+    if provider["requires_key"]:
+        if provider["key_url"]:
+            print(f"\n  Get your API key at: {provider['key_url']}")
+        print(f"  {provider['label']} API key (input is hidden):")
+        try:
+            key = getpass.getpass("  API key: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            key = ""
+
+        if not key:
+            print("  ⚠️  No key provided — set VITRUVYAN_LLM_API_KEY in .env before starting.")
+        values["VITRUVYAN_LLM_API_KEY"] = key
+        values["VITRUVYAN_LLM_BASE_URL"] = ""
+
+        # Backward-compat aliases so existing code that reads OPENAI_API_KEY / OPENAI_MODEL
+        # continues to work when OpenAI is selected
+        if provider["name"] == "openai":
+            values["OPENAI_API_KEY"] = key
+            values["OPENAI_MODEL"] = model_id
+        else:
+            values["OPENAI_API_KEY"] = ""
+            values["OPENAI_MODEL"] = ""
+    else:
+        # On-premise: ask for base URL only
+        default_url = "http://localhost:11434/v1"
+        print(f"\n  API base URL (leave blank for Ollama default: {default_url}):")
+        try:
+            base_url = input(f"  Base URL [{default_url}]: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            base_url = ""
+        values["VITRUVYAN_LLM_BASE_URL"] = base_url or default_url
+        values["VITRUVYAN_LLM_API_KEY"] = ""
+        values["OPENAI_API_KEY"] = ""
+        values["OPENAI_MODEL"] = ""
+
+    print(f"\n  ✅ LLM configured: {provider['label']} / {model_id}")
+    return values
+
+
 def collect_env_interactive() -> Dict[str, str]:
     """Interactively collect required environment variables from user."""
     values: Dict[str, str] = {}
@@ -476,6 +697,10 @@ def collect_env_interactive() -> Dict[str, str]:
     print("  (press Enter to accept defaults shown in brackets)\n")
 
     for key, (default, description) in ENV_TEMPLATE.items():
+        # LLM keys are handled by collect_llm_interactive() — skip here
+        if key in LLM_MANAGED_KEYS:
+            continue
+
         # Check if already set in environment
         env_val = os.environ.get(key)
         if env_val:

@@ -22,6 +22,7 @@ from vitruvyan_core.core.platform.package_manager.bootstrap import (
     check_python,
     collect_credentials_interactive,
     collect_env_interactive,
+    collect_llm_interactive,
     collect_ports_interactive,
     find_repo_root,
     generate_env_file,
@@ -157,11 +158,17 @@ def _interactive_wizard(skip_confirm: bool = False) -> int:
     print("\n  ✅ Prerequisites OK\n")
 
     # Step 2: Port configuration
-    print("  Step 2/5 — Port configuration\n")
+    print("  Step 2/6 — Port configuration\n")
     port_config = collect_ports_interactive()
 
-    # Step 3: Profile selection
-    print("\n  Step 3/5 — Choose installation profile\n")
+    # Step 3: LLM provider selection
+    print("\n  Step 3/6 — LLM provider\n")
+    env_path = repo_root / "infrastructure" / "docker" / ".env"
+    existing_env = read_existing_env(env_path)
+    llm_overrides = collect_llm_interactive(existing_env)
+
+    # Step 4: Profile selection
+    print("\n  Step 4/6 — Choose installation profile\n")
     profiles = list_profiles()
     for i, p in enumerate(profiles, 1):
         print(f"    {i}) {p.summary}")
@@ -178,9 +185,9 @@ def _interactive_wizard(skip_confirm: bool = False) -> int:
             print("\n  Aborted.")
             return 1
 
-    # Step 4: Environment configuration
-    print(f"\n  Step 4/5 — Environment configuration\n")
-    env_path = repo_root / "infrastructure" / "docker" / ".env"
+    # Step 5: Environment configuration
+    print(f"\n  Step 5/6 — Environment configuration\n")
+    # Re-read env after potential prior writes
     existing_env = read_existing_env(env_path)
 
     # Always collect DB credentials (required for Postgres to start)
@@ -194,16 +201,18 @@ def _interactive_wizard(skip_confirm: bool = False) -> int:
             print(f"    - {key}")
         print()
         values = collect_env_interactive()
-        values.update(cred_overrides)  # credentials take precedence
+        values.update(cred_overrides)   # credentials take precedence
+        values.update(llm_overrides)    # LLM config takes precedence
         generate_env_file(env_path, values, port_config=port_config)
         print(f"\n  ✅ Environment file written to {env_path}\n")
     else:
-        # Write port config + credentials
-        generate_env_file(env_path, cred_overrides, port_config=port_config)
+        # Write port config + credentials + LLM config
+        merged = {**cred_overrides, **llm_overrides}
+        generate_env_file(env_path, merged, port_config=port_config)
         print(f"  ✅ Environment configured ({env_path})\n")
 
-    # Step 5: Install packages + start infrastructure
-    print("  Step 5/5 — Starting containers\n")
+    # Step 6: Install packages + start infrastructure
+    print("  Step 6/6 — Starting containers\n")
     print("  Creating Docker network and volumes...")
     if start_infrastructure(repo_root):
         print("  ✅ Infrastructure and core services started\n")
